@@ -1,4 +1,4 @@
-import NextLink from 'next/link'
+"use client";
 import {
     Box,
     Flex,
@@ -18,7 +18,7 @@ import {
     Link
 } from '@chakra-ui/react';
 import { SunIcon, MoonIcon, HamburgerIcon } from '@chakra-ui/icons';
-import {BalancerLogo} from "@/app/lib/shared/imgs/BalancerLogo";
+import {BalancerLogo} from "@/lib/shared/imgs/BalancerLogo";
 
 const Navbar = () => {
     const { colorMode, toggleColorMode } = useColorMode();
@@ -63,8 +63,8 @@ const Navbar = () => {
                     <DrawerBody>
                         <VStack spacing={4}>
                             <Link href="/">Home</Link>
-                            <Link as={NextLink} href="/payloadBuilder">Payload Builder</Link>
-                            <Link href="/rewardsInjector">Rewards Injector</Link>
+                            <Link href="/payload-builder">Payload Builder</Link>
+                            <Link href="/rewards-injector">Rewards Injector</Link>
                         </VStack>
                     </DrawerBody>
 
