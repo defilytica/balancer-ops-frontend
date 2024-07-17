@@ -1,5 +1,4 @@
 'use client'
-import ReactJson from "react-json-view";
 import {
     Alert,
     AlertDescription,
@@ -34,6 +33,10 @@ import {
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
+import dynamic from "next/dynamic";
+const ReactJson = dynamic(() => import("react-json-view"), {
+    ssr: false
+})
 
 export interface AddRewardInput {
     targetGauge: string;
