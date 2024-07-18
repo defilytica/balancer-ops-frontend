@@ -7,8 +7,8 @@ import Navbar from "@/lib/modules/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "%s - Balancer Ops Tooling",
-    description: "",
+    title: "Balancer Ops Tooling",
+    description: "Tooling Suite for Balancer DAOs On-Chain Operations",
 };
 
 export default function RootLayout({

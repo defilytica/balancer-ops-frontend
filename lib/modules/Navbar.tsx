@@ -39,7 +39,7 @@ const Navbar = () => {
                         <Box boxSize={30} marginRight={2}>
                             <BalancerLogo />{/* Placeholder for logo */}
                         </Box>
-                        <Heading size="md" color="white">Ops Tooling</Heading>
+                        <Heading size="md" >Ops Tooling</Heading>
                     </Flex>
                     <IconButton
                         size="md"
