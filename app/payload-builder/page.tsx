@@ -1,17 +1,14 @@
-import { Box, Heading } from '@chakra-ui/react';
-import GridContainer from '../../lib/modules/GridContainer';
-import {PAYLOAD_OPTIONS} from "@/app/payload-builder/constants";
+import { Box, Heading, Text, SimpleGrid } from '@chakra-ui/react';
+import { PAYLOAD_OPTIONS } from "@/app/payload-builder/constants";
 import React from "react";
 import CustomCard from "@/lib/modules/CustomCard";
 
-
-
-
 export default function PayloadBuilder() {
     return (
-        <Box p={8}>
-            <Heading mb={6}>Payload Builder</Heading>
-            <GridContainer>
+        <Box p={8} maxW="container.lg" mx="auto">
+            <Heading mb={1}>Payload Builder Library</Heading>
+            <Text mb={4}>Choose from a variety of options to create Balancer DAO Payloads</Text>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                 {PAYLOAD_OPTIONS.map((link) => (
                     <CustomCard
                         key={link.key}
@@ -22,7 +19,7 @@ export default function PayloadBuilder() {
                         link={link.href}
                     />
                 ))}
-            </GridContainer>
+            </SimpleGrid>
         </Box>
     );
 }
