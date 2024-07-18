@@ -1,34 +1,51 @@
 // lib/constants.ts
 import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from 'react-icons/fa';
+import { FaBridgeCircleCheck } from "react-icons/fa6";
 
-export const NAVIGATION = [
+export const PAYLOAD_OPTIONS = [
     {
         href: '/payload-builder/create-payment',
         key: 'create-payment',
-        label: 'Create Payment',
+        label: 'Create DAO Payment Request',
+        button_label: 'Create Payment',
         description: 'Build a token payment payload from a set whitelisted tokens and DAO wallets.',
         icon: FaDollarSign
     },
     {
         href: '/payload-builder/enable-gauge',
         key: 'enable-gauge',
-        label: 'Enable Gauge',
+        label: 'Enable Gauge for BAL Rewards in the veBAL system',
+        button_label: 'Enable Gauge',
         description: 'Set up a payload to enable a gauge in the Balancer gauge system.',
-        icon: FaTachometerAlt },
+        icon: FaTachometerAlt
+    },
     {
         href: '/payload-builder/kill-gauge',
         key: 'kill-gauge',
-        label: 'Remove gauge',
+        label: 'Remove Gauge from the veBAL system',
+        button_label: 'Kill Gauge',
         description: 'Set up a payload to remove a gauge from the Balancer gauge system',
-        icon: FaSkull },
+        icon: FaSkull
+    },
     {
         href: '/payload-builder/add-reward-to-gauge',
         key: 'add-reward-to-gauge',
         label: 'Add Secondary Reward Tokens to Gauge',
+        button_label: 'Add Reward Tokens',
         description: 'Add secondary rewards to a Balancer staking gauge.',
-        icon: FaGift },
+        icon: FaGift
+    },
+    {
+        href: '/payload-builder/ccip-bridge',
+        key: 'ccip-bridge',
+        label: 'Bridge USDC via CCIP',
+        button_label: 'Create Bridge Tx',
+        description: 'Bridge USDC stable coins between DAO Multisigs with the official CCIP bridge',
+        icon: FaBridgeCircleCheck
+    },
 ];
 
+//TODO: refactor to reference address book
 export const NETWORK_OPTIONS = [
     {label: 'Ethereum', chainId: '1', maxiSafe:'0xc38c5f97B34E175FFd35407fc91a937300E33860', entrypoint:'0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA'},
     {label: 'Arbitrum', chainId: '42161', maxiSafe:'0xc38c5f97B34E175FFd35407fc91a937300E33860', entrypoint:'0x97207B095e4D5C9a6e4cfbfcd2C3358E03B90c4A'},

@@ -1,5 +1,5 @@
 'use client'
-import React, {useState} from 'react';
+import React, {useState} from "react";
 import dynamic from 'next/dynamic';
 import {
     Box,
@@ -18,33 +18,60 @@ import {
     useColorMode,
     useToast,
 } from '@chakra-ui/react';
-import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from '@chakra-ui/icons';
-import {
-    generateHumanReadableTokenTransfer,
-    generateTokenPaymentPayload,
-    PaymentInput,
-} from '../payloadHelperFunctions';
+import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
+import {CCTPBridgeInput, generateCCTPBridgePayload, generateHumanReadableCCTPBridge,} from "../payloadHelperFunctions";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
-export default function CreatePaymentPage() {
+const DOMAIN_OPTIONS = [
+    {label: 'Ethereum', value: '0'},
+    {label: 'Avalanche', value: '1'},
+    {label: 'Optimism', value: '2'},
+    {label: 'Arbitrum', value: '3'},
+    {label: 'Base', value: '6'},
+    {label: 'Polygon PoS', value: '7'}
+];
+
+const addressMapping: { [key: string]: string } = {
+    '0': '0xc38c5f97B34E175FFd35407fc91a937300E33860', // Ethereum
+    '1': '0x326A7778DB9B741Cb2acA0DE07b9402C7685dAc6', // Avalanche
+    '2': '0x09Df1626110803C7b3b07085Ef1E053494155089', // Optimism
+    '3': '0xc38c5f97B34E175FFd35407fc91a937300E33860', // Arbitrum
+    '6': '0x65226673F3D202E0f897C862590d7e1A992B2048', // Base
+    '7': '0xc38c5f97B34E175FFd35407fc91a937300E33860',  // Polygon
+};
+
+export default function CCIPBridge() {
     const {colorMode} = useColorMode();
-    const reactJsonTheme = colorMode === 'light' ? 'rjv-default' : 'solarized';
-    const [payments, setPayments] = useState<PaymentInput[]>([]);
+    const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
+    const [inputs, setInputs] = useState<CCTPBridgeInput[]>([{value: 0, destinationDomain: '0', mintRecipient: ''}]);
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
     const toast = useToast();
 
-    const handleRemovePayment = (index: number) => {
-        const newPayments = [...payments];
-        newPayments.splice(index, 1);
-        setPayments(newPayments);
+    const handleInputChange = (index: number, field: string, value: string | number) => {
+        const updatedInputs = [...inputs];
+        (updatedInputs[index] as any)[field] = value;
+        if (field === 'destinationDomain') {
+            (updatedInputs[index] as any).mintRecipient = addressMapping[value as string] || '';
+        }
+        setInputs(updatedInputs);
+    };
+
+    const addInput = () => {
+        setInputs([...inputs, {value: 0, destinationDomain: '0', mintRecipient: ''}]);
+    };
+
+    const handleRemoveInput = (index: number) => {
+        const updatedInputs = [...inputs];
+        updatedInputs.splice(index, 1);
+        setInputs(updatedInputs);
     };
 
     const handleGenerateClick = () => {
-        const payload = generateTokenPaymentPayload(payments);
-        const text = payments.map(payment => generateHumanReadableTokenTransfer(payment)).join('\n');
-        setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
+        let payload = generateCCTPBridgePayload(inputs);
+        let text = generateHumanReadableCCTPBridge(inputs);
+        setGeneratedPayload(JSON.stringify(payload, null, 4));  // Beautify JSON string
         setHumanReadableText(text);
     };
 
@@ -54,7 +81,7 @@ export default function CreatePaymentPage() {
             const blob = new Blob([payloadString], {type: 'application/json'});
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'BIP-XXX-payment.json';
+            link.download = 'BIP-XXX.json';
             link.click();
             URL.revokeObjectURL(link.href);
         }
@@ -64,8 +91,8 @@ export default function CreatePaymentPage() {
         const payloadString = JSON.stringify(JSON.parse(payload), null, 2);
         navigator.clipboard.writeText(payloadString).then(() => {
             toast({
-                title: 'Copied to clipboard!',
-                status: 'success',
+                title: "Copied to clipboard!",
+                status: "success",
                 duration: 2000,
                 isClosable: true,
             });
@@ -77,8 +104,8 @@ export default function CreatePaymentPage() {
     const copyTextToClipboard = (text: string) => {
         navigator.clipboard.writeText(text).then(() => {
             toast({
-                title: 'Copied to clipboard!',
-                status: 'success',
+                title: "Copied to clipboard!",
+                status: "success",
                 duration: 2000,
                 isClosable: true,
             });
@@ -90,26 +117,17 @@ export default function CreatePaymentPage() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Create DAO Payment</Heading>
-                <Text mt={4}>Build a payment payload to send USDC or BAL from the DAO multi-sig on mainnet to a
-                    destination address of your choosing.</Text>
+                <Heading>Create Payment</Heading>
+                <Text mt={4}>Further logic for creating a CCIP payment goes here.</Text>
             </Box>
             <Box>
-                {payments.map((payment, index) => (
+                {inputs.map((input, index) => (
                     <Box key={index} mb="10px">
                         <SimpleGrid columns={{base: 1, md: 2}} spacing={4}>
                             <FormControl>
                                 <FormLabel>Token</FormLabel>
-                                <Select
-                                    value={payment.token}
-                                    onChange={(e) => {
-                                        const updatedPayments = [...payments];
-                                        updatedPayments[index].token = e.target.value as 'USDC' | 'BAL';
-                                        setPayments(updatedPayments);
-                                    }}
-                                >
+                                <Select value="USDC" isDisabled>
                                     <option value="USDC">USDC</option>
-                                    <option value="BAL">BAL</option>
                                 </Select>
                             </FormControl>
 
@@ -117,44 +135,44 @@ export default function CreatePaymentPage() {
                                 <FormLabel>Amount #{index + 1}</FormLabel>
                                 <Input
                                     type="number"
-                                    value={payment.value}
-                                    onChange={(e) => {
-                                        const updatedPayments = [...payments];
-                                        updatedPayments[index].value = Number(e.target.value);
-                                        setPayments(updatedPayments);
-                                    }}
+                                    value={input.value}
+                                    onChange={(e) => handleInputChange(index, "value", Number(e.target.value))}
                                 />
                             </FormControl>
-                        </SimpleGrid>
-                        <SimpleGrid columns={{base: 1, md: 2}} spacing={4} mt={4}>
+
                             <FormControl>
-                                <FormLabel>Recipient Address #{index + 1}</FormLabel>
+                                <FormLabel>Destination Domain</FormLabel>
+                                <Select
+                                    value={input.destinationDomain}
+                                    onChange={(e) => handleInputChange(index, "destinationDomain", e.target.value)}
+                                >
+                                    {DOMAIN_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl>
+                                <FormLabel>Mint Recipient #{index + 1}</FormLabel>
                                 <Input
-                                    value={payment.to}
-                                    onChange={(e) => {
-                                        const updatedPayments = [...payments];
-                                        updatedPayments[index].to = e.target.value;
-                                        setPayments(updatedPayments);
-                                    }}
+                                    value={input.mintRecipient}
+                                    onChange={(e) => handleInputChange(index, "mintRecipient", e.target.value)}
                                 />
                             </FormControl>
-                            <Flex alignItems="flex-end" justifyContent="flex-end">
-                                <IconButton
-                                    icon={<DeleteIcon/>}
-                                    onClick={() => handleRemovePayment(index)}
-                                    aria-label="Remove"
-                                />
-                            </Flex>
                         </SimpleGrid>
+                        <Flex justifyContent="flex-end" mt={2}>
+                            <IconButton
+                                icon={<DeleteIcon/>}
+                                onClick={() => handleRemoveInput(index)}
+                                aria-label="Remove"
+                            />
+                        </Flex>
                     </Box>
                 ))}
-                <Button
-                    onClick={() =>
-                        setPayments([...payments, {to: '', value: 0, token: 'USDC'}])
-                    }
-                    leftIcon={<AddIcon/>}
-                >
-                    Add Payment
+                <Button onClick={addInput} leftIcon={<AddIcon/>}>
+                    Add Input
                 </Button>
             </Box>
             <Box mt="20px">

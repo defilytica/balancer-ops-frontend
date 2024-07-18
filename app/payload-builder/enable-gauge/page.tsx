@@ -33,6 +33,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
 import dynamic from "next/dynamic";
+
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
 })
@@ -56,11 +57,11 @@ export default function EnableGaugePage() {
 
     return (
         <Container maxW="container.md">
-            <Box p={4}>
+            <Box mb='10px'>
                 <Heading>Enable Gauge Payload Builder</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
-                <Box flex="1" >
+                <Box flex="1">
                     <Flex
                         align={"center"}
                     >
@@ -197,7 +198,7 @@ export default function EnableGaugePage() {
                 )}
             </>
             {/* Spacer at the bottom */}
-            <Box mt={8} />
+            <Box mt={8}/>
         </Container>
     );
 };

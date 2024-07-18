@@ -18,7 +18,6 @@ import {
     List,
     ListIcon,
     ListItem,
-    Select,
     Text,
     useColorMode,
     useToast,
@@ -29,10 +28,9 @@ import {
     copyJsonToClipboard,
     copyTextToClipboard,
     generateKillGaugePayload,
-    generateHumanReadableForEnableGauge,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
+
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
 })
@@ -40,16 +38,15 @@ const ReactJson = dynamic(() => import("react-json-view"), {
 export default function KillGaugePage() {
 
 
-
-    const { colorMode } = useColorMode();
+    const {colorMode} = useColorMode();
     const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
-    const [gauges, setGauges] = useState<{ id: string }[]>([{ id: '' }]);
+    const [gauges, setGauges] = useState<{ id: string }[]>([{id: ''}]);
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
     const toast = useToast();
 
     const handleGenerateClick = () => {
-        let payload = generateKillGaugePayload(gauges.map(g => ({ target: g.id })));
+        let payload = generateKillGaugePayload(gauges.map(g => ({target: g.id})));
         let text = ''; // According to the provided snippet
         setGeneratedPayload(JSON.stringify(payload, null, 4));  // Beautify JSON string
         setHumanReadableText(text);
@@ -57,11 +54,11 @@ export default function KillGaugePage() {
 
     return (
         <Container maxW="container.md">
-            <Box p={4}>
+            <Box mb='10px'>
                 <Heading>Create Gauge Removal Payload</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
-                <Box flex="1" >
+                <Box flex="1">
                     <Flex align={"center"}>
                         <AlertIcon/>
                         <AlertTitle>Hints</AlertTitle>
@@ -70,7 +67,8 @@ export default function KillGaugePage() {
                         <List spacing={2}>
                             <ListItem>
                                 <ListIcon as={ChevronRightIcon}/>
-                                Build a payload to disable a gauge for BAL rewards by providing a set of gauge contract IDs.
+                                Build a payload to disable a gauge for BAL rewards by providing a set of gauge contract
+                                IDs.
                             </ListItem>
                             <ListItem>
                                 <ListIcon as={ChevronRightIcon}/>
@@ -78,7 +76,8 @@ export default function KillGaugePage() {
                             </ListItem>
                             <ListItem>
                                 <ListIcon as={ChevronRightIcon}/>
-                                After submitting a PR, validate that the gauges match the ones that are desired to be removed.
+                                After submitting a PR, validate that the gauges match the ones that are desired to be
+                                removed.
                             </ListItem>
                         </List>
                     </AlertDescription>
@@ -118,8 +117,8 @@ export default function KillGaugePage() {
                     </Box>
                 ))}
                 <Button
-                    onClick={() => setGauges([...gauges, { id: "" }])}
-                    leftIcon={<AddIcon />}
+                    onClick={() => setGauges([...gauges, {id: ""}])}
+                    leftIcon={<AddIcon/>}
                 >
                     Add Gauge ID
                 </Button>
@@ -137,20 +136,20 @@ export default function KillGaugePage() {
                         <Text fontSize="lg" mb="10px">
                             Generated JSON Payload:
                         </Text>
-                        <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)} />
+                        <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)}/>
                     </Box>
                 )}
 
                 <Box display="flex" alignItems="center" mt="20px">
                     <Button
                         mr="10px"
-                        leftIcon={<DownloadIcon />}
+                        leftIcon={<DownloadIcon/>}
                         onClick={() => handleDownloadClick(generatedPayload)}
                     >
                         Download Payload
                     </Button>
                     <Button
-                        leftIcon={<CopyIcon />}
+                        leftIcon={<CopyIcon/>}
                         onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                     >
                         Copy Payload to Clipboard
@@ -165,7 +164,7 @@ export default function KillGaugePage() {
                         </Box>
                         <Button
                             colorScheme="blue"
-                            leftIcon={<CopyIcon />}
+                            leftIcon={<CopyIcon/>}
                             onClick={() => copyTextToClipboard(humanReadableText, toast)}
                         >
                             Copy Text to Clipboard
@@ -174,7 +173,7 @@ export default function KillGaugePage() {
                 )}
             </>
             {/* Spacer at the bottom */}
-            <Box mt={8} />
+            <Box mt={8}/>
         </Container>
     );
 }

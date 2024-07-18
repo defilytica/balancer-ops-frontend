@@ -8,11 +8,12 @@ import { ReactElement } from 'react';
 interface CardProps {
     title: string;
     description: string;
+    button_label: string,
     icon: ReactElement;
     link: string;
 }
 
-export default function CustomCard({ title, description, icon, link }: CardProps) {
+export default function CustomCard({ title, description, button_label, icon, link }: CardProps) {
     return (
         <ChakraCard align='center' boxShadow='md' borderRadius='md'>
             <CardHeader>
@@ -26,7 +27,7 @@ export default function CustomCard({ title, description, icon, link }: CardProps
             <CardFooter>
                 <Link href={link} legacyBehavior>
                     <Button colorScheme='teal' rightIcon={icon}>
-                        {title}
+                        {button_label}
                     </Button>
                 </Link>
             </CardFooter>

@@ -34,6 +34,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
 import dynamic from "next/dynamic";
+
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
 })
@@ -58,7 +59,7 @@ const addressMapping: { [key: string]: string } = {
 };
 
 export default function AddRewardToGaugePage() {
-    const { colorMode } = useColorMode();
+    const {colorMode} = useColorMode();
     const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
     const toast = useToast();
 
@@ -106,7 +107,14 @@ export default function AddRewardToGaugePage() {
     };
 
     const addRewardRow = () => {
-        setRewardAdds([...rewardAdds, { targetGauge, rewardToken, distributorAddress, safeAddress, authorizerAdaptorEntrypoint, chainId }]);
+        setRewardAdds([...rewardAdds, {
+            targetGauge,
+            rewardToken,
+            distributorAddress,
+            safeAddress,
+            authorizerAdaptorEntrypoint,
+            chainId
+        }]);
         setTargetGauge('');
         setRewardToken('');
         setDistributorAddress('');
@@ -114,27 +122,28 @@ export default function AddRewardToGaugePage() {
 
     return (
         <Container maxW="container.md">
-            <Box p={4}>
+            <Box mb='10px'>
                 <Heading>Create Payload to Add Rewards to a Gauge</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
                 <Box flex="1">
                     <Flex align={"center"}>
-                        <AlertIcon />
+                        <AlertIcon/>
                         <AlertTitle>Hint</AlertTitle>
                     </Flex>
                     <AlertDescription display="block">
                         <List spacing={2}>
                             <ListItem>
-                                <ListIcon as={ChevronRightIcon} />
-                                Build a payload to add rewards to a gauge by providing the gauge ID, reward token, and distributor address.
+                                <ListIcon as={ChevronRightIcon}/>
+                                Build a payload to add rewards to a gauge by providing the gauge ID, reward token, and
+                                distributor address.
                             </ListItem>
                             <ListItem>
-                                <ListIcon as={ChevronRightIcon} />
+                                <ListIcon as={ChevronRightIcon}/>
                                 Make sure to select the correct network for the gauge.
                             </ListItem>
                             <ListItem>
-                                <ListIcon as={ChevronRightIcon} />
+                                <ListIcon as={ChevronRightIcon}/>
                                 Validate the generated payload and ensure all details are correct before submitting.
                             </ListItem>
                         </List>
@@ -151,21 +160,21 @@ export default function AddRewardToGaugePage() {
                     ))}
                 </Select>
             </FormControl>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+            <SimpleGrid columns={{base: 1, md: 3}} spacing={4}>
                 <FormControl>
                     <FormLabel>Target Gauge</FormLabel>
-                    <Input value={targetGauge} onChange={(e) => setTargetGauge(e.target.value)} />
+                    <Input value={targetGauge} onChange={(e) => setTargetGauge(e.target.value)}/>
                 </FormControl>
                 <FormControl>
                     <FormLabel>Reward Token</FormLabel>
-                    <Input value={rewardToken} onChange={(e) => setRewardToken(e.target.value)} />
+                    <Input value={rewardToken} onChange={(e) => setRewardToken(e.target.value)}/>
                 </FormControl>
                 <FormControl>
                     <FormLabel>Distributor Address</FormLabel>
-                    <Input value={distributorAddress} onChange={(e) => setDistributorAddress(e.target.value)} />
+                    <Input value={distributorAddress} onChange={(e) => setDistributorAddress(e.target.value)}/>
                 </FormControl>
             </SimpleGrid>
-            <Button mt={4} leftIcon={<AddIcon />} onClick={addRewardRow}>
+            <Button mt={4} leftIcon={<AddIcon/>} onClick={addRewardRow}>
                 Add Reward
             </Button>
             {rewardAdds.map((reward, index) => (
@@ -177,7 +186,7 @@ export default function AddRewardToGaugePage() {
                     <Text>Safe Address: {reward.safeAddress}</Text>
                     <Text>Authorizer/Adaptor Entrypoint: {reward.authorizerAdaptorEntrypoint}</Text>
                     <IconButton
-                        icon={<DeleteIcon />}
+                        icon={<DeleteIcon/>}
                         onClick={() => handleRemoveReward(index)}
                         aria-label={'Delete'}
                         mt={2}
@@ -189,27 +198,27 @@ export default function AddRewardToGaugePage() {
                     Generate Payload
                 </Button>
             </Box>
-            <Divider />
+            <Divider/>
 
             {generatedPayload && (
                 <Box mt="20px">
                     <Text fontSize="lg" mb="10px">
                         Generated JSON Payload:
                     </Text>
-                    <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)} />
+                    <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)}/>
                 </Box>
             )}
 
             <Box display="flex" alignItems="center" mt="20px">
                 <Button
                     mr="10px"
-                    leftIcon={<DownloadIcon />}
+                    leftIcon={<DownloadIcon/>}
                     onClick={() => handleDownloadClick(generatedPayload)}
                 >
                     Download Payload
                 </Button>
                 <Button
-                    leftIcon={<CopyIcon />}
+                    leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                 >
                     Copy Payload to Clipboard
@@ -224,7 +233,7 @@ export default function AddRewardToGaugePage() {
                     </Box>
                     <Button
                         colorScheme="blue"
-                        leftIcon={<CopyIcon />}
+                        leftIcon={<CopyIcon/>}
                         onClick={() => copyTextToClipboard(humanReadableText, toast)}
                     >
                         Copy Text to Clipboard
@@ -232,7 +241,7 @@ export default function AddRewardToGaugePage() {
                 </Box>
             )}
             {/* Spacer at the bottom */}
-            <Box mt={8} />
+            <Box mt={8}/>
         </Container>
     );
 }
