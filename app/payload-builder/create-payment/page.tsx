@@ -15,6 +15,7 @@ import {
     Select,
     SimpleGrid,
     Text,
+    Card,
     useColorMode,
     useToast,
 } from '@chakra-ui/react';
@@ -90,13 +91,14 @@ export default function CreatePaymentPage() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Create DAO Payment</Heading>
+                <Heading as="h2" size="lg" variant="special">Create DAO Payment</Heading>
                 <Text mt={4}>Build a payment payload to send USDC or BAL from the DAO multi-sig on mainnet to a
                     destination address of your choosing.</Text>
             </Box>
             <Box>
                 {payments.map((payment, index) => (
                     <Box key={index} mb="10px">
+                        <Card>
                         <SimpleGrid columns={{base: 1, md: 2}} spacing={4}>
                             <FormControl>
                                 <FormLabel>Token</FormLabel>
@@ -146,9 +148,11 @@ export default function CreatePaymentPage() {
                                 />
                             </Flex>
                         </SimpleGrid>
+                        </Card>
                     </Box>
                 ))}
                 <Button
+                    variant="secondary"
                     onClick={() =>
                         setPayments([...payments, {to: '', value: 0, token: 'USDC'}])
                     }
@@ -158,7 +162,11 @@ export default function CreatePaymentPage() {
                 </Button>
             </Box>
             <Box mt="20px">
-                <Button mb="10px" onClick={handleGenerateClick}>
+                <Button
+                    variant="primary"
+                    mb="10px"
+                    onClick={handleGenerateClick}
+                >
                     Generate Payload
                 </Button>
             </Box>
@@ -175,6 +183,7 @@ export default function CreatePaymentPage() {
 
             <Box display="flex" alignItems="center" mt="20px">
                 <Button
+                    variant="secondary"
                     mr="10px"
                     leftIcon={<DownloadIcon/>}
                     onClick={() => handleDownloadClick(generatedPayload)}
@@ -182,6 +191,7 @@ export default function CreatePaymentPage() {
                     Download Payload
                 </Button>
                 <Button
+                    variant="secondary"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload)}
                 >
@@ -196,7 +206,7 @@ export default function CreatePaymentPage() {
                         <Text>{humanReadableText}</Text>
                     </Box>
                     <Button
-                        colorScheme="blue"
+                        variant="secondary"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyTextToClipboard(humanReadableText)}
                     >

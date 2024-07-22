@@ -6,6 +6,7 @@ import {
     AlertTitle,
     Box,
     Button,
+    Card,
     Container,
     Divider,
     Flex,
@@ -123,7 +124,7 @@ export default function AddRewardToGaugePage() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Create Payload to Add Rewards to a Gauge</Heading>
+                <Heading as="h2" size="lg" variant="special">Create Payload to Add Rewards to a Gauge</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
                 <Box flex="1">
@@ -150,6 +151,10 @@ export default function AddRewardToGaugePage() {
                     </AlertDescription>
                 </Box>
             </Alert>
+            <Card
+                mb='10px'
+                key={'add-reward-card'}
+            >
             <FormControl mb="30px">
                 <FormLabel>Network</FormLabel>
                 <Select value={network} onChange={(e) => handleNetworkChange(e.target.value)}>
@@ -174,27 +179,33 @@ export default function AddRewardToGaugePage() {
                     <Input value={distributorAddress} onChange={(e) => setDistributorAddress(e.target.value)}/>
                 </FormControl>
             </SimpleGrid>
-            <Button mt={4} leftIcon={<AddIcon/>} onClick={addRewardRow}>
+            </Card>
+            <Button variant="secondary" mt='10px' mb='10px' leftIcon={<AddIcon/>} onClick={addRewardRow}>
                 Add Reward
             </Button>
             {rewardAdds.map((reward, index) => (
-                <Box key={index} p={4} mt={4} borderWidth="1px" borderRadius="lg">
-                    <Text fontSize="lg" mb={2}>Reward {index + 1}</Text>
-                    <Text>Target Gauge: {reward.targetGauge}</Text>
-                    <Text>Reward Token: {reward.rewardToken}</Text>
-                    <Text>Distributor Address: {reward.distributorAddress}</Text>
-                    <Text>Safe Address: {reward.safeAddress}</Text>
-                    <Text>Authorizer/Adaptor Entrypoint: {reward.authorizerAdaptorEntrypoint}</Text>
-                    <IconButton
-                        icon={<DeleteIcon/>}
-                        onClick={() => handleRemoveReward(index)}
-                        aria-label={'Delete'}
-                        mt={2}
-                    />
-                </Box>
+                <Card
+                    key={'add-reward-element' + index}
+                    mb='10px'>
+                    <Box key={index} p={4} mt={4} borderRadius="lg">
+                        <Text fontSize="lg" mb={2}>Reward {index + 1}</Text>
+                        <Text>Target Gauge: {reward.targetGauge}</Text>
+                        <Text>Reward Token: {reward.rewardToken}</Text>
+                        <Text>Distributor Address: {reward.distributorAddress}</Text>
+                        <Text>Safe Address: {reward.safeAddress}</Text>
+                        <Text>Authorizer/Adaptor Entrypoint: {reward.authorizerAdaptorEntrypoint}</Text>
+                        <IconButton
+                            icon={<DeleteIcon/>}
+                            onClick={() => handleRemoveReward(index)}
+                            aria-label={'Delete'}
+                            mt={2}
+                        />
+                    </Box>
+                </Card>
             ))}
-            <Box mt="20px">
-                <Button mb="10px" onClick={handleGenerateClick} isDisabled={rewardAdds.length === 0}>
+
+            <Box mb="20px">
+                <Button variant="primary" mb="10px" onClick={handleGenerateClick} isDisabled={rewardAdds.length === 0}>
                     Generate Payload
                 </Button>
             </Box>
@@ -211,6 +222,7 @@ export default function AddRewardToGaugePage() {
 
             <Box display="flex" alignItems="center" mt="20px">
                 <Button
+                    variant="secondary"
                     mr="10px"
                     leftIcon={<DownloadIcon/>}
                     onClick={() => handleDownloadClick(generatedPayload)}
@@ -218,6 +230,7 @@ export default function AddRewardToGaugePage() {
                     Download Payload
                 </Button>
                 <Button
+                    variant="secondary"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                 >
@@ -232,7 +245,7 @@ export default function AddRewardToGaugePage() {
                         <Text>{humanReadableText}</Text>
                     </Box>
                     <Button
-                        colorScheme="blue"
+                        variant="secondary"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyTextToClipboard(humanReadableText, toast)}
                     >

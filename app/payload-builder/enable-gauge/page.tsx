@@ -19,6 +19,7 @@ import {
     ListItem,
     Select,
     Text,
+    Card,
     useColorMode,
     useToast,
 } from '@chakra-ui/react';
@@ -58,7 +59,7 @@ export default function EnableGaugePage() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Enable Gauge Payload Builder</Heading>
+                <Heading as="h2" size="lg" variant="special">Enable Gauge Payload Builder</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
                 <Box flex="1">
@@ -91,12 +92,13 @@ export default function EnableGaugePage() {
             </Alert>
             <>
                 {gauges.map((gauge, index) => (
+                    <Card key={'enableGauge-card'+ index} mb='10px'>
                     <Box
                         key={index}
                         display="flex"
-                        mb="10px"
                         alignItems="flex-end"
                     >
+
                         <FormControl mr="10px" flex="1">
                             <FormLabel>Gauge ID #{index + 1}</FormLabel>
                             <Input
@@ -138,9 +140,12 @@ export default function EnableGaugePage() {
                                 aria-label={'Delete'}
                             />
                         </Box>
+
                     </Box>
+                    </Card>
                 ))}
                 <Button
+                    variant="secondary"
                     onClick={() =>
                         setGauges([...gauges, {id: "", network: "Ethereum"}])
                     }
@@ -151,7 +156,11 @@ export default function EnableGaugePage() {
             </>
             <>
                 <Box mt="20px">
-                    <Button mb="10px" onClick={handleGenerateClick}>
+                    <Button
+                        variant="primary"
+                        mb="10px"
+                        onClick={handleGenerateClick}
+                    >
                         Generate Payload
                     </Button>
                 </Box>
@@ -168,6 +177,7 @@ export default function EnableGaugePage() {
 
                 <Box display="flex" alignItems="center" mt="20px">
                     <Button
+                        variant="secondary"
                         mr="10px"
                         leftIcon={<DownloadIcon/>}
                         onClick={() => handleDownloadClick(generatedPayload)}
@@ -175,6 +185,7 @@ export default function EnableGaugePage() {
                         Download Payload
                     </Button>
                     <Button
+                        variant="secondary"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                     >
@@ -189,7 +200,7 @@ export default function EnableGaugePage() {
                             <Text>{humanReadableText}</Text>
                         </Box>
                         <Button
-                            colorScheme="blue"
+                            variant="secondary"
                             leftIcon={<CopyIcon/>}
                             onClick={() => copyTextToClipboard(humanReadableText, toast)}>
                             Copy Text to Clipboard

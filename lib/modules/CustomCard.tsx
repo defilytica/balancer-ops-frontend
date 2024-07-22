@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import { ReactElement } from 'react';
+import {colors} from "@/lib/shared/services/chakra/themes/base/colors";
 
 interface CardProps {
     title: string;
@@ -35,11 +36,11 @@ export default function CustomCard({ title, description, button_label, icon, lin
                         justify={'center'}
                         color={'white'}
                         rounded={'full'}
-                        bg={useColorModeValue('gray.400', 'blue.700')}
+                        bg={useColorModeValue(colors.brown[200], colors.brown[300])}
                         flexShrink={0}>
                         {icon}
                     </Flex>
-                    <Heading size='md' ml={4}>{title}</Heading>
+                    <Heading as="h2" size="md" ml={4} variant="secondary">{title}</Heading>
                 </Flex>
             </CardHeader>
             <CardBody>
@@ -47,7 +48,9 @@ export default function CustomCard({ title, description, button_label, icon, lin
             </CardBody>
             <CardFooter>
                 <Link href={link} legacyBehavior>
-                    <Button colorScheme='teal' rightIcon={icon}>
+                    <Button
+                        variant="secondary"
+                        rightIcon={icon}>
                         {button_label}
                     </Button>
                 </Link>
