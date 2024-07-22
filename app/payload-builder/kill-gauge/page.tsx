@@ -131,7 +131,11 @@ export default function KillGaugePage() {
             </>
             <>
                 <Box mt="20px">
-                    <Button mb="10px" onClick={handleGenerateClick}>
+                    <Button
+                        variant="primary"
+                        mb="10px"
+                        onClick={handleGenerateClick}
+                    >
                         Generate Payload
                     </Button>
                 </Box>
@@ -148,6 +152,7 @@ export default function KillGaugePage() {
 
                 <Box display="flex" alignItems="center" mt="20px">
                     <Button
+                        variant="secondary"
                         mr="10px"
                         leftIcon={<DownloadIcon/>}
                         onClick={() => handleDownloadClick(generatedPayload)}
@@ -155,6 +160,7 @@ export default function KillGaugePage() {
                         Download Payload
                     </Button>
                     <Button
+                        variant="secondary"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                     >
@@ -169,7 +175,7 @@ export default function KillGaugePage() {
                             <Text>{humanReadableText}</Text>
                         </Box>
                         <Button
-                            colorScheme="blue"
+                            variant="secondary"
                             leftIcon={<CopyIcon/>}
                             onClick={() => copyTextToClipboard(humanReadableText, toast)}
                         >

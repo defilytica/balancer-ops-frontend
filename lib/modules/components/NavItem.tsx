@@ -48,8 +48,8 @@ export default function NavItem({ icon, title, description, target, active, navS
             <Menu isOpen={isOpen} placement="right">
                 <Link
                     backgroundColor={active ? colors.brown[300] : undefined}
-                    p={3}
-                    borderRadius={8}
+                    p={1}
+                    borderRadius={5}
                     href={target}
                     _hover={{ textDecor: 'none', backgroundColor: "secondary" }}
                     w={navSize == "large" ? "100%" : undefined}
@@ -73,8 +73,6 @@ export default function NavItem({ icon, title, description, target, active, navS
                 <MenuList
                     py={0}
                     border="none"
-                    w={200}
-                    h={200}
                     ml={5}
                     onMouseEnter={() => setIsOpen(true)}
                     onMouseLeave={() => setIsOpen(false)}

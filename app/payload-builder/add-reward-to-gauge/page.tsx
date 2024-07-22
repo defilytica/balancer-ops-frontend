@@ -180,7 +180,7 @@ export default function AddRewardToGaugePage() {
                 </FormControl>
             </SimpleGrid>
             </Card>
-            <Button mt='10px' mb='10px' leftIcon={<AddIcon/>} onClick={addRewardRow}>
+            <Button variant="secondary" mt='10px' mb='10px' leftIcon={<AddIcon/>} onClick={addRewardRow}>
                 Add Reward
             </Button>
             {rewardAdds.map((reward, index) => (
@@ -205,7 +205,7 @@ export default function AddRewardToGaugePage() {
             ))}
 
             <Box mb="20px">
-                <Button mb="10px" onClick={handleGenerateClick} isDisabled={rewardAdds.length === 0}>
+                <Button variant="primary" mb="10px" onClick={handleGenerateClick} isDisabled={rewardAdds.length === 0}>
                     Generate Payload
                 </Button>
             </Box>
@@ -222,6 +222,7 @@ export default function AddRewardToGaugePage() {
 
             <Box display="flex" alignItems="center" mt="20px">
                 <Button
+                    variant="secondary"
                     mr="10px"
                     leftIcon={<DownloadIcon/>}
                     onClick={() => handleDownloadClick(generatedPayload)}
@@ -229,6 +230,7 @@ export default function AddRewardToGaugePage() {
                     Download Payload
                 </Button>
                 <Button
+                    variant="secondary"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                 >
@@ -243,7 +245,7 @@ export default function AddRewardToGaugePage() {
                         <Text>{humanReadableText}</Text>
                     </Box>
                     <Button
-                        colorScheme="blue"
+                        variant="secondary"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyTextToClipboard(humanReadableText, toast)}
                     >

@@ -4,10 +4,11 @@ import {
     Heading,
     Text,
     Icon,
-    FlexProps
+    FlexProps,
+    useColorModeValue
 } from '@chakra-ui/react'
 import { IconType } from 'react-icons'
-import {colors} from "@/lib/shared/services/chakra/themes/base/colors";
+import { colors } from "@/lib/shared/services/chakra/themes/base/colors";
 
 interface NavHoverBoxProps extends FlexProps {
     title: string;
@@ -16,34 +17,25 @@ interface NavHoverBoxProps extends FlexProps {
 }
 
 export default function NavHoverBox({ title, icon, description }: NavHoverBoxProps) {
+    const bgColor = useColorModeValue(colors.gray[100], colors.gray[600]);
+    const textColor = useColorModeValue(colors.gray[600], colors.gray[100]);
+    const iconColor = useColorModeValue(colors.brown[500], colors.brown[300]);
+
     return (
-        <>
-            <Flex
-                pos="absolute"
-                mt="calc(100px - 7.5px)"
-                ml="-10px"
-                width={0}
-                height={0}
-                borderTop="10px solid transparent"
-                borderBottom="10px solid transparent"
-                borderRight="10px solid #82AAAD"
-            />
-            <Flex
-                h={200}
-                p={4}
-                w="100%"
-                flexDir="column"
-                alignItems="center"
-                justify="center"
-                backgroundColor={colors.gray[500]}
-                borderRadius="10px"
-                color="#fff"
-                textAlign="center"
-            >
-                <Icon as={icon} fontSize="3xl" mb={4} />
-                <Heading size="md" fontWeight="normal">{title}</Heading>
-                <Text>{description}</Text>
-            </Flex>
-        </>
+        <Flex
+            p={3}
+            flexDir="column"
+            alignItems="center"
+            justify="center"
+            backgroundColor={bgColor}
+            borderRadius="8px"
+            color={textColor}
+            textAlign="center"
+            boxShadow="sm"
+        >
+            <Icon as={icon} color={iconColor} fontSize="xl" mb={2} />
+            <Heading size="sm" fontWeight="medium" mb={1}>{title}</Heading>
+            <Text fontSize="xs">{description}</Text>
+        </Flex>
     )
 }
