@@ -47,7 +47,7 @@ export default function CustomCard({ title, description, button_label, icon, lin
             </CardBody>
             <CardFooter>
                 <Link href={link} legacyBehavior>
-                    <Button colorScheme='teal' rightIcon={icon}>
+                    <Button  rightIcon={icon}>
                         {button_label}
                     </Button>
                 </Link>
