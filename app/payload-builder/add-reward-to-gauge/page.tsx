@@ -153,6 +153,7 @@ export default function AddRewardToGaugePage() {
             </Alert>
             <Card
                 mb='10px'
+                key={'add-reward-card'}
             >
             <FormControl mb="30px">
                 <FormLabel>Network</FormLabel>
@@ -183,7 +184,9 @@ export default function AddRewardToGaugePage() {
                 Add Reward
             </Button>
             {rewardAdds.map((reward, index) => (
-                <Card mb='10px'>
+                <Card
+                    key={'add-reward-element' + index}
+                    mb='10px'>
                     <Box key={index} p={4} mt={4} borderRadius="lg">
                         <Text fontSize="lg" mb={2}>Reward {index + 1}</Text>
                         <Text>Target Gauge: {reward.targetGauge}</Text>
