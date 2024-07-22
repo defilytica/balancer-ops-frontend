@@ -7,6 +7,7 @@ import {
     FlexProps
 } from '@chakra-ui/react'
 import { IconType } from 'react-icons'
+import {colors} from "@/lib/shared/services/chakra/themes/base/colors";
 
 interface NavHoverBoxProps extends FlexProps {
     title: string;
@@ -34,7 +35,7 @@ export default function NavHoverBox({ title, icon, description }: NavHoverBoxPro
                 flexDir="column"
                 alignItems="center"
                 justify="center"
-                backgroundColor="#82AAAD"
+                backgroundColor={colors.gray[500]}
                 borderRadius="10px"
                 color="#fff"
                 textAlign="center"

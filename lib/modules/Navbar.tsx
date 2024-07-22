@@ -1,4 +1,3 @@
-
 import {
     Box,
     Flex,
@@ -16,11 +15,13 @@ const Navbar = () => {
             <Box px={8}>
                 <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
                     <Link href={'/'}>
-                    <Flex alignItems={'center'}>
+                    <Flex alignItems={'center'} justifyContent={'center'}>
                         <Box boxSize={30} marginRight={2}>
                             <BalancerLogo />{/* Placeholder for logo */}
                         </Box>
-                        <Heading size="md" >Ops Tooling</Heading>
+                        <Box>
+                            <Heading as="h5" size="md" variant="special">Ops Tooling</Heading>
+                        </Box>
                     </Flex>
                     </Link>
                     <DarkModeToggle />

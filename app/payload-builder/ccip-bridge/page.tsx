@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import {
     Box,
     Button,
+    Card,
     Container,
     Divider,
     Flex,
@@ -117,59 +118,61 @@ export default function CCIPBridge() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Create Payment</Heading>
+                <Heading as="h2" size="lg" variant="special">Create Bridge Transaction</Heading>
                 <Text mt={4}>Further logic for creating a CCIP payment goes here.</Text>
             </Box>
             <Box>
                 {inputs.map((input, index) => (
-                    <Box key={index} mb="10px">
-                        <SimpleGrid columns={{base: 1, md: 2}} spacing={4}>
-                            <FormControl>
-                                <FormLabel>Token</FormLabel>
-                                <Select value="USDC" isDisabled>
-                                    <option value="USDC">USDC</option>
-                                </Select>
-                            </FormControl>
+                    <Card key={'bridge-card'+ index} mb='10px'>
+                        <Box key={index} mb="10px">
+                            <SimpleGrid columns={{base: 1, md: 2}} spacing={4}>
+                                <FormControl>
+                                    <FormLabel>Token</FormLabel>
+                                    <Select value="USDC" isDisabled>
+                                        <option value="USDC">USDC</option>
+                                    </Select>
+                                </FormControl>
 
-                            <FormControl>
-                                <FormLabel>Amount #{index + 1}</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={input.value}
-                                    onChange={(e) => handleInputChange(index, "value", Number(e.target.value))}
+                                <FormControl>
+                                    <FormLabel>Amount #{index + 1}</FormLabel>
+                                    <Input
+                                        type="number"
+                                        value={input.value}
+                                        onChange={(e) => handleInputChange(index, "value", Number(e.target.value))}
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <FormLabel>Destination Domain</FormLabel>
+                                    <Select
+                                        value={input.destinationDomain}
+                                        onChange={(e) => handleInputChange(index, "destinationDomain", e.target.value)}
+                                    >
+                                        {DOMAIN_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+
+                                <FormControl>
+                                    <FormLabel>Mint Recipient #{index + 1}</FormLabel>
+                                    <Input
+                                        value={input.mintRecipient}
+                                        onChange={(e) => handleInputChange(index, "mintRecipient", e.target.value)}
+                                    />
+                                </FormControl>
+                            </SimpleGrid>
+                            <Flex justifyContent="flex-end" mt={2}>
+                                <IconButton
+                                    icon={<DeleteIcon/>}
+                                    onClick={() => handleRemoveInput(index)}
+                                    aria-label="Remove"
                                 />
-                            </FormControl>
-
-                            <FormControl>
-                                <FormLabel>Destination Domain</FormLabel>
-                                <Select
-                                    value={input.destinationDomain}
-                                    onChange={(e) => handleInputChange(index, "destinationDomain", e.target.value)}
-                                >
-                                    {DOMAIN_OPTIONS.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </Select>
-                            </FormControl>
-
-                            <FormControl>
-                                <FormLabel>Mint Recipient #{index + 1}</FormLabel>
-                                <Input
-                                    value={input.mintRecipient}
-                                    onChange={(e) => handleInputChange(index, "mintRecipient", e.target.value)}
-                                />
-                            </FormControl>
-                        </SimpleGrid>
-                        <Flex justifyContent="flex-end" mt={2}>
-                            <IconButton
-                                icon={<DeleteIcon/>}
-                                onClick={() => handleRemoveInput(index)}
-                                aria-label="Remove"
-                            />
-                        </Flex>
-                    </Box>
+                            </Flex>
+                        </Box>
+                    </Card>
                 ))}
                 <Button onClick={addInput} leftIcon={<AddIcon/>}>
                     Add Input

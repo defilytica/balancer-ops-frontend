@@ -19,6 +19,7 @@ import {
     ListIcon,
     ListItem,
     Text,
+    Card,
     useColorMode,
     useToast,
 } from '@chakra-ui/react';
@@ -55,7 +56,7 @@ export default function KillGaugePage() {
     return (
         <Container maxW="container.md">
             <Box mb='10px'>
-                <Heading>Create Gauge Removal Payload</Heading>
+                <Heading as="h2" size="lg" variant="special">Create Gauge Removal Payload</Heading>
             </Box>
             <Alert status="info" mt={4} mb={4}>
                 <Box flex="1">
@@ -85,10 +86,14 @@ export default function KillGaugePage() {
             </Alert>
             <>
                 {gauges.map((gauge, index) => (
+                    <Card
+                        key={'kill-card'+ index}
+                        mb="10px"
+                    >
                     <Box
                         key={index}
                         display="flex"
-                        mb="10px"
+
                         alignItems="flex-end"
                     >
                         <FormControl mr="10px" flex="1">
@@ -115,6 +120,7 @@ export default function KillGaugePage() {
                             />
                         </Box>
                     </Box>
+                    </Card>
                 ))}
                 <Button
                     onClick={() => setGauges([...gauges, {id: ""}])}

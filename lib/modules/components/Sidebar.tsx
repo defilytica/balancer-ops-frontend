@@ -34,6 +34,7 @@ export default function Sidebar() {
         <Flex
             pos="sticky"
             left="5"
+            mb={2}
             h="85vh"
             boxShadow="0 4px 12px 0 rgba(0, 0, 0, 0.1)"
             borderRadius={navSize == "small" ? "15px" : "30px"}
@@ -61,7 +62,7 @@ export default function Sidebar() {
                     }}
                     aria-label="Menu"
                 />
-                <NavItem navSize={navSize} icon={FiHome} title="Home" target={'/'} description="This is the description for the dashboard." />
+                <NavItem navSize={navSize} icon={FiHome} title="Home" target={'/'} description="Navigate back to Home" />
                 <NavItem navSize={navSize} icon={FiEdit} title="Payload Builder" target={'/payload-builder'} description="Choose from a variety of options to create Balancer DAO Payloads" />
                 <NavItem navSize={navSize} icon={FiDollarSign} title="Rewards Injector" target={'/rewards-injector'} description="View and Configure Gauge Rewards injectors" />
             </Flex>

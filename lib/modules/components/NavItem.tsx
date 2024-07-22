@@ -12,6 +12,7 @@ import {
 } from '@chakra-ui/react'
 import { IconType } from 'react-icons'
 import NavHoverBox from './NavHoverBox'
+import {colors} from "@/lib/shared/services/chakra/themes/base/colors";
 
 interface NavItemProps extends FlexProps {
     icon: IconType;
@@ -46,18 +47,18 @@ export default function NavItem({ icon, title, description, target, active, navS
         >
             <Menu isOpen={isOpen} placement="right">
                 <Link
-                    backgroundColor={active ? "#AEC8CA" : undefined}
+                    backgroundColor={active ? colors.brown[300] : undefined}
                     p={3}
                     borderRadius={8}
                     href={target}
-                    _hover={{ textDecor: 'none', backgroundColor: "#AEC8CA" }}
+                    _hover={{ textDecor: 'none', backgroundColor: "secondary" }}
                     w={navSize == "large" ? "100%" : undefined}
                     onMouseEnter={() => setIsOpen(true)}
                     onMouseLeave={() => setIsOpen(false)}
                 >
                     <MenuButton w="100%">
                         <Flex>
-                            <Icon as={icon} fontSize="xl" color={active ? "#82AAAD" : "gray.500"} />
+                            <Icon as={icon} fontSize="xl" color={active ? colors.brown[300] : colors.brown[300]} />
                             <Text
                                 ml={5}
                                 opacity={showText ? 1 : 0}
