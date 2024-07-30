@@ -1,6 +1,22 @@
-import { useToast } from '@chakra-ui/react';
+import {UseToastOptions} from "@chakra-ui/react";
 
-export const createPR = async (repo,payload, branchName, title, description,toast) => {
+interface CreatePRParams {
+    repo: string;
+    payload: any;
+    branchName: string;
+    title: string;
+    description: string;
+    toast: (options: UseToastOptions) => void;
+}
+
+export const createPR = async ({
+                                   repo,
+                                   payload,
+                                   branchName,
+                                   title,
+                                   description,
+                                   toast
+                               }: CreatePRParams): Promise<void> => {
     const currentDate = new Date().toISOString().split('T')[0];
     const filePath = `payloads/${currentDate}-enable-gauge.json`;
     const base = 'main';
@@ -38,7 +54,7 @@ export const createPR = async (repo,payload, branchName, title, description,toas
 
         window.open(data.pr_url, '_blank');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating PR:', error);
         toast({
             title: "Error creating PR",

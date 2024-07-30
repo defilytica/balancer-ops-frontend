@@ -79,10 +79,10 @@ const networks: Record<string, NetworkInfo> = {
 
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);
-    const [selectedAddress, setSelectedAddress] = useState<AddressOption>(null);
-    const [provider, setProvider] = useState(null);
-    const [contract, setContract] = useState(null);
-    const [gauges, setGauges] = useState([]);
+    const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
+    const [provider, setProvider] = useState<ethers.JsonRpcProvider>();
+    const [contract, setContract] = useState<ethers.Contract>();
+    const [gauges, setGauges] = useState<Recipient[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isV2, setIsV2] = useState(false);
     const [tokenName, setTokenName] = useState("");
@@ -244,7 +244,7 @@ function App() {
         let remaining = 0;
 
         gauges.forEach(gauge => {
-            const amount = parseFloat(gauge.amountPerPeriod) || 0;
+            const amount = parseFloat(gauge.amountPerPeriod!) || 0;
             const maxPeriods = parseInt(gauge.maxPeriods) || 0;
             const currentPeriod = parseInt(gauge.periodNumber) || 0;
 
@@ -259,7 +259,7 @@ function App() {
         return { total, distributed, remaining };
     };
 
-    const formatAmount = (amount) => {
+    const formatAmount = (amount : any) => {
         return amount.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
@@ -270,7 +270,7 @@ function App() {
         <Container maxW="container.lg" justifyContent="center" alignItems="center">
                 <>
                     <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                        <Menu w="100%">
+                        <Menu>
                             <MenuButton
                                 as={Button}
                                 rightIcon={<ChevronDownIcon/>}
@@ -392,7 +392,7 @@ function App() {
                                         <Td>{gauge.amountPerPeriod}</Td>
                                         <Td>{gauge.periodNumber}</Td>
                                         <Td>{gauge.maxPeriods}</Td>
-                                        <Td>{new Date(gauge.lastInjectionTimeStamp * 1000).toLocaleDateString()}</Td>
+                                        <Td>{new Date(Number(gauge.lastInjectionTimeStamp) * 1000).toLocaleDateString()}</Td>
                                     </Tr>
                                 ))}
                             </Tbody>

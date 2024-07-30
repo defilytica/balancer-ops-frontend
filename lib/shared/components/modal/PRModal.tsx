@@ -29,7 +29,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
                                                                     isOpen,
                                                                     onClose,
                                                                     payload,
-    type
+                                                                    type
                                                                 }) => {
     const [prRepo, setPrRepo] = useState(REPO_OPTIONS[0]);
     const [prBranch, setPrBranch] = useState('');
@@ -38,12 +38,19 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const toast = useToast();
 
-    const { branchNamePlaceholder, prNamePlaceholder } = PAYLOAD_TYPES[type];
+    const {branchNamePlaceholder, prNamePlaceholder} = PAYLOAD_TYPES[type];
 
     const handleCreatePR = async () => {
         setIsLoading(true);
         try {
-            await createPR(prRepo, payload, prBranch, prName, prDescription, toast);
+            await createPR({
+                repo: prRepo,
+                payload: payload,
+                branchName: prBranch,
+                title: prName,
+                description: prDescription,
+                toast
+            });
             onClose();
         } catch (error) {
         } finally {
@@ -53,10 +60,10 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalOverlay />
+            <ModalOverlay/>
             <ModalContent>
                 <ModalHeader>Create Pull Request</ModalHeader>
-                <ModalCloseButton />
+                <ModalCloseButton/>
                 <ModalBody>
                     <FormControl mb={4}>
                         <FormLabel>Repository</FormLabel>
