@@ -82,3 +82,37 @@ export const NETWORK_OPTIONS = [
     {label: 'Gnosis', chainId: '100', maxiSafe:'0x14969B55a675d13a1700F71A37511bc22D90155a', entrypoint:'0x8F42aDBbA1B16EaAE3BB5754915E0D06059aDd75'},
 
 ];
+
+// tokenConstants.ts
+
+export interface TokenInfo {
+    symbol: string;
+    address: string;
+    decimals: number;
+}
+
+export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
+    mainnet: [
+        { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
+        { symbol: 'BAL', address: '0xba100000625a3754423978a60c9317c58a424e3D', decimals: 18 },
+        // Add more mainnet tokens as needed
+    ],
+    arbitrum: [
+        { symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6 },
+        { symbol: 'BAL', address: '0x040d1EdC9569d4Bab2D15287Dc5A4F10F56a56B8', decimals: 18 },
+        { symbol: 'ARB', address: '0x912CE59144191C1204E64559FE8253a0e49E6548', decimals: 18 },
+        // Add more Goerli tokens as needed
+    ],
+    avalanche: [
+        { symbol: 'USDC', address: '0x099D7767eC64Ac33C076f1e3Eb3DC24D08FA86A5', decimals: 6 },
+        { symbol: 'BAL', address: '0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3', decimals: 18 },
+        { symbol: 'WAVAX', address: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7', decimals: 18 },
+        // Add more Goerli tokens as needed
+    ],
+    polygon: [
+        { symbol: 'USDC', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', decimals: 6 },
+        { symbol: 'BAL', address: '0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3', decimals: 18 },
+        { symbol: 'WMATIC', address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', decimals: 18 },
+        // Add more Goerli tokens as needed
+    ],
+};

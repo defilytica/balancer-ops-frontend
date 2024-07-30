@@ -1,3 +1,5 @@
+import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
+
 export interface EnableGaugeInput {
     gauge: string;
     gaugeType: string;
@@ -132,17 +134,25 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
 export interface PaymentInput {
     to: string;
     value: number;
-    token: 'USDC' | 'BAL';
+    token: string;
 }
 
-export function generateTokenPaymentPayload(inputs: PaymentInput[]) {
+interface SafeInfo {
+    address: string;
+    network: string;
+}
+
+export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: SafeInfo) {
     const transactions = inputs.map(input => {
-        const tokenAddress = input.token === 'USDC' ? "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : "0xba100000625a3754423978a60c9317c58a424e3d";
-        const decimals = input.token === 'USDC' ? 6 : 18;
-        const value = BigInt(input.value) * BigInt(10 ** decimals);
+        const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(t => t.address === input.token);
+        if (!tokenInfo) {
+            throw new Error(`Token ${input.token} not found for network ${safeInfo.network}`);
+        }
+
+        const value = BigInt(input.value) * BigInt(10 ** tokenInfo.decimals);
 
         return {
-            to: tokenAddress,
+            to: tokenInfo.address,
             value: "0",
             data: null,
             contractMethod: {
@@ -168,7 +178,7 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[]) {
             name: "Transactions Batch",
             description: "Fund grants for Q4 2023",
             txBuilderVersion: "1.13.3",
-            createdFromSafeAddress: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
+            createdFromSafeAddress: safeInfo.address,
             createdFromOwnerAddress: "",
             checksum: ""
         },
@@ -182,14 +192,15 @@ export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]):
     return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
 }
 
-export function generateHumanReadableTokenTransfer(payment: PaymentInput) {
-    const tokenAddress = payment.token === 'USDC'
-        ? "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        : "0xba100000625a3754423978a60c9317c58a424e3d";
-    const decimals = payment.token === 'USDC' ? 6 : 18;
-    const value = payment.value * (10 ** decimals);
+export function generateHumanReadableTokenTransfer(payment: PaymentInput, safeInfo: SafeInfo) {
+    const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(t => t.address === payment.token);
+    if (!tokenInfo) {
+        throw new Error(`Token ${payment.token} not found for network ${safeInfo.network}`);
+    }
 
-    return `The Balancer DAO multisig 0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f will interact with ${payment.token} ${tokenAddress} by writing transfer passing the ${payment.to} as recipient and amount as ${payment.value} ${payment.token} ${value}.`;
+    const value = payment.value * (10 ** tokenInfo.decimals);
+
+    return `The multisig ${safeInfo.address} will interact with ${tokenInfo.symbol} at ${tokenInfo.address} by writing transfer, passing ${payment.to} as recipient and the amount ${payment.value} as ${value}.`;
 }
 
 export interface CCTPBridgeInput {
@@ -330,4 +341,24 @@ export function generateHumanReadableAddReward(inputs: AddRewardInput[]): string
     const safeAddress = inputs[0].safeAddress || 'Unknown'; // Default value if safeAddress is undefined
 
     return `The Maxi Multisig ${safeAddress} will interact with the following gauges:\n${readableInputs}`;
+}
+
+export function transformToHumanReadable(input: string): string {
+    // Dictionary of special cases
+    const specialCases: { [key: string]: string } = {
+        'lm': 'LM',
+        'dao': 'DAO',
+        // Add more special cases here as needed
+    };
+
+    // Check if the input is a special case
+    if (input.toLowerCase() in specialCases) {
+        return specialCases[input.toLowerCase()];
+    }
+
+    // General transformation for other cases
+    return input
+        .split(/[-_]+/) // Split by hyphens or underscores
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
 }

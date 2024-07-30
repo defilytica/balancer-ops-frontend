@@ -1,32 +1,18 @@
 import {AddressBook} from "@/lib/config/types/interfaces";
 
-let cachedData: AddressBook | null = null;
-let lastFetchTime: number = 0;
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-
 export async function fetchAddressBook(): Promise<AddressBook> {
-    const currentTime = Date.now();
-    if (cachedData && currentTime - lastFetchTime < CACHE_DURATION) {
-        return cachedData;
-    }
-
     const url = 'https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/addressbook.json';
 
-    // Use different fetch methods for server and client
-    const response = await (typeof window === 'undefined'
-        ? fetch(url)
-        : window.fetch(url));
-
+    const response = await fetch(url, {
+        next: {
+            revalidate: 1800 // 30 minutes in seconds
+        }
+    });
     if (!response.ok) {
         throw new Error('Failed to fetch address book');
     }
-    const data: AddressBook = await response.json();
-    cachedData = data;
-    lastFetchTime = currentTime;
-    return data;
+    return await response.json();
 }
-
-// ... keep other utility functions as they were
 
 // --- Helper functions ---
 export function getNetworks(addressBook: AddressBook): string[] {
@@ -61,7 +47,7 @@ export function getCategoryData(
     addressBook: AddressBook,
     network: string,
     category: string
-): { [subcategory: string]: string | { [key: string]: string } } | undefined {
+): { [subcategory: string]: string | { [key: string]: string } } {
     return addressBook.active[network]?.[category];
 }
 
