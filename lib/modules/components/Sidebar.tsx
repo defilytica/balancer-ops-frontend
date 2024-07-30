@@ -2,7 +2,6 @@
 import React, {useEffect, useState} from 'react'
 import {
     Flex,
-    Text,
     IconButton,
     Divider,
     Avatar,
@@ -15,8 +14,11 @@ import {
     FiDollarSign,
 } from 'react-icons/fi'
 import NavItem from './NavItem'
+import {useSession} from "next-auth/react";
+import {SignInButton} from "@/lib/modules/components/SignInButton";
 
 export default function Sidebar() {
+    const session = useSession()
     const [navSize, setNavSize] = useState<"small" | "large">("small")
     const [showText, setShowText] = useState(navSize === "large");
 
@@ -74,26 +76,37 @@ export default function Sidebar() {
                 mb={4}
             >
                 <Divider display={navSize == "small" ? "none" : "flex"} />
-                <Flex
-                    mt={4}
-                    align="center"
-                    transition="all 0.3s ease"
-                >
-                    <Avatar size="sm" />
-                    <Flex flexDir="column" ml={4} display={navSize == "small" ? "none" : "flex"}>
-                        <Heading
-                            as="h3"
-                            size="sm"
-                            opacity={showText ? 1 : 0}
-                        >
-                            DeFi Degen
-                        </Heading>
-                        <Text
-                            color="gray"
-                            opacity={showText ? 1 : 0}
-                            transition="all 0.3s ease"
-                        >Admin</Text>
+                {session.data?.user?.image && (
+                    <Flex
+                        mt={4}
+                        flexDirection="column"
+                        align={navSize == "small" ? "center" : "flex-start"}
+                        transition="all 0.3s ease"
+                    >
+                        <Flex align="center">
+                            <Avatar size="sm" src={session?.data.user.image} />
+                            <Flex
+                                flexDir="column"
+                                ml={4}
+                                display={navSize == "small" ? "none" : "flex"}
+                            >
+                                <Heading
+                                    as="h3"
+                                    size="sm"
+                                    opacity={showText ? 1 : 0}
+                                >
+                                    {session.data.user.name}
+                                </Heading>
+                            </Flex>
+                        </Flex>
                     </Flex>
+                )}
+                <Flex
+                    mt={2}
+                    justifyContent={navSize == "small" ? "center" : "flex-start"}
+                    width="100%"
+                >
+                    <SignInButton/>
                 </Flex>
             </Flex>
         </Flex>

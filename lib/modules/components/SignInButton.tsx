@@ -1,0 +1,12 @@
+import {signIn, signOut, useSession} from "next-auth/react"
+import {Button} from "@chakra-ui/react";
+
+
+export function SignInButton() {
+    const session = useSession()
+
+    if (!session.data?.user){
+        return <Button size={"xs"} mt={2} rounded={"full"} variant={"primary"} onClick={() => signIn("github", "public_repo")}>Sign In</Button>
+    }
+    return <Button size={"xs"} mt={2} rounded={"full"} variant={"primary"} onClick={() => signOut()}>Sign Out</Button>
+}

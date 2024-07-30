@@ -17,7 +17,7 @@ import {
     Text,
     Card,
     useColorMode,
-    useToast,
+    useToast, useDisclosure,
 } from '@chakra-ui/react';
 import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from '@chakra-ui/icons';
 import {
@@ -25,6 +25,8 @@ import {
     generateTokenPaymentPayload,
     PaymentInput,
 } from '../payloadHelperFunctions';
+import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import {VscGithubInverted} from "react-icons/vsc";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
@@ -35,6 +37,21 @@ export default function CreatePaymentPage() {
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
     const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const handleOpenPRModal = () => {
+        if (generatedPayload) {
+            onOpen();
+        } else {
+            toast({
+                title: "No payload generated",
+                description: "Please generate a payload first",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    };
 
     const handleRemovePayment = (index: number) => {
         const newPayments = [...payments];
@@ -192,10 +209,18 @@ export default function CreatePaymentPage() {
                 </Button>
                 <Button
                     variant="secondary"
+                    mr="10px"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload)}
                 >
                     Copy Payload to Clipboard
+                </Button>
+                <Button
+                    variant="secondary"
+                    leftIcon={<VscGithubInverted/>}
+                    onClick={() => handleOpenPRModal()}
+                >
+                    Open PR
                 </Button>
             </Box>
 
@@ -216,6 +241,12 @@ export default function CreatePaymentPage() {
             )}
             {/* Spacer at the bottom */}
             <Box mt={8}/>
+            <PRCreationModal
+                type={"create-payment"}
+                isOpen={isOpen}
+                onClose={onClose}
+                payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            />
         </Container>
     );
 }

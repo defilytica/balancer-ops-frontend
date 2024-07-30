@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@apollo/client": "3.8.0-rc.1",
+    "@auth/prisma-adapter": "^2.4.2",
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/next-js": "^2.2.0",
     "@chakra-ui/react": "^2.8.2",
@@ -18,17 +19,20 @@
     "@emotion/styled": "^11.11.5",
     "@nikolovlazar/chakra-ui-prose": "^1.2.1",
     "@octokit/rest": "^21.0.0",
+    "@prisma/client": "^5.17.0",
     "@rainbow-me/rainbowkit": "^2.1.1",
     "@types/tinycolor2": "^1.4.6",
     "axios": "^1.7.2",
     "bignumber.js": "^9.1.2",
     "chakra-react-select": "^4.9.1",
+    "ethers": "^6.13.0",
     "framer-motion": "^11.3.0",
     "graphql": "^16.7.1",
     "graphql-request": "^6.1.0",
     "graphql-tag": "^2.12.6",
     "lodash": "^4.17.21",
     "next": "14.2.4",
+    "next-auth": "^5.0.0-beta.20",
     "next-themes": "^0.3.0",
     "react": "^18",
     "react-dom": "^18",
@@ -37,8 +41,7 @@
     "react-json-view": "^1.21.3",
     "tinycolor2": "^1.6.0",
     "viem": "^2.16.3",
-    "wagmi": "^2.10.8",
-    "ethers": "^6.13.0"
+    "wagmi": "^2.10.8"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -46,6 +49,7 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
+    "prisma": "^5.17.0",
     "typescript": "^5"
   }
 }

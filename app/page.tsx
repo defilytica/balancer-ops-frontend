@@ -1,6 +1,7 @@
 'use client'
 import { useState } from "react";
 import { Box, Heading, Text, Button, VStack, Container, Grid, GridItem, Link } from "@chakra-ui/react";
+import {SignInButton} from "@/lib/modules/components/SignInButton";
 
 export default function Page() {
     const [showOptions, setShowOptions] = useState(false);

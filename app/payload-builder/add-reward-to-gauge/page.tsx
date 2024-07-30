@@ -21,7 +21,7 @@ import {
     Select,
     SimpleGrid,
     Text,
-    useColorMode,
+    useColorMode, useDisclosure,
     useToast,
 } from '@chakra-ui/react';
 import {AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
@@ -35,6 +35,9 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
 import dynamic from "next/dynamic";
+import {createPR} from "@/lib/shared/services/createPR";
+import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import {VscGithubInverted} from "react-icons/vsc";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
@@ -74,6 +77,22 @@ export default function AddRewardToGaugePage() {
     const [chainId, setChainId] = useState('1');
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const handleOpenPRModal = () => {
+        if (generatedPayload) {
+            onOpen();
+        } else {
+            toast({
+                title: "No payload generated",
+                description: "Please generate a payload first",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    };
+
 
     const handleNetworkChange = (selectedNetwork: string) => {
         const selectedOption = NETWORK_OPTIONS.find(option => option.label === selectedNetwork);
@@ -231,10 +250,18 @@ export default function AddRewardToGaugePage() {
                 </Button>
                 <Button
                     variant="secondary"
+                    mr="10px"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                 >
                     Copy Payload to Clipboard
+                </Button>
+                <Button
+                    variant="secondary"
+                    leftIcon={<VscGithubInverted/>}
+                    onClick={() => handleOpenPRModal()}
+                >
+                    Open PR
                 </Button>
             </Box>
 
@@ -255,6 +282,12 @@ export default function AddRewardToGaugePage() {
             )}
             {/* Spacer at the bottom */}
             <Box mt={8}/>
+            <PRCreationModal
+                type={"add-reward-to-gauge"}
+                isOpen={isOpen}
+                onClose={onClose}
+                payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            />
         </Container>
     );
 }
