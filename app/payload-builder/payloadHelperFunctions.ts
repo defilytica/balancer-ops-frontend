@@ -56,7 +56,7 @@ export const copyTextToClipboard = (text: string, toast: any) => {
     });
 };
 
-
+// --- ENABLE GAUGE
 export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     const transactions = inputs.map(input => ({
         to: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
@@ -92,6 +92,14 @@ export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     };
 }
 
+export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
+    const gaugesList = inputs.map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`).join("\n");
+
+    return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
+}
+
+
+// --- KILL GAUGE ---
 export interface KillGaugeInput {
     target: string;
 }
@@ -131,6 +139,7 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
     };
 }
 
+// --- PAYMENT ---
 export interface PaymentInput {
     to: string;
     value: number;
@@ -141,6 +150,15 @@ interface SafeInfo {
     address: string;
     network: string;
 }
+
+type NetworkType = keyof typeof WHITELISTED_PAYMENT_TOKENS;
+
+const safeChainIDs: { [key in NetworkType]: string } = {
+    mainnet: "1",
+    arbitrum: "42161",
+    avalanche: "43114",
+    polygon: "137"
+};
 
 export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: SafeInfo) {
     const transactions = inputs.map(input => {
@@ -172,11 +190,11 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: Sa
 
     return {
         version: "1.0",
-        chainId: "1",
+        chainId: safeChainIDs[safeInfo.network as NetworkType] || "1",
         createdAt: Date.now(),
         meta: {
             name: "Transactions Batch",
-            description: "Fund grants for Q4 2023",
+            description: "Payment",
             txBuilderVersion: "1.13.3",
             createdFromSafeAddress: safeInfo.address,
             createdFromOwnerAddress: "",
@@ -184,12 +202,6 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: Sa
         },
         transactions
     };
-}
-
-export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
-    const gaugesList = inputs.map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`).join("\n");
-
-    return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
 }
 
 export function generateHumanReadableTokenTransfer(payment: PaymentInput, safeInfo: SafeInfo) {
@@ -203,6 +215,7 @@ export function generateHumanReadableTokenTransfer(payment: PaymentInput, safeIn
     return `The multisig ${safeInfo.address} will interact with ${tokenInfo.symbol} at ${tokenInfo.address} by writing transfer, passing ${payment.to} as recipient and the amount ${payment.value} as ${value}.`;
 }
 
+// --- CCTP BRIDGE ---
 export interface CCTPBridgeInput {
     value: number;
     destinationDomain: string;
@@ -284,6 +297,8 @@ export function generateHumanReadableCCTPBridge(inputs: CCTPBridgeInput[]): stri
     return `The Maxi Multisig 0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the CCTP Bridge as follows:\n${readableInputs}`;
 }
 
+
+// --- ADD REWARD ---
 export interface AddRewardInput {
     targetGauge: string;
     rewardToken: string;
@@ -343,6 +358,8 @@ export function generateHumanReadableAddReward(inputs: AddRewardInput[]): string
     return `The Maxi Multisig ${safeAddress} will interact with the following gauges:\n${readableInputs}`;
 }
 
+
+// General helpers
 export function transformToHumanReadable(input: string): string {
     // Dictionary of special cases
     const specialCases: { [key: string]: string } = {

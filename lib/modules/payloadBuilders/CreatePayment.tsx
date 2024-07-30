@@ -28,6 +28,7 @@ import {
 import {AddressBook} from "@/lib/config/types/interfaces";
 import {getCategoryData, getNetworks} from "@/lib/shared/data/maxis/addressBook";
 import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
+import SearchableAddressInput from "@/lib/modules/payloadBuilders/SearchableAddressInput";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
@@ -64,6 +65,11 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
             Object.entries(multisigs).forEach(([key, value]) => {
                 if (typeof value === 'string') {
                     formattedMultisigs[key] = value;
+                } else if (typeof value === 'object' && value !== null) {
+                    // Handle nested structure
+                    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+                        formattedMultisigs[`${key}.${nestedKey}`] = nestedValue;
+                    });
                 }
             });
             setAvailableMultisigs(formattedMultisigs);
@@ -155,21 +161,24 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                 </Box>
                 {payments.map((payment, index) => (
                     <Box key={index} mb="10px">
-                        <Card>
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                        <Card key={index + selectedNetwork}>
+                            <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4} mb={2}>
                                 <FormControl>
-                                    <FormLabel>Multisig</FormLabel>
+                                    <FormLabel>Source Wallet</FormLabel>
                                     <Select
                                         value={selectedMultisig}
                                         onChange={(e) => setSelectedMultisig(e.target.value)}
                                     >
                                         {Object.entries(availableMultisigs).map(([name, address]) => (
-                                            <option key={address} value={address}>
-                                                {transformToHumanReadable(name)}
+                                            <option key={`${address}-${selectedNetwork}`} value={address}>
+                                                {transformToHumanReadable(name.split('.').pop() || name)}
                                             </option>
                                         ))}
                                     </Select>
                                 </FormControl>
+                            </SimpleGrid>
+                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+
                                 <FormControl>
                                     <FormLabel>Token</FormLabel>
                                     <Select
@@ -181,7 +190,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                                         }}
                                     >
                                         {WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.map((token) => (
-                                            <option key={token.address} value={token.address}>{token.symbol}</option>
+                                            <option key={token.address + selectedNetwork} value={token.address}>{token.symbol}</option>
                                         ))}
                                     </Select>
                                 </FormControl>
@@ -198,25 +207,29 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                                     />
                                 </FormControl>
                             </SimpleGrid>
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-                                <FormControl>
-                                    <FormLabel>Recipient Address #{index + 1}</FormLabel>
-                                    <Input
-                                        value={payment.to}
-                                        onChange={(e) => {
-                                            const updatedPayments = [...payments];
-                                            updatedPayments[index].to = e.target.value;
-                                            setPayments(updatedPayments);
-                                        }}
-                                    />
+                            <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4}>
+                                <FormControl width="100%">
+                                    <FormLabel>Recipient Wallet #{index + 1}</FormLabel>
+                                    <Flex>
+                                        <Box flex="1">
+                                            <SearchableAddressInput
+                                                value={payment.to}
+                                                onChange={(value) => {
+                                                    const updatedPayments = [...payments];
+                                                    updatedPayments[index].to = value;
+                                                    setPayments(updatedPayments);
+                                                }}
+                                                addresses={availableMultisigs}
+                                            />
+                                        </Box>
+                                        <IconButton
+                                            icon={<DeleteIcon />}
+                                            onClick={() => handleRemovePayment(index)}
+                                            aria-label="Remove"
+                                            ml={2}
+                                        />
+                                    </Flex>
                                 </FormControl>
-                                <Flex alignItems="flex-end" justifyContent="flex-end">
-                                    <IconButton
-                                        icon={<DeleteIcon />}
-                                        onClick={() => handleRemovePayment(index)}
-                                        aria-label="Remove"
-                                    />
-                                </Flex>
                             </SimpleGrid>
                         </Card>
                     </Box>

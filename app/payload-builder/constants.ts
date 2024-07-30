@@ -1,4 +1,3 @@
-// lib/constants.ts
 import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from 'react-icons/fa';
 import { FaBridgeCircleCheck } from "react-icons/fa6";
 
