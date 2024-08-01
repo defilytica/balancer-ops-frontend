@@ -25,7 +25,7 @@ import {
     useDisclosure,
 } from '@chakra-ui/react';
 import {AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
-import {useState} from "react";
+import React, {useState} from "react";
 import {
     copyJsonToClipboard,
     copyTextToClipboard,
@@ -35,6 +35,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
 import dynamic from "next/dynamic";
+import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 import {VscGithubInverted} from "react-icons/vsc";
 import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 
@@ -173,15 +174,17 @@ export default function EnableGaugePage() {
                 </Button>
             </>
             <>
-                <Box mt="20px">
+                <Flex justifyContent="space-between" alignItems="center" mt="20px">
                     <Button
                         variant="primary"
-                        mb="10px"
                         onClick={handleGenerateClick}
                     >
                         Generate Payload
                     </Button>
-                </Box>
+                    {generatedPayload && (
+                        <SimulateTransactionButton batchFile={generatedPayload} />
+                    )}
+                </Flex>
                 <Divider/>
 
                 {generatedPayload && (

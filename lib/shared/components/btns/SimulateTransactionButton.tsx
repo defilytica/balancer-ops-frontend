@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+'use client'
+import React, {useCallback, useEffect, useState} from 'react';
 import axios from 'axios';
-import { Button, Box, Text, Link, useToast, VStack } from '@chakra-ui/react';
+import {Button, Box, Text, Link, useToast, VStack, Flex, Badge} from '@chakra-ui/react';
 
 interface Transaction {
     to: string;
@@ -44,10 +45,10 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
     const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
     const toast = useToast();
 
-    const simulateTransaction = async (): Promise<void> => {
+    const simulateTransaction = useCallback(async (): Promise<void> => {
         setIsSimulating(true);
         try {
-            const response = await axios.post<SimulationResult>('/api/tenderly/simulate-transaction', { batchFile });
+            const response = await axios.post<SimulationResult>('/api/tenderly/simulate-transactions', batchFile);
 
             setSimulationResult(response.data);
             toast({
@@ -69,7 +70,13 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
         } finally {
             setIsSimulating(false);
         }
-    };
+    }, [batchFile, toast]);
+
+    useEffect(() => {
+        return () => {
+            // Cleanup function to prevent state updates on unmounted component
+        };
+    }, []);
 
     const getTenderlyLink = (): string | null => {
         if (!simulationResult) return null;
@@ -77,29 +84,42 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
     };
 
     return (
-        <VStack spacing={4} align="stretch">
-            <Button
-                onClick={simulateTransaction}
-                isLoading={isSimulating}
-                loadingText="Simulating..."
-                colorScheme="blue"
-            >
-                Simulate Transaction Batch
-            </Button>
-            {simulationResult && (
-                <Box>
-                    <Text mb={2}>Simulation {simulationResult.success === '🟩 SUCCESS' ? 'successful' : 'failed'}!</Text>
-                    <Link
-                        href={getTenderlyLink() ?? '#'}
-                        isExternal
-                        color="blue.500"
-                        fontWeight="medium"
-                    >
-                        View on Tenderly
-                    </Link>
-                </Box>
-            )}
-        </VStack>
+        <Box  borderRadius="lg" p={2} maxWidth="300px">
+            <Flex direction="column" align="stretch">
+                <Button
+                    onClick={simulateTransaction}
+                    variant="secondary"
+                    isLoading={isSimulating}
+                    loadingText="Simulating..."
+                    colorScheme="blue"
+                    size="sm"
+                    mb={3}
+                >
+                    Simulate Transaction Batch
+                </Button>
+                {simulationResult && (
+                    <Box>
+                        <Flex align="center" mb={2}>
+                            <Text fontSize="sm" fontWeight="medium" mr={2}>
+                                Simulation Status:
+                            </Text>
+                            <Badge colorScheme={simulationResult.success === '🟩 SUCCESS' ? 'green' : 'red'}>
+                                {simulationResult.success === '🟩 SUCCESS' ? 'Successful' : 'Failed'}
+                            </Badge>
+                        </Flex>
+                        <Link
+                            href={getTenderlyLink() ?? '#'}
+                            isExternal
+                            color="blue.500"
+                            fontWeight="medium"
+                            fontSize="sm"
+                        >
+                            View Details on Tenderly
+                        </Link>
+                    </Box>
+                )}
+            </Flex>
+        </Box>
     );
 };
 

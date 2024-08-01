@@ -185,7 +185,10 @@ export default async function handler(
         const simulationUrl = `https://www.tdly.co/shared/simulation/${simulationResponse.data.simulation.id}`;
         const success = simulationResponse.data.simulation.status ? '🟩 SUCCESS' : '🟥 FAILURE';
 
-        return res.status(200).json({ url: simulationUrl, success });
+        return res.status(200).json({
+            url: simulationUrl,
+            success: success === '🟩 SUCCESS' ? '🟩 SUCCESS' : '🟥 FAILURE'
+        });
     } catch (error) {
         console.error('Simulation failed:', error);
         return res.status(500).json({
