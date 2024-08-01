@@ -7,10 +7,11 @@ import {
     Text,
     InputGroup,
     InputRightElement,
-    IconButton,
+    IconButton, useColorModeValue,
 } from '@chakra-ui/react';
 import { SearchIcon, CloseIcon } from '@chakra-ui/icons';
 import {transformToHumanReadable} from "@/app/payload-builder/payloadHelperFunctions";
+import {colors} from "@/lib/shared/services/chakra/themes/base/colors";
 
 interface SearchableAddressInputProps {
     value: string;
@@ -22,6 +23,9 @@ const SearchableAddressInput: React.FC<SearchableAddressInputProps> = ({ value, 
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const listBgColor = useColorModeValue('white', colors.gray[600])
+    const hoverColor = useColorModeValue(colors.purple[300], colors.purple[500])
 
     const filteredAddresses = Object.entries(addresses).filter(
         ([name, address]) =>
@@ -83,7 +87,7 @@ const SearchableAddressInput: React.FC<SearchableAddressInputProps> = ({ value, 
                 <List
                     position="absolute"
                     zIndex={1}
-                    bg="white"
+                    bg={listBgColor}
                     width="100%"
                     boxShadow="md"
                     borderRadius="md"
@@ -95,7 +99,7 @@ const SearchableAddressInput: React.FC<SearchableAddressInputProps> = ({ value, 
                         <ListItem
                             key={address}
                             onClick={() => handleSelectAddress(address)}
-                            _hover={{ bg: 'gray.100' }}
+                            _hover={{ bg: hoverColor }}
                             cursor="pointer"
                             p={2}
                         >

@@ -1,5 +1,5 @@
 'use client'
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import dynamic from 'next/dynamic';
 import {
     Box,
@@ -17,7 +17,7 @@ import {
     Text,
     Card,
     useColorMode,
-    useToast,
+    useToast, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper
 } from '@chakra-ui/react';
 import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from '@chakra-ui/icons';
 import {
@@ -86,6 +86,16 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
         newPayments.splice(index, 1);
         setPayments(newPayments);
     };
+
+    const handleValueChange = useCallback((index: number, valueAsString: string) => {
+        const updatedPayments = [...payments];
+        updatedPayments[index] = {
+            ...updatedPayments[index],
+            displayValue: valueAsString,
+            value: valueAsString === '' ? 0 : parseFloat(valueAsString) || 0,
+        };
+        setPayments(updatedPayments);
+    }, [payments]);
 
     const handleGenerateClick = () => {
         const safeInfo = {
@@ -196,15 +206,12 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                                 </FormControl>
                                 <FormControl>
                                     <FormLabel>Amount #{index + 1}</FormLabel>
-                                    <Input
-                                        type="number"
-                                        value={payment.value}
-                                        onChange={(e) => {
-                                            const updatedPayments = [...payments];
-                                            updatedPayments[index].value = Number(e.target.value);
-                                            setPayments(updatedPayments);
-                                        }}
-                                    />
+                                    <NumberInput
+                                        value={payment.displayValue}
+                                        onChange={(valueString) => handleValueChange(index, valueString)}
+                                    >
+                                        <NumberInputField />
+                                    </NumberInput>
                                 </FormControl>
                             </SimpleGrid>
                             <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4}>
@@ -237,7 +244,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                 <Button
                     variant="secondary"
                     onClick={() =>
-                        setPayments([...payments, { to: '', value: 0, token: WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.[0]?.address || '' }])
+                        setPayments([...payments, { to: '', value: 0, displayValue: '0', token: WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.[0]?.address || '' }])
                     }
                     leftIcon={<AddIcon />}
                 >

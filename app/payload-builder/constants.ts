@@ -79,6 +79,7 @@ export const NETWORK_OPTIONS = [
     {label: 'Avalanche', chainId: '43114', maxiSafe:'0x326A7778DB9B741Cb2acA0DE07b9402C7685dAc6', entrypoint:'0x4E7bBd911cf1EFa442BC1b2e9Ea01ffE785412EC'},
     {label: 'Base', chainId: '8453', maxiSafe:'0x65226673F3D202E0f897C862590d7e1A992B2048', entrypoint:'0x9129E834e15eA19b6069e8f08a8EcFc13686B8dC'},
     {label: 'Gnosis', chainId: '100', maxiSafe:'0x14969B55a675d13a1700F71A37511bc22D90155a', entrypoint:'0x8F42aDBbA1B16EaAE3BB5754915E0D06059aDd75'},
+    {label: 'Fraxtal', chainId: '2522', maxiSafe:'0x7BBAc709a9535464690A435ca7361256496f13Ce', entrypoint:'0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88'},
 
 ];
 
@@ -94,6 +95,7 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
     mainnet: [
         { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
         { symbol: 'BAL', address: '0xba100000625a3754423978a60c9317c58a424e3D', decimals: 18 },
+        { symbol: 'WETH', address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', decimals: 18 },
         // Add more mainnet tokens as needed
     ],
     arbitrum: [

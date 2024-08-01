@@ -143,6 +143,7 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
 export interface PaymentInput {
     to: string;
     value: number;
+    displayValue: string;
     token: string;
 }
 
@@ -160,6 +161,20 @@ const safeChainIDs: { [key in NetworkType]: string } = {
     polygon: "137"
 };
 
+function convertToTokenValue(amount: number, decimals: number): string {
+    // Convert the amount to a string and remove any existing decimal point
+    const [integerPart, fractionalPart = ''] = amount.toString().split('.');
+
+    // Pad the fractional part with zeros if needed
+    const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
+
+    // Combine integer and fractional parts
+    const fullValue = integerPart + paddedFractionalPart;
+
+    // Remove leading zeros
+    return fullValue.replace(/^0+/, '') || '0';
+}
+
 export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: SafeInfo) {
     const transactions = inputs.map(input => {
         const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(t => t.address === input.token);
@@ -167,7 +182,9 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: Sa
             throw new Error(`Token ${input.token} not found for network ${safeInfo.network}`);
         }
 
-        const value = BigInt(input.value) * BigInt(10 ** tokenInfo.decimals);
+        const value = convertToTokenValue(input.value, tokenInfo.decimals);
+
+        const isWETH = tokenInfo.symbol === 'WETH';
 
         return {
             to: tokenInfo.address,
@@ -175,15 +192,23 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: Sa
             data: null,
             contractMethod: {
                 inputs: [
-                    { internalType: "address", name: "to", type: "address" },
-                    { internalType: "uint256", name: "value", type: "uint256" }
+                    {
+                        internalType: "address",
+                        name: isWETH ? "dst" : "to",
+                        type: "address"
+                    },
+                    {
+                        internalType: "uint256",
+                        name: isWETH ? "wad" : "value",
+                        type: "uint256"
+                    }
                 ],
                 name: "transfer",
                 payable: false
             },
             contractInputsValues: {
-                to: input.to,
-                value: value.toString()
+                [isWETH ? "dst" : "to"]: input.to,
+                [isWETH ? "wad" : "value"]: value
             }
         };
     });
