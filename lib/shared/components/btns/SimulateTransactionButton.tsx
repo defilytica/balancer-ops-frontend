@@ -30,10 +30,7 @@ interface BatchFile {
 }
 
 interface SimulationResult {
-    transaction: {
-        hash: string;
-    };
-    // Add other fields from the simulation result as needed
+    url: string;
 }
 
 interface SimulateTransactionButtonProps {
@@ -74,7 +71,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
 
     const getTenderlyLink = (): string | null => {
         if (!simulationResult) return null;
-        return `https://dashboard.tenderly.co/tx/${batchFile.chainId}/${simulationResult.transaction.hash}`;
+        return simulationResult.url;
     };
 
     return (
