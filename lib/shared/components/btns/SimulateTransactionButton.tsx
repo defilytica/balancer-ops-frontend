@@ -6,12 +6,13 @@ interface Transaction {
     to: string;
     value: string;
     data: string | null;
-    contractMethod: {
+    operation?: number;
+    contractMethod?: {
         inputs: { internalType: string; name: string; type: string }[];
         name: string;
         payable: boolean;
     };
-    contractInputsValues: Record<string, string>;
+    contractInputsValues?: Record<string, string>;
 }
 
 interface BatchFile {
@@ -31,6 +32,7 @@ interface BatchFile {
 
 interface SimulationResult {
     url: string;
+    success: string;
 }
 
 interface SimulateTransactionButtonProps {
@@ -45,13 +47,13 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
     const simulateTransaction = async (): Promise<void> => {
         setIsSimulating(true);
         try {
-            const response = await axios.post<SimulationResult>('/api/tenderly/simulate-transactions', batchFile);
+            const response = await axios.post<SimulationResult>('/api/tenderly/simulate-transaction', { batchFile });
 
             setSimulationResult(response.data);
             toast({
-                title: "Simulation Successful",
-                description: "Transaction was simulated successfully.",
-                status: "success",
+                title: "Simulation Completed",
+                description: `Transaction simulation ${response.data.success === '🟩 SUCCESS' ? 'succeeded' : 'failed'}.`,
+                status: response.data.success === '🟩 SUCCESS' ? "success" : "warning",
                 duration: 5000,
                 isClosable: true,
             });
@@ -86,7 +88,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
             </Button>
             {simulationResult && (
                 <Box>
-                    <Text mb={2}>Simulation successful!</Text>
+                    <Text mb={2}>Simulation {simulationResult.success === '🟩 SUCCESS' ? 'successful' : 'failed'}!</Text>
                     <Link
                         href={getTenderlyLink() ?? '#'}
                         isExternal
