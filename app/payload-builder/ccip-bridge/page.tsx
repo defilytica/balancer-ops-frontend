@@ -21,6 +21,7 @@ import {
 } from '@chakra-ui/react';
 import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
 import {CCTPBridgeInput, generateCCTPBridgePayload, generateHumanReadableCCTPBridge,} from "../payloadHelperFunctions";
+import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 import {VscGithubInverted} from "react-icons/vsc";
 import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 
@@ -199,15 +200,17 @@ export default function CCIPBridge() {
                     Add Input
                 </Button>
             </Box>
-            <Box mt="20px">
+            <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
                 <Button
                     variant="primary"
-                    mb="10px"
                     onClick={handleGenerateClick}
                 >
                     Generate Payload
                 </Button>
-            </Box>
+                {generatedPayload && (
+                    <SimulateTransactionButton batchFile={generatedPayload} />
+                )}
+            </Flex>
             <Divider/>
 
             {generatedPayload && (

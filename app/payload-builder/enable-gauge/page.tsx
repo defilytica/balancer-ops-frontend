@@ -174,7 +174,7 @@ export default function EnableGaugePage() {
                 </Button>
             </>
             <>
-                <Flex justifyContent="space-between" alignItems="center" mt="20px">
+                <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
                     <Button
                         variant="primary"
                         onClick={handleGenerateClick}

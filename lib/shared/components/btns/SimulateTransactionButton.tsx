@@ -47,6 +47,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
 
     const simulateTransaction = useCallback(async (): Promise<void> => {
         setIsSimulating(true);
+        setSimulationResult(null); // Reset the simulation result before starting a new simulation
         try {
             const response = await axios.post<SimulationResult>('/api/tenderly/simulate-transactions', batchFile);
 
@@ -60,6 +61,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
             });
         } catch (error) {
             console.error('Simulation failed:', error);
+            setSimulationResult(null); // Ensure simulationResult is null on error
             toast({
                 title: "Simulation Failed",
                 description: "There was an error simulating the transaction.",
@@ -72,19 +74,12 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
         }
     }, [batchFile, toast]);
 
-    useEffect(() => {
-        return () => {
-            // Cleanup function to prevent state updates on unmounted component
-        };
-    }, []);
-
     const getTenderlyLink = (): string | null => {
-        if (!simulationResult) return null;
-        return simulationResult.url;
+        return simulationResult?.url ?? null;
     };
 
     return (
-        <Box  borderRadius="lg" p={2} maxWidth="300px">
+        <Box borderRadius="lg" p={2} maxWidth="300px">
             <Flex direction="column" align="stretch">
                 <Button
                     onClick={simulateTransaction}
@@ -107,15 +102,17 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
                                 {simulationResult.success === '🟩 SUCCESS' ? 'Successful' : 'Failed'}
                             </Badge>
                         </Flex>
-                        <Link
-                            href={getTenderlyLink() ?? '#'}
-                            isExternal
-                            color="blue.500"
-                            fontWeight="medium"
-                            fontSize="sm"
-                        >
-                            View Details on Tenderly
-                        </Link>
+                        {getTenderlyLink() && (
+                            <Link
+                                href={getTenderlyLink() ?? '#'}
+                                isExternal
+                                color="blue.500"
+                                fontWeight="medium"
+                                fontSize="sm"
+                            >
+                                View Details on Tenderly
+                            </Link>
+                        )}
                     </Box>
                 )}
             </Flex>
