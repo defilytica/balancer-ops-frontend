@@ -45,6 +45,31 @@ export const PAYLOAD_OPTIONS = [
     },
 ];
 
+export const REPO_OPTIONS = ['defilytica/multisig-ops-mock', 'defilytica/multisig-ops-mock2']
+
+export const PAYLOAD_TYPES = {
+    "add-reward-to-gauge": {
+        "branchNamePlaceholder": "feature/add-reward-to-gauge",
+        "prNamePlaceholder": "Add Reward to Gauge XYZ"
+    },
+    "ccip-bridge": {
+        "branchNamePlaceholder": "feature/ccip-bridge-setup",
+        "prNamePlaceholder": "Set Up CCIP Bridge for Network XYZ"
+    },
+    "create-payment": {
+        "branchNamePlaceholder": "feature/create-payment",
+        "prNamePlaceholder": "Create Payment for Service XYZ"
+    },
+    "kill-gauge": {
+        "branchNamePlaceholder": "feature/kill-gauge",
+        "prNamePlaceholder": "Kill Gauge XYZ"
+    },
+    "enable-gauge": {
+        "branchNamePlaceholder": "feature/enable-gauge",
+        "prNamePlaceholder": "Enable Gauge XYZ"
+    },
+};
+
 //TODO: refactor to reference address book
 export const NETWORK_OPTIONS = [
     {label: 'Ethereum', chainId: '1', maxiSafe:'0xc38c5f97B34E175FFd35407fc91a937300E33860', entrypoint:'0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA'},

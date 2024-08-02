@@ -22,6 +22,7 @@ import {
     Card,
     useColorMode,
     useToast,
+    useDisclosure,
 } from '@chakra-ui/react';
 import {AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
 import {useState} from "react";
@@ -34,6 +35,8 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
 import dynamic from "next/dynamic";
+import {VscGithubInverted} from "react-icons/vsc";
+import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
@@ -47,6 +50,7 @@ export default function EnableGaugePage() {
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
     const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     const handleGenerateClick = () => {
         let payload = generateEnableGaugePayload(gauges.map(g => ({gauge: g.id, gaugeType: g.network})));
@@ -54,6 +58,20 @@ export default function EnableGaugePage() {
 
         setGeneratedPayload(JSON.stringify(payload, null, 4));  // Beautify JSON string
         setHumanReadableText(text);
+    };
+
+    const handleOpenPRModal = () => {
+        if (generatedPayload) {
+            onOpen();
+        } else {
+            toast({
+                title: "No payload generated",
+                description: "Please generate a payload first",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
     };
 
     return (
@@ -186,10 +204,18 @@ export default function EnableGaugePage() {
                     </Button>
                     <Button
                         variant="secondary"
+                        mr="10px"
                         leftIcon={<CopyIcon/>}
                         onClick={() => copyJsonToClipboard(generatedPayload, toast)}
                     >
                         Copy Payload to Clipboard
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        leftIcon={<VscGithubInverted/>}
+                        onClick={() => handleOpenPRModal()}
+                    >
+                       Open PR
                     </Button>
                 </Box>
 
@@ -210,6 +236,12 @@ export default function EnableGaugePage() {
             </>
             {/* Spacer at the bottom */}
             <Box mt={8}/>
+            <PRCreationModal
+                type={"enable-gauge"}
+                isOpen={isOpen}
+                onClose={onClose}
+                payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            />
         </Container>
     );
 };

@@ -16,11 +16,13 @@ import {
     Select,
     SimpleGrid,
     Text,
-    useColorMode,
+    useColorMode, useDisclosure,
     useToast,
 } from '@chakra-ui/react';
 import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
 import {CCTPBridgeInput, generateCCTPBridgePayload, generateHumanReadableCCTPBridge,} from "../payloadHelperFunctions";
+import {VscGithubInverted} from "react-icons/vsc";
+import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
@@ -49,6 +51,21 @@ export default function CCIPBridge() {
     const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
     const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
     const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const handleOpenPRModal = () => {
+        if (generatedPayload) {
+            onOpen();
+        } else {
+            toast({
+                title: "No payload generated",
+                description: "Please generate a payload first",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    };
 
     const handleInputChange = (index: number, field: string, value: string | number) => {
         const updatedInputs = [...inputs];
@@ -213,10 +230,18 @@ export default function CCIPBridge() {
                 </Button>
                 <Button
                     variant="secondary"
+                    mr="10px"
                     leftIcon={<CopyIcon/>}
                     onClick={() => copyJsonToClipboard(generatedPayload)}
                 >
                     Copy Payload to Clipboard
+                </Button>
+                <Button
+                    variant="secondary"
+                    leftIcon={<VscGithubInverted/>}
+                    onClick={() => handleOpenPRModal()}
+                >
+                    Open PR
                 </Button>
             </Box>
 
@@ -237,6 +262,12 @@ export default function CCIPBridge() {
             )}
             {/* Spacer at the bottom */}
             <Box mt={8}/>
+            <PRCreationModal
+                type={"ccip-bridge"}
+                isOpen={isOpen}
+                onClose={onClose}
+                payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            />
         </Container>
     );
 }
