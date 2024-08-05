@@ -25,7 +25,7 @@ import {
     useToast,
 } from '@chakra-ui/react';
 import {AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
-import {useState} from "react";
+import React, {useState} from "react";
 import {
     copyJsonToClipboard,
     copyTextToClipboard,
@@ -38,6 +38,7 @@ import dynamic from "next/dynamic";
 import {createPR} from "@/lib/shared/services/createPR";
 import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 import {VscGithubInverted} from "react-icons/vsc";
+import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
@@ -223,11 +224,17 @@ export default function AddRewardToGaugePage() {
                 </Card>
             ))}
 
-            <Box mb="20px">
-                <Button variant="primary" mb="10px" onClick={handleGenerateClick} isDisabled={rewardAdds.length === 0}>
+            <Flex justifyContent="space-between" alignItems="center" mt="20px">
+                <Button
+                    variant="primary"
+                    onClick={handleGenerateClick}
+                >
                     Generate Payload
                 </Button>
-            </Box>
+                {generatedPayload && (
+                    <SimulateTransactionButton batchFile={generatedPayload} />
+                )}
+            </Flex>
             <Divider/>
 
             {generatedPayload && (
