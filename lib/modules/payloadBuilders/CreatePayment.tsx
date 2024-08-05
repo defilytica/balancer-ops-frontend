@@ -29,6 +29,7 @@ import {AddressBook} from "@/lib/config/types/interfaces";
 import {getCategoryData, getNetworks, getSubCategoryData} from "@/lib/shared/data/maxis/addressBook";
 import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
 import SearchableAddressInput from "@/lib/modules/payloadBuilders/SearchableAddressInput";
+import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
@@ -259,15 +260,17 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                     Add Payment
                 </Button>
             </Box>
-            <Box mt="20px">
+            <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
                 <Button
                     variant="primary"
-                    mb="10px"
                     onClick={handleGenerateClick}
                 >
                     Generate Payload
                 </Button>
-            </Box>
+                {generatedPayload && (
+                    <SimulateTransactionButton batchFile={generatedPayload} />
+                )}
+            </Flex>
             <Divider />
 
             {generatedPayload && (
