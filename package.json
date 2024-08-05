@@ -22,6 +22,7 @@
     "@octokit/rest": "^21.0.0",
     "@prisma/client": "^5.17.0",
     "@rainbow-me/rainbowkit": "^2.1.1",
+    "@types/papaparse": "^5.3.14",
     "@types/tinycolor2": "^1.4.6",
     "axios": "^1.7.2",
     "bignumber.js": "^9.1.2",
