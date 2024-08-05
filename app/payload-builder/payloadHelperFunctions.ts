@@ -1,3 +1,5 @@
+import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
+
 export interface EnableGaugeInput {
     gauge: string;
     gaugeType: string;
@@ -54,7 +56,7 @@ export const copyTextToClipboard = (text: string, toast: any) => {
     });
 };
 
-
+// --- ENABLE GAUGE
 export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     const transactions = inputs.map(input => ({
         to: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
@@ -90,6 +92,14 @@ export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     };
 }
 
+export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
+    const gaugesList = inputs.map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`).join("\n");
+
+    return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
+}
+
+
+// --- KILL GAUGE ---
 export interface KillGaugeInput {
     target: string;
 }
@@ -129,46 +139,89 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
     };
 }
 
+// --- PAYMENT ---
 export interface PaymentInput {
     to: string;
     value: number;
-    token: 'USDC' | 'BAL';
+    displayValue: string;
+    token: string;
 }
 
-export function generateTokenPaymentPayload(inputs: PaymentInput[]) {
+interface SafeInfo {
+    address: string;
+    network: string;
+}
+
+type NetworkType = keyof typeof WHITELISTED_PAYMENT_TOKENS;
+
+const safeChainIDs: { [key in NetworkType]: string } = {
+    mainnet: "1",
+    arbitrum: "42161",
+    avalanche: "43114",
+    polygon: "137"
+};
+
+function convertToTokenValue(amount: number, decimals: number): string {
+    // Convert the amount to a string and remove any existing decimal point
+    const [integerPart, fractionalPart = ''] = amount.toString().split('.');
+
+    // Pad the fractional part with zeros if needed
+    const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
+
+    // Combine integer and fractional parts
+    const fullValue = integerPart + paddedFractionalPart;
+
+    // Remove leading zeros
+    return fullValue.replace(/^0+/, '') || '0';
+}
+
+export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: SafeInfo) {
     const transactions = inputs.map(input => {
-        const tokenAddress = input.token === 'USDC' ? "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : "0xba100000625a3754423978a60c9317c58a424e3d";
-        const decimals = input.token === 'USDC' ? 6 : 18;
-        const value = BigInt(input.value) * BigInt(10 ** decimals);
+        const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(t => t.address === input.token);
+        if (!tokenInfo) {
+            throw new Error(`Token ${input.token} not found for network ${safeInfo.network}`);
+        }
+
+        const value = convertToTokenValue(input.value, tokenInfo.decimals);
+
+        const isWETH = tokenInfo.symbol === 'WETH';
 
         return {
-            to: tokenAddress,
+            to: tokenInfo.address,
             value: "0",
             data: null,
             contractMethod: {
                 inputs: [
-                    { internalType: "address", name: "to", type: "address" },
-                    { internalType: "uint256", name: "value", type: "uint256" }
+                    {
+                        internalType: "address",
+                        name: isWETH ? "dst" : "to",
+                        type: "address"
+                    },
+                    {
+                        internalType: "uint256",
+                        name: isWETH ? "wad" : "value",
+                        type: "uint256"
+                    }
                 ],
                 name: "transfer",
                 payable: false
             },
             contractInputsValues: {
-                to: input.to,
-                value: value.toString()
+                [isWETH ? "dst" : "to"]: input.to,
+                [isWETH ? "wad" : "value"]: value
             }
         };
     });
 
     return {
         version: "1.0",
-        chainId: "1",
+        chainId: safeChainIDs[safeInfo.network as NetworkType] || "1",
         createdAt: Date.now(),
         meta: {
             name: "Transactions Batch",
-            description: "Fund grants for Q4 2023",
+            description: "Payment",
             txBuilderVersion: "1.13.3",
-            createdFromSafeAddress: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
+            createdFromSafeAddress: safeInfo.address,
             createdFromOwnerAddress: "",
             checksum: ""
         },
@@ -176,22 +229,18 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[]) {
     };
 }
 
-export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
-    const gaugesList = inputs.map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`).join("\n");
+export function generateHumanReadableTokenTransfer(payment: PaymentInput, safeInfo: SafeInfo) {
+    const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(t => t.address === payment.token);
+    if (!tokenInfo) {
+        throw new Error(`Token ${payment.token} not found for network ${safeInfo.network}`);
+    }
 
-    return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
+    const value = payment.value * (10 ** tokenInfo.decimals);
+
+    return `The multisig ${safeInfo.address} will interact with ${tokenInfo.symbol} at ${tokenInfo.address} by writing transfer, passing ${payment.to} as recipient and the amount ${payment.value} as ${value}.`;
 }
 
-export function generateHumanReadableTokenTransfer(payment: PaymentInput) {
-    const tokenAddress = payment.token === 'USDC'
-        ? "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        : "0xba100000625a3754423978a60c9317c58a424e3d";
-    const decimals = payment.token === 'USDC' ? 6 : 18;
-    const value = payment.value * (10 ** decimals);
-
-    return `The Balancer DAO multisig 0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f will interact with ${payment.token} ${tokenAddress} by writing transfer passing the ${payment.to} as recipient and amount as ${payment.value} ${payment.token} ${value}.`;
-}
-
+// --- CCTP BRIDGE ---
 export interface CCTPBridgeInput {
     value: number;
     destinationDomain: string;
@@ -273,6 +322,8 @@ export function generateHumanReadableCCTPBridge(inputs: CCTPBridgeInput[]): stri
     return `The Maxi Multisig 0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the CCTP Bridge as follows:\n${readableInputs}`;
 }
 
+
+// --- ADD REWARD ---
 export interface AddRewardInput {
     targetGauge: string;
     rewardToken: string;
@@ -330,4 +381,40 @@ export function generateHumanReadableAddReward(inputs: AddRewardInput[]): string
     const safeAddress = inputs[0].safeAddress || 'Unknown'; // Default value if safeAddress is undefined
 
     return `The Maxi Multisig ${safeAddress} will interact with the following gauges:\n${readableInputs}`;
+}
+
+
+export function transformToHumanReadable(input: string): string {
+    // Dictionary of special cases
+    const specialCases: { [key: string]: string } = {
+        'lm': 'LM',
+        'dao': 'DAO',
+        // Add more special cases here as needed
+    };
+
+    // Split the input by dots
+    const parts = input.split('.');
+
+    // Remove and store the category (multisig or contributor)
+    const category = parts.shift();
+
+    // Process each part
+    const transformedParts = parts.map(part => {
+        // Check if the part is a special case
+        if (part.toLowerCase() in specialCases) {
+            return specialCases[part.toLowerCase()];
+        }
+
+        // General transformation for other cases
+        return part
+            .split(/[-_]+/) // Split by hyphens or underscores
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    });
+
+    // Join the transformed parts
+    const result = transformedParts.join(' ');
+
+    // Add the category back if it exists
+    return category ? `${category.charAt(0).toUpperCase() + category.slice(1)}: ${result}` : result;
 }
