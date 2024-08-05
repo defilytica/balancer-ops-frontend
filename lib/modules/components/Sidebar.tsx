@@ -13,6 +13,9 @@ import {
     FiEdit,
     FiDollarSign,
 } from 'react-icons/fi'
+import { SiChainlink } from "react-icons/si";
+import { RiContractLine } from "react-icons/ri";
+import { TbTransactionBitcoin } from "react-icons/tb";
 import NavItem from './NavItem'
 import {useSession} from "next-auth/react";
 import {SignInButton} from "@/lib/modules/components/SignInButton";
@@ -65,8 +68,9 @@ export default function Sidebar() {
                     aria-label="Menu"
                 />
                 <NavItem navSize={navSize} icon={FiHome} title="Home" target={'/'} description="Navigate back to Home" />
-                <NavItem navSize={navSize} icon={FiEdit} title="Payload Builder" target={'/payload-builder'} description="Choose from a variety of options to create Balancer DAO Payloads" />
-                <NavItem navSize={navSize} icon={FiDollarSign} title="Rewards Injector" target={'/rewards-injector'} description="View and Configure Gauge Rewards injectors" />
+                <NavItem navSize={navSize} icon={TbTransactionBitcoin} title="Payload Builder" target={'/payload-builder'} description="Choose from a variety of options to create Balancer DAO Payloads" />
+                <NavItem navSize={navSize} icon={RiContractLine} title="Rewards Injector" target={'/rewards-injector'} description="View and Configure Gauge Rewards injectors" />
+                <NavItem navSize={navSize} icon={SiChainlink} title="Automation Catalog" target={'/chainlink-automation'} description="View Chainlink Automation Upkeeps" />
             </Flex>
             <Flex
                 p="5%"
