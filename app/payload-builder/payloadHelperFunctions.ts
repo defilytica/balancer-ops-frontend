@@ -384,7 +384,6 @@ export function generateHumanReadableAddReward(inputs: AddRewardInput[]): string
 }
 
 
-// General helpers
 export function transformToHumanReadable(input: string): string {
     // Dictionary of special cases
     const specialCases: { [key: string]: string } = {
@@ -393,14 +392,29 @@ export function transformToHumanReadable(input: string): string {
         // Add more special cases here as needed
     };
 
-    // Check if the input is a special case
-    if (input.toLowerCase() in specialCases) {
-        return specialCases[input.toLowerCase()];
-    }
+    // Split the input by dots
+    const parts = input.split('.');
 
-    // General transformation for other cases
-    return input
-        .split(/[-_]+/) // Split by hyphens or underscores
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+    // Remove and store the category (multisig or contributor)
+    const category = parts.shift();
+
+    // Process each part
+    const transformedParts = parts.map(part => {
+        // Check if the part is a special case
+        if (part.toLowerCase() in specialCases) {
+            return specialCases[part.toLowerCase()];
+        }
+
+        // General transformation for other cases
+        return part
+            .split(/[-_]+/) // Split by hyphens or underscores
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    });
+
+    // Join the transformed parts
+    const result = transformedParts.join(' ');
+
+    // Add the category back if it exists
+    return category ? `${category.charAt(0).toUpperCase() + category.slice(1)}: ${result}` : result;
 }

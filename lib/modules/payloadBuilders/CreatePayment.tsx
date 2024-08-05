@@ -26,7 +26,7 @@ import {
     PaymentInput, transformToHumanReadable
 } from "@/app/payload-builder/payloadHelperFunctions";
 import {AddressBook} from "@/lib/config/types/interfaces";
-import {getCategoryData, getNetworks} from "@/lib/shared/data/maxis/addressBook";
+import {getCategoryData, getNetworks, getSubCategoryData} from "@/lib/shared/data/maxis/addressBook";
 import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
 import SearchableAddressInput from "@/lib/modules/payloadBuilders/SearchableAddressInput";
 
@@ -57,25 +57,33 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
         }
     }, [addressBook]);
 
+
+
     useEffect(() => {
         const multisigs = getCategoryData(addressBook, selectedNetwork, 'multisigs');
+        const contributors = getSubCategoryData(addressBook, selectedNetwork, 'EOA', 'contributors-payees');
+
+        const formattedAddresses: { [key: string]: string } = {};
 
         if (multisigs && typeof multisigs === 'object') {
-            const formattedMultisigs: { [key: string]: string } = {};
             Object.entries(multisigs).forEach(([key, value]) => {
                 if (typeof value === 'string') {
-                    formattedMultisigs[key] = value;
+                    formattedAddresses[`multisig.${key}`] = value;
                 } else if (typeof value === 'object' && value !== null) {
-                    // Handle nested structure
                     Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-                        formattedMultisigs[`${key}.${nestedKey}`] = nestedValue;
+                        formattedAddresses[`multisig.${key}.${nestedKey}`] = nestedValue;
                     });
                 }
             });
-            setAvailableMultisigs(formattedMultisigs);
-        } else {
-            setAvailableMultisigs({});
         }
+
+        if (contributors && typeof contributors === 'object') {
+            Object.entries(contributors).forEach(([key, value]) => {
+                formattedAddresses[`contributor.${key}`] = value;
+            });
+        }
+
+        setAvailableMultisigs(formattedAddresses);
 
         setSelectedMultisig('');
     }, [selectedNetwork, addressBook]);
@@ -181,7 +189,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
                                     >
                                         {Object.entries(availableMultisigs).map(([name, address]) => (
                                             <option key={`${address}-${selectedNetwork}`} value={address}>
-                                                {transformToHumanReadable(name.split('.').pop() || name)}
+                                                {`${transformToHumanReadable(name)}`}
                                             </option>
                                         ))}
                                     </Select>
