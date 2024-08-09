@@ -27,6 +27,7 @@ import ArbitrumLogo from '@/lib/shared/imgs/arbitrum.svg'
 import AvalancheLogo from '@/lib/shared/imgs/avalancheLogo.svg'
 import GnosisLogo from '@/lib/shared/imgs/gnosis.svg'
 import BaseLogo from '@/lib/shared/imgs/base.svg'
+import MainnetLogo from '@/lib/shared/imgs/mainnet.svg'
 import zkevmLogo from '@/lib/shared/imgs/Polygon-zkEVM.png'
 import {ethers} from "ethers";
 import {InjectorABIV1} from "@/abi/InjectorV1";
@@ -68,6 +69,7 @@ const tokenDecimals: Record<string, number> = {
 };
 
 const networks: Record<string, NetworkInfo> = {
+    mainnet: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
     polygon: {logo: PolygonLogo.src, rpc: "https://1rpc.io/matic"},
     optimism: {logo: OptimismLogo.src, rpc: "https://mainnet.optimism.io"},
     avalanche: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
@@ -107,6 +109,8 @@ function App() {
         setContract(new ethers.Contract(address.address, InjectorABIV1, tempProvider));
         setIsLoading(true);
     };
+
+    console.log(addresses)
 
     async function getAccountInfoForAddress(recipient: Recipient) {
         if (contract) {
@@ -281,7 +285,7 @@ function App() {
                                 {selectedAddress ? (
                                     <Flex alignItems="center">
                                         <Image
-                                            src={networks[selectedAddress.network].logo}
+                                            src={networks[selectedAddress.network]?.logo}
                                             alt={`${selectedAddress.network} logo`}
                                             boxSize="20px"
                                             mr={2}
@@ -303,7 +307,7 @@ function App() {
                                     >
                                         <Flex alignItems="center" w="100%">
                                             <Image
-                                                src={networks[address.network].logo}
+                                                src={networks[address.network]?.logo}
                                                 alt={`${address.network} logo`}
                                                 boxSize="20px"
                                                 mr={2}
