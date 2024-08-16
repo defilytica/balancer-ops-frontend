@@ -33,12 +33,12 @@ import {
     generateHumanReadableAddReward,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
+import {NETWORK_OPTIONS} from "@/constants/constants";
 import dynamic from "next/dynamic";
-import {createPR} from "@/lib/shared/services/createPR";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 import {VscGithubInverted} from "react-icons/vsc";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
+
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false

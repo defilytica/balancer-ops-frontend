@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from './providers'
-import Navbar from "@/lib/modules/Navbar";
+import Navbar from "@/components/Navbar";
 import { Flex } from '@chakra-ui/react'
-import Sidebar from "@/lib/modules/components/Sidebar";
-import {satoshiFont} from "@/lib/assets/fonts/satoshi/satoshi";
-import '@/lib/assets/css/global.css'
-
-const inter = Inter({ subsets: ["latin"] });
+import Sidebar from "@/components/Sidebar";
+import '@/public/css/global.css'
+import {satoshiFont} from "@/public/fonts/satoshi/satoshi";
 
 export const metadata: Metadata = {
     title: "Balancer Ops Tooling",

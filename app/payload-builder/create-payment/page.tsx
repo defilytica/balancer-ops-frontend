@@ -1,7 +1,7 @@
-import CreatePayment from "@/lib/modules/payloadBuilders/CreatePayment";
-import {fetchAddressBook} from "@/lib/shared/data/maxis/addressBook";
+import CreatePayment from "@/components/CreatePayment";
 import {Suspense} from "react";
 import {Skeleton} from "@chakra-ui/skeleton";
+import {fetchAddressBook} from "@/lib/data/maxis/addressBook";
 
 export default async function CreatePaymentPage() {
 

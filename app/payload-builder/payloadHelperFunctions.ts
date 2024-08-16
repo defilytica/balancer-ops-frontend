@@ -1,4 +1,4 @@
-import {WHITELISTED_PAYMENT_TOKENS} from "@/app/payload-builder/constants";
+import {WHITELISTED_PAYMENT_TOKENS} from "@/constants/constants";
 
 export interface EnableGaugeInput {
     gauge: string;

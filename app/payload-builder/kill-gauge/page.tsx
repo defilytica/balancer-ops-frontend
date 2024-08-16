@@ -31,8 +31,8 @@ import {
     generateKillGaugePayload,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
 import {VscGithubInverted} from "react-icons/vsc";
 
 const ReactJson = dynamic(() => import("react-json-view"), {

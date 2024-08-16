@@ -21,20 +21,13 @@ import {
     Thead,
     Tr,
 } from "@chakra-ui/react";
-import PolygonLogo from '@/lib/shared/imgs/polygon.svg'
-import OptimismLogo from '@/lib/shared/imgs/optimism.svg'
-import ArbitrumLogo from '@/lib/shared/imgs/arbitrum.svg'
-import AvalancheLogo from '@/lib/shared/imgs/avalancheLogo.svg'
-import GnosisLogo from '@/lib/shared/imgs/gnosis.svg'
-import BaseLogo from '@/lib/shared/imgs/base.svg'
-import MainnetLogo from '@/lib/shared/imgs/mainnet.svg'
-import zkevmLogo from '@/lib/shared/imgs/Polygon-zkEVM.png'
 import {ethers} from "ethers";
 import {InjectorABIV1} from "@/abi/InjectorV1";
 import {ERC20} from "@/abi/erc20";
 import {poolsABI} from "@/abi/pool";
 import {gaugeABI} from "@/abi/gauge";
 import {ChevronDownIcon} from "@chakra-ui/icons";
+import {networks} from "@/constants/constants";
 
 type AddressOption = {
     network: string;
@@ -42,10 +35,7 @@ type AddressOption = {
     token: string;
 };
 
-type NetworkInfo = {
-    logo: string;
-    rpc: string;
-};
+
 
 type Recipient = {
     gaugeAddress: string;
@@ -67,17 +57,6 @@ const tokenDecimals: Record<string, number> = {
     "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6, // base USDbC
     "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
 };
-
-const networks: Record<string, NetworkInfo> = {
-    mainnet: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
-    polygon: {logo: PolygonLogo.src, rpc: "https://1rpc.io/matic"},
-    optimism: {logo: OptimismLogo.src, rpc: "https://mainnet.optimism.io"},
-    avalanche: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
-    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://arb1.arbitrum.io/rpc"},
-    gnosis: {logo: GnosisLogo.src, rpc: "https://rpc.gnosischain.com"},
-    base: {logo: BaseLogo.src, rpc: "https://mainnet.base.org"},
-    zkevm: {logo: zkevmLogo.src, rpc: "https://zkevm-rpc.com"}
-}
 
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);

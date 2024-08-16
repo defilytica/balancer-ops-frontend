@@ -1,7 +1,7 @@
 import { Box, Heading, Text, SimpleGrid } from '@chakra-ui/react';
-import { PAYLOAD_OPTIONS } from "@/app/payload-builder/constants";
+import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import React from "react";
-import CustomCard from "@/lib/modules/CustomCard";
+import CustomCard from "@/components/CustomCard";
 
 export default function PayloadBuilder() {
     return (
