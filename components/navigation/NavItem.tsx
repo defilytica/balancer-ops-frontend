@@ -14,7 +14,7 @@ interface NavItemProps extends FlexProps {
     icon: IconType
     children: React.ReactNode
     target: string
-    onClose: () => void  // Add this line
+    onClose: () => void
 }
 
 const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => {
@@ -25,8 +25,8 @@ const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => 
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault()
-        onClose()  // Close the drawer
-        router.push(target)  // Navigate to the target
+        onClose()
+        router.push(target)
     }
 
     return (
@@ -35,7 +35,7 @@ const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => 
             href={target}
             style={{ textDecoration: 'none' }}
             _focus={{ boxShadow: 'none' }}
-            onClick={handleClick}  // Add onClick handler
+            onClick={handleClick}
         >
             <Flex
                 align="center"

@@ -66,7 +66,6 @@ export function Toast({ id, status, isClosable, title, description, linkUrl }: P
         if (id) toast.close(id)
     }
 
-    // Hach to make tooltip zIndex work in toast
     const ref = useRef(null)
 
     return (
