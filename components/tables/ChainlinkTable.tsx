@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
 import {
-    Table,
-    Thead,
-    Tbody,
-    Tr,
-    Th,
-    Td,
+    Box,
+    VStack,
+    HStack,
+    Text,
     Link,
     Icon,
     Tooltip,
     Image,
     Flex,
     Card,
-    Box,
+    Badge,
+    useMediaQuery,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
-import {ChainlinkData} from "@/types/interfaces";
-import {networks} from "@/constants/constants";
+import { ChainlinkData } from "@/types/interfaces";
+import { networks } from "@/constants/constants";
 
 interface ChainlinkTableProps {
     data: ChainlinkData[];
@@ -25,6 +24,7 @@ interface ChainlinkTableProps {
 export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
     const [sortColumn, setSortColumn] = useState<keyof ChainlinkData | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [isMobile] = useMediaQuery("(max-width: 48em)");
 
     const handleSort = (column: keyof ChainlinkData) => {
         if (sortColumn === column) {
@@ -46,106 +46,111 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
         let color;
         switch (status.toLowerCase()) {
             case 'active':
-                color = 'green.500';
+                color = 'green';
                 break;
             case 'paused':
-                color = 'yellow.500';
+                color = 'yellow';
                 break;
             case 'cancelled':
-                color = 'red.500';
+                color = 'red';
                 break;
             default:
-                color = 'gray.500';
+                color = 'gray';
         }
-        return <Box w="10px" h="10px" borderRadius="full" bg={color} />;
+        return <Badge colorScheme={color}>{status}</Badge>;
     };
 
-    return (
-        <Card>
-            <Table variant="simple" size="md">
-                <Thead>
-                    <Tr>
-                        <Th px={2} py={1}>Network</Th>
-                        <Th px={2} py={1} cursor="pointer" onClick={() => handleSort('upkeep_name')}>
-                            Upkeep Name
-                            {sortColumn === 'upkeep_name' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1}>Status</Th>
-                        <Th px={2} py={1} isNumeric cursor="pointer" onClick={() => handleSort('upkeep_balance')}>
-                            Balance
-                            {sortColumn === 'upkeep_balance' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1} isNumeric cursor="pointer" onClick={() => handleSort('total_link_payments')}>
-                            Total Payments
-                            {sortColumn === 'total_link_payments' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1} isNumeric cursor="pointer" onClick={() => handleSort('total_performs')}>
-                            Total Performs
-                            {sortColumn === 'total_performs' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1} isNumeric cursor="pointer" onClick={() => handleSort('link_per_perform')}>
-                            LINK/Perform
-                            {sortColumn === 'link_per_perform' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1} isNumeric cursor="pointer" onClick={() => handleSort('estimated_actions_left')}>
-                            Est. Actions Left
-                            {sortColumn === 'estimated_actions_left' && (
-                                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
-                            )}
-                        </Th>
-                        <Th px={2} py={1}>URL</Th>
-                    </Tr>
-                </Thead>
-                <Tbody>
-                    {sortedData.map((row, index) => (
-                        <Tr key={index}>
-                            <Td px={2} py={1}>
+    const SortableHeader: React.FC<{ column: keyof ChainlinkData; label: string }> = ({ column, label }) => (
+        <Flex
+            alignItems="center"
+            cursor="pointer"
+            onClick={() => handleSort(column)}
+        >
+            <Text fontWeight="bold">{label}</Text>
+            {sortColumn === column && (
+                sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />
+            )}
+        </Flex>
+    );
+
+    if (isMobile) {
+        return (
+            <VStack spacing={4} align="stretch">
+                {sortedData.map((row, index) => (
+                    <Card key={index} p={4}>
+                        <VStack align="stretch" spacing={2}>
+                            <HStack justify="space-between">
                                 <Tooltip label={row.blockchain}>
-                                    <Flex alignItems="center">
-                                        <Image
-                                            src={networks[row.blockchain.toLowerCase()]?.logo}
-                                            alt={`${row.blockchain} logo`}
-                                            boxSize="20px"
-                                        />
-                                    </Flex>
+                                    <Image
+                                        src={networks[row.blockchain.toLowerCase()]?.logo}
+                                        alt={`${row.blockchain} logo`}
+                                        boxSize="20px"
+                                    />
                                 </Tooltip>
-                            </Td>
-                            <Td px={2} py={1} fontSize="sm">{row.upkeep_name}</Td>
-                            <Td px={2} py={1}>
-                                <Tooltip label={row.upkeep_status}>
-                                    <Flex alignItems="center">
-                                        <StatusIcon status={row.upkeep_status} />
-                                    </Flex>
+                                <StatusIcon status={row.upkeep_status} />
+                            </HStack>
+                            <Text fontWeight="bold">{row.upkeep_name}</Text>
+                            <Text>Balance: {row.upkeep_balance.toFixed(2)} LINK</Text>
+                            <Text>Total Payments: {row.total_link_payments.toFixed(2)} LINK</Text>
+                            <Text>Total Performs: {row.total_performs}</Text>
+                            <Text>LINK/Perform: {row.link_per_perform.toFixed(4)}</Text>
+                            <Text>Est. Actions Left: {isFinite(row.estimated_actions_left) ? row.estimated_actions_left : '-'}</Text>
+                            <Link href={row.upkeep_url} isExternal>
+                                View Details <Icon as={ExternalLinkIcon} mx="2px" />
+                            </Link>
+                        </VStack>
+                    </Card>
+                ))}
+            </VStack>
+        );
+    }
+
+    return (
+        <Card overflowX="auto">
+            <Box as="table" width="100%" style={{ borderCollapse: 'collapse' }}>
+                <Box as="thead">
+                    <Box as="tr">
+                        <Box as="th" p={2}>Network</Box>
+                        <Box as="th" p={2}><SortableHeader column="upkeep_name" label="Upkeep Name" /></Box>
+                        <Box as="th" p={2}>Status</Box>
+                        <Box as="th" p={2}><SortableHeader column="upkeep_balance" label="Balance" /></Box>
+                        <Box as="th" p={2}><SortableHeader column="total_link_payments" label="Total Payments" /></Box>
+                        <Box as="th" p={2}><SortableHeader column="total_performs" label="Total Performs" /></Box>
+                        <Box as="th" p={2}><SortableHeader column="link_per_perform" label="LINK/Perform" /></Box>
+                        <Box as="th" p={2}><SortableHeader column="estimated_actions_left" label="Est. Actions Left" /></Box>
+                        <Box as="th" p={2}>URL</Box>
+                    </Box>
+                </Box>
+                <Box as="tbody">
+                    {sortedData.map((row, index) => (
+                        <Box as="tr" key={index}>
+                            <Box as="td" p={2}>
+                                <Tooltip label={row.blockchain}>
+                                    <Image
+                                        src={networks[row.blockchain.toLowerCase()]?.logo}
+                                        alt={`${row.blockchain} logo`}
+                                        boxSize="20px"
+                                    />
                                 </Tooltip>
-                            </Td>
-                            <Td px={2} py={1} isNumeric fontSize="sm">{row.upkeep_balance.toFixed(2)}</Td>
-                            <Td px={2} py={1} isNumeric fontSize="sm">{row.total_link_payments.toFixed(2)}</Td>
-                            <Td px={2} py={1} isNumeric fontSize="sm">{row.total_performs}</Td>
-                            <Td px={2} py={1} isNumeric fontSize="sm">{row.link_per_perform.toFixed(4)}</Td>
-                            <Td px={2} py={1} isNumeric fontSize="sm">{
-                                isFinite(row.estimated_actions_left) ? row.estimated_actions_left : '-'
-                            }</Td>
-                            <Td px={2} py={1}>
-                                <Tooltip label="Open upkeep URL">
-                                    <Link href={row.upkeep_url} isExternal>
-                                        <Icon as={ExternalLinkIcon} boxSize="14px" />
-                                    </Link>
-                                </Tooltip>
-                            </Td>
-                        </Tr>
+                            </Box>
+                            <Box as="td" p={2}>{row.upkeep_name}</Box>
+                            <Box as="td" p={2}><StatusIcon status={row.upkeep_status} /></Box>
+                            <Box as="td" p={2} textAlign="right">{row.upkeep_balance.toFixed(2)}</Box>
+                            <Box as="td" p={2} textAlign="right">{row.total_link_payments.toFixed(2)}</Box>
+                            <Box as="td" p={2} textAlign="right">{row.total_performs}</Box>
+                            <Box as="td" p={2} textAlign="right">{row.link_per_perform.toFixed(4)}</Box>
+                            <Box as="td" p={2} textAlign="right">
+                                {isFinite(row.estimated_actions_left) ? row.estimated_actions_left : '-'}
+                            </Box>
+                            <Box as="td" p={2}>
+                                <Link href={row.upkeep_url} isExternal>
+                                    <Icon as={ExternalLinkIcon} />
+                                </Link>
+                            </Box>
+                        </Box>
                     ))}
-                </Tbody>
-            </Table>
+                </Box>
+            </Box>
         </Card>
     );
 };

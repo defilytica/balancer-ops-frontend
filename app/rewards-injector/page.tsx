@@ -28,6 +28,7 @@ import {poolsABI} from "@/abi/pool";
 import {gaugeABI} from "@/abi/gauge";
 import {ChevronDownIcon} from "@chakra-ui/icons";
 import {networks} from "@/constants/constants";
+import {RewardsInjectorTable} from "@/components/tables/RewardsInjectorTable";
 
 type AddressOption = {
     network: string;
@@ -353,33 +354,10 @@ function App() {
 
                     {isLoading ? (
                         <Flex justifyContent="center" alignItems="center" height="200px">
-                            <Spinner size="xl"/>
+                            <Spinner size="xl" />
                         </Flex>
                     ) : (
-                        <Table variant="simple" w="100%">
-                            <Thead>
-                                <Tr>
-                                    <Th>Address</Th>
-                                    <Th>Name</Th>
-                                    <Th>Amount Per Period</Th>
-                                    <Th>Period Number</Th>
-                                    <Th>Max Periods</Th>
-                                    <Th>Last Injection</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {gauges.map((gauge) => (
-                                    <Tr key={gauge.gaugeAddress}>
-                                        <Td>{gauge.gaugeAddress}</Td>
-                                        <Td>{gauge.poolName}</Td>
-                                        <Td>{gauge.amountPerPeriod}</Td>
-                                        <Td>{gauge.periodNumber}</Td>
-                                        <Td>{gauge.maxPeriods}</Td>
-                                        <Td>{new Date(Number(gauge.lastInjectionTimeStamp) * 1000).toLocaleDateString()}</Td>
-                                    </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
+                        <RewardsInjectorTable data={gauges} tokenSymbol={tokenSymbol} />
                     )}
                 </>
         </Container>

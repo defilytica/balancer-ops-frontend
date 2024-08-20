@@ -93,9 +93,11 @@ export const NETWORK_OPTIONS = [
 
 export const networks: Record<string, NetworkInfo> = {
     mainnet: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
+    ethereum: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
     polygon: {logo: PolygonLogo.src, rpc: "https://1rpc.io/matic"},
     optimism: {logo: OptimismLogo.src, rpc: "https://mainnet.optimism.io"},
     avalanche: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
+    avalanche_c: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
     arbitrum: {logo: ArbitrumLogo.src, rpc: "https://arb1.arbitrum.io/rpc"},
     gnosis: {logo: GnosisLogo.src, rpc: "https://rpc.gnosischain.com"},
     base: {logo: BaseLogo.src, rpc: "https://mainnet.base.org"},
