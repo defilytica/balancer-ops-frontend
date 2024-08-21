@@ -35,6 +35,7 @@ import {ERC20} from "@/abi/erc20";
 import {poolsABI} from "@/abi/pool";
 import {gaugeABI} from "@/abi/gauge";
 import {ChevronDownIcon} from "@chakra-ui/icons";
+import { Provider, Contract } from 'ethers-multicall';
 
 type AddressOption = {
     network: string;
@@ -69,15 +70,15 @@ const tokenDecimals: Record<string, number> = {
 };
 
 const networks: Record<string, NetworkInfo> = {
-    mainnet: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
-    polygon: {logo: PolygonLogo.src, rpc: "https://1rpc.io/matic"},
-    optimism: {logo: OptimismLogo.src, rpc: "https://mainnet.optimism.io"},
-    avalanche: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
-    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://arb1.arbitrum.io/rpc"},
-    gnosis: {logo: GnosisLogo.src, rpc: "https://rpc.gnosischain.com"},
-    base: {logo: BaseLogo.src, rpc: "https://mainnet.base.org"},
-    zkevm: {logo: zkevmLogo.src, rpc: "https://zkevm-rpc.com"}
-}
+    mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
+    polygon: {logo: PolygonLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey="},
+    optimism: {logo: OptimismLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey="},
+    avalanche: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
+    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey="},
+    gnosis: {logo: GnosisLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey="},
+    base: {logo: BaseLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=base&dkey="},
+    zkevm: {logo: zkevmLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey="}
+};
 
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);
@@ -104,54 +105,12 @@ function App() {
 
     const handleAddressSelect = (address: AddressOption) => {
         setSelectedAddress(address);
-        const tempProvider = new ethers.JsonRpcProvider(networks[address.network].rpc);
+        const rpcUrl = `${networks[address.network].rpc}${process.env.NEXT_PUBLIC_DRPC_API_KEY}`;
+        const tempProvider = new ethers.JsonRpcProvider(rpcUrl);
         setProvider(tempProvider);
         setContract(new ethers.Contract(address.address, InjectorABIV1, tempProvider));
         setIsLoading(true);
     };
-
-    console.log(addresses)
-
-    async function getAccountInfoForAddress(recipient: Recipient) {
-        if (contract) {
-            try {
-                if (isV2){
-                    const result = await contract.getGaugeInfo(recipient.gaugeAddress);
-                    recipient.amountPerPeriod = formatTokenAmount(result.amountPerPeriod, selectedAddress!.address);
-
-                    return recipient
-                }
-                const result = await contract.getAccountInfo(recipient.gaugeAddress);
-                console.log(result)
-                recipient.amountPerPeriod = formatTokenAmount(result.amountPerPeriod, selectedAddress!.address);
-                recipient.maxPeriods = result.maxPeriods.toString();
-                recipient.periodNumber = result.periodNumber.toString();
-                recipient.lastInjectionTimeStamp = result.lastInjectionTimeStamp.toString();
-
-                return recipient
-                /*
-                setAccountInfo((prevInfo) => ({...prevInfo, [address]: result}));
-
-                const periodFinish = await fetchPeriodFinish(address);
-                setPeriodFinishTimestamps((prevTimestamps) => ({...prevTimestamps, [address]: periodFinish}));
-
-                setEditableData((prevData) => ({
-                    ...prevData,
-                    [address]: {
-                        ...prevData[address],
-                        address: address,
-                        amountPerPeriod: formattedAmountPerPeriod,
-                        maxPeriods: result.maxPeriods.toString(),
-                    },
-                }));
-                 */
-            } catch (error) {
-                console.error(`Error fetching info for address ${recipient.gaugeAddress}:`, error);
-                return recipient
-            }
-        }
-        return recipient
-    }
 
     function formatTokenAmount(amount: any, tokenAddress: string) {
         if (amount === null || amount === undefined) return "Loading...";
@@ -162,57 +121,87 @@ function App() {
         return ethers.formatUnits(formattedAmount, decimals);
     }
 
-    console.log(gauges);
-
     async function getWatchList() {
-        if (contract) {
+        if (contract && provider) {
             try {
-                const result = await contract.getWatchList(); //V2: getActiveGaugeList()
-                const newRecipients: Recipient[] = result.map((g: any) => ({
-                    gaugeAddress: g,
-                }));
+                const [watchList, injectorTokenAddress] = await Promise.all([
+                    contract.getWatchList(),
+                    contract.getInjectTokenAddress()
+                ]);
 
-                const injectorTokenAddress = await contract.getInjectTokenAddress();
                 await fetchTokenInfo(injectorTokenAddress);
 
-                for (let recipient of newRecipients) {
-                    recipient.poolName = await fetchPoolName(recipient.gaugeAddress);
-                    recipient = await getAccountInfoForAddress(recipient);
-                }
+                const newRecipients: Recipient[] = await fetchGaugeInfo(watchList);
 
                 setGauges(newRecipients);
-                setIsLoading(false)
+                setIsLoading(false);
             } catch (error) {
                 console.error("Error:", error);
-                setIsLoading(false)
+                setIsLoading(false);
             }
         }
     }
 
+    async function fetchGaugeInfo(gaugeAddresses: string[]) {
+        if (!provider || !contract) return [];
+
+        const gaugeContracts = gaugeAddresses.map(address => new ethers.Contract(address, gaugeABI, provider));
+
+        const gaugeInfoPromises = gaugeAddresses.map(async (address, index) => {
+            const [accountInfo, lpToken] = await Promise.all([
+                contract.getAccountInfo(address),
+                gaugeContracts[index].lp_token()
+            ]);
+
+            return {
+                gaugeAddress: address,
+                accountInfo,
+                lpToken
+            };
+        });
+
+        const gaugeInfos = await Promise.all(gaugeInfoPromises);
+
+        const newRecipients: Recipient[] = await Promise.all(gaugeInfos.map(async (info) => ({
+            gaugeAddress: info.gaugeAddress,
+            poolName: await fetchPoolName(info.lpToken),
+            amountPerPeriod: formatTokenAmount(info.accountInfo.amountPerPeriod, selectedAddress!.address),
+            maxPeriods: info.accountInfo.maxPeriods.toString(),
+            periodNumber: info.accountInfo.periodNumber.toString(),
+            lastInjectionTimeStamp: info.accountInfo.lastInjectionTimeStamp.toString()
+        })));
+
+        return newRecipients;
+    }
+
+    async function fetchPoolName(lpTokenAddress: string) {
+        if (!provider) return "Unknown Pool";
+
+        try {
+            const poolContract = new ethers.Contract(lpTokenAddress, poolsABI, provider);
+            const poolName = await poolContract.name();
+            return poolName;
+        } catch (error) {
+            console.error(`Error fetching pool name for address ${lpTokenAddress}:`, error);
+            return "Unknown Pool";
+        }
+    }
+
     async function fetchTokenInfo(tokenAddress: string) {
+        if (!provider) return;
+
         try {
             const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
-            const name = await tokenContract.name();
-            const symbol = await tokenContract.symbol();
+            const [name, symbol] = await Promise.all([
+                tokenContract.name(),
+                tokenContract.symbol()
+            ]);
             setTokenName(name);
             setTokenSymbol(symbol);
         } catch (error) {
             console.error("Error fetching token info:", error);
             setTokenName("Unknown");
             setTokenSymbol("???");
-        }
-    }
-
-    async function fetchPoolName(address: string) {
-        try {
-            const gaugeContract = new ethers.Contract(address, gaugeABI, provider);
-            const gaugeLPTokenAddress = await gaugeContract.lp_token();
-            const tokenContract = new ethers.Contract(gaugeLPTokenAddress, poolsABI, provider);
-            const poolName = await tokenContract.name();
-            return poolName;
-        } catch (error) {
-            console.error(`Error fetching pool name for address ${address}:`, error);
-            return "Unknown Pool";
         }
     }
 
@@ -263,7 +252,7 @@ function App() {
         return { total, distributed, remaining };
     };
 
-    const formatAmount = (amount : any) => {
+    const formatAmount = (amount : number) => {
         return amount.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
