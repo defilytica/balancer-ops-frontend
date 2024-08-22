@@ -33,11 +33,11 @@ import {
     generateHumanReadableForEnableGauge,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
+import {NETWORK_OPTIONS} from "@/constants/constants";
 import dynamic from "next/dynamic";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 import {VscGithubInverted} from "react-icons/vsc";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false

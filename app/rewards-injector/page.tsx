@@ -21,15 +21,15 @@ import {
     Thead,
     Tr,
 } from "@chakra-ui/react";
-import PolygonLogo from '@/lib/shared/imgs/polygon.svg'
-import OptimismLogo from '@/lib/shared/imgs/optimism.svg'
-import ArbitrumLogo from '@/lib/shared/imgs/arbitrum.svg'
-import AvalancheLogo from '@/lib/shared/imgs/avalancheLogo.svg'
-import GnosisLogo from '@/lib/shared/imgs/gnosis.svg'
-import BaseLogo from '@/lib/shared/imgs/base.svg'
-import MainnetLogo from '@/lib/shared/imgs/mainnet.svg'
-import zkevmLogo from '@/lib/shared/imgs/Polygon-zkEVM.png'
+
+import {ethers} from "ethers";
+import {InjectorABIV1} from "@/abi/InjectorV1";
+import {ERC20} from "@/abi/erc20";
+import {poolsABI} from "@/abi/pool";
+import {gaugeABI} from "@/abi/gauge";
 import {ChevronDownIcon} from "@chakra-ui/icons";
+import {networks} from "@/constants/constants";
+import {RewardsInjectorTable} from "@/components/tables/RewardsInjectorTable";
 
 type AddressOption = {
     network: string;
@@ -37,10 +37,7 @@ type AddressOption = {
     token: string;
 };
 
-type NetworkInfo = {
-    logo: string;
-    rpc: string;
-};
+
 
 type Recipient = {
     gaugeAddress: string;
@@ -50,6 +47,7 @@ type Recipient = {
     periodNumber: string,
     lastInjectionTimeStamp: string
 }
+
 
 const networks: Record<string, NetworkInfo> = {
     mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
@@ -265,33 +263,10 @@ function App() {
 
                     {isLoading ? (
                         <Flex justifyContent="center" alignItems="center" height="200px">
-                            <Spinner size="xl"/>
+                            <Spinner size="xl" />
                         </Flex>
                     ) : (
-                        <Table variant="simple" w="100%">
-                            <Thead>
-                                <Tr>
-                                    <Th>Address</Th>
-                                    <Th>Name</Th>
-                                    <Th>Amount Per Period</Th>
-                                    <Th>Period Number</Th>
-                                    <Th>Max Periods</Th>
-                                    <Th>Last Injection</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {gauges.map((gauge) => (
-                                    <Tr key={gauge.gaugeAddress}>
-                                        <Td>{gauge.gaugeAddress}</Td>
-                                        <Td>{gauge.poolName}</Td>
-                                        <Td>{gauge.amountPerPeriod}</Td>
-                                        <Td>{gauge.periodNumber}</Td>
-                                        <Td>{gauge.maxPeriods}</Td>
-                                        <Td>{new Date(Number(gauge.lastInjectionTimeStamp) * 1000).toLocaleDateString()}</Td>
-                                    </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
+                        <RewardsInjectorTable data={gauges} tokenSymbol={tokenSymbol} />
                     )}
                 </>
         </Container>
