@@ -13,20 +13,8 @@ import {
     MenuList, SimpleGrid,
     Spinner, Stack,
     Switch,
-    Table,
-    Tbody,
-    Td,
     Text,
-    Th,
-    Thead,
-    Tr,
 } from "@chakra-ui/react";
-
-import {ethers} from "ethers";
-import {InjectorABIV1} from "@/abi/InjectorV1";
-import {ERC20} from "@/abi/erc20";
-import {poolsABI} from "@/abi/pool";
-import {gaugeABI} from "@/abi/gauge";
 import {ChevronDownIcon} from "@chakra-ui/icons";
 import {networks} from "@/constants/constants";
 import {RewardsInjectorTable} from "@/components/tables/RewardsInjectorTable";
@@ -49,17 +37,6 @@ type Recipient = {
 }
 
 
-const networks: Record<string, NetworkInfo> = {
-    mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
-    polygon: {logo: PolygonLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey="},
-    optimism: {logo: OptimismLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey="},
-    avalanche: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
-    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey="},
-    gnosis: {logo: GnosisLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey="},
-    base: {logo: BaseLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=base&dkey="},
-    zkevm: {logo: zkevmLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey="}
-};
-
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
@@ -77,15 +54,12 @@ function App() {
 
     useEffect(() => {
         if (selectedAddress) {
-            fetchInjectorData(selectedAddress.address,selectedAddress.network, selectedAddress.token)
+            fetchInjectorData(selectedAddress.address, selectedAddress.network, selectedAddress.token);
         }
     }, [selectedAddress]);
 
     const handleAddressSelect = (address: AddressOption) => {
         setSelectedAddress(address);
-        fetchInjectorData(address.address, address.network, address.token);
-
-        setIsLoading(true);
     };
 
 

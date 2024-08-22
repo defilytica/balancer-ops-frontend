@@ -33,7 +33,6 @@ const LinkItems = [
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     return (
         <Box
-            transition="3s ease"
             bg={useColorModeValue('#EFEDE6', '#393E48')}
             borderRight="2px"
             borderRightColor={useColorModeValue('gray.200', 'gray.700')}
@@ -65,10 +64,6 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 flexDirection="column"
                 alignItems="center"
             >
-                <HStack spacing={4} mb={4}>
-                    <SignInButton />
-                    <DarkModeToggle />
-                </HStack>
             </Flex>
         </Box>
     )

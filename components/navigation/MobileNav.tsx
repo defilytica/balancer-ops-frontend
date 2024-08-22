@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi'
 import {BalancerLogo} from "@/public/imgs/BalancerLogo";
 import DarkModeToggle from "@/components/btns/DarkModeToggle";
+import {SignInButton} from "@/components/SignInButton";
 
 interface MobileProps extends FlexProps {
     onOpen: () => void
@@ -50,14 +51,10 @@ const MobileNav = ({onOpen, ...rest}: MobileProps) => {
                 </Box>
             </Flex>
 
-
-            <DarkModeToggle/>
-
-            <HStack spacing={{base: '0', md: '6'}}>
-                <Flex alignItems={'center'}>
-
-                </Flex>
-            </HStack>
+            <Box mr={2}>
+                <SignInButton />
+            </Box>
+            <DarkModeToggle />
         </Flex>
     )
 }

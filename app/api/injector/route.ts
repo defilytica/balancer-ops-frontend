@@ -5,26 +5,10 @@ import {InjectorABIV1} from "@/abi/InjectorV1";
 import {ERC20} from "@/abi/erc20";
 import {poolsABI} from "@/abi/pool";
 import {gaugeABI} from "@/abi/gauge";
-import MainnetLogo from "@/lib/shared/imgs/mainnet.svg";
-import PolygonLogo from "@/lib/shared/imgs/polygon.svg";
-import OptimismLogo from "@/lib/shared/imgs/optimism.svg";
-import AvalancheLogo from "@/lib/shared/imgs/avalancheLogo.svg";
-import ArbitrumLogo from "@/lib/shared/imgs/arbitrum.svg";
-import GnosisLogo from "@/lib/shared/imgs/gnosis.svg";
-import BaseLogo from "@/lib/shared/imgs/base.svg";
-import zkevmLogo from "@/lib/shared/imgs/Polygon-zkEVM.png";
 import {NextRequest, NextResponse} from "next/server";
+import {networks} from "@/constants/constants";
 
-const networks: Record<string, NetworkInfo> = {
-    mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
-    polygon: {logo: PolygonLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey="},
-    optimism: {logo: OptimismLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey="},
-    avalanche: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
-    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey="},
-    gnosis: {logo: GnosisLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey="},
-    base: {logo: BaseLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=base&dkey="},
-    zkevm: {logo: zkevmLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey="}
-};
+
 
 const tokenDecimals: Record<string, number> = {
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet

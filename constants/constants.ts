@@ -92,16 +92,16 @@ export const NETWORK_OPTIONS = [
 ];
 
 export const networks: Record<string, NetworkInfo> = {
-    mainnet: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
-    ethereum: {logo: MainnetLogo.src, rpc: "https://eth.drpc.org"},
-    polygon: {logo: PolygonLogo.src, rpc: "https://1rpc.io/matic"},
-    optimism: {logo: OptimismLogo.src, rpc: "https://mainnet.optimism.io"},
-    avalanche: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
-    avalanche_c: {logo: AvalancheLogo.src, rpc: "https://avalanche.public-rpc.com"},
-    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://arb1.arbitrum.io/rpc"},
-    gnosis: {logo: GnosisLogo.src, rpc: "https://rpc.gnosischain.com"},
-    base: {logo: BaseLogo.src, rpc: "https://mainnet.base.org"},
-    zkevm: {logo: zkevmLogo.src, rpc: "https://zkevm-rpc.com"}
+    mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
+    polygon: {logo: PolygonLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey="},
+    optimism: {logo: OptimismLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey="},
+    avalanche: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
+    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey="},
+    gnosis: {logo: GnosisLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey="},
+    base: {logo: BaseLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=base&dkey="},
+    zkevm: {logo: zkevmLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey="},
+    avalanche_c: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
+    ethereum: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
 }
 
 
