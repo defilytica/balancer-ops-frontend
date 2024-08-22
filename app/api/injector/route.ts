@@ -1,13 +1,10 @@
-// pages/api/injector-data.js
-
-import {ethers} from "ethers";
+import {ethers, JsonRpcProvider} from "ethers";
 import {InjectorABIV1} from "@/abi/InjectorV1";
 import {ERC20} from "@/abi/erc20";
 import {poolsABI} from "@/abi/pool";
 import {gaugeABI} from "@/abi/gauge";
 import {NextRequest, NextResponse} from "next/server";
 import {networks} from "@/constants/constants";
-
 
 
 const tokenDecimals: Record<string, number> = {
@@ -22,14 +19,14 @@ const tokenDecimals: Record<string, number> = {
     "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
 };
 
-export async function GET(request) {
-    const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+    const {searchParams} = new URL(request.url);
     const address = searchParams.get('address');
     const network = searchParams.get('network');
     const token = searchParams.get('token');
 
     if (!address || !network || !token) {
-        return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+        return NextResponse.json({error: 'Missing required parameters'}, {status: 400});
     }
 
     const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
@@ -45,14 +42,14 @@ export async function GET(request) {
         const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
         const gauges = await fetchGaugeInfo(watchList, contract, provider, address);
 
-        return NextResponse.json({ tokenInfo, gauges });
+        return NextResponse.json({tokenInfo, gauges});
     } catch (error) {
         console.error("Error:", error);
-        return NextResponse.json({ error: 'An error occurred while fetching data' }, { status: 500 });
+        return NextResponse.json({error: 'An error occurred while fetching data'}, {status: 500});
     }
 }
 
-async function fetchTokenInfo(tokenAddress, provider) {
+async function fetchTokenInfo(tokenAddress: string, provider: JsonRpcProvider) {
     const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
     const [name, symbol] = await Promise.all([
         tokenContract.name(),
@@ -61,10 +58,10 @@ async function fetchTokenInfo(tokenAddress, provider) {
     return {name, symbol};
 }
 
-async function fetchGaugeInfo(gaugeAddresses, contract, provider, injectorAddress) {
-    const gaugeContracts = gaugeAddresses.map(address => new ethers.Contract(address, gaugeABI, provider));
+async function fetchGaugeInfo(gaugeAddresses: any, contract: ethers.Contract, provider: JsonRpcProvider, injectorAddress: string) {
+    const gaugeContracts = gaugeAddresses.map((address : string) => new ethers.Contract(address, gaugeABI, provider));
 
-    const gaugeInfoPromises = gaugeAddresses.map(async (address, index) => {
+    const gaugeInfoPromises = gaugeAddresses.map(async (address: string, index: number) => {
         const [accountInfo, lpToken] = await Promise.all([
             contract.getAccountInfo(address),
             gaugeContracts[index].lp_token()
@@ -91,7 +88,7 @@ async function fetchGaugeInfo(gaugeAddresses, contract, provider, injectorAddres
     return gauges;
 }
 
-async function fetchPoolName(lpTokenAddress, provider) {
+async function fetchPoolName(lpTokenAddress: string, provider: JsonRpcProvider) {
     try {
         const poolContract = new ethers.Contract(lpTokenAddress, poolsABI, provider);
         return await poolContract.name();
@@ -101,7 +98,7 @@ async function fetchPoolName(lpTokenAddress, provider) {
     }
 }
 
-function formatTokenAmount(amount, tokenAddress) {
+function formatTokenAmount(amount: number, tokenAddress: string) {
     if (amount === null || amount === undefined) return "Loading...";
 
     const formattedAmount = BigInt(amount.toString());

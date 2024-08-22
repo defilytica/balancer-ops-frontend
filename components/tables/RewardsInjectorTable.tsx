@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 
-interface RewardsInjectorData {
+export interface RewardsInjectorData {
     gaugeAddress: string;
     poolName: string;
     amountPerPeriod: string;

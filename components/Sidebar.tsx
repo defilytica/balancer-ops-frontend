@@ -1,116 +1,72 @@
-'use client'
-import React, {useEffect, useState} from 'react'
+import React from 'react'
 import {
+    Box,
+    CloseButton,
     Flex,
-    IconButton,
-    Divider,
-    Avatar,
-    Heading
+    useColorModeValue,
+    Text,
+    BoxProps,
 } from '@chakra-ui/react'
 import {
-    FiMenu,
     FiHome,
+    FiTrendingUp,
+    FiCompass,
+    FiStar,
+    FiSettings,
 } from 'react-icons/fi'
-import { SiChainlink } from "react-icons/si";
-import { RiContractLine } from "react-icons/ri";
-import { TbTransactionBitcoin } from "react-icons/tb";
-import NavItem from './NavItem'
-import {useSession} from "next-auth/react";
-import {SignInButton} from "@/components/SignInButton";
+import { IconType } from 'react-icons'
+import NavItem from "@/components/navigation/NavItem";
 
-export default function Sidebar() {
-    const session = useSession()
-    const [navSize, setNavSize] = useState<"small" | "large">("small")
-    const [showText, setShowText] = useState(navSize === "large");
 
-    useEffect(() => {
-        let timeout: NodeJS.Timeout;
-        if (navSize === "large") {
-            timeout = setTimeout(() => setShowText(true), 0.3 * 1000);
-        } else {
-            setShowText(false);
-        }
-        return () => clearTimeout(timeout);
-    }, [navSize]);
+interface LinkItemProps {
+    name: string
+    icon: IconType
+    target: string
+}
 
+const LinkItems: Array<LinkItemProps> = [
+    { name: 'Home', icon: FiHome, target: '/' },
+    { name: 'Trending', icon: FiTrendingUp, target: '/trending' },
+    { name: 'Explore', icon: FiCompass, target: '/explore' },
+    { name: 'Favourites', icon: FiStar, target: '/favourites' },
+    { name: 'Settings', icon: FiSettings, target: '/settings' },
+]
+
+interface SidebarProps extends BoxProps {
+    onClose: () => void
+    isCollapsed: boolean
+}
+
+const SidebarContent = ({ onClose, isCollapsed, ...rest }: SidebarProps) => {
     return (
-        <Flex
-            pos="sticky"
-            left="5"
-            mb={2}
-            h="85vh"
-            boxShadow="0 4px 12px 0 rgba(0, 0, 0, 0.1)"
-            borderRadius={navSize == "small" ? "15px" : "30px"}
-            w={navSize == "small" ? "75px" : "300px"}
-            flexDir="column"
-            justifyContent="space-between"
-            transition="all 0.3s ease"
-        >
-            <Flex
-                p="5%"
-                flexDir="column"
-                w="100%"
-                alignItems={navSize == "small" ? "center" : "flex-start"}
-                as="nav"
-            >
-                <IconButton
-                    mt={5}
-                    _hover={{ background: 'none' }}
-                    icon={<FiMenu />}
-                    onClick={() => {
-                        if (navSize == "small")
-                            setNavSize("large")
-                        else
-                            setNavSize("small")
-                    }}
-                    aria-label="Menu"
-                />
-                <NavItem navSize={navSize} icon={FiHome} title="Home" target={'/'} description="Navigate back to Home" />
-                <NavItem navSize={navSize} icon={TbTransactionBitcoin} title="Payload Builder" target={'/payload-builder'} description="Choose from a variety of options to create Balancer DAO Payloads" />
-                <NavItem navSize={navSize} icon={RiContractLine} title="Rewards Injector" target={'/rewards-injector'} description="View and Configure Gauge Rewards injectors" />
-                <NavItem navSize={navSize} icon={SiChainlink} title="Automation Catalog" target={'/chainlink-automation'} description="View Chainlink Automation Upkeeps" />
+        <Box
+            transition="3s ease"
+            bg={useColorModeValue('white', 'gray.900')}
+            borderRight="1px"
+            borderRightColor={useColorModeValue('gray.200', 'gray.700')}
+            w={{ base: 'full', md: isCollapsed ? 60 : 240 }}
+            pos="fixed"
+            h="full"
+            {...rest}>
+            <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+                <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
+                    Logo
+                </Text>
+                <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
             </Flex>
-            <Flex
-                p="5%"
-                flexDir="column"
-                w="100%"
-                alignItems={navSize == "small" ? "center" : "flex-start"}
-                mb={4}
-            >
-                <Divider display={navSize == "small" ? "none" : "flex"} />
-                {session.data?.user?.image && (
-                    <Flex
-                        mt={4}
-                        flexDirection="column"
-                        align={navSize == "small" ? "center" : "flex-start"}
-                        transition="all 0.3s ease"
-                    >
-                        <Flex align="center">
-                            <Avatar size="sm" src={session?.data.user.image} />
-                            <Flex
-                                flexDir="column"
-                                ml={4}
-                                display={navSize == "small" ? "none" : "flex"}
-                            >
-                                <Heading
-                                    as="h3"
-                                    size="sm"
-                                    opacity={showText ? 1 : 0}
-                                >
-                                    {session.data.user.name}
-                                </Heading>
-                            </Flex>
-                        </Flex>
-                    </Flex>
-                )}
-                <Flex
-                    mt={2}
-                    justifyContent={navSize == "small" ? "center" : "flex-start"}
-                    width="100%"
+            {LinkItems.map((link) => (
+                <NavItem
+                    key={link.name}
+                    icon={link.icon}
+                    target={link.target}
+                    onClose={onClose}
+                    isCollapsed={isCollapsed}
                 >
-                    <SignInButton/>
-                </Flex>
-            </Flex>
-        </Flex>
+                    {link.name}
+                </NavItem>
+            ))}
+        </Box>
     )
 }
+
+export default SidebarContent

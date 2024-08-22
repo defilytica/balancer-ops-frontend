@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import {ChevronDownIcon} from "@chakra-ui/icons";
 import {networks} from "@/constants/constants";
-import {RewardsInjectorTable} from "@/components/tables/RewardsInjectorTable";
+import {RewardsInjectorData, RewardsInjectorTable} from "@/components/tables/RewardsInjectorTable";
 
 type AddressOption = {
     network: string;
@@ -40,7 +40,7 @@ type Recipient = {
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
-    const [gauges, setGauges] = useState<Recipient[]>([]);
+    const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isV2, setIsV2] = useState(false);
     const [tokenName, setTokenName] = useState("");
@@ -64,7 +64,7 @@ function App() {
 
 
 
-    async function fetchInjectorData(address, network, token) {
+    async function fetchInjectorData(address: string, network: string, token: string) {
         setIsLoading(true);
         try {
             const response = await fetch(`/api/injector?address=${address}&network=${network}&token=${token}`);

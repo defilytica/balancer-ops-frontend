@@ -5,6 +5,7 @@ import {
     Link as ChakraLink,
     FlexProps,
     useColorModeValue,
+    Text,
 } from '@chakra-ui/react'
 import { IconType } from 'react-icons'
 import NextLink from 'next/link'
@@ -12,12 +13,14 @@ import { useRouter } from 'next/navigation'
 
 interface NavItemProps extends FlexProps {
     icon: IconType
-    children: React.ReactNode
+    title?: string
+    children?: React.ReactNode
     target: string
-    onClose: () => void
+    isCollapsed?: boolean
+    onClose?: () => void
 }
 
-const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => {
+const NavItem = ({ icon, title, children, target, isCollapsed, onClose, ...rest }: NavItemProps) => {
     const router = useRouter()
     const hoverBg = useColorModeValue('indigo.100', 'indigo.900')
     const hoverColor = useColorModeValue('indigo.700', 'indigo.200')
@@ -25,7 +28,7 @@ const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => 
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault()
-        onClose()
+        if (onClose) onClose()
         router.push(target)
     }
 
@@ -62,7 +65,7 @@ const NavItem = ({ icon, children, target, onClose, ...rest }: NavItemProps) => 
                         as={icon}
                     />
                 )}
-                {children}
+                {!isCollapsed && (children || (title && <Text>{title}</Text>))}
             </Flex>
         </ChakraLink>
     )

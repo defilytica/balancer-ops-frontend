@@ -14,7 +14,6 @@ const DesktopNav = () => {
             px={4}
             height="20"
             alignItems="center"
-            borderBottomWidth="1px"
             borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
             justifyContent="flex-end"
             display={{ base: 'none', md: 'flex' }} // Show only on desktop
