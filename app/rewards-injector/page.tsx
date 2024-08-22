@@ -21,6 +21,7 @@ import {
     Thead,
     Tr,
 } from "@chakra-ui/react";
+
 import {ethers} from "ethers";
 import {InjectorABIV1} from "@/abi/InjectorV1";
 import {ERC20} from "@/abi/erc20";
@@ -47,23 +48,21 @@ type Recipient = {
     lastInjectionTimeStamp: string
 }
 
-const tokenDecimals: Record<string, number> = {
-    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
-    "0x2791bca1f2de4661ed88a30c99a7a9449aa84174": 6, // polygon
-    "0xaf88d065e77c8cc2239327c5edb3a432268e5831": 6, // arbitrum
-    "0xddafbb505ad214d7b80b1f830fccc89b60fb7a83": 6, // gnosis
-    "0xa8ce8aee21bc2a48a5ef670afcc9274c7bbbc035": 6, // zkevm
-    "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e": 6, // avalanche
-    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 6, // base
-    "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6, // base USDbC
-    "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
+
+const networks: Record<string, NetworkInfo> = {
+    mainnet: {logo: MainnetLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey="},
+    polygon: {logo: PolygonLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey="},
+    optimism: {logo: OptimismLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey="},
+    avalanche: {logo: AvalancheLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey="},
+    arbitrum: {logo: ArbitrumLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey="},
+    gnosis: {logo: GnosisLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey="},
+    base: {logo: BaseLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=base&dkey="},
+    zkevm: {logo: zkevmLogo.src, rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey="}
 };
 
 function App() {
     const [addresses, setAddresses] = useState<AddressOption[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
-    const [provider, setProvider] = useState<ethers.JsonRpcProvider>();
-    const [contract, setContract] = useState<ethers.Contract>();
     const [gauges, setGauges] = useState<Recipient[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isV2, setIsV2] = useState(false);
@@ -78,123 +77,33 @@ function App() {
 
     useEffect(() => {
         if (selectedAddress) {
-            getWatchList();
+            fetchInjectorData(selectedAddress.address,selectedAddress.network, selectedAddress.token)
         }
     }, [selectedAddress]);
 
     const handleAddressSelect = (address: AddressOption) => {
         setSelectedAddress(address);
-        const tempProvider = new ethers.JsonRpcProvider(networks[address.network].rpc);
-        setProvider(tempProvider);
-        setContract(new ethers.Contract(address.address, InjectorABIV1, tempProvider));
+        fetchInjectorData(address.address, address.network, address.token);
+
         setIsLoading(true);
     };
 
-    console.log(addresses)
 
-    async function getAccountInfoForAddress(recipient: Recipient) {
-        if (contract) {
-            try {
-                if (isV2){
-                    const result = await contract.getGaugeInfo(recipient.gaugeAddress);
-                    recipient.amountPerPeriod = formatTokenAmount(result.amountPerPeriod, selectedAddress!.address);
 
-                    return recipient
-                }
-                const result = await contract.getAccountInfo(recipient.gaugeAddress);
-                console.log(result)
-                recipient.amountPerPeriod = formatTokenAmount(result.amountPerPeriod, selectedAddress!.address);
-                recipient.maxPeriods = result.maxPeriods.toString();
-                recipient.periodNumber = result.periodNumber.toString();
-                recipient.lastInjectionTimeStamp = result.lastInjectionTimeStamp.toString();
-
-                return recipient
-                /*
-                setAccountInfo((prevInfo) => ({...prevInfo, [address]: result}));
-
-                const periodFinish = await fetchPeriodFinish(address);
-                setPeriodFinishTimestamps((prevTimestamps) => ({...prevTimestamps, [address]: periodFinish}));
-
-                setEditableData((prevData) => ({
-                    ...prevData,
-                    [address]: {
-                        ...prevData[address],
-                        address: address,
-                        amountPerPeriod: formattedAmountPerPeriod,
-                        maxPeriods: result.maxPeriods.toString(),
-                    },
-                }));
-                 */
-            } catch (error) {
-                console.error(`Error fetching info for address ${recipient.gaugeAddress}:`, error);
-                return recipient
-            }
-        }
-        return recipient
-    }
-
-    function formatTokenAmount(amount: any, tokenAddress: string) {
-        if (amount === null || amount === undefined) return "Loading...";
-
-        const formattedAmount = BigInt(amount.toString());
-        const decimals = tokenDecimals[tokenAddress.toLowerCase()] || 18;
-
-        return ethers.formatUnits(formattedAmount, decimals);
-    }
-
-    console.log(gauges);
-
-    async function getWatchList() {
-        if (contract) {
-            try {
-                const result = await contract.getWatchList(); //V2: getActiveGaugeList()
-                const newRecipients: Recipient[] = result.map((g: any) => ({
-                    gaugeAddress: g,
-                }));
-
-                const injectorTokenAddress = await contract.getInjectTokenAddress();
-                await fetchTokenInfo(injectorTokenAddress);
-
-                for (let recipient of newRecipients) {
-                    recipient.poolName = await fetchPoolName(recipient.gaugeAddress);
-                    recipient = await getAccountInfoForAddress(recipient);
-                }
-
-                setGauges(newRecipients);
-                setIsLoading(false)
-            } catch (error) {
-                console.error("Error:", error);
-                setIsLoading(false)
-            }
-        }
-    }
-
-    async function fetchTokenInfo(tokenAddress: string) {
+    async function fetchInjectorData(address, network, token) {
+        setIsLoading(true);
         try {
-            const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
-            const name = await tokenContract.name();
-            const symbol = await tokenContract.symbol();
-            setTokenName(name);
-            setTokenSymbol(symbol);
+            const response = await fetch(`/api/injector?address=${address}&network=${network}&token=${token}`);
+            const data = await response.json();
+            setTokenName(data.tokenInfo.name);
+            setTokenSymbol(data.tokenInfo.symbol);
+            setGauges(data.gauges);
         } catch (error) {
-            console.error("Error fetching token info:", error);
-            setTokenName("Unknown");
-            setTokenSymbol("???");
+            console.error("Error fetching injector data:", error);
         }
+        setIsLoading(false);
     }
 
-    async function fetchPoolName(address: string) {
-        try {
-            const gaugeContract = new ethers.Contract(address, gaugeABI, provider);
-            const gaugeLPTokenAddress = await gaugeContract.lp_token();
-            const tokenContract = new ethers.Contract(gaugeLPTokenAddress, poolsABI, provider);
-            const poolName = await tokenContract.name();
-            return poolName;
-        } catch (error) {
-            console.error(`Error fetching pool name for address ${address}:`, error);
-            return "Unknown Pool";
-        }
-    }
 
     useEffect(() => {
         fetch("https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/addressbook.json")
@@ -243,7 +152,7 @@ function App() {
         return { total, distributed, remaining };
     };
 
-    const formatAmount = (amount : any) => {
+    const formatAmount = (amount : number) => {
         return amount.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
