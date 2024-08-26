@@ -6,7 +6,8 @@ import {
     useColorModeValue,
     Heading,
     BoxProps,
-    HStack,
+    Link,
+    Image,
 } from '@chakra-ui/react'
 import {
     FiHome,
@@ -29,6 +30,28 @@ const LinkItems = [
     { name: 'Rewards Injector', icon: RiContractLine, target: '/rewards-injector', description: "View and Configure Gauge Rewards injectors" },
     { name: 'Automation Catalog', icon: SiChainlink, target: '/chainlink-automation', description: "View Chainlink Automation Upkeeps" },
 ];
+
+const DRPCBanner = () => (
+    <Link href="https://drpc.org?ref=974b0e" isExternal>
+        <Box
+            shadow="md"
+            borderRadius="md"
+            overflow="hidden"
+            transition="all 0.1s"
+            _hover={{
+                shadow: "lg",
+                transform: "translateY(-2px)",
+            }}
+        >
+            <Image
+                src="https://drpc.org/images/external/powered-by-drpc-dark.svg"
+                alt="Powered by dRPC"
+                width="218px"
+                height="54px"
+            />
+        </Box>
+    </Link>
+);
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     return (
@@ -64,6 +87,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 flexDirection="column"
                 alignItems="center"
             >
+                <DRPCBanner />
             </Flex>
         </Box>
     )

@@ -50,11 +50,12 @@ const MobileNav = ({onOpen, ...rest}: MobileProps) => {
                     <Heading as="h5" size="md" variant="special">Ops Tooling</Heading>
                 </Box>
             </Flex>
-
-            <Box mr={2}>
-                <SignInButton />
-            </Box>
-            <DarkModeToggle />
+            <Flex alignItems="center">
+                <Box mr={2}>
+                    <SignInButton />
+                </Box>
+                <DarkModeToggle />
+            </Flex>
         </Flex>
     )
 }

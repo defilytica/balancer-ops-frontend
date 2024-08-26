@@ -142,7 +142,7 @@ export default function AddRewardToGaugePage() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Payload to Add Rewards to a Gauge</Heading>
             </Box>
@@ -175,7 +175,7 @@ export default function AddRewardToGaugePage() {
                 mb='10px'
                 key={'add-reward-card'}
             >
-            <FormControl mb="30px">
+            <FormControl mb="30px" maxWidth="md">
                 <FormLabel>Network</FormLabel>
                 <Select value={network} onChange={(e) => handleNetworkChange(e.target.value)}>
                     {NETWORK_OPTIONS.map((option) => (

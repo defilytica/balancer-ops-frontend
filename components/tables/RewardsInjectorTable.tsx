@@ -101,16 +101,17 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({ data
     }
 
     return (
+        sortedData.length > 0 ?
         <Card overflowX="auto">
             <Table variant="simple" size="sm">
                 <Thead>
                     <Tr>
-                        <Th><SortableHeader column="gaugeAddress" label="Address" /></Th>
-                        <Th><SortableHeader column="poolName" label="Name" /></Th>
-                        <Th><SortableHeader column="amountPerPeriod" label="Amount Per Period" /></Th>
-                        <Th><SortableHeader column="periodNumber" label="Period Number" /></Th>
-                        <Th><SortableHeader column="maxPeriods" label="Max Periods" /></Th>
-                        <Th><SortableHeader column="lastInjectionTimeStamp" label="Last Injection" /></Th>
+                        <Th><SortableHeader column="gaugeAddress" label="Address"/></Th>
+                        <Th><SortableHeader column="poolName" label="Name"/></Th>
+                        <Th><SortableHeader column="amountPerPeriod" label="Amount Per Period"/></Th>
+                        <Th><SortableHeader column="periodNumber" label="Period Number"/></Th>
+                        <Th><SortableHeader column="maxPeriods" label="Max Periods"/></Th>
+                        <Th><SortableHeader column="lastInjectionTimeStamp" label="Last Injection"/></Th>
                     </Tr>
                 </Thead>
                 <Tbody>
@@ -130,6 +131,6 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({ data
                     ))}
                 </Tbody>
             </Table>
-        </Card>
+        </Card> : null
     );
 };

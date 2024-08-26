@@ -72,7 +72,7 @@ export default function KillGaugePage() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Gauge Removal Payload</Heading>
             </Box>

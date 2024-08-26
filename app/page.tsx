@@ -7,7 +7,8 @@ export default function Page() {
 
     const options = [
         { title: "Create DAO Payloads", href: "/payload-builder" },
-        { title: "Injector Viewer", href: "/rewards-injector" }
+        { title: "Injector Viewer", href: "/rewards-injector" },
+        { title: "Chainlink Automation", href: "/chainlink-automation" }
     ];
 
     return (
@@ -41,7 +42,7 @@ export default function Page() {
                             Get Started
                         </Button>
                     ) : (
-                        <Grid templateColumns="repeat(2, 1fr)" gap={6} mt={8}>
+                        <Grid templateColumns="repeat(3, 1fr)" gap={6} mt={8}>
                             {options.map((option, index) => (
                                 <GridItem key={index}>
                                     <Link href={option.href} _hover={{ textDecoration: 'none' }}>

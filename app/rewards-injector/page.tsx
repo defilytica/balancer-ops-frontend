@@ -1,6 +1,7 @@
 "use client";
 import React, {useEffect, useState} from "react";
 import {
+    Box,
     Button, Card, CardBody,
     Container,
     Flex,
@@ -35,6 +36,17 @@ type Recipient = {
     periodNumber: string,
     lastInjectionTimeStamp: string
 }
+
+const formatTokenName = (token: string) => {
+    return token
+        .split('_')
+        .map((word, index, array) =>
+            index === array.length - 1 ?
+                word.charAt(0).toUpperCase() + word.slice(1) :
+                word.toUpperCase()
+        )
+        .join(' ');
+};
 
 
 function App() {
@@ -136,12 +148,18 @@ function App() {
     return (
         <Container maxW="container.lg" justifyContent="center" alignItems="center">
                 <>
-                    <Flex justifyContent="space-between" alignItems="center" mb={4}>
+                    <Box mb={2}>
+                        <Heading as="h2" size="lg" variant="special">
+                            Rewards Injector Viewer
+                        </Heading>
+                        <Text mb={4}>Choose an rewards injector contract to fetch its current state.</Text>
+                    </Box>
+                    <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
                         <Menu>
                             <MenuButton
                                 as={Button}
                                 rightIcon={<ChevronDownIcon/>}
-                                mb={4}
+
                                 isDisabled={isLoading}
                                 w="100%"
                             >
@@ -154,7 +172,7 @@ function App() {
                                             mr={2}
                                         />
                                         <Text isTruncated>
-                                            {selectedAddress.address} - {selectedAddress.token}
+                                            {selectedAddress.address} - {formatTokenName(selectedAddress.token)}
                                         </Text>
                                     </Flex>
                                 ) : (
@@ -176,7 +194,7 @@ function App() {
                                                 mr={2}
                                             />
                                             <Text isTruncated>
-                                                {address.address} - {address.token}
+                                                {address.address} - {formatTokenName(address.token)}
                                             </Text>
                                         </Flex>
                                     </MenuItem>

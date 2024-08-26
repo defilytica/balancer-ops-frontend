@@ -134,10 +134,10 @@ export default function CCIPBridge() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Bridge Transaction</Heading>
-                <Text mt={4}>Further logic for creating a CCIP payment goes here.</Text>
+                <Text mb={4}>Further logic for creating a CCIP payment goes here.</Text>
             </Box>
             <Box>
                 {inputs.map((input, index) => (

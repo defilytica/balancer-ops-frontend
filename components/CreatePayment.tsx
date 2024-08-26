@@ -156,15 +156,15 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create DAO Payment</Heading>
-                <Text mt={4}>Build a payment payload to send tokens from the DAO multi-sig to a destination address of your choosing.</Text>
+                <Text mb={4}>Build a payment payload to send tokens from the DAO multi-sig to a destination address of your choosing.</Text>
             </Box>
             <Box>
                 <Box mb={2} mt={2}>
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <FormControl>
+                    <FormControl maxWidth="sm">
                         <FormLabel>Select Network</FormLabel>
                         <Select
                             value={selectedNetwork}

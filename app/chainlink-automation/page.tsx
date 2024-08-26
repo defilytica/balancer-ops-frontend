@@ -34,7 +34,7 @@ const ChainlinkAutomationPage: React.FC = () => {
 
     return (
 
-        <Box p={8} maxW="container.lg" mx="auto">
+        <Box p={2} maxW="container.lg" mx="auto">
             {isLoading ? (
                 <Flex justifyContent="center" alignItems="center" height="200px">
                     <Spinner size="xl"/>

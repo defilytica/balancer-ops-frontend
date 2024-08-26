@@ -11,7 +11,7 @@ const DesktopNav = () => {
     return (
         <Flex
             ml={{ base: 0, md: 60 }}
-            px={4}
+            px={3}
             height="20"
             alignItems="center"
             borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
