@@ -1,0 +1,21 @@
+query GetPools($chainIn: [GqlChain!]){
+    poolGetPools(
+        where:{chainIn:$chainIn}
+        orderBy: totalLiquidity
+        orderDirection: desc
+    ){
+        chain
+        protocolVersion
+        address
+        name
+        symbol
+        type
+        version
+        createTime
+        owner
+        dynamicData{
+            swapFee
+            poolId
+        }
+    }
+}

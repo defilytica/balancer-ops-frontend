@@ -1,5 +1,6 @@
 # Balancer Ops Frontend
-This is the Balancer Operations front-end that will fully integrate into the Balancer Maxis tooling repositories. 
+
+This is the Balancer Operations front-end that will fully integrate into the Balancer Maxis tooling repositories.
 
 ## Getting Started
 
