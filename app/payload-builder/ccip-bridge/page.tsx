@@ -21,9 +21,9 @@ import {
 } from '@chakra-ui/react';
 import {AddIcon, CopyIcon, DeleteIcon, DownloadIcon} from "@chakra-ui/icons";
 import {CCTPBridgeInput, generateCCTPBridgePayload, generateHumanReadableCCTPBridge,} from "../payloadHelperFunctions";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
 import {VscGithubInverted} from "react-icons/vsc";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
 
 const ReactJson = dynamic(() => import('react-json-view'), {ssr: false});
 
@@ -134,10 +134,10 @@ export default function CCIPBridge() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Bridge Transaction</Heading>
-                <Text mt={4}>Further logic for creating a CCIP payment goes here.</Text>
+                <Text mb={4}>Further logic for creating a CCIP payment goes here.</Text>
             </Box>
             <Box>
                 {inputs.map((input, index) => (

@@ -1,11 +1,11 @@
 import { Box, Heading, Text, SimpleGrid } from '@chakra-ui/react';
-import { PAYLOAD_OPTIONS } from "@/app/payload-builder/constants";
+import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import React from "react";
-import CustomCard from "@/lib/modules/CustomCard";
+import CustomCard from "@/components/CustomCard";
 
 export default function PayloadBuilder() {
     return (
-        <Box p={8} maxW="container.lg" mx="auto">
+        <Box p={2} maxW="container.lg" mx="auto">
             <Heading as="h2" size="lg" variant="special">
                 Payload Builder Library
             </Heading>

@@ -31,8 +31,8 @@ import {
     generateKillGaugePayload,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
 import {VscGithubInverted} from "react-icons/vsc";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
@@ -72,7 +72,7 @@ export default function KillGaugePage() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Gauge Removal Payload</Heading>
             </Box>

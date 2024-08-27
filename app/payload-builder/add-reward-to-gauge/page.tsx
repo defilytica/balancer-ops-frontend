@@ -33,12 +33,12 @@ import {
     generateHumanReadableAddReward,
     handleDownloadClick
 } from "@/app/payload-builder/payloadHelperFunctions";
-import {NETWORK_OPTIONS} from "@/app/payload-builder/constants";
+import {NETWORK_OPTIONS} from "@/constants/constants";
 import dynamic from "next/dynamic";
-import {createPR} from "@/lib/shared/services/createPR";
-import {PRCreationModal} from "@/lib/shared/components/modal/PRModal";
 import {VscGithubInverted} from "react-icons/vsc";
-import SimulateTransactionButton from "@/lib/shared/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import {PRCreationModal} from "@/components/modal/PRModal";
+
 
 const ReactJson = dynamic(() => import("react-json-view"), {
     ssr: false
@@ -142,7 +142,7 @@ export default function AddRewardToGaugePage() {
     };
 
     return (
-        <Container maxW="container.md">
+        <Container maxW="container.lg">
             <Box mb='10px'>
                 <Heading as="h2" size="lg" variant="special">Create Payload to Add Rewards to a Gauge</Heading>
             </Box>
@@ -175,7 +175,7 @@ export default function AddRewardToGaugePage() {
                 mb='10px'
                 key={'add-reward-card'}
             >
-            <FormControl mb="30px">
+            <FormControl mb="30px" maxWidth="md">
                 <FormLabel>Network</FormLabel>
                 <Select value={network} onChange={(e) => handleNetworkChange(e.target.value)}>
                     {NETWORK_OPTIONS.map((option) => (

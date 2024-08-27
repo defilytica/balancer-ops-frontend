@@ -1,9 +1,10 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import {Box, Card, Flex, Heading, Spinner, Text, VStack} from '@chakra-ui/react';
-import {ChainlinkData} from "@/lib/shared/types/interfaces";
-import {fetchChainlinkData} from "@/lib/shared/services/fetchChainlinkData";
-import {ChainlinkTable} from "@/lib/shared/components/tables/ChainlinkTable";
+import {Box, Flex, Heading, Spinner, Text, VStack} from '@chakra-ui/react';
+import {ChainlinkData} from "@/types/interfaces";
+import {fetchChainlinkData} from "@/lib/services/fetchChainlinkData";
+import {ChainlinkTable} from "@/components/tables/ChainlinkTable";
+
 
 const ChainlinkAutomationPage: React.FC = () => {
     const [chainlinkData, setChainlinkData] = useState<ChainlinkData[]>([]);
@@ -33,7 +34,7 @@ const ChainlinkAutomationPage: React.FC = () => {
 
     return (
 
-        <Box p={8} maxW="container.lg" mx="auto">
+        <Box p={2} maxW="container.lg" mx="auto">
             {isLoading ? (
                 <Flex justifyContent="center" alignItems="center" height="200px">
                     <Spinner size="xl"/>
