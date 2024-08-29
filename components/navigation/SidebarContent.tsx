@@ -7,7 +7,7 @@ import {
     Heading,
     BoxProps,
     Link,
-    Image,
+    Image, Badge, useBreakpointValue,
 } from '@chakra-ui/react'
 import {
     FiHome,
@@ -87,6 +87,15 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 flexDirection="column"
                 alignItems="center"
             >
+                <Badge
+                    colorScheme="purple"
+                    mb={4}
+                    fontSize="0.8em"
+                    borderRadius="full"
+                    px={2}
+                >
+                    Alpha release
+                </Badge>
                 <DRPCBanner />
             </Flex>
         </Box>
