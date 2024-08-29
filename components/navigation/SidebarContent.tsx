@@ -7,7 +7,7 @@ import {
     Heading,
     BoxProps,
     Link,
-    Image, Badge, useBreakpointValue,
+    Image, Badge,
 } from '@chakra-ui/react'
 import {
     FiHome,
@@ -17,8 +17,6 @@ import { RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin } from "react-icons/tb";
 import NavItem from './NavItem'
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
-import { SignInButton } from "@/components/SignInButton";
-import DarkModeToggle from "@/components/btns/DarkModeToggle";
 
 interface SidebarProps extends BoxProps {
     onClose: () => void
