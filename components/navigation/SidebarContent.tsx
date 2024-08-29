@@ -7,7 +7,7 @@ import {
     Heading,
     BoxProps,
     Link,
-    Image,
+    Image, Badge,
 } from '@chakra-ui/react'
 import {
     FiHome,
@@ -17,8 +17,6 @@ import { RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin } from "react-icons/tb";
 import NavItem from './NavItem'
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
-import { SignInButton } from "@/components/SignInButton";
-import DarkModeToggle from "@/components/btns/DarkModeToggle";
 
 interface SidebarProps extends BoxProps {
     onClose: () => void
@@ -87,6 +85,15 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
                 flexDirection="column"
                 alignItems="center"
             >
+                <Badge
+                    colorScheme="purple"
+                    mb={4}
+                    fontSize="0.8em"
+                    borderRadius="full"
+                    px={2}
+                >
+                    Alpha release
+                </Badge>
                 <DRPCBanner />
             </Flex>
         </Box>

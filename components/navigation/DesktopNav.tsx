@@ -2,7 +2,7 @@ import React from 'react'
 import {
     Flex,
     useColorModeValue,
-    Box, Avatar, Heading,
+    Avatar,
 } from '@chakra-ui/react'
 import DarkModeToggle from "@/components/btns/DarkModeToggle";
 import { SignInButton } from "@/components/SignInButton";
