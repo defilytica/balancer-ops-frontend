@@ -475,6 +475,7 @@ export interface SwapFeeChangeInput {
 export function generateSwapFeeChangePayload(
   input: SwapFeeChangeInput,
   chainId: string,
+  multisig: string,
 ) {
   const swapFeePercentage = (
     parseFloat(input.newSwapFeePercentage) * 1e16
@@ -508,7 +509,7 @@ export function generateSwapFeeChangePayload(
       name: "Transactions Batch",
       description: `Set swap fee to ${input.newSwapFeePercentage}% for ${input.poolName}`,
       txBuilderVersion: "1.17.0",
-      createdFromSafeAddress: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+      createdFromSafeAddress: multisig,
       createdFromOwnerAddress: "",
       checksum: "0x",
     },
