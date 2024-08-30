@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
+  Alert, AlertDescription, AlertIcon, AlertTitle,
   Box,
   Button,
   Card,
@@ -27,6 +28,7 @@ import {
   RewardsInjectorData,
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
+import {fetchAddressBook, getCategoryData, getNetworks} from "@/lib/data/maxis/addressBook";
 
 type AddressOption = {
   network: string;
@@ -63,6 +65,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isV2, setIsV2] = useState(false);
   const [tokenName, setTokenName] = useState("");
+  const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
 
   const handleVersionSwitch = () => {
@@ -84,7 +87,7 @@ function App() {
   const handleAddressSelect = (address: AddressOption) => {
     setSelectedAddress(address);
   };
-
+  console.log(tokenSymbol)
   async function fetchInjectorData(
     address: string,
     network: string,
@@ -99,35 +102,32 @@ function App() {
       setTokenName(data.tokenInfo.name);
       setTokenSymbol(data.tokenInfo.symbol);
       setGauges(data.gauges);
+      setContractBalance(data.contractBalance);
     } catch (error) {
       console.error("Error fetching injector data:", error);
     }
     setIsLoading(false);
   }
-
+  console.log(contractBalance)
   useEffect(() => {
-    fetch(
-      "https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/addressbook.json",
-    )
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchAddresses = async () => {
+      try {
+        const addressBook = await fetchAddressBook();
         let allAddressesWithOptions = [];
-        const activeNetworks = data.active;
 
-        // Iterate over each network and extract gaugeRewardsInjectors addresses
-        for (const network in activeNetworks) {
-          const maxiKeepers = activeNetworks[network].maxiKeepers;
+        const networks = getNetworks(addressBook);
+        for (const network of networks) {
+          const maxiKeepers = getCategoryData(addressBook, network, 'maxiKeepers');
           if (maxiKeepers) {
             const injectors = isV2
-              ? maxiKeepers.gaugeRewardsInjectorsV2
-              : maxiKeepers.gaugeRewardsInjectors;
+                ? maxiKeepers.gaugeRewardsInjectorsV2
+                : maxiKeepers.gaugeRewardsInjectors;
             if (injectors) {
-              for (const token in injectors) {
-                const address = injectors[token];
+              for (const [token, address] of Object.entries(injectors)) {
                 allAddressesWithOptions.push({
-                  network: network,
-                  address: address,
-                  token: token,
+                  network,
+                  address,
+                  token,
                 });
               }
             }
@@ -135,8 +135,12 @@ function App() {
         }
 
         setAddresses(allAddressesWithOptions);
-      })
-      .catch((error) => console.error("Error fetching addresses:", error));
+      } catch (error) {
+        console.error("Error fetching addresses:", error);
+      }
+    };
+
+    fetchAddresses();
   }, [isV2]);
 
   const calculateDistributionAmounts = () => {
@@ -166,6 +170,9 @@ function App() {
       maximumFractionDigits: 2,
     });
   };
+
+  const { total: totalProduct, distributed: totalAmountDistributed, remaining: totalAmountRemaining } = calculateDistributionAmounts();
+  const additionalTokensRequired = totalAmountRemaining > contractBalance ? totalAmountRemaining - contractBalance : 0;
 
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
@@ -288,6 +295,16 @@ function App() {
               </CardBody>
             </Card>
           </SimpleGrid>
+        )}
+
+        {additionalTokensRequired > 0 && (
+            <Alert status="error" mb={4}>
+              <AlertIcon />
+              <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
+              <AlertDescription>
+                Additional {formatAmount(additionalTokensRequired)} {tokenSymbol} required to complete all distributions.
+              </AlertDescription>
+            </Alert>
         )}
 
         {isLoading ? (
