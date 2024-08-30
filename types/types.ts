@@ -1,4 +1,4 @@
 export type NetworkInfo = {
-    logo: string;
-    rpc: string;
+  logo: string;
+  rpc: string;
 };
