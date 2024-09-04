@@ -34,6 +34,7 @@
     "axios": "^1.7.2",
     "bignumber.js": "^9.1.2",
     "chakra-react-select": "^4.9.1",
+    "date-fns": "^3.6.0",
     "ethers": "^6.13.2",
     "ethers-multicall": "^0.2.3",
     "framer-motion": "^11.3.0",

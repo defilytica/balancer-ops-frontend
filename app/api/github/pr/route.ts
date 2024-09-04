@@ -58,40 +58,71 @@ export async function POST(req: NextRequest) {
 
     const octokit = new Octokit({ auth: githubToken });
 
-    // Step 1: Get the latest commit SHA of the base branch
-    const { data: baseBranchData } = await octokit.repos.getBranch({
-      owner,
-      repo: repoName,
-      branch: base,
-    });
-    const baseSha = baseBranchData.commit.sha;
+    const { data: authUser } = await octokit.users.getAuthenticated();
 
-    // Step 2: Create a new branch
+    // Step 1: Fork the repository
+    let fork;
+    try {
+      const { data: existingFork } = await octokit.repos.get({
+        owner: authUser.login,
+        repo: repoName,
+      });
+      fork = existingFork;
+      console.log("Using existing fork");
+    } catch (error) {
+      // If the fork doesn't exist, create a new one
+      const { data: newFork } = await octokit.repos.createFork({
+        owner,
+        repo: repoName,
+      });
+      fork = newFork;
+      console.log("Created new fork");
+
+      // Wait for the fork to be created
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    // Step 2: Get the default branch of the forked repo
+    const { data: repoData } = await octokit.repos.get({
+      owner: fork.owner.login,
+      repo: fork.name,
+    });
+    const defaultBranch = repoData.default_branch;
+
+    // Step 3: Get the latest commit SHA of the default branch in the fork
+    const { data: defaultBranchData } = await octokit.repos.getBranch({
+      owner: fork.owner.login,
+      repo: fork.name,
+      branch: defaultBranch,
+    });
+    const baseSha = defaultBranchData.commit.sha;
+
+    // Step 4: Create a new branch in the fork
     await octokit.git.createRef({
-      owner,
-      repo: repoName,
+      owner: fork.owner.login,
+      repo: fork.name,
       ref: `refs/heads/${branchName}`,
       sha: baseSha,
     });
 
-    // Step 3: Create or update the file in the new branch
+    // Step 5: Create or update the file in the new branch
     const content = Buffer.from(JSON.stringify(payload)).toString("base64");
     await octokit.repos.createOrUpdateFileContents({
-      owner,
-      repo: repoName,
+      owner: fork.owner.login,
+      repo: fork.name,
       path: filePath,
       message: "chore: add payload file",
       content,
       branch: branchName,
     });
 
-    // Step 4: Create a pull request
+    // Step 6: Create a pull request
     const { data: pr } = await octokit.pulls.create({
       owner,
       repo: repoName,
       title: title,
       body: description,
-      head: branchName,
+      head: `${fork.owner.login}:${branchName}`,
       base: base,
     });
 

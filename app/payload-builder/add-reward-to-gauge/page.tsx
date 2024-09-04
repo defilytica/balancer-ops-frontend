@@ -74,7 +74,7 @@ export default function AddRewardToGaugePage() {
   const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const toast = useToast();
 
-  const [network, setNetwork] = useState("");
+  const [network, setNetwork] = useState("Ethereum");
   const [targetGauge, setTargetGauge] = useState("");
   const [rewardToken, setRewardToken] = useState("");
   const [distributorAddress, setDistributorAddress] = useState("");
@@ -161,6 +161,8 @@ export default function AddRewardToGaugePage() {
     setRewardToken("");
     setDistributorAddress("");
   };
+
+  console.log(network);
 
   return (
     <Container maxW="container.lg">
@@ -333,6 +335,7 @@ export default function AddRewardToGaugePage() {
       <Box mt={8} />
       <PRCreationModal
         type={"add-reward-to-gauge"}
+        network={network}
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
