@@ -36,6 +36,7 @@ import {
   getCategoryData,
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
+import {AddressBook} from "@/types/interfaces";
 
 type AddressOption = {
   network: string;
@@ -52,6 +53,10 @@ type Recipient = {
   lastInjectionTimeStamp: string;
 };
 
+type RewardsInjectorProps = {
+  addressBook: AddressBook;
+};
+
 const formatTokenName = (token: string) => {
   return token
     .split("_")
@@ -63,7 +68,7 @@ const formatTokenName = (token: string) => {
     .join(" ");
 };
 
-function RewardsInjector({ addressBook }) {
+function RewardsInjector({ addressBook }: RewardsInjectorProps) {
   const [addresses, setAddresses] = useState<AddressOption[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(
     null,
