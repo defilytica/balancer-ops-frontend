@@ -70,6 +70,7 @@ export const PAYLOAD_OPTIONS = [
 export const REPO_OPTIONS = [
   "defilytica/multisig-ops-mock",
   "defilytica/multisig-ops-mock2",
+  "BalancerMaxis/dummy_repo_ci_test",
 ];
 
 export const PAYLOAD_TYPES = {

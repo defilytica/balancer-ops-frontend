@@ -6,6 +6,7 @@ interface CreatePRParams {
   branchName: string;
   title: string;
   description: string;
+  filePath: string;
   toast: (options: UseToastOptions) => void;
 }
 
@@ -15,10 +16,10 @@ export const createPR = async ({
   branchName,
   title,
   description,
+  filePath,
   toast,
 }: CreatePRParams): Promise<void> => {
   const currentDate = new Date().toISOString().split("T")[0];
-  const filePath = `payloads/${currentDate}-enable-gauge.json`;
   const base = "main";
 
   try {
