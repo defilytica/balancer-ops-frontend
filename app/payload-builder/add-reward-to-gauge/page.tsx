@@ -162,8 +162,6 @@ export default function AddRewardToGaugePage() {
     setDistributorAddress("");
   };
 
-  console.log(network);
-
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
