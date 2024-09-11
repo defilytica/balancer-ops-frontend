@@ -36,7 +36,8 @@ import {
   getCategoryData,
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
-import {AddressBook} from "@/types/interfaces";
+import { AddressBook } from "@/types/interfaces";
+import {css} from "@emotion/react";
 
 type AddressOption = {
   network: string;
@@ -224,8 +225,11 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
                     boxSize="20px"
                     mr={2}
                   />
-                  <Text isTruncated>
-                    {selectedAddress.address} -{" "}
+                  <Text>
+                    <Text as="span" fontFamily="mono" isTruncated>
+                      {selectedAddress.address}
+                    </Text>
+                    {" - "}
                     {formatTokenName(selectedAddress.token)}
                   </Text>
                 </Flex>
@@ -247,8 +251,12 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
                       boxSize="20px"
                       mr={2}
                     />
-                    <Text isTruncated>
-                      {address.address} - {formatTokenName(address.token)}
+                    <Text>
+                      <Text as="span" fontFamily="mono" isTruncated>
+                        {address.address}
+                      </Text>
+                      {" - "}
+                      {formatTokenName(address.token)}
                     </Text>
                   </Flex>
                 </MenuItem>

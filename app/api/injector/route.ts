@@ -43,7 +43,11 @@ export async function GET(request: NextRequest) {
 
     const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
     const gauges = await fetchGaugeInfo(watchList, contract, provider, address);
-    const contractBalance = await getInjectTokenBalanceForAddress(injectorTokenAddress,address,provider)
+    const contractBalance = await getInjectTokenBalanceForAddress(
+      injectorTokenAddress,
+      address,
+      provider,
+    );
 
     return NextResponse.json({ tokenInfo, gauges, contractBalance });
   } catch (error) {
@@ -130,19 +134,22 @@ async function fetchPoolName(
 }
 
 async function getInjectTokenBalanceForAddress(
-    injectTokenAddress: string,
-    contractAddress: string,
-    provider: JsonRpcProvider
+  injectTokenAddress: string,
+  contractAddress: string,
+  provider: JsonRpcProvider,
 ) {
-  console.log(injectTokenAddress)
-  const tokenContract = new ethers.Contract(injectTokenAddress, ERC20, provider);
-  console.log(contractAddress)
+  console.log(injectTokenAddress);
+  const tokenContract = new ethers.Contract(
+    injectTokenAddress,
+    ERC20,
+    provider,
+  );
+  console.log(contractAddress);
   const balanceForAddress = await tokenContract.balanceOf(contractAddress);
-  console.log(balanceForAddress)
+  console.log(balanceForAddress);
   const decimals = tokenDecimals[injectTokenAddress.toLowerCase()] || 18;
   return ethers.formatUnits(balanceForAddress, decimals);
 }
-
 
 function formatTokenAmount(amount: number, tokenAddress: string) {
   if (amount === null || amount === undefined) return "Loading...";

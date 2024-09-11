@@ -17,7 +17,8 @@ import {
   useToast,
   Box,
   Flex,
-  IconButton, FormErrorMessage,
+  IconButton,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import { PAYLOAD_TYPES, REPO_OPTIONS } from "@/constants/constants";
 import { createPR } from "@/lib/services/createPR";
@@ -167,9 +168,9 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
           <FormControl mb={4} isInvalid={!!branchError}>
             <FormLabel>Branch Name</FormLabel>
             <Input
-                value={prBranch}
-                onChange={handleBranchNameChange}
-                placeholder={branchNamePlaceholder}
+              value={prBranch}
+              onChange={handleBranchNameChange}
+              placeholder={branchNamePlaceholder}
             />
             <FormErrorMessage>{branchError}</FormErrorMessage>
           </FormControl>
