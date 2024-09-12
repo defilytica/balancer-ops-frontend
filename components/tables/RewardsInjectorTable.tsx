@@ -22,6 +22,7 @@ import {
   TriangleDownIcon,
   TriangleUpIcon,
 } from "@chakra-ui/icons";
+import { networks } from "@/constants/constants";
 
 export interface RewardsInjectorData {
   gaugeAddress: string;
@@ -29,23 +30,27 @@ export interface RewardsInjectorData {
   amountPerPeriod: string;
   periodNumber: string;
   maxPeriods: string;
+  isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
 }
 
 interface RewardsInjectorTableProps {
   data: RewardsInjectorData[];
   tokenSymbol: string;
+  network: string;
 }
 
 export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   data,
   tokenSymbol,
+  network,
 }) => {
   const [sortColumn, setSortColumn] = useState<
     keyof RewardsInjectorData | null
   >(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
+  const explorerUrl = networks[network]?.explorer || "";
 
   const handleSort = (column: keyof RewardsInjectorData) => {
     if (sortColumn === column) {
@@ -64,7 +69,14 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   });
 
   const formatDate = (timestamp: string) => {
-    return new Date(Number(timestamp) * 1000).toLocaleDateString();
+    const date = new Date(Number(timestamp) * 1000);
+
+    // Check if the date is January 1, 1970 (Unix epoch start)
+    if (date.getTime() === 0) {
+      return "-";
+    }
+
+    return date.toLocaleDateString();
   };
 
   const SortableHeader: React.FC<{
@@ -86,6 +98,24 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     </Flex>
   );
 
+  const AddressLink: React.FC<{ address: string }> = ({ address }) => (
+    <Tooltip label="View on Explorer">
+      <Link
+        href={`${explorerUrl}address/${address}`}
+        isExternal
+        color="blue.500"
+        _hover={{ textDecoration: "underline" }}
+      >
+        <Flex alignItems="center">
+          <Text isTruncated maxWidth="180px">
+            {address}
+          </Text>
+          <Icon as={ExternalLinkIcon} ml={1} boxSize={3} />
+        </Flex>
+      </Link>
+    </Tooltip>
+  );
+
   if (isMobile) {
     return (
       <VStack spacing={4} align="stretch">
@@ -93,9 +123,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
           <Card key={index} p={4}>
             <VStack align="stretch" spacing={2}>
               <Text fontWeight="bold">{row.poolName}</Text>
-              <Tooltip label={row.gaugeAddress}>
-                <Text isTruncated>{row.gaugeAddress}</Text>
-              </Tooltip>
+              <AddressLink address={row.gaugeAddress} />
               <HStack justify="space-between">
                 <Text>Amount Per Period:</Text>
                 <Text>{`${row.amountPerPeriod} ${tokenSymbol}`}</Text>
@@ -150,12 +178,9 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
           {sortedData.map((row, index) => (
             <Tr key={index}>
               <Td>
-                <Tooltip label={row.gaugeAddress}>
-                  <Text isTruncated maxWidth="200px">
-                    {row.gaugeAddress}
-                  </Text>
-                </Tooltip>
+                <AddressLink address={row.gaugeAddress} />
               </Td>
+
               <Td>{row.poolName}</Td>
               <Td
                 isNumeric
