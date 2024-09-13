@@ -42,7 +42,14 @@ export async function GET(request: NextRequest) {
     ]);
 
     const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
-    const gauges = await fetchGaugeInfo(watchList, contract, provider, address);
+    const gauges = await fetchGaugeInfo(
+      watchList,
+      contract,
+      provider,
+      injectorTokenAddress,
+      address,
+      network,
+    );
     const contractBalance = await getInjectTokenBalanceForAddress(
       injectorTokenAddress,
       address,
@@ -72,7 +79,9 @@ async function fetchGaugeInfo(
   gaugeAddresses: any,
   contract: ethers.Contract,
   provider: JsonRpcProvider,
+  injectorTokenAddress: string,
   injectorAddress: string,
+  network: string,
 ) {
   const gaugeContracts = gaugeAddresses.map(
     (address: string) => new ethers.Contract(address, gaugeABI, provider),
@@ -80,37 +89,47 @@ async function fetchGaugeInfo(
 
   const gaugeInfoPromises = gaugeAddresses.map(
     async (address: string, index: number) => {
-      const [accountInfo, lpToken] = await Promise.all([
+      const [accountInfo, lpToken, rewardData] = await Promise.all([
         contract.getAccountInfo(address),
         gaugeContracts[index].lp_token(),
+        gaugeContracts[index]
+          .reward_data(injectorTokenAddress)
+          .catch(() => null),
       ]);
+
+      //Ignore check for mainnet injectors as different rules apply,
+      // otherwise check if hte injector is set as token distributor for requested address
+      const isRewardTokenSetup =
+        network === "mainnet" ||
+        (rewardData !== null && rewardData[0] == injectorAddress);
+      // console.log("Injector setup: ", isRewardTokenSetup, ": ", rewardData[0], " - ", injectorAddress)
 
       return {
         gaugeAddress: address,
         accountInfo,
         lpToken,
+        isRewardTokenSetup,
       };
     },
   );
 
   const gaugeInfos = await Promise.all(gaugeInfoPromises);
 
-  const gauges = await Promise.all(
+  return await Promise.all(
     gaugeInfos.map(async (info) => ({
       gaugeAddress: info.gaugeAddress,
       poolName: await fetchPoolName(info.lpToken, provider),
       amountPerPeriod: formatTokenAmount(
         info.accountInfo.amountPerPeriod,
-        injectorAddress,
+        injectorTokenAddress,
       ),
       maxPeriods: info.accountInfo.maxPeriods.toString(),
       periodNumber: info.accountInfo.periodNumber.toString(),
       lastInjectionTimeStamp:
         info.accountInfo.lastInjectionTimeStamp.toString(),
+      isRewardTokenSetup: info.isRewardTokenSetup,
     })),
   );
-
-  return gauges;
 }
 
 async function fetchPoolName(

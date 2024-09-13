@@ -14,7 +14,10 @@ import {
   FormControl,
   FormLabel,
   Heading,
+  IconButton,
   Image,
+  Link,
+  ListItem,
   Menu,
   MenuButton,
   MenuItem,
@@ -24,8 +27,14 @@ import {
   Stack,
   Switch,
   Text,
+  UnorderedList,
+  useMediaQuery,
 } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import {
+  ChevronDownIcon,
+  ExternalLinkIcon,
+  WarningIcon,
+} from "@chakra-ui/icons";
 import { networks } from "@/constants/constants";
 import {
   RewardsInjectorData,
@@ -37,7 +46,7 @@ import {
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
 import { AddressBook } from "@/types/interfaces";
-import {css} from "@emotion/react";
+import { css } from "@emotion/react";
 
 type AddressOption = {
   network: string;
@@ -80,6 +89,7 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
   const [tokenName, setTokenName] = useState("");
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
+  const [isMobile] = useMediaQuery("(max-width: 48em)");
 
   const handleVersionSwitch = () => {
     setIsV2(!isV2);
@@ -193,6 +203,10 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
       ? totalAmountRemaining - contractBalance
       : 0;
 
+  const incorrectlySetupGauges = gauges.filter(
+    (gauge) => !gauge.isRewardTokenSetup,
+  );
+
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
       <>
@@ -215,6 +229,9 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
               as={Button}
               rightIcon={<ChevronDownIcon />}
               isDisabled={isLoading}
+              whiteSpace="normal"
+              height="auto"
+              blockSize="auto"
               w="100%"
             >
               {selectedAddress ? (
@@ -227,7 +244,9 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
                   />
                   <Text>
                     <Text as="span" fontFamily="mono" isTruncated>
-                      {selectedAddress.address}
+                      {isMobile
+                        ? `${selectedAddress.address.slice(0, 6)}...`
+                        : selectedAddress.address}
                     </Text>
                     {" - "}
                     {formatTokenName(selectedAddress.token)}
@@ -263,6 +282,20 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
               ))}
             </MenuList>
           </Menu>
+
+          {selectedAddress && (
+            <IconButton
+              aria-label={""}
+              as="a"
+              href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${selectedAddress.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="m"
+              icon={<ExternalLinkIcon />}
+              variant="ghost"
+              ml={2}
+            ></IconButton>
+          )}
 
           <FormControl
             display="flex"
@@ -323,6 +356,39 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
           </SimpleGrid>
         )}
 
+        {incorrectlySetupGauges.length > 0 && selectedAddress && (
+          <Alert status="error" mb={4}>
+            <AlertIcon />
+            <Box flex="1">
+              <AlertTitle mr={2}>Gauge Setup Warning!</AlertTitle>
+              <AlertDescription display="block">
+                {incorrectlySetupGauges.length} gauge
+                {incorrectlySetupGauges.length > 1 ? "s" : ""}{" "}
+                {incorrectlySetupGauges.length > 1 ? "are" : "is"} not correctly
+                set up. This may result in rewards not being distributed
+                properly.
+              </AlertDescription>
+              <Box mt={2}>
+                <Text fontWeight="bold">Misconfigured gauges:</Text>
+                <UnorderedList>
+                  {incorrectlySetupGauges.map((gauge, index) => (
+                    <ListItem key={index}>
+                      <Link
+                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${gauge.gaugeAddress}`}
+                        isExternal
+                        color="blue.500"
+                      >
+                        {gauge.poolName || gauge.gaugeAddress}{" "}
+                        <ExternalLinkIcon mx="2px" />
+                      </Link>
+                    </ListItem>
+                  ))}
+                </UnorderedList>
+              </Box>
+            </Box>
+          </Alert>
+        )}
+
         {additionalTokensRequired > 0 && (
           <Alert status="error" mb={4}>
             <AlertIcon />
@@ -339,7 +405,13 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
             <Spinner size="xl" />
           </Flex>
         ) : (
-          <RewardsInjectorTable data={gauges} tokenSymbol={tokenSymbol} />
+          <RewardsInjectorTable
+            data={gauges}
+            tokenSymbol={tokenSymbol}
+            network={
+              selectedAddress ? selectedAddress.network.toLowerCase() : ""
+            }
+          />
         )}
       </>
     </Container>
