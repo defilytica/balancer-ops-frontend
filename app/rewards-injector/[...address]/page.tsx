@@ -15,7 +15,6 @@ export default async function RewardsInjectorPage({
     <Suspense fallback={<Skeleton w="full" h="500px" />}>
       <RewardsInjectorContainer
         addressBook={addressBook}
-        initialAddress={injectorAddress}
       />
     </Suspense>
   );
