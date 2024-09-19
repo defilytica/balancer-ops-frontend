@@ -23,3 +23,9 @@ export interface ChainlinkData {
   upkeep_url: string;
   estimated_actions_left: number;
 }
+
+export type AddressOption = {
+  network: string;
+  address: string;
+  token: string;
+};

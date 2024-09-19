@@ -1,5 +1,5 @@
 "use client";
-import React, {useCallback, useEffect, useState} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -37,14 +37,8 @@ import {
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
-import { AddressBook } from "@/types/interfaces";
-import {usePathname, useRouter} from "next/navigation";
-
-type AddressOption = {
-  network: string;
-  address: string;
-  token: string;
-};
+import { AddressBook, AddressOption } from "@/types/interfaces";
+import { usePathname, useRouter } from "next/navigation";
 
 type Recipient = {
   gaugeAddress: string;
@@ -57,7 +51,8 @@ type Recipient = {
 
 type RewardsInjectorProps = {
   addressBook: AddressBook;
-  initialAddress?: string | null;
+  selectedAddress: AddressOption | null;
+  onAddressSelect: (address: AddressOption) => void;
 };
 
 const formatTokenName = (token: string) => {
@@ -73,14 +68,11 @@ const formatTokenName = (token: string) => {
 
 function RewardsInjector({
   addressBook,
-  initialAddress,
+  selectedAddress,
+  onAddressSelect,
 }: RewardsInjectorProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(
-    null,
-  );
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isV2, setIsV2] = useState(false);
@@ -88,10 +80,10 @@ function RewardsInjector({
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
+  const [addresses, setAddresses] = useState<AddressOption[]>([]);
 
   const handleVersionSwitch = () => {
     setIsV2(!isV2);
-    setSelectedAddress(null);
     setGauges([]);
   };
 
@@ -105,41 +97,44 @@ function RewardsInjector({
     }
   }, [selectedAddress]);
 
-  const handleAddressSelect = useCallback((address: AddressOption) => {
-    setSelectedAddress(address);
-    fetchInjectorData(address.address, address.network, address.token);
-    router.push(`/rewards-injector/${address.address}`);
-  }, [router]);
+  const handleAddressSelect = useCallback(
+    (address: AddressOption) => {
+      fetchInjectorData(address.address, address.network, address.token);
+      router.push(`/rewards-injector/${address.address}`);
+    },
+    [router],
+  );
 
-  const fetchInjectorData = useCallback(async (address: string, network: string, token: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/injector?address=${address}&network=${network}&token=${token}`);
-      const data = await response.json();
-      setTokenName(data.tokenInfo.name);
-      setTokenSymbol(data.tokenInfo.symbol);
-      setGauges(data.gauges);
-      setContractBalance(data.contractBalance);
-    } catch (error) {
-      console.error("Error fetching injector data:", error);
-    }
-    setIsLoading(false);
-  }, []);
+  const fetchInjectorData = useCallback(
+    async (address: string, network: string, token: string) => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/injector?address=${address}&network=${network}&token=${token}`,
+        );
+        const data = await response.json();
+        setTokenName(data.tokenInfo.name);
+        setTokenSymbol(data.tokenInfo.symbol);
+        setGauges(data.gauges);
+        setContractBalance(data.contractBalance);
+      } catch (error) {
+        console.error("Error fetching injector data:", error);
+      }
+      setIsLoading(false);
+    },
+    [],
+  );
 
   const loadAddresses = useCallback(() => {
     let allAddressesWithOptions = [];
 
     const networks = getNetworks(addressBook);
     for (const network of networks) {
-      const maxiKeepers = getCategoryData(
-          addressBook,
-          network,
-          "maxiKeepers",
-      );
+      const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
       if (maxiKeepers) {
         const injectors = isV2
-            ? maxiKeepers.gaugeRewardsInjectorsV2
-            : maxiKeepers.gaugeRewardsInjectors;
+          ? maxiKeepers.gaugeRewardsInjectorsV2
+          : maxiKeepers.gaugeRewardsInjectors;
         if (injectors) {
           for (const [token, address] of Object.entries(injectors)) {
             allAddressesWithOptions.push({
@@ -154,23 +149,25 @@ function RewardsInjector({
     setAddresses(allAddressesWithOptions);
   }, [addressBook, isV2]);
 
-
   useEffect(() => {
     loadAddresses();
   }, [loadAddresses]);
 
   useEffect(() => {
-    const addressFromUrl = pathname.split('/').pop();
-    const addressToUse = initialAddress || addressFromUrl;
-
-    if (addressToUse && addresses.length > 0) {
-      const matchingAddress = addresses.find(addr => addr.address.toLowerCase() === addressToUse.toLowerCase());
+    const addressFromUrl = pathname.split("/").pop();
+    if (addressFromUrl && addresses.length > 0) {
+      const matchingAddress = addresses.find(
+        (addr) => addr.address.toLowerCase() === addressFromUrl.toLowerCase(),
+      );
       if (matchingAddress) {
-        setSelectedAddress(matchingAddress);
-        fetchInjectorData(matchingAddress.address, matchingAddress.network, matchingAddress.token);
+        fetchInjectorData(
+          matchingAddress.address,
+          matchingAddress.network,
+          matchingAddress.token,
+        );
       }
     }
-  }, [addresses, initialAddress, pathname]);
+  }, [addresses, pathname]);
 
   const calculateDistributionAmounts = () => {
     let total = 0;
