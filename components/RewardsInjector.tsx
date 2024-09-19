@@ -53,6 +53,8 @@ type RewardsInjectorProps = {
   addressBook: AddressBook;
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
+  injectorData: any; // Replace 'any' with a proper type if available
+  isLoading: boolean;
 };
 
 const formatTokenName = (token: string) => {
@@ -67,14 +69,15 @@ const formatTokenName = (token: string) => {
 };
 
 function RewardsInjector({
-  addressBook,
-  selectedAddress,
-  onAddressSelect,
-}: RewardsInjectorProps) {
+                           addressBook,
+                           selectedAddress,
+                           onAddressSelect,
+                           injectorData,
+                           isLoading
+                         }: RewardsInjectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isV2, setIsV2] = useState(false);
   const [tokenName, setTokenName] = useState("");
   const [contractBalance, setContractBalance] = useState(0);
@@ -88,42 +91,13 @@ function RewardsInjector({
   };
 
   useEffect(() => {
-    if (selectedAddress) {
-      fetchInjectorData(
-        selectedAddress.address,
-        selectedAddress.network,
-        selectedAddress.token,
-      );
+    if (selectedAddress && injectorData) {
+      setTokenName(injectorData.tokenInfo.name);
+      setTokenSymbol(injectorData.tokenInfo.symbol);
+      setGauges(injectorData.gauges);
+      setContractBalance(injectorData.contractBalance);
     }
-  }, [selectedAddress]);
-
-  const handleAddressSelect = useCallback(
-    (address: AddressOption) => {
-      fetchInjectorData(address.address, address.network, address.token);
-      router.push(`/rewards-injector/${address.address}`);
-    },
-    [router],
-  );
-
-  const fetchInjectorData = useCallback(
-    async (address: string, network: string, token: string) => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `/api/injector?address=${address}&network=${network}&token=${token}`,
-        );
-        const data = await response.json();
-        setTokenName(data.tokenInfo.name);
-        setTokenSymbol(data.tokenInfo.symbol);
-        setGauges(data.gauges);
-        setContractBalance(data.contractBalance);
-      } catch (error) {
-        console.error("Error fetching injector data:", error);
-      }
-      setIsLoading(false);
-    },
-    [],
-  );
+  }, [selectedAddress, injectorData]);
 
   const loadAddresses = useCallback(() => {
     let allAddressesWithOptions = [];
@@ -153,21 +127,6 @@ function RewardsInjector({
     loadAddresses();
   }, [loadAddresses]);
 
-  useEffect(() => {
-    const addressFromUrl = pathname.split("/").pop();
-    if (addressFromUrl && addresses.length > 0) {
-      const matchingAddress = addresses.find(
-        (addr) => addr.address.toLowerCase() === addressFromUrl.toLowerCase(),
-      );
-      if (matchingAddress) {
-        fetchInjectorData(
-          matchingAddress.address,
-          matchingAddress.network,
-          matchingAddress.token,
-        );
-      }
-    }
-  }, [addresses, pathname]);
 
   const calculateDistributionAmounts = () => {
     let total = 0;
@@ -264,7 +223,7 @@ function RewardsInjector({
               {addresses.map((address) => (
                 <MenuItem
                   key={address.network + address.token}
-                  onClick={() => handleAddressSelect(address)}
+                  onClick={() => onAddressSelect(address)}
                   w="100%"
                 >
                   <Flex alignItems="center" w="100%">
