@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -30,29 +30,15 @@ import {
   UnorderedList,
   useMediaQuery,
 } from "@chakra-ui/react";
-import {
-  ChevronDownIcon,
-  ExternalLinkIcon,
-  WarningIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { networks } from "@/constants/constants";
 import {
   RewardsInjectorData,
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
-import {
-  fetchAddressBook,
-  getCategoryData,
-  getNetworks,
-} from "@/lib/data/maxis/addressBook";
-import { AddressBook } from "@/types/interfaces";
-import { css } from "@emotion/react";
-
-type AddressOption = {
-  network: string;
-  address: string;
-  token: string;
-};
+import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import { AddressBook, AddressOption } from "@/types/interfaces";
+import { usePathname, useRouter } from "next/navigation";
 
 type Recipient = {
   gaugeAddress: string;
@@ -65,6 +51,10 @@ type Recipient = {
 
 type RewardsInjectorProps = {
   addressBook: AddressBook;
+  selectedAddress: AddressOption | null;
+  onAddressSelect: (address: AddressOption) => void;
+  injectorData: any; // Replace 'any' with a proper type if available
+  isLoading: boolean;
 };
 
 const formatTokenName = (token: string) => {
@@ -78,92 +68,65 @@ const formatTokenName = (token: string) => {
     .join(" ");
 };
 
-function RewardsInjector({ addressBook }: RewardsInjectorProps) {
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(
-    null,
-  );
+function RewardsInjector({
+                           addressBook,
+                           selectedAddress,
+                           onAddressSelect,
+                           injectorData,
+                           isLoading
+                         }: RewardsInjectorProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isV2, setIsV2] = useState(false);
   const [tokenName, setTokenName] = useState("");
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
+  const [addresses, setAddresses] = useState<AddressOption[]>([]);
 
   const handleVersionSwitch = () => {
     setIsV2(!isV2);
-    setSelectedAddress(null);
     setGauges([]);
   };
 
   useEffect(() => {
-    if (selectedAddress) {
-      fetchInjectorData(
-        selectedAddress.address,
-        selectedAddress.network,
-        selectedAddress.token,
-      );
+    if (selectedAddress && injectorData) {
+      setTokenName(injectorData.tokenInfo.name);
+      setTokenSymbol(injectorData.tokenInfo.symbol);
+      setGauges(injectorData.gauges);
+      setContractBalance(injectorData.contractBalance);
     }
-  }, [selectedAddress]);
+  }, [selectedAddress, injectorData]);
 
-  const handleAddressSelect = (address: AddressOption) => {
-    setSelectedAddress(address);
-  };
+  const loadAddresses = useCallback(() => {
+    let allAddressesWithOptions = [];
 
-  async function fetchInjectorData(
-    address: string,
-    network: string,
-    token: string,
-  ) {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/injector?address=${address}&network=${network}&token=${token}`,
-      );
-      const data = await response.json();
-      setTokenName(data.tokenInfo.name);
-      setTokenSymbol(data.tokenInfo.symbol);
-      setGauges(data.gauges);
-      setContractBalance(data.contractBalance);
-    } catch (error) {
-      console.error("Error fetching injector data:", error);
-    }
-    setIsLoading(false);
-  }
-
-  useEffect(() => {
-    const loadAddresses = () => {
-      let allAddressesWithOptions = [];
-
-      const networks = getNetworks(addressBook);
-      for (const network of networks) {
-        const maxiKeepers = getCategoryData(
-          addressBook,
-          network,
-          "maxiKeepers",
-        );
-        if (maxiKeepers) {
-          const injectors = isV2
-            ? maxiKeepers.gaugeRewardsInjectorsV2
-            : maxiKeepers.gaugeRewardsInjectors;
-          if (injectors) {
-            for (const [token, address] of Object.entries(injectors)) {
-              allAddressesWithOptions.push({
-                network,
-                address,
-                token,
-              });
-            }
+    const networks = getNetworks(addressBook);
+    for (const network of networks) {
+      const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
+      if (maxiKeepers) {
+        const injectors = isV2
+          ? maxiKeepers.gaugeRewardsInjectorsV2
+          : maxiKeepers.gaugeRewardsInjectors;
+        if (injectors) {
+          for (const [token, address] of Object.entries(injectors)) {
+            allAddressesWithOptions.push({
+              network,
+              address,
+              token,
+            });
           }
         }
       }
-
-      setAddresses(allAddressesWithOptions);
-    };
-
-    loadAddresses();
+    }
+    setAddresses(allAddressesWithOptions);
   }, [addressBook, isV2]);
+
+  useEffect(() => {
+    loadAddresses();
+  }, [loadAddresses]);
+
 
   const calculateDistributionAmounts = () => {
     let total = 0;
@@ -260,7 +223,7 @@ function RewardsInjector({ addressBook }: RewardsInjectorProps) {
               {addresses.map((address) => (
                 <MenuItem
                   key={address.network + address.token}
-                  onClick={() => handleAddressSelect(address)}
+                  onClick={() => onAddressSelect(address)}
                   w="100%"
                 >
                   <Flex alignItems="center" w="100%">
