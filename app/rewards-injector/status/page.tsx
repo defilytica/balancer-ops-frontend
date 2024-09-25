@@ -42,7 +42,7 @@ const RewardsInjectorPage = () => {
               : 0;
 
           const incorrectlySetupGauges = injector.gauges.filter(
-            (gauge) => !gauge.isRewardTokenSetup,
+            (gauge : any) => !gauge.isRewardTokenSetup,
           );
 
           return {
