@@ -70,7 +70,7 @@ const RewardsInjectorPage = () => {
         });
 
         setInjectorsData(sortedData);
-      } catch (err) {
+      } catch (err : any) {
         setError(err.message);
         toast({
           title: "Error fetching data",
