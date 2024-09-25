@@ -14,7 +14,7 @@ import {
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
 
-const CACHE_DURATION = 60 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_DURATION = 1440 * 60 * 1000; // 1 day in milliseconds
 
 export async function GET(request: NextRequest) {
   try {
