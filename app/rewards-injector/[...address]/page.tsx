@@ -13,7 +13,7 @@ export default async function RewardsInjectorPage({
 
   return (
     <Suspense fallback={<Skeleton w="full" h="500px" />}>
-      <RewardsInjectorContainer addressBook={addressBook} />
+      <RewardsInjectorContainer addressBook={addressBook} isViewer={true} />
     </Suspense>
   );
 }

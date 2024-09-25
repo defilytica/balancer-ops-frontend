@@ -8,7 +8,7 @@ export default async function RewardsInjectorPage() {
 
   return (
     <Suspense fallback={<Skeleton w="full" h="500px" />}>
-      <RewardsInjectorContainer addressBook={addressBook} isViewer={true} />
+      <RewardsInjectorContainer addressBook={addressBook} isViewer={false} />
     </Suspense>
   );
 }

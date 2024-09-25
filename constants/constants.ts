@@ -77,6 +77,15 @@ export const PAYLOAD_OPTIONS = [
       "Configure the swap fee setting on a pool that have swap fee settings delegated to the DAO.",
     icon: TbSettingsDollar,
   },
+  {
+    href: "/payload-builder/injector-configurator",
+    key: "injector-configurator",
+    label: "Configure Rewards Injectors",
+    button_label: "Configure rewards",
+    description:
+      "Configure a rewards injector with a new token emission schedule.",
+    icon: TbSettingsDollar,
+  },
 ];
 
 export const REPO_OPTIONS = [
@@ -109,6 +118,10 @@ export const PAYLOAD_TYPES = {
   "set-swapfee": {
     branchNamePlaceholder: "feature/set-swapfee",
     prNamePlaceholder: "Set Swap Fee on Pool XYZ",
+  },
+  "injector-schedule": {
+    branchNamePlaceholder: "feature/set-injector",
+    prNamePlaceholder: "Program rewards injector XYZ",
   },
 };
 

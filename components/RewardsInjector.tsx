@@ -39,6 +39,7 @@ import {
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
 import { usePathname, useRouter } from "next/navigation";
+import { formatTokenName } from "@/lib/utils/formatTokenName";
 
 type Recipient = {
   gaugeAddress: string;
@@ -53,19 +54,8 @@ type RewardsInjectorProps = {
   addressBook: AddressBook;
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
-  injectorData: any; // Replace 'any' with a proper type if available
+  injectorData: any;
   isLoading: boolean;
-};
-
-const formatTokenName = (token: string) => {
-  return token
-    .split("_")
-    .map((word, index, array) =>
-      index === array.length - 1
-        ? word.charAt(0).toUpperCase() + word.slice(1)
-        : word.toUpperCase(),
-    )
-    .join(" ");
 };
 
 function RewardsInjector({
@@ -75,11 +65,8 @@ function RewardsInjector({
   injectorData,
   isLoading,
 }: RewardsInjectorProps) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [isV2, setIsV2] = useState(false);
-  const [tokenName, setTokenName] = useState("");
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
@@ -92,7 +79,6 @@ function RewardsInjector({
 
   useEffect(() => {
     if (selectedAddress && injectorData) {
-      setTokenName(injectorData.tokenInfo.name);
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);

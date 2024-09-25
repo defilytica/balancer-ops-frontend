@@ -14,8 +14,3 @@ export interface Pool {
     poolId: string;
   };
 }
-
-export interface FormattedAttribute {
-  title: string;
-  value: string;
-}

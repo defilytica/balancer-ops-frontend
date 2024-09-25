@@ -12,7 +12,7 @@ import {
   Badge,
 } from "@chakra-ui/react";
 
-interface Transaction {
+export interface Transaction {
   to: string;
   value: string;
   data: string | null;
@@ -25,7 +25,7 @@ interface Transaction {
   contractInputsValues?: Record<string, string>;
 }
 
-interface BatchFile {
+export interface BatchFile {
   version: string;
   chainId: string;
   createdAt: number;
@@ -40,7 +40,7 @@ interface BatchFile {
   transactions: Transaction[];
 }
 
-interface SimulationResult {
+export interface SimulationResult {
   url: string;
   success: string;
 }

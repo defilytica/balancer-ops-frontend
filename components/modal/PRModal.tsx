@@ -53,6 +53,7 @@ const PR_TYPE_PATHS = {
   "add-reward-to-gauge": "MaxiOps/add_rewards/[chain]/",
   "ccip-bridge": "MaxiOps/CCTP_Bridge/",
   "set-swapfee": "MaxiOps/PoolSwapFeeChanges/",
+  "injector-schedule": "MaxiOps/00partnerLM/",
 };
 
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
