@@ -92,7 +92,7 @@ const RewardsInjectorPage = () => {
   };
 
   const filteredInjectors = hideCompleted
-    ? injectorsData.filter((injector) => !injector.isCompleted)
+    ? injectorsData.filter((injector : any) => !injector.isCompleted)
     : injectorsData;
 
   if (isLoading) {
