@@ -32,7 +32,7 @@ const RewardsInjectorPage = () => {
         }
         const data = await response.json();
 
-        const processedData = data.map((injector) => {
+        const processedData = data.map((injector : any) => {
           const { total, distributed, remaining } =
             calculateDistributionAmounts(injector.gauges);
 
