@@ -21,17 +21,18 @@ model User {
 }
 
 model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,4 +58,39 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model Injector {
+  id              String     @id @default(cuid())
+  address         String
+  network         String
+  tokenInfo       TokenInfo?
+  contractBalance String
+  token           String
+  gauges          Gauge[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([network, address])
+}
+
+model TokenInfo {
+  id         String   @id @default(cuid())
+  name       String
+  symbol     String
+  injector   Injector @relation(fields: [injectorId], references: [id])
+  injectorId String   @unique
+}
+
+model Gauge {
+  id                     String   @id @default(cuid())
+  gaugeAddress           String
+  poolName               String
+  amountPerPeriod        String
+  maxPeriods             String
+  periodNumber           String
+  lastInjectionTimeStamp String
+  isRewardTokenSetup     Boolean
+  injector               Injector @relation(fields: [injectorId], references: [id])
+  injectorId             String
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@/auth";
+import { decrypt } from "@/lib/config/encrypt";
 
 const prisma = new PrismaClient();
 
@@ -54,7 +55,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const githubToken = user.accounts[0].access_token;
+    const githubTokenEncrypted = user.accounts[0].access_token;
+    const githubToken = decrypt(githubTokenEncrypted);
+    console.log(githubToken);
 
     const octokit = new Octokit({ auth: githubToken });
 

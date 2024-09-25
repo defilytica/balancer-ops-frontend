@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { FiHome } from "react-icons/fi";
 import { SiChainlink } from "react-icons/si";
-import { RiContractLine } from "react-icons/ri";
+import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin } from "react-icons/tb";
 import NavItem from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
@@ -40,6 +40,12 @@ const LinkItems = [
     icon: RiContractLine,
     target: "/rewards-injector",
     description: "View and Configure Gauge Rewards injectors",
+  },
+  {
+    name: "Injector Status",
+    icon: RiAlertLine,
+    target: "/rewards-injector/status",
+    description: "Check Injector status",
   },
   {
     name: "Automation Catalog",
