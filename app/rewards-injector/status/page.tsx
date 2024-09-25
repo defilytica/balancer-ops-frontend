@@ -56,7 +56,7 @@ const RewardsInjectorPage = () => {
           };
         });
 
-        const sortedData = processedData.sort((a, b) => {
+        const sortedData = processedData.sort((a : any, b : any) => {
           const aHasIssues =
             a.additionalTokensRequired > 0 ||
             a.incorrectlySetupGauges.length > 0;
