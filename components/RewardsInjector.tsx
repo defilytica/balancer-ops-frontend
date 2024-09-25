@@ -69,12 +69,12 @@ const formatTokenName = (token: string) => {
 };
 
 function RewardsInjector({
-                           addressBook,
-                           selectedAddress,
-                           onAddressSelect,
-                           injectorData,
-                           isLoading
-                         }: RewardsInjectorProps) {
+  addressBook,
+  selectedAddress,
+  onAddressSelect,
+  injectorData,
+  isLoading,
+}: RewardsInjectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
@@ -126,7 +126,6 @@ function RewardsInjector({
   useEffect(() => {
     loadAddresses();
   }, [loadAddresses]);
-
 
   const calculateDistributionAmounts = () => {
     let total = 0;

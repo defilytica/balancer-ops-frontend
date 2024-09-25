@@ -12,7 +12,8 @@ import {
   useColorModeValue,
   IconButton,
   Image,
-  Progress, Link,
+  Progress,
+  Link,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import {
@@ -117,7 +118,11 @@ const RewardsInjectorCard = ({ data, networks }) => {
                 correctly set up. This may result in rewards not being
                 distributed properly.
               </AlertDescription>
-              <Link href={`rewards-injector/${address}`} mt={2} fontWeight="bold">
+              <Link
+                href={`rewards-injector/${address}`}
+                mt={2}
+                fontWeight="bold"
+              >
                 More Information
               </Link>
             </Box>

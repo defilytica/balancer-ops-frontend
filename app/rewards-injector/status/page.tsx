@@ -32,7 +32,7 @@ const RewardsInjectorPage = () => {
         }
         const data = await response.json();
 
-        const processedData = data.map((injector : any) => {
+        const processedData = data.map((injector: any) => {
           const { total, distributed, remaining } =
             calculateDistributionAmounts(injector.gauges);
 
@@ -42,7 +42,7 @@ const RewardsInjectorPage = () => {
               : 0;
 
           const incorrectlySetupGauges = injector.gauges.filter(
-            (gauge : any) => !gauge.isRewardTokenSetup,
+            (gauge: any) => !gauge.isRewardTokenSetup,
           );
 
           return {
@@ -56,7 +56,7 @@ const RewardsInjectorPage = () => {
           };
         });
 
-        const sortedData = processedData.sort((a : any, b : any) => {
+        const sortedData = processedData.sort((a: any, b: any) => {
           const aHasIssues =
             a.additionalTokensRequired > 0 ||
             a.incorrectlySetupGauges.length > 0;
@@ -70,7 +70,7 @@ const RewardsInjectorPage = () => {
         });
 
         setInjectorsData(sortedData);
-      } catch (err : any) {
+      } catch (err: any) {
         setError(err.message);
         toast({
           title: "Error fetching data",
@@ -92,7 +92,7 @@ const RewardsInjectorPage = () => {
   };
 
   const filteredInjectors = hideCompleted
-    ? injectorsData.filter((injector : any) => !injector.isCompleted)
+    ? injectorsData.filter((injector: any) => !injector.isCompleted)
     : injectorsData;
 
   if (isLoading) {
@@ -125,7 +125,7 @@ const RewardsInjectorPage = () => {
           </Button>
         </HStack>
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-          {filteredInjectors.map((injector : any) => (
+          {filteredInjectors.map((injector: any) => (
             <RewardsInjectorCard
               key={injector.address}
               data={injector}
