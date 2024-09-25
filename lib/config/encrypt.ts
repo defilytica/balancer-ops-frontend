@@ -1,19 +1,19 @@
 import crypto from "crypto";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; //64-character hex string
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string; // 64-character hex string
 const ALGORITHM = "aes-256-cbc";
 const IV_LENGTH = 16;
 
-function encrypt(text) {
+function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
   const key = Buffer.from(ENCRYPTION_KEY, "hex");
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
+  return `${iv.toString("hex")}:${encrypted.toString("hex")}`;
 }
 
-function decrypt(text) {
+function decrypt(text: string): string | null {
   try {
     console.log("Attempting to decrypt:", text);
     const textParts = text.split(":");
