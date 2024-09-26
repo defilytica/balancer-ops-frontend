@@ -127,7 +127,7 @@ const RewardsInjectorPage = () => {
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
           {filteredInjectors.map((injector: any) => (
             <RewardsInjectorCard
-              key={injector.address}
+              key={injector.address + injector.network}
               data={injector}
               networks={networks}
             />
