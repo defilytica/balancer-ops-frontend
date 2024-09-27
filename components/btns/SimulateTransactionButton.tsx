@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import {
   Button,
   Box,
@@ -77,11 +77,23 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({
     } catch (error) {
       console.error("Simulation failed:", error);
       setSimulationResult(null); // Ensure simulationResult is null on error
+      let errorMessage = "There was an error simulating the transaction.";
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ error?: string }>;
+        if (axiosError.response?.data?.error) {
+          errorMessage = axiosError.response.data.error;
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Simulation Failed",
-        description: "There was an error simulating the transaction.",
+        description: errorMessage,
         status: "error",
-        duration: 5000,
+        duration: 10000,
         isClosable: true,
       });
     } finally {

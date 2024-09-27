@@ -489,7 +489,7 @@ export function generateInjectorSchedulePayload({
 
   const payload: BatchFile = {
     version: "1.0",
-    chainId,
+    chainId: safeChainIDs[chainId as NetworkType] || "1",
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
