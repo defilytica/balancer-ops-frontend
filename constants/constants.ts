@@ -11,6 +11,18 @@ import zkevmLogo from "@/public/imgs/Polygon-zkEVM.png";
 import { NetworkInfo } from "@/types/types";
 import { TbSettingsDollar } from "react-icons/tb";
 
+export const tokenDecimals: Record<string, number> = {
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
+  "0x2791bca1f2de4661ed88a30c99a7a9449aa84174": 6, // polygon
+  "0xaf88d065e77c8cc2239327c5edb3a432268e5831": 6, // arbitrum
+  "0xddafbb505ad214d7b80b1f830fccc89b60fb7a83": 6, // gnosis
+  "0xa8ce8aee21bc2a48a5ef670afcc9274c7bbbc035": 6, // zkevm
+  "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e": 6, // avalanche
+  "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 6, // base
+  "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6, // base USDbC
+  "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
+};
+
 export const PAYLOAD_OPTIONS = [
   {
     href: "/payload-builder/create-payment",
