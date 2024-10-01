@@ -38,8 +38,8 @@ import {
 } from "@/components/tables/RewardsInjectorTable";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
-import { usePathname, useRouter } from "next/navigation";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
+import { TbSettingsDollar } from "react-icons/tb";
 
 type Recipient = {
   gaugeAddress: string;
@@ -78,7 +78,12 @@ function RewardsInjector({
   };
 
   useEffect(() => {
-    if (selectedAddress && injectorData) {
+    if (
+      selectedAddress &&
+      injectorData &&
+      injectorData.tokenInfo &&
+      injectorData.gauges
+    ) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
@@ -322,7 +327,7 @@ function RewardsInjector({
                   {incorrectlySetupGauges.map((gauge, index) => (
                     <ListItem key={index}>
                       <Link
-                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${gauge.gaugeAddress}`}
+                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}`+ 'address/' + gauge.gaugeAddress}
                         isExternal
                         color="blue.500"
                       >
@@ -353,6 +358,7 @@ function RewardsInjector({
             <Spinner size="xl" />
           </Flex>
         ) : (
+            <>
           <RewardsInjectorTable
             data={gauges}
             tokenSymbol={tokenSymbol}
@@ -360,6 +366,16 @@ function RewardsInjector({
               selectedAddress ? selectedAddress.network.toLowerCase() : ""
             }
           />
+              {selectedAddress && (
+                  <Box mt={2}>
+            <Link href={'/payload-builder/injector-configurator/' + selectedAddress?.address}>
+              <Button variant="secondary" >
+                {'Modify configuration'}
+              </Button>
+            </Link>
+                  </Box>
+              )}
+            </>
         )}
       </>
     </Container>
