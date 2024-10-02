@@ -16,7 +16,7 @@ import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
 import { calculateDistributionAmounts } from "@/lib/data/injector/helpers";
 
-const RewardsInjectorPage = () => {
+const RewardsInjectorStatusPage = () => {
   const [injectorsData, setInjectorsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -138,4 +138,4 @@ const RewardsInjectorPage = () => {
   );
 };
 
-export default RewardsInjectorPage;
+export default RewardsInjectorStatusPage;

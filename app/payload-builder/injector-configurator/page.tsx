@@ -3,7 +3,7 @@ import { Skeleton } from "@chakra-ui/skeleton";
 import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
 import RewardsInjectorContainer from "@/components/RewardsInjectorContainer";
 
-export default async function RewardsInjectorPage() {
+export default async function InjectorConfigurator() {
   const addressBook = await fetchAddressBook();
 
   return (
