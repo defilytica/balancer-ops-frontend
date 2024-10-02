@@ -13,7 +13,7 @@ import {
   getCategoryData,
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
-import {RateLimiter} from "@/lib/services/rateLimiter";
+import { RateLimiter } from "@/lib/services/rateLimiter";
 
 const CACHE_DURATION = 1440 * 60 * 1000; // 1 day in milliseconds
 

@@ -10,12 +10,14 @@ import {
   Container,
   Button,
   VStack,
-  HStack, IconButton, Tooltip,
+  HStack,
+  IconButton,
+  Tooltip,
 } from "@chakra-ui/react";
 import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
 import { calculateDistributionAmounts } from "@/lib/data/injector/helpers";
-import {RefreshCw} from "react-feather";
+import { RefreshCw } from "react-feather";
 
 const RewardsInjectorStatusPage = () => {
   const [injectorsData, setInjectorsData] = useState([]);
@@ -29,7 +31,7 @@ const RewardsInjectorStatusPage = () => {
     try {
       const response = await fetch("/api/injector/all");
       if (response.status === 429) {
-          throw new Error(`Too many requests. Please try again in later.`);
+        throw new Error(`Too many requests. Please try again in later.`);
       }
 
       if (!response.ok) {
@@ -37,17 +39,18 @@ const RewardsInjectorStatusPage = () => {
       }
       const data = await response.json();
 
-      const processedData = data.map((injector) => {
-        const { total, distributed, remaining } =
-            calculateDistributionAmounts(injector.gauges);
+      const processedData = data.map((injector: any) => {
+        const { total, distributed, remaining } = calculateDistributionAmounts(
+          injector.gauges,
+        );
 
         const additionalTokensRequired =
-            remaining > injector.contractBalance
-                ? remaining - injector.contractBalance
-                : 0;
+          remaining > injector.contractBalance
+            ? remaining - injector.contractBalance
+            : 0;
 
         const incorrectlySetupGauges = injector.gauges.filter(
-            (gauge) => !gauge.isRewardTokenSetup
+          (gauge: any) => !gauge.isRewardTokenSetup,
         );
 
         return {
@@ -61,13 +64,11 @@ const RewardsInjectorStatusPage = () => {
         };
       });
 
-      const sortedData = processedData.sort((a, b) => {
+      const sortedData = processedData.sort((a: any, b: any) => {
         const aHasIssues =
-            a.additionalTokensRequired > 0 ||
-            a.incorrectlySetupGauges.length > 0;
+          a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
         const bHasIssues =
-            b.additionalTokensRequired > 0 ||
-            b.incorrectlySetupGauges.length > 0;
+          b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
 
         if (aHasIssues && !bHasIssues) return -1;
         if (!aHasIssues && bHasIssues) return 1;
@@ -75,7 +76,7 @@ const RewardsInjectorStatusPage = () => {
       });
 
       setInjectorsData(sortedData);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       toast({
         title: "Error fetching data",
@@ -118,10 +119,10 @@ const RewardsInjectorStatusPage = () => {
           </Heading>
           <Tooltip label="The data is refreshed every 24 hours, if you want more up-to-date data you can fetch it manually.">
             <IconButton
-                aria-label="Refresh data"
-                icon={<RefreshCw />}
-                onClick={handleRefresh}
-                isDisabled={isLoading}
+              aria-label="Refresh data"
+              icon={<RefreshCw />}
+              onClick={handleRefresh}
+              isDisabled={isLoading}
             />
           </Tooltip>
         </HStack>
