@@ -3,10 +3,23 @@ import { Octokit } from "@octokit/rest";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@/auth";
 import { decrypt } from "@/lib/config/encrypt";
+import { RateLimiter } from "@/lib/services/rateLimiter";
 
 const prisma = new PrismaClient();
 
+const rateLimiter = new RateLimiter({
+  windowSize: 3600 * 1000, // 1 hour
+  maxRequests: 2,
+});
+
 export async function POST(req: NextRequest) {
+  const ip = req.ip ?? req.headers.get("X-Forwarded-For") ?? "unknown";
+  const isRateLimited = rateLimiter.limit(ip);
+
+  if (isRateLimited) {
+    return NextResponse.json({ error: "rate limited" }, { status: 429 });
+  }
+
   const session = await auth();
   if (!session || !session.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

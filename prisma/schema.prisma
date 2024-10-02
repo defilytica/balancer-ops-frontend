@@ -87,6 +87,7 @@ model Gauge {
   gaugeAddress           String
   poolName               String
   amountPerPeriod        String
+  rawAmountPerPeriod     String
   maxPeriods             String
   periodNumber           String
   lastInjectionTimeStamp String

@@ -327,7 +327,11 @@ function RewardsInjector({
                   {incorrectlySetupGauges.map((gauge, index) => (
                     <ListItem key={index}>
                       <Link
-                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}`+ 'address/' + gauge.gaugeAddress}
+                        href={
+                          `${networks[selectedAddress.network.toLowerCase()].explorer}` +
+                          "address/" +
+                          gauge.gaugeAddress
+                        }
                         isExternal
                         color="blue.500"
                       >
@@ -358,24 +362,27 @@ function RewardsInjector({
             <Spinner size="xl" />
           </Flex>
         ) : (
-            <>
-          <RewardsInjectorTable
-            data={gauges}
-            tokenSymbol={tokenSymbol}
-            network={
-              selectedAddress ? selectedAddress.network.toLowerCase() : ""
-            }
-          />
-              {selectedAddress && (
-                  <Box mt={2}>
-            <Link href={'/payload-builder/injector-configurator/' + selectedAddress?.address}>
-              <Button variant="secondary" >
-                {'Modify configuration'}
-              </Button>
-            </Link>
-                  </Box>
-              )}
-            </>
+          <>
+            <RewardsInjectorTable
+              data={gauges}
+              tokenSymbol={tokenSymbol}
+              network={
+                selectedAddress ? selectedAddress.network.toLowerCase() : ""
+              }
+            />
+            {selectedAddress && (
+              <Box mt={2}>
+                <Link
+                  href={
+                    "/payload-builder/injector-configurator/" +
+                    selectedAddress?.address
+                  }
+                >
+                  <Button variant="secondary">{"Modify configuration"}</Button>
+                </Link>
+              </Box>
+            )}
+          </>
         )}
       </>
     </Container>

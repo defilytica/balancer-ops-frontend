@@ -13,10 +13,23 @@ import {
   getCategoryData,
   getNetworks,
 } from "@/lib/data/maxis/addressBook";
+import {RateLimiter} from "@/lib/services/rateLimiter";
 
 const CACHE_DURATION = 1440 * 60 * 1000; // 1 day in milliseconds
 
+const rateLimiter = new RateLimiter({
+  windowSize: 3600 * 1000, // 1 hour
+  maxRequests: 1,
+});
+
 export async function GET(request: NextRequest) {
+  const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
+  const isRateLimited = rateLimiter.limit(ip);
+
+  if (isRateLimited) {
+    return NextResponse.json({ error: "rate limited" }, { status: 429 });
+  }
+
   try {
     const addressBook = await fetchAddressBook();
     const networks = getNetworks(addressBook);
