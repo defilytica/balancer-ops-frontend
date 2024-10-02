@@ -28,6 +28,7 @@ export interface RewardsInjectorData {
   gaugeAddress: string;
   poolName: string;
   amountPerPeriod: string;
+  rawAmountPerPeriod: string;
   periodNumber: string;
   maxPeriods: string;
   isRewardTokenSetup: boolean;

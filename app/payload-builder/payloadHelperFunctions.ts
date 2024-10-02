@@ -1,4 +1,8 @@
 import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import {
+  BatchFile,
+  Transaction,
+} from "@/components/btns/SimulateTransactionButton";
 
 export interface EnableGaugeInput {
   gauge: string;
@@ -407,6 +411,98 @@ export function generateAddRewardPayload(inputs: AddRewardInput[]) {
     },
     transactions: [...transactions], // Using array notation to handle multiple transactions
   };
+}
+
+// --- Injector configurator ---
+export interface InjectorScheduleInput {
+  gaugeAddress: string;
+  amountPerPeriod: string;
+  rawAmountPerPeriod: string;
+  maxPeriods: string;
+}
+
+export interface PayloadGeneratorInput {
+  injectorType: "v1" | "v2";
+  injectorAddress: string;
+  chainId: string;
+  safeAddress: string;
+  scheduleInputs: InjectorScheduleInput[];
+}
+
+export function generateInjectorSchedulePayload({
+  injectorType,
+  injectorAddress,
+  chainId,
+  safeAddress,
+  scheduleInputs,
+}: PayloadGeneratorInput): BatchFile {
+  let contractMethod;
+  if (injectorType === "v1") {
+    contractMethod = {
+      inputs: [
+        {
+          name: "gaugeAddresses",
+          type: "address[]",
+          internalType: "address[]",
+        },
+        {
+          name: "amountsPerPeriod",
+          type: "uint256[]",
+          internalType: "uint256[]",
+        },
+        { name: "maxPeriods", type: "uint8[]", internalType: "uint8[]" },
+      ],
+      name: "setRecipientList",
+      payable: false,
+    };
+  } else {
+    contractMethod = {
+      inputs: [
+        {
+          name: "gaugeAddresses",
+          type: "address[]",
+          internalType: "address[]",
+        },
+        {
+          name: "amountsPerPeriod",
+          type: "uint256[]",
+          internalType: "uint256[]",
+        },
+        { name: "maxPeriods", type: "uint32[]", internalType: "uint32[]" },
+      ],
+      name: "setMany",
+      payable: false,
+    };
+  }
+
+  const transaction: Transaction = {
+    to: injectorAddress,
+    value: "0",
+    data: null,
+    contractMethod,
+    contractInputsValues: {
+      gaugeAddresses: `[${scheduleInputs.map((input) => input.gaugeAddress).join(", ")}]`,
+      amountsPerPeriod: `[${scheduleInputs.map((input) => input.rawAmountPerPeriod).join(", ")}]`,
+      maxPeriods: `[${scheduleInputs.map((input) => input.maxPeriods).join(", ")}]`,
+    },
+  };
+
+  const payload: BatchFile = {
+    version: "1.0",
+    chainId: safeChainIDs[chainId as NetworkType] || "1",
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: "",
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: safeAddress,
+      createdFromOwnerAddress: "",
+      checksum: "0x" + Math.random().toString(16).substring(2, 64),
+    },
+    transactions: [transaction],
+  };
+
+  return payload;
 }
 
 export function generateHumanReadableAddReward(

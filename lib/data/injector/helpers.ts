@@ -89,6 +89,7 @@ export async function fetchGaugeInfo(
         info.accountInfo.amountPerPeriod,
         injectorTokenAddress,
       ),
+      rawAmountPerPeriod: info.accountInfo.amountPerPeriod.toString(),
       maxPeriods: info.accountInfo.maxPeriods.toString(),
       periodNumber: info.accountInfo.periodNumber.toString(),
       lastInjectionTimeStamp:

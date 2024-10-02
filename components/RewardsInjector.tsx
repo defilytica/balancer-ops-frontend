@@ -38,7 +38,8 @@ import {
 } from "@/components/tables/RewardsInjectorTable";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
-import { usePathname, useRouter } from "next/navigation";
+import { formatTokenName } from "@/lib/utils/formatTokenName";
+import { TbSettingsDollar } from "react-icons/tb";
 
 type Recipient = {
   gaugeAddress: string;
@@ -53,19 +54,8 @@ type RewardsInjectorProps = {
   addressBook: AddressBook;
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
-  injectorData: any; // Replace 'any' with a proper type if available
+  injectorData: any;
   isLoading: boolean;
-};
-
-const formatTokenName = (token: string) => {
-  return token
-    .split("_")
-    .map((word, index, array) =>
-      index === array.length - 1
-        ? word.charAt(0).toUpperCase() + word.slice(1)
-        : word.toUpperCase(),
-    )
-    .join(" ");
 };
 
 function RewardsInjector({
@@ -75,11 +65,8 @@ function RewardsInjector({
   injectorData,
   isLoading,
 }: RewardsInjectorProps) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [isV2, setIsV2] = useState(false);
-  const [tokenName, setTokenName] = useState("");
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
@@ -91,8 +78,12 @@ function RewardsInjector({
   };
 
   useEffect(() => {
-    if (selectedAddress && injectorData) {
-      setTokenName(injectorData.tokenInfo.name);
+    if (
+      selectedAddress &&
+      injectorData &&
+      injectorData.tokenInfo &&
+      injectorData.gauges
+    ) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
@@ -336,7 +327,7 @@ function RewardsInjector({
                   {incorrectlySetupGauges.map((gauge, index) => (
                     <ListItem key={index}>
                       <Link
-                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${gauge.gaugeAddress}`}
+                        href={`${networks[selectedAddress.network.toLowerCase()].explorer}`+ 'address/' + gauge.gaugeAddress}
                         isExternal
                         color="blue.500"
                       >
@@ -367,6 +358,7 @@ function RewardsInjector({
             <Spinner size="xl" />
           </Flex>
         ) : (
+            <>
           <RewardsInjectorTable
             data={gauges}
             tokenSymbol={tokenSymbol}
@@ -374,6 +366,16 @@ function RewardsInjector({
               selectedAddress ? selectedAddress.network.toLowerCase() : ""
             }
           />
+              {selectedAddress && (
+                  <Box mt={2}>
+            <Link href={'/payload-builder/injector-configurator/' + selectedAddress?.address}>
+              <Button variant="secondary" >
+                {'Modify configuration'}
+              </Button>
+            </Link>
+                  </Box>
+              )}
+            </>
         )}
       </>
     </Container>

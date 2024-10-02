@@ -3,7 +3,7 @@ import { Skeleton } from "@chakra-ui/skeleton";
 import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
 import RewardsInjectorContainer from "@/components/RewardsInjectorContainer";
 
-export default async function RewardsInjectorPage({
+export default async function RewardsInjectorDetailPage({
   params,
 }: {
   params: { address?: string[] };
@@ -13,7 +13,7 @@ export default async function RewardsInjectorPage({
 
   return (
     <Suspense fallback={<Skeleton w="full" h="500px" />}>
-      <RewardsInjectorContainer addressBook={addressBook} />
+      <RewardsInjectorContainer addressBook={addressBook} isViewer={true} />
     </Suspense>
   );
 }

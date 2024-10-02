@@ -5,19 +5,23 @@ import { useRouter, usePathname } from "next/navigation";
 import RewardsInjector from "./RewardsInjector";
 import { AddressBook, AddressOption } from "@/types/interfaces";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import RewardsInjectorConfigurator from "@/components/RewardsInjectorConfigurator";
 
 type RewardsInjectorContainerProps = {
   addressBook: AddressBook;
+  isViewer: boolean;
 };
 
 export default function RewardsInjectorContainer({
   addressBook,
+  isViewer,
 }: RewardsInjectorContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(
     null,
   );
+  const [selectedSafe, setSelectedSafe] = useState(String);
   const [injectorData, setInjectorData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,6 +45,26 @@ export default function RewardsInjectorContainer({
         }
       }
       return null;
+    },
+    [addressBook],
+  );
+
+  const findMultiSigForNetwork = useCallback(
+    (network: string) => {
+      const multisigs = getCategoryData(
+        addressBook,
+        network.toLowerCase(),
+        "multisigs",
+      );
+      if (multisigs && multisigs["lm"]) {
+        const lm = multisigs["lm"];
+        if (typeof lm === "string") {
+          return lm;
+        } else if (typeof lm === "object") {
+          return Object.values(lm)[0];
+        }
+      }
+      return "";
     },
     [addressBook],
   );
@@ -69,6 +93,7 @@ export default function RewardsInjectorContainer({
           matchingAddress.address !== selectedAddress.address)
       ) {
         setSelectedAddress(matchingAddress);
+        setSelectedSafe(findMultiSigForNetwork(matchingAddress.network));
         fetchInjectorData(matchingAddress);
       }
     }
@@ -82,15 +107,29 @@ export default function RewardsInjectorContainer({
 
   const handleAddressSelect = useCallback(
     (address: AddressOption) => {
-      router.push(`/rewards-injector/${address.address}`, { scroll: false });
+      isViewer
+        ? router.push(`/rewards-injector/${address.address}`, { scroll: false })
+        : router.push(
+            `/payload-builder/injector-configurator/${address.address}`,
+            { scroll: false },
+          );
     },
-    [router],
+    [router, isViewer],
   );
 
-  return (
+  return isViewer ? (
     <RewardsInjector
       addressBook={addressBook}
       selectedAddress={selectedAddress}
+      onAddressSelect={handleAddressSelect}
+      injectorData={injectorData}
+      isLoading={isLoading}
+    />
+  ) : (
+    <RewardsInjectorConfigurator
+      addressBook={addressBook}
+      selectedAddress={selectedAddress}
+      selectedSafe={selectedSafe}
       onAddressSelect={handleAddressSelect}
       injectorData={injectorData}
       isLoading={isLoading}
