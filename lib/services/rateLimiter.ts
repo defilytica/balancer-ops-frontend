@@ -1,34 +1,29 @@
 class RateLimiter {
-  windowStart: number;
   windowSize: number;
   maxRequests: number;
-  idToRequestCount: Map<string, number>;
+  idToRequests: Map<string, { count: number; timestamp: number }>;
 
   constructor(config: { windowSize: number; maxRequests: number }) {
-    this.windowStart = Date.now();
     this.windowSize = config.windowSize;
     this.maxRequests = config.maxRequests;
-    this.idToRequestCount = new Map<string, number>();
+    this.idToRequests = new Map<string, { count: number; timestamp: number }>();
   }
 
-  limit(id: string) {
+  limit(id: string): boolean {
     const now = Date.now();
+    const userRequests = this.idToRequests.get(id) || { count: 0, timestamp: now };
 
-    // Check and update current window
-    const isNewWindow = now - this.windowStart > this.windowSize;
-    if (isNewWindow) {
-      this.windowStart = now;
-      this.idToRequestCount.set(id, 0);
+    if (now - userRequests.timestamp > this.windowSize) {
+      // Reset if the window has passed
+      userRequests.count = 1;
+      userRequests.timestamp = now;
+    } else {
+      userRequests.count++;
     }
 
-    // Check and update current request limits
-    const currentRequestCount = this.idToRequestCount.get(id) ?? 0;
+    this.idToRequests.set(id, userRequests);
 
-    if (currentRequestCount >= this.maxRequests) return true;
-
-    this.idToRequestCount.set(id, currentRequestCount + 1);
-
-    return false;
+    return userRequests.count > this.maxRequests;
   }
 }
 
