@@ -24,6 +24,7 @@ export default function RewardsInjectorContainer({
   const [selectedSafe, setSelectedSafe] = useState(String);
   const [injectorData, setInjectorData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [owner, setOwner] = useState<string>('');
 
   const findAddressOption = useCallback(
     (address: string | undefined): AddressOption | null => {
@@ -77,6 +78,7 @@ export default function RewardsInjectorContainer({
       );
       const data = await response.json();
       setInjectorData(data);
+      setOwner(data.owner);
     } catch (error) {
       console.error("Error fetching injector data:", error);
     }
@@ -84,17 +86,18 @@ export default function RewardsInjectorContainer({
   }, []);
 
   useEffect(() => {
-    const addressFromPath = pathname.split("/").pop();
-    if (addressFromPath) {
-      const matchingAddress = findAddressOption(addressFromPath);
-      if (
-        matchingAddress &&
-        (!selectedAddress ||
-          matchingAddress.address !== selectedAddress.address)
-      ) {
-        setSelectedAddress(matchingAddress);
-        setSelectedSafe(findMultiSigForNetwork(matchingAddress.network));
-        fetchInjectorData(matchingAddress);
+    if (pathname) {
+      const addressFromPath = pathname.split("/").pop();
+      if (addressFromPath) {
+        const matchingAddress = findAddressOption(addressFromPath);
+        if (
+            matchingAddress &&
+            (!selectedAddress ||
+                matchingAddress.address !== selectedAddress.address)
+        ) {
+          setSelectedAddress(matchingAddress);
+          fetchInjectorData(matchingAddress);
+        }
       }
     }
   }, [
@@ -129,7 +132,7 @@ export default function RewardsInjectorContainer({
     <RewardsInjectorConfigurator
       addressBook={addressBook}
       selectedAddress={selectedAddress}
-      selectedSafe={selectedSafe}
+      selectedSafe={owner}
       onAddressSelect={handleAddressSelect}
       injectorData={injectorData}
       isLoading={isLoading}
