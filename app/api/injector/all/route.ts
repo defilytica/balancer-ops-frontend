@@ -24,10 +24,16 @@ const rateLimiter = new RateLimiter({
 
 export async function GET(request: NextRequest) {
   const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
-  const isRateLimited = rateLimiter.limit(ip);
+  const forceReload = request.nextUrl.searchParams.get('forceReload') === 'true';
 
-  if (isRateLimited) {
-    return NextResponse.json({ error: "rate limited" }, { status: 429 });
+  if (forceReload) {
+    const isRateLimited = rateLimiter.limit(ip);
+    if (isRateLimited) {
+      return NextResponse.json(
+          { error: "Rate limited for force reload" },
+          { status: 429 }
+      );
+    }
   }
 
   try {
@@ -55,8 +61,9 @@ export async function GET(request: NextRequest) {
             });
 
             const shouldFetchFreshData =
-              !cachedInjector ||
-              Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
+                forceReload ||
+                !cachedInjector ||
+                Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
 
             let injectorData;
 
@@ -65,10 +72,10 @@ export async function GET(request: NextRequest) {
               const freshData = await fetchFreshData(address, network);
               // Update the database with fresh data
               injectorData = await updateDatabase(
-                address,
-                network,
-                freshData,
-                token,
+                  address,
+                  network,
+                  freshData,
+                  token,
               );
             } else {
               injectorData = cachedInjector;
@@ -92,8 +99,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 },
+        { error: "An error occurred while fetching data" },
+        { status: 500 },
     );
   }
 }
@@ -173,6 +180,3 @@ async function updateDatabase(
     },
   });
 }
-
-// Existing helper functions (fetchTokenInfo, fetchGaugeInfo, etc.) go here...
-// Make sure to update them to return data in a format compatible with your Prisma schema
