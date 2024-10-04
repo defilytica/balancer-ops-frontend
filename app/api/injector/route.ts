@@ -1,10 +1,7 @@
-import { ethers, JsonRpcProvider } from "ethers";
+import { ethers } from "ethers";
 import { InjectorABIV1 } from "@/abi/InjectorV1";
-import { ERC20 } from "@/abi/erc20";
-import { poolsABI } from "@/abi/pool";
-import { gaugeABI } from "@/abi/gauge";
 import { NextRequest, NextResponse } from "next/server";
-import { networks, tokenDecimals } from "@/constants/constants";
+import { networks } from "@/constants/constants";
 import {
   fetchGaugeInfo,
   fetchTokenInfo,
@@ -29,9 +26,10 @@ export async function GET(request: NextRequest) {
   const contract = new ethers.Contract(address, InjectorABIV1, provider);
 
   try {
-    const [watchList, injectorTokenAddress] = await Promise.all([
+    const [watchList, injectorTokenAddress, owner] = await Promise.all([
       contract.getWatchList(),
       contract.getInjectTokenAddress(),
+      contract.owner()
     ]);
 
     const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
@@ -49,7 +47,7 @@ export async function GET(request: NextRequest) {
       provider,
     );
 
-    return NextResponse.json({ tokenInfo, gauges, contractBalance });
+    return NextResponse.json({ tokenInfo, gauges, contractBalance, owner });
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(
