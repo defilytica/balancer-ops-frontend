@@ -70,7 +70,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
     return Number(amount).toFixed(1);
   };
 
-  const distributedPercentage = (distributed / total) * 100;
+  const distributedPercentage = total > 0 ? (distributed / total) * 100 : 0;
   const remainingPercentage = (remaining / total) * 100;
 
   return (
