@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Pool } from "@/lib/config/types";
+import { Pool } from "@/types/interfaces";
 
 export function useFormattedPoolAttributes(pool: Pool | null) {
   return useMemo(() => {
