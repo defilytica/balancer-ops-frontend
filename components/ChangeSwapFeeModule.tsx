@@ -57,19 +57,14 @@ import {
   GetPoolsQuery,
   GetPoolsQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
-import { Pool } from "@/lib/config/types";
+import { Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { AddressBook } from "@/types/interfaces";
-import {
-  getCategoryData,
-  getNetworks,
-  getSubCategoryData,
-} from "@/lib/data/maxis/addressBook";
-import * as net from "node:net";
+import { getCategoryData } from "@/lib/data/maxis/addressBook";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 

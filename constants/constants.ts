@@ -8,8 +8,9 @@ import ArbitrumLogo from "@/public/imgs/arbitrum.svg";
 import GnosisLogo from "@/public/imgs/gnosis.svg";
 import BaseLogo from "@/public/imgs/base.svg";
 import zkevmLogo from "@/public/imgs/Polygon-zkEVM.png";
-import { NetworkInfo } from "@/types/types";
 import { TbSettingsDollar } from "react-icons/tb";
+import { NetworkInfo } from "@/types/types";
+import { TokenInfo } from "@/types/interfaces";
 
 export const tokenDecimals: Record<string, number> = {
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
@@ -32,6 +33,10 @@ export const PAYLOAD_OPTIONS = [
     description:
       "Build a token payment payload from a set whitelisted tokens and DAO wallets.",
     icon: FaDollarSign,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/create-payment",
+    prNamePlaceholder: "Create Payment for Service XYZ",
+    prTypePath: "BIPs/YYYY-WXX/",
   },
   {
     href: "/payload-builder/enable-gauge",
@@ -41,6 +46,10 @@ export const PAYLOAD_OPTIONS = [
     description:
       "Set up a payload to enable a gauge in the Balancer gauge system.",
     icon: FaTachometerAlt,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/enable-gauge",
+    prNamePlaceholder: "Enable Gauge XYZ",
+    prTypePath: "BIPs/YYYY-WXX/",
   },
   {
     href: "/payload-builder/kill-gauge",
@@ -50,6 +59,10 @@ export const PAYLOAD_OPTIONS = [
     description:
       "Set up a payload to remove a gauge from the Balancer gauge system",
     icon: FaSkull,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/kill-gauge",
+    prNamePlaceholder: "Kill Gauge XYZ",
+    prTypePath: "BIPs/YYYY-WXX/",
   },
   {
     href: "/payload-builder/add-reward-to-gauge",
@@ -58,15 +71,23 @@ export const PAYLOAD_OPTIONS = [
     button_label: "Add Reward Tokens",
     description: "Add secondary rewards to a Balancer staking gauge.",
     icon: FaGift,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/add-reward-to-gauge",
+    prNamePlaceholder: "Add Reward to Gauge XYZ",
+    prTypePath: "MaxiOps/add_rewards/[chain]/",
   },
   {
-    href: "/payload-builder/ccip-bridge",
-    key: "ccip-bridge",
-    label: "Bridge USDC via CCIP",
+    href: "/payload-builder/cctp-bridge",
+    key: "cctp-bridge",
+    label: "Bridge USDC via CCTP",
     button_label: "Create Bridge Tx",
     description:
-      "Bridge USDC stable coins between DAO Multisigs with the official CCIP bridge",
+      "Bridge USDC stable coins between DAO Multisigs with the official CCTP bridge",
     icon: FaBridgeCircleCheck,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/ccip-bridge-setup",
+    prNamePlaceholder: "Set Up CCIP Bridge for Network XYZ",
+    prTypePath: "MaxiOps/CCTP_Bridge/",
   },
   {
     href: "/payload-builder/fee-setter",
@@ -76,6 +97,10 @@ export const PAYLOAD_OPTIONS = [
     description:
       "Configure the swap fee setting on a pool that have swap fee settings delegated to the DAO.",
     icon: TbSettingsDollar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/set-swapfee",
+    prNamePlaceholder: "Set Swap Fee on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolSwapFeeChanges/",
   },
   {
     href: "/payload-builder/injector-configurator",
@@ -85,45 +110,12 @@ export const PAYLOAD_OPTIONS = [
     description:
       "Configure a rewards injector with a new token emission schedule.",
     icon: TbSettingsDollar,
-  },
-];
-
-export const REPO_OPTIONS = [
-  "defilytica/multisig-ops-mock",
-  "defilytica/multisig-ops-mock2",
-  "BalancerMaxis/dummy_repo_ci_test",
-];
-
-export const PAYLOAD_TYPES = {
-  "add-reward-to-gauge": {
-    branchNamePlaceholder: "feature/add-reward-to-gauge",
-    prNamePlaceholder: "Add Reward to Gauge XYZ",
-  },
-  "ccip-bridge": {
-    branchNamePlaceholder: "feature/ccip-bridge-setup",
-    prNamePlaceholder: "Set Up CCIP Bridge for Network XYZ",
-  },
-  "create-payment": {
-    branchNamePlaceholder: "feature/create-payment",
-    prNamePlaceholder: "Create Payment for Service XYZ",
-  },
-  "kill-gauge": {
-    branchNamePlaceholder: "feature/kill-gauge",
-    prNamePlaceholder: "Kill Gauge XYZ",
-  },
-  "enable-gauge": {
-    branchNamePlaceholder: "feature/enable-gauge",
-    prNamePlaceholder: "Enable Gauge XYZ",
-  },
-  "set-swapfee": {
-    branchNamePlaceholder: "feature/set-swapfee",
-    prNamePlaceholder: "Set Swap Fee on Pool XYZ",
-  },
-  "injector-schedule": {
+    repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/set-injector",
     prNamePlaceholder: "Program rewards injector XYZ",
+    prTypePath: "MaxiOps/injectorScheduling/[chain]/",
   },
-};
+];
 
 //TODO: refactor to reference address book
 export const NETWORK_OPTIONS = [
@@ -244,14 +236,6 @@ export const networks: Record<string, NetworkInfo> = {
     explorer: "https://polygonscan.com/",
   },
 };
-
-// tokenConstants.ts
-
-export interface TokenInfo {
-  symbol: string;
-  address: string;
-  decimals: number;
-}
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
   mainnet: [

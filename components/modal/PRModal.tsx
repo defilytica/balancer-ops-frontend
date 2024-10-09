@@ -20,7 +20,7 @@ import {
   IconButton,
   FormErrorMessage,
 } from "@chakra-ui/react";
-import { PAYLOAD_TYPES, REPO_OPTIONS } from "@/constants/constants";
+import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import { createPR } from "@/lib/services/createPR";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import {
@@ -37,23 +37,13 @@ interface PRCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   payload: any;
-  type: keyof typeof PAYLOAD_TYPES;
+  type: string;
   network?: string;
 }
 
 const isValidBranchName = (name: string) => {
   const regex = /^(?!.*\.\.)[^\s~^:?*\\[]+(?<!\.lock)$/;
   return regex.test(name) && !name.startsWith("-") && !name.includes("@{");
-};
-
-const PR_TYPE_PATHS = {
-  "create-payment": "BIPs/YYYY-WXX/",
-  "enable-gauge": "BIPs/YYYY-WXX/",
-  "kill-gauge": "BIPs/YYYY-WXX/",
-  "add-reward-to-gauge": "MaxiOps/add_rewards/[chain]/",
-  "ccip-bridge": "MaxiOps/CCTP_Bridge/",
-  "set-swapfee": "MaxiOps/PoolSwapFeeChanges/",
-  "injector-schedule": "MaxiOps/00partnerLM/",
 };
 
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
@@ -63,7 +53,10 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   type,
   network,
 }) => {
-  const [prRepo, setPrRepo] = useState(REPO_OPTIONS[0]);
+  const payloadOption = PAYLOAD_OPTIONS.find((option) => option.key === type);
+  const repoOptions = payloadOption ? payloadOption.repos : [];
+
+  const [prRepo, setPrRepo] = useState(repoOptions[0] || "");
   const [prBranch, setPrBranch] = useState("");
   const [prName, setPrName] = useState("");
   const [filePath, setFilePath] = useState("");
@@ -73,11 +66,11 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const [branchError, setBranchError] = useState("");
   const toast = useToast();
 
-  const { branchNamePlaceholder, prNamePlaceholder } = PAYLOAD_TYPES[type];
-  const needsWeekSelector = PR_TYPE_PATHS[type].includes("YYYY-WXX");
+  const { branchNamePlaceholder, prNamePlaceholder } = payloadOption || {};
+  const needsWeekSelector = payloadOption?.prTypePath.includes("YYYY-WXX");
 
   useEffect(() => {
-    const basePath = PR_TYPE_PATHS[type] || "";
+    const basePath = payloadOption?.prTypePath || "";
     const year = getYear(selectedWeek);
     const weekNum = getISOWeek(selectedWeek);
     const weekStr = weekNum < 10 ? `W0${weekNum}` : `W${weekNum}`;
@@ -159,7 +152,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
           <FormControl mb={4}>
             <FormLabel>Repository</FormLabel>
             <Select value={prRepo} onChange={(e) => setPrRepo(e.target.value)}>
-              {REPO_OPTIONS.map((repo) => (
+              {repoOptions.map((repo) => (
                 <option key={repo} value={repo}>
                   {repo}
                 </option>

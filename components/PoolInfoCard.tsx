@@ -12,7 +12,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useFormattedPoolAttributes } from "@/lib/data/useFormattedPoolAttributes";
-import { Pool } from "@/lib/config/types";
+import { Pool } from "@/types/interfaces";
 
 interface PoolInfoCardProps {
   pool: Pool;

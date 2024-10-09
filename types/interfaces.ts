@@ -29,3 +29,25 @@ export type AddressOption = {
   address: string;
   token: string;
 };
+
+export interface Pool {
+  chain: string;
+  protocolVersion: string;
+  address: string;
+  name: string;
+  symbol: string;
+  type: string;
+  version: string;
+  createTime: string;
+  owner: string;
+  dynamicData: {
+    swapFee: string;
+    poolId: string;
+  };
+}
+
+export interface TokenInfo {
+  symbol: string;
+  address: string;
+  decimals: number;
+}
