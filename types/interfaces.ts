@@ -50,4 +50,13 @@ export interface TokenInfo {
   symbol: string;
   address: string;
   decimals: number;
+  name?: string;
+  logoURI?: string;
+  chainId?: number;
+}
+
+export interface CoingeckoData {
+  name: string;
+  symbol: string;
+  logoURI?: string;
 }

@@ -185,55 +185,77 @@ export const NETWORK_OPTIONS = [
 ];
 
 export const networks: Record<string, NetworkInfo> = {
-  mainnet: {
+  ethereum: {
     logo: MainnetLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
     explorer: "https://etherscan.io/",
+    coingeckoId: "ethereum",
+    chainId: 1,
+    name: "Mainnet",
   },
   polygon: {
     logo: PolygonLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey=",
     explorer: "https://polygonscan.com/",
+    coingeckoId: "polygon-pos",
+    chainId: 137,
+    name: "Polygon POS",
   },
   optimism: {
     logo: OptimismLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey=",
     explorer: "https://optimistic.etherscan.io/",
+    coingeckoId: "optimistic-ethereum",
+    chainId: 10,
+    name: "Optimism",
   },
   avalanche: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
     explorer: "https://snowscan.xyz/",
+    coingeckoId: "avalanchec",
+    chainId: 43114,
+    name: "Avalanche",
   },
   arbitrum: {
     logo: ArbitrumLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey=",
     explorer: "https://arbiscan.io/",
+    coingeckoId: "arbitrum-one",
+    chainId: 42161,
+    name: "Arbitrum One",
   },
   gnosis: {
     logo: GnosisLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey=",
     explorer: "https://gnosisscan.io/",
+    coingeckoId: "xdai",
+    chainId: 100,
+    name: "Gnosis",
   },
   base: {
     logo: BaseLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=base&dkey=",
     explorer: "https://basescan.org/",
+    coingeckoId: "base",
+    chainId: 8453,
+    name: "Base",
   },
   zkevm: {
     logo: zkevmLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey=",
     explorer: "https://gnosisscan.io/",
+    coingeckoId: "zkevm",
+    chainId: 1101,
+    name: "Polygon zkEVM",
   },
-  avalanche_c: {
-    logo: AvalancheLogo.src,
-    rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
-    explorer: "https://snowscan.xyz/",
-  },
-  ethereum: {
-    logo: MainnetLogo.src,
-    rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
-    explorer: "https://polygonscan.com/",
+  fraxtal: {
+    logo: zkevmLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey=",
+    explorer: "https://gnosisscan.io/",
+    coingeckoId: "zkevm",
+    chainId: 1101,
+    name: "Fraxtal",
   },
 };
 

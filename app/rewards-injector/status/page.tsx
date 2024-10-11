@@ -30,8 +30,8 @@ const RewardsInjectorStatusPage = () => {
     setIsLoading(true);
     try {
       const url = forceReload
-          ? "/api/injector/all?forceReload=true"
-          : "/api/injector/all";
+        ? "/api/injector/all?forceReload=true"
+        : "/api/injector/all";
       const response = await fetch(url);
       if (response.status === 429) {
         throw new Error(`Too many requests. Please try again in later.`);
