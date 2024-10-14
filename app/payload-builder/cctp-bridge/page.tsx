@@ -29,6 +29,7 @@ import {
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
+import { CodeiumEditor } from "@codeium/react-code-editor";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -62,6 +63,7 @@ export default function CCIPBridge() {
   );
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -120,6 +122,26 @@ export default function CCIPBridge() {
       link.download = "BIP-XXX.json";
       link.click();
       URL.revokeObjectURL(link.href);
+    }
+  };
+
+  const handleToggleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveEdit = (editedValue: string) => {
+    try {
+      const parsedJson = JSON.parse(editedValue);
+      setGeneratedPayload(JSON.stringify(parsedJson, null, 2));
+      setIsEditing(false);
+    } catch (error) {
+      toast({
+        title: "Invalid JSON",
+        description: "Please ensure the edited JSON is valid",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -248,13 +270,31 @@ export default function CCIPBridge() {
 
       {generatedPayload && (
         <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(generatedPayload)}
-          />
+          <Flex justifyContent="space-between" alignItems="center" mb="10px">
+            <Text fontSize="lg">Generated JSON Payload:</Text>
+            <Button onClick={handleToggleEdit}>
+              {isEditing ? "Switch to Viewer" : "Switch to Editor"}
+            </Button>
+          </Flex>
+          {isEditing ? (
+            <CodeiumEditor
+              height="400px"
+              language="json"
+              theme="vs-dark"
+              value={generatedPayload}
+              onChange={(value) => setGeneratedPayload(value)}
+            />
+          ) : (
+            <ReactJson
+              theme={reactJsonTheme}
+              src={JSON.parse(generatedPayload)}
+            />
+          )}
+          {isEditing && (
+            <Button mt="10px" onClick={() => handleSaveEdit(generatedPayload)}>
+              Save Changes
+            </Button>
+          )}
         </Box>
       )}
 

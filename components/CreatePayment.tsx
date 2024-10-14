@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   Box,
   Button,
@@ -15,13 +14,9 @@ import {
   SimpleGrid,
   Text,
   Card,
-  useColorMode,
   useToast,
   NumberInput,
   NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import { AddIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import {
@@ -39,8 +34,7 @@ import {
   getSubCategoryData,
 } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 interface CreatePaymentProps {
   addressBook: AddressBook;
@@ -49,8 +43,6 @@ interface CreatePaymentProps {
 export default function CreatePaymentContent({
   addressBook,
 }: CreatePaymentProps) {
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [payments, setPayments] = useState<PaymentInput[]>([]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(
@@ -343,15 +335,10 @@ export default function CreatePaymentContent({
       <Divider />
 
       {generatedPayload && (
-        <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(generatedPayload)}
-          />
-        </Box>
+        <JsonViewerEditor
+          jsonData={generatedPayload}
+          onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+        />
       )}
 
       <Box display="flex" alignItems="center" mt="20px">

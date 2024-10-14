@@ -20,7 +20,6 @@ import {
   Select,
   Text,
   Card,
-  useColorMode,
   useToast,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -40,18 +39,12 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS } from "@/constants/constants";
-import dynamic from "next/dynamic";
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
-
-const ReactJson = dynamic(() => import("react-json-view"), {
-  ssr: false,
-});
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 export default function EnableGaugePage() {
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
     { id: "", network: "Ethereum" },
   ]);
@@ -197,15 +190,10 @@ export default function EnableGaugePage() {
         <Divider />
 
         {generatedPayload && (
-          <Box mt="20px">
-            <Text fontSize="lg" mb="10px">
-              Generated JSON Payload:
-            </Text>
-            <ReactJson
-              theme={reactJsonTheme}
-              src={JSON.parse(generatedPayload)}
-            />
-          </Box>
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+          />
         )}
 
         <Box display="flex" alignItems="center" mt="20px">

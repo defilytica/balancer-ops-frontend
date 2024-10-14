@@ -1,5 +1,4 @@
 "use client";
-import dynamic from "next/dynamic";
 import {
   Alert,
   AlertDescription,
@@ -20,7 +19,6 @@ import {
   ListItem,
   Text,
   Card,
-  useColorMode,
   useToast,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -41,14 +39,9 @@ import {
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { VscGithubInverted } from "react-icons/vsc";
-
-const ReactJson = dynamic(() => import("react-json-view"), {
-  ssr: false,
-});
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 export default function KillGaugePage() {
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(
@@ -168,15 +161,10 @@ export default function KillGaugePage() {
         <Divider />
 
         {generatedPayload && (
-          <Box mt="20px">
-            <Text fontSize="lg" mb="10px">
-              Generated JSON Payload:
-            </Text>
-            <ReactJson
-              theme={reactJsonTheme}
-              src={JSON.parse(generatedPayload)}
-            />
-          </Box>
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+          />
         )}
 
         <Box display="flex" alignItems="center" mt="20px">

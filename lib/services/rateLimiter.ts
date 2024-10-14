@@ -11,7 +11,10 @@ class RateLimiter {
 
   limit(id: string): boolean {
     const now = Date.now();
-    const userRequests = this.idToRequests.get(id) || { count: 0, timestamp: now };
+    const userRequests = this.idToRequests.get(id) || {
+      count: 0,
+      timestamp: now,
+    };
 
     if (now - userRequests.timestamp > this.windowSize) {
       // Reset if the window has passed
