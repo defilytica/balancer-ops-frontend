@@ -45,6 +45,7 @@ import dynamic from "next/dynamic";
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
+import OpenPRButton from "@/components/btns/OpenPRButton";
 
 const ReactJson = dynamic(() => import("react-json-view"), {
   ssr: false,
@@ -305,13 +306,7 @@ export default function AddRewardToGaugePage() {
         >
           Copy Payload to Clipboard
         </Button>
-        <Button
-          variant="secondary"
-          leftIcon={<VscGithubInverted />}
-          onClick={() => handleOpenPRModal()}
-        >
-          Open PR
-        </Button>
+        <OpenPRButton onClick={handleOpenPRModal} />
       </Box>
 
       {humanReadableText && (

@@ -77,6 +77,26 @@ function RewardsInjector({
     setGauges([]);
   };
 
+  // New function to fetch deployed injectors for V2
+  const fetchDeployedInjectorsV2 = async (
+    network: string,
+    factoryAddress: string,
+  ) => {
+    // This is a placeholder. You'll need to implement the actual API call to the blockchain
+    // to fetch the deployed injectors from the factory contract.
+    console.log(
+      `Fetching deployed injectors for ${network} from ${factoryAddress}`,
+    );
+    // For now, we'll return a mock result
+    return [
+      {
+        address: "0x01b1ECB65125E12BCB22614504526F328e0c060b",
+        network: "Avalanche",
+        token: "USDC",
+      },
+    ];
+  };
+
   useEffect(() => {
     if (
       selectedAddress &&
@@ -90,33 +110,63 @@ function RewardsInjector({
     }
   }, [selectedAddress, injectorData]);
 
-  const loadAddresses = useCallback(() => {
-    let allAddressesWithOptions = [];
+  const loadAddresses = useCallback(
+    async (isV2: boolean) => {
+      let allAddressesWithOptions = [];
 
-    const networks = getNetworks(addressBook);
-    for (const network of networks) {
-      const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-      if (maxiKeepers) {
-        const injectors = isV2
-          ? maxiKeepers.gaugeRewardsInjectorsV2
-          : maxiKeepers.gaugeRewardsInjectors;
-        if (injectors) {
-          for (const [token, address] of Object.entries(injectors)) {
-            allAddressesWithOptions.push({
-              network,
-              address,
-              token,
-            });
+      const networks = getNetworks(addressBook);
+      for (const network of networks) {
+        const maxiKeepers = getCategoryData(
+          addressBook,
+          network,
+          "maxiKeepers",
+        );
+        if (maxiKeepers) {
+          if (isV2) {
+            // const factories = maxiKeepers.gaugeRewardsInjectorFactories;
+            const factories = [
+              {
+                factoryAddress: "0x01b1ECB65125E12BCB22614504526F328e0c060b",
+                token: "USDC",
+              },
+            ];
+            if (factories) {
+              for (const [token, factoryAddress] of Object.entries(factories)) {
+                const deployedInjectors = await fetchDeployedInjectorsV2(
+                  network,
+                  factoryAddress.factoryAddress,
+                );
+                deployedInjectors.forEach((injector) => {
+                  allAddressesWithOptions.push({
+                    network,
+                    address: injector.address,
+                    token: injector.token,
+                  });
+                });
+              }
+            }
+          } else {
+            const injectors = maxiKeepers.gaugeRewardsInjectors;
+            if (injectors) {
+              for (const [token, address] of Object.entries(injectors)) {
+                allAddressesWithOptions.push({
+                  network,
+                  address,
+                  token,
+                });
+              }
+            }
           }
         }
       }
-    }
-    setAddresses(allAddressesWithOptions);
-  }, [addressBook, isV2]);
+      setAddresses(allAddressesWithOptions);
+    },
+    [addressBook],
+  );
 
   useEffect(() => {
-    loadAddresses();
-  }, [loadAddresses]);
+    loadAddresses(isV2);
+  }, [loadAddresses, isV2]);
 
   const calculateDistributionAmounts = () => {
     let total = 0;

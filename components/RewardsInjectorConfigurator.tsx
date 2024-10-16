@@ -59,7 +59,7 @@ import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
 import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
-import { VscGithubInverted } from "react-icons/vsc";
+import OpenPRButton from "./btns/OpenPRButton";
 
 type RewardsInjectorConfiguratorProps = {
   addressBook: AddressBook;
@@ -452,13 +452,7 @@ function RewardsInjectorConfigurator({
           >
             Copy Payload to Clipboard
           </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<VscGithubInverted />}
-            onClick={() => handleOpenPRModal()}
-          >
-            Open PR
-          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
             type={"injector-schedule"}
