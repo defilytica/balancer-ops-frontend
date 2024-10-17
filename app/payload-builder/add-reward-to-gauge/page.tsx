@@ -21,7 +21,6 @@ import {
   Select,
   SimpleGrid,
   Text,
-  useColorMode,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -41,14 +40,10 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS } from "@/constants/constants";
-import dynamic from "next/dynamic";
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
-
-const ReactJson = dynamic(() => import("react-json-view"), {
-  ssr: false,
-});
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 export interface AddRewardInput {
   targetGauge: string;
@@ -59,21 +54,8 @@ export interface AddRewardInput {
   chainId: string;
 }
 
-//TODO: read from address book!
-const addressMapping: { [key: string]: string } = {
-  "0": "0xc38c5f97B34E175FFd35407fc91a937300E33860", // Ethereum
-  "1": "0x326A7778DB9B741Cb2acA0DE07b9402C7685dAc6", // Avalanche
-  "2": "0x09Df1626110803C7b3b07085Ef1E053494155089", // Optimism
-  "3": "0xc38c5f97B34E175FFd35407fc91a937300E33860", // Arbitrum
-  "6": "0x65226673F3D202E0f897C862590d7e1A992B2048", // Base
-  "7": "0xc38c5f97B34E175FFd35407fc91a937300E33860", // Polygon
-};
-
 export default function AddRewardToGaugePage() {
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const toast = useToast();
-
   const [network, setNetwork] = useState("Ethereum");
   const [targetGauge, setTargetGauge] = useState("");
   const [rewardToken, setRewardToken] = useState("");
@@ -116,20 +98,6 @@ export default function AddRewardToGaugePage() {
       setSafeAddress(selectedOption.maxiSafe);
       setChainId(selectedOption.chainId);
     }
-  };
-
-  const handleInputChange = (
-    index: number,
-    field: string,
-    value: string | number,
-  ) => {
-    const updatedInputs = [...rewardAdds];
-    (updatedInputs[index] as any)[field] = value;
-    if (field === "destinationDomain") {
-      (updatedInputs[index] as any).mintRecipient =
-        addressMapping[value as string] || "";
-    }
-    setRewardAdds(updatedInputs);
   };
 
   const handleRemoveReward = (index: number) => {
@@ -277,15 +245,10 @@ export default function AddRewardToGaugePage() {
       <Divider />
 
       {generatedPayload && (
-        <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(generatedPayload)}
-          />
-        </Box>
+        <JsonViewerEditor
+          jsonData={generatedPayload}
+          onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+        />
       )}
 
       <Box display="flex" alignItems="center" mt="20px">

@@ -1,9 +1,16 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Box,
   Button,
+  Card,
+  CardBody,
   Container,
+  Divider,
   Flex,
   FormControl,
   FormLabel,
@@ -14,37 +21,23 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  SimpleGrid,
+  Spinner,
+  Stack,
   Switch,
   Text,
   useDisclosure,
   useMediaQuery,
   useToast,
-  SimpleGrid,
-  Card,
-  CardBody,
-  Stack,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Divider,
-  useColorMode,
-  Spinner,
 } from "@chakra-ui/react";
 import {
-  AddIcon,
   ChevronDownIcon,
   CopyIcon,
   DownloadIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons";
-import {
-  fetchAddressBook,
-  getNetworks,
-  getCategoryData,
-} from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
-import dynamic from "next/dynamic";
 import SimulateTransactionButton, {
   BatchFile,
 } from "@/components/btns/SimulateTransactionButton";
@@ -60,6 +53,7 @@ import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import { VscGithubInverted } from "react-icons/vsc";
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 type RewardsInjectorConfiguratorProps = {
   addressBook: AddressBook;
@@ -69,8 +63,6 @@ type RewardsInjectorConfiguratorProps = {
   injectorData: any;
   isLoading: boolean;
 };
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 function RewardsInjectorConfigurator({
   addressBook,
@@ -91,8 +83,6 @@ function RewardsInjectorConfigurator({
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(
     null,
   );
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -222,6 +212,10 @@ function RewardsInjectorConfigurator({
         isClosable: true,
       });
     }
+  };
+
+  const handleJsonChange = (newJson: string | BatchFile) => {
+    setGeneratedPayload(newJson as BatchFile);
   };
 
   return (
@@ -419,15 +413,10 @@ function RewardsInjectorConfigurator({
       <Divider />
 
       {generatedPayload && (
-        <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(JSON.stringify(generatedPayload))}
-          />
-        </Box>
+        <JsonViewerEditor
+          jsonData={generatedPayload}
+          onJsonChange={handleJsonChange}
+        />
       )}
 
       {generatedPayload && (
