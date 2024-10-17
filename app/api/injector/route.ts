@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const [watchList, injectorTokenAddress, owner] = await Promise.all([
       contract.getWatchList(),
       contract.getInjectTokenAddress(),
-      contract.owner()
+      contract.owner(),
     ]);
 
     const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);

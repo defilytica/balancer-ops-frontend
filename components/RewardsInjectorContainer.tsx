@@ -24,7 +24,7 @@ export default function RewardsInjectorContainer({
   const [selectedSafe, setSelectedSafe] = useState(String);
   const [injectorData, setInjectorData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [owner, setOwner] = useState<string>('');
+  const [owner, setOwner] = useState<string>("");
 
   const findAddressOption = useCallback(
     (address: string | undefined): AddressOption | null => {
@@ -91,9 +91,9 @@ export default function RewardsInjectorContainer({
       if (addressFromPath) {
         const matchingAddress = findAddressOption(addressFromPath);
         if (
-            matchingAddress &&
-            (!selectedAddress ||
-                matchingAddress.address !== selectedAddress.address)
+          matchingAddress &&
+          (!selectedAddress ||
+            matchingAddress.address !== selectedAddress.address)
         ) {
           setSelectedAddress(matchingAddress);
           fetchInjectorData(matchingAddress);

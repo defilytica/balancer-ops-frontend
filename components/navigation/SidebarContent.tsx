@@ -125,7 +125,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           borderRadius="full"
           px={2}
         >
-          Alpha release
+          Beta release
         </Badge>
         <DRPCBanner />
       </Flex>
