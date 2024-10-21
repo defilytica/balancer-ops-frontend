@@ -3,7 +3,7 @@ import { useSession } from "next-auth/react";
 import { Button, Tooltip } from "@chakra-ui/react";
 import { VscGithubInverted } from "react-icons/vsc";
 
-const OpenPRButton = ({ onClick }) => {
+const OpenPRButton = ({ onClick }: { onClick: () => void }) => {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
 
