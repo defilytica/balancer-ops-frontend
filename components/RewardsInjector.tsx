@@ -51,51 +51,28 @@ type Recipient = {
 };
 
 type RewardsInjectorProps = {
-  addressBook: AddressBook;
+  addresses: AddressOption[];
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
   injectorData: any;
   isLoading: boolean;
+  isV2: boolean;
+  onVersionToggle: () => void;
 };
 
 function RewardsInjector({
-  addressBook,
+  addresses,
   selectedAddress,
   onAddressSelect,
   injectorData,
   isLoading,
+  isV2,
+  onVersionToggle,
 }: RewardsInjectorProps) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [isV2, setIsV2] = useState(false);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
-
-  const handleVersionSwitch = () => {
-    setIsV2(!isV2);
-    setGauges([]);
-  };
-
-  // New function to fetch deployed injectors for V2
-  const fetchDeployedInjectorsV2 = async (
-    network: string,
-    factoryAddress: string,
-  ) => {
-    // This is a placeholder. You'll need to implement the actual API call to the blockchain
-    // to fetch the deployed injectors from the factory contract.
-    console.log(
-      `Fetching deployed injectors for ${network} from ${factoryAddress}`,
-    );
-    // For now, we'll return a mock result
-    return [
-      {
-        address: "0x01b1ECB65125E12BCB22614504526F328e0c060b",
-        network: "Avalanche",
-        token: "USDC",
-      },
-    ];
-  };
 
   useEffect(() => {
     if (
@@ -109,64 +86,6 @@ function RewardsInjector({
       setContractBalance(injectorData.contractBalance);
     }
   }, [selectedAddress, injectorData]);
-
-  const loadAddresses = useCallback(
-    async (isV2: boolean) => {
-      let allAddressesWithOptions = [];
-
-      const networks = getNetworks(addressBook);
-      for (const network of networks) {
-        const maxiKeepers = getCategoryData(
-          addressBook,
-          network,
-          "maxiKeepers",
-        );
-        if (maxiKeepers) {
-          if (isV2) {
-            // const factories = maxiKeepers.gaugeRewardsInjectorFactories;
-            const factories = [
-              {
-                factoryAddress: "0x01b1ECB65125E12BCB22614504526F328e0c060b",
-                token: "USDC",
-              },
-            ];
-            if (factories) {
-              for (const [token, factoryAddress] of Object.entries(factories)) {
-                const deployedInjectors = await fetchDeployedInjectorsV2(
-                  network,
-                  factoryAddress.factoryAddress,
-                );
-                deployedInjectors.forEach((injector) => {
-                  allAddressesWithOptions.push({
-                    network,
-                    address: injector.address,
-                    token: injector.token,
-                  });
-                });
-              }
-            }
-          } else {
-            const injectors = maxiKeepers.gaugeRewardsInjectors;
-            if (injectors) {
-              for (const [token, address] of Object.entries(injectors)) {
-                allAddressesWithOptions.push({
-                  network,
-                  address,
-                  token,
-                });
-              }
-            }
-          }
-        }
-      }
-      setAddresses(allAddressesWithOptions);
-    },
-    [addressBook],
-  );
-
-  useEffect(() => {
-    loadAddresses(isV2);
-  }, [loadAddresses, isV2]);
 
   const calculateDistributionAmounts = () => {
     let total = 0;
@@ -313,7 +232,10 @@ function RewardsInjector({
               size={"lg"}
               id="version-switch"
               isChecked={isV2}
-              onChange={handleVersionSwitch}
+              onChange={() => {
+                setGauges([]);
+                onVersionToggle();
+              }}
             />
             <FormLabel htmlFor="version-switch" mb="0" ml={2}>
               V2

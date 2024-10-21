@@ -1,11 +1,11 @@
-import React from 'react';
-import { useSession } from 'next-auth/react';
-import { Button, Tooltip } from '@chakra-ui/react';
-import { VscGithubInverted } from 'react-icons/vsc';
+import React from "react";
+import { useSession } from "next-auth/react";
+import { Button, Tooltip } from "@chakra-ui/react";
+import { VscGithubInverted } from "react-icons/vsc";
 
 const OpenPRButton = ({ onClick }) => {
   const { status } = useSession();
-  const isAuthenticated = status === 'authenticated';
+  const isAuthenticated = status === "authenticated";
 
   return (
     <Tooltip
@@ -19,7 +19,7 @@ const OpenPRButton = ({ onClick }) => {
         isDisabled={!isAuthenticated}
         variant="secondary"
         opacity={isAuthenticated ? 1 : 0.5}
-        cursor={isAuthenticated ? 'pointer' : 'not-allowed'}
+        cursor={isAuthenticated ? "pointer" : "not-allowed"}
       >
         Open PR
       </Button>

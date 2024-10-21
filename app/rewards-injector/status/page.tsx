@@ -13,6 +13,7 @@ import {
   HStack,
   IconButton,
   Tooltip,
+  Switch,
 } from "@chakra-ui/react";
 import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
@@ -24,17 +25,19 @@ const RewardsInjectorStatusPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [isV2, setIsV2] = useState(false);
   const toast = useToast();
 
   const fetchInjectorsData = async (forceReload = false) => {
     setIsLoading(true);
     try {
+      const version = isV2 ? 'v2' : 'v1';
       const url = forceReload
-          ? "/api/injector/all?forceReload=true"
-          : "/api/injector/all";
+        ? `/api/injector/${version}/all?forceReload=${forceReload}`
+        : `/api/injector/${version}/all?forceReload=${forceReload}`;
       const response = await fetch(url);
       if (response.status === 429) {
-        throw new Error(`Too many requests. Please try again in later.`);
+        throw new Error(`Too many requests. Please try again later.`);
       }
 
       if (!response.ok) {
@@ -95,7 +98,7 @@ const RewardsInjectorStatusPage = () => {
 
   useEffect(() => {
     fetchInjectorsData();
-  }, []);
+  }, [isV2]);
 
   const toggleHideCompleted = () => {
     setHideCompleted(!hideCompleted);
@@ -105,6 +108,10 @@ const RewardsInjectorStatusPage = () => {
     fetchInjectorsData(true);
   };
 
+    const handleVersionToggle = () => {
+    setIsV2(!isV2);
+  };
+
   const filteredInjectors = hideCompleted
     ? injectorsData.filter((injector: any) => !injector.isCompleted)
     : injectorsData;
@@ -112,7 +119,7 @@ const RewardsInjectorStatusPage = () => {
   if (isLoading) {
     return <Skeleton height="400px" />;
   }
-
+  
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
       <VStack spacing={4} align="stretch">
@@ -134,13 +141,21 @@ const RewardsInjectorStatusPage = () => {
             Showing {filteredInjectors.length} of {injectorsData.length}{" "}
             injectors
           </Text>
-          <Button onClick={toggleHideCompleted}>
-            {hideCompleted ? "Show All" : "Hide Completed"}
-          </Button>
+          <HStack>
+            <Button onClick={toggleHideCompleted}>
+              {hideCompleted ? "Show All" : "Hide Completed"}
+            </Button>
+            <HStack>
+              <Text>V1</Text>
+              <Switch isChecked={isV2} onChange={handleVersionToggle} />
+              <Text>V2</Text>
+            </HStack>
+          </HStack>
         </HStack>
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
           {filteredInjectors.map((injector: any) => (
             <RewardsInjectorCard
+              v2={isV2}
               key={injector.address + injector.network}
               data={injector}
               networks={networks}
