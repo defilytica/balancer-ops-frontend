@@ -17,14 +17,6 @@ const FACTORY_ABI = [
   },
 ];
 
-const mockInjectors = [
-  {
-    factory: "0x01b1ECB65125E12BCB22614504526F328e0c060b",
-    network: "avalanche",
-    deployedInjectors: ["0xbBa6D6319EBF66ef3bd375671df54b397A8bfB08"],
-  },
-];
-
 export async function GET(request: NextRequest) {
   try {
     const addressBook = await fetchAddressBook();
@@ -35,33 +27,29 @@ export async function GET(request: NextRequest) {
 
     for (const network of networks) {
       const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-      if (maxiKeepers && maxiKeepers.gaugeRewardsInjectorFactories) {
+      if (maxiKeepers && maxiKeepers.injectorV2) {
         hasRealData = true;
-        const factories = maxiKeepers.gaugeRewardsInjectorFactories;
+        const factories = maxiKeepers.injectorV2;
 
         for (const [token, factoryAddress] of Object.entries(factories)) {
-          console.log(
-            `Fetching data for factory ${factoryAddress} on ${network}...`,
-          );
-          const deployedInjectors = await fetchDeployedInjectors(
-            factoryAddress,
-            network,
-          );
+          if (token === "factory") {
+            console.log(
+              `Fetching data for factory ${factoryAddress} on ${network}...`,
+            );
+            const deployedInjectors = await fetchDeployedInjectors(
+              factoryAddress,
+              network,
+            );
 
-          allInjectors.push({
-            factory: factoryAddress,
-            network,
-            token,
-            deployedInjectors,
-          });
+            allInjectors.push({
+              factory: factoryAddress,
+              network,
+              token,
+              deployedInjectors,
+            });
+          }
         }
       }
-    }
-
-    // If no real data is found, use mock data
-    if (!hasRealData) {
-      console.log("No real data found. Using mock data.");
-      allInjectors = mockInjectors;
     }
 
     return NextResponse.json(allInjectors);
