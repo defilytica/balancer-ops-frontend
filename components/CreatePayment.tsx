@@ -329,7 +329,7 @@ export default function CreatePaymentContent({
           Generate Payload
         </Button>
         {generatedPayload && (
-          <SimulateTransactionButton batchFile={generatedPayload} />
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />

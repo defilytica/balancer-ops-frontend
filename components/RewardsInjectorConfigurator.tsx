@@ -49,12 +49,12 @@ import {
   InjectorScheduleInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
-import {networks} from "@/constants/constants";
+import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import { VscGithubInverted } from "react-icons/vsc";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
-import {getChainId} from "@/lib/utils/getChainId";
+import { getChainId } from "@/lib/utils/getChainId";
 
 type RewardsInjectorConfiguratorProps = {
   addressBook: AddressBook;

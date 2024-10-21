@@ -455,7 +455,7 @@ export type GqlPoolBatchSwapPool = {
 export type GqlPoolBatchSwapSwap = {
   __typename: "GqlPoolBatchSwapSwap";
   id: Scalars["ID"]["output"];
-  pool: GqlPoolMinimal;
+  pool: PoolForBatchSwap;
   timestamp: Scalars["Int"]["output"];
   tokenAmountIn: Scalars["String"]["output"];
   tokenAmountOut: Scalars["String"]["output"];
@@ -2078,9 +2078,19 @@ export type GqlVeBalBalance = {
   lockedUsd: Scalars["AmountHumanReadable"]["output"];
 };
 
+/** Represents a snapshot of a VeBal lock at a specific point in time. */
+export type GqlVeBalLockSnapshot = {
+  __typename: "GqlVeBalLockSnapshot";
+  /** The locked balance at that time. */
+  balance: Scalars["AmountHumanReadable"]["output"];
+  /** The timestamp of the snapshot, snapshots are taking at lock events. */
+  timestamp: Scalars["Int"]["output"];
+};
+
 export type GqlVeBalUserData = {
   __typename: "GqlVeBalUserData";
   balance: Scalars["AmountHumanReadable"]["output"];
+  lockSnapshots: Array<GqlVeBalLockSnapshot>;
   locked: Scalars["AmountHumanReadable"]["output"];
   lockedUsd: Scalars["AmountHumanReadable"]["output"];
   rank?: Maybe<Scalars["Int"]["output"]>;
@@ -2264,6 +2274,15 @@ export type MutationUserInitWalletBalancesForPoolArgs = {
 
 export type MutationUserSyncBalanceArgs = {
   poolId: Scalars["String"]["input"];
+};
+
+export type PoolForBatchSwap = {
+  __typename: "PoolForBatchSwap";
+  allTokens?: Maybe<Array<TokenForBatchSwapPool>>;
+  id: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  symbol: Scalars["String"]["output"];
+  type: GqlPoolType;
 };
 
 export type Query = {
@@ -2610,6 +2629,14 @@ export type Token = {
   __typename: "Token";
   address: Scalars["String"]["output"];
   decimals: Scalars["Int"]["output"];
+};
+
+export type TokenForBatchSwapPool = {
+  __typename: "TokenForBatchSwapPool";
+  address: Scalars["String"]["output"];
+  isNested: Scalars["Boolean"]["output"];
+  isPhantomBpt: Scalars["Boolean"]["output"];
+  weight?: Maybe<Scalars["BigDecimal"]["output"]>;
 };
 
 export type GetPoolsQueryVariables = Exact<{
