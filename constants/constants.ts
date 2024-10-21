@@ -85,8 +85,8 @@ export const PAYLOAD_OPTIONS = [
       "Bridge USDC stable coins between DAO Multisigs with the official CCTP bridge",
     icon: FaBridgeCircleCheck,
     repos: ["BalancerMaxis/multisig-ops"],
-    branchNamePlaceholder: "feature/ccip-bridge-setup",
-    prNamePlaceholder: "Set Up CCIP Bridge for Network XYZ",
+    branchNamePlaceholder: "feature/cctp-bridge-setup",
+    prNamePlaceholder: "Set Up CCTP Bridge for Network XYZ",
     prTypePath: "MaxiOps/CCTP_Bridge/",
   },
   {

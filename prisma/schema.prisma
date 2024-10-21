@@ -70,6 +70,12 @@ model Injector {
   gauges          Gauge[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+  version         String     @default("v1") // "v1" or "v2"
+  owner           String?
+  maxInjectionAmount      String?
+  minWaitPeriodSeconds    String?
+  maxGlobalAmountPerPeriod String?
+  maxTotalDue             String?
 
   @@unique([network, address])
 }

@@ -40,9 +40,9 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS } from "@/constants/constants";
-import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
+import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
 export interface AddRewardInput {
@@ -268,13 +268,7 @@ export default function AddRewardToGaugePage() {
         >
           Copy Payload to Clipboard
         </Button>
-        <Button
-          variant="secondary"
-          leftIcon={<VscGithubInverted />}
-          onClick={() => handleOpenPRModal()}
-        >
-          Open PR
-        </Button>
+        <OpenPRButton onClick={handleOpenPRModal} />
       </Box>
 
       {humanReadableText && (

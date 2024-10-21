@@ -1,16 +1,9 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
   Box,
   Button,
-  Card,
-  CardBody,
   Container,
-  Divider,
   Flex,
   FormControl,
   FormLabel,
@@ -21,22 +14,35 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-  SimpleGrid,
-  Spinner,
-  Stack,
   Switch,
   Text,
   useDisclosure,
   useMediaQuery,
   useToast,
+  SimpleGrid,
+  Card,
+  CardBody,
+  Stack,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Divider,
+  useColorMode,
+  Spinner,
 } from "@chakra-ui/react";
 import {
+  AddIcon,
   ChevronDownIcon,
   CopyIcon,
   DownloadIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons";
-import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import {
+  fetchAddressBook,
+  getNetworks,
+  getCategoryData,
+} from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
 import SimulateTransactionButton, {
   BatchFile,
@@ -49,10 +55,10 @@ import {
   InjectorScheduleInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
-import {networks} from "@/constants/constants";
+import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
-import { VscGithubInverted } from "react-icons/vsc";
+import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import {getChainId} from "@/lib/utils/getChainId";
 
@@ -200,6 +206,7 @@ function RewardsInjectorConfigurator({
 
     setGeneratedPayload(payload);
   };
+  
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -215,9 +222,10 @@ function RewardsInjectorConfigurator({
     }
   };
 
-  const handleJsonChange = (newJson: string | BatchFile) => {
+   const handleJsonChange = (newJson: string | BatchFile) => {
     setGeneratedPayload(newJson as BatchFile);
   };
+
 
   return (
     <Container maxW="container.xl">
@@ -414,7 +422,7 @@ function RewardsInjectorConfigurator({
       <Divider />
 
       {generatedPayload && (
-        <JsonViewerEditor
+      <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={handleJsonChange}
         />
@@ -442,13 +450,7 @@ function RewardsInjectorConfigurator({
           >
             Copy Payload to Clipboard
           </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<VscGithubInverted />}
-            onClick={() => handleOpenPRModal()}
-          >
-            Open PR
-          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
             type={"injector-schedule"}
