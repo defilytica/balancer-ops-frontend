@@ -44,7 +44,6 @@ import {
   getCategoryData,
 } from "@/lib/data/maxis/addressBook";
 import { AddressBook, AddressOption } from "@/types/interfaces";
-import dynamic from "next/dynamic";
 import SimulateTransactionButton, {
   BatchFile,
 } from "@/components/btns/SimulateTransactionButton";
@@ -60,6 +59,8 @@ import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import OpenPRButton from "./btns/OpenPRButton";
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import {getChainId} from "@/lib/utils/getChainId";
 
 type RewardsInjectorConfiguratorProps = {
   addressBook: AddressBook;
@@ -69,8 +70,6 @@ type RewardsInjectorConfiguratorProps = {
   injectorData: any;
   isLoading: boolean;
 };
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 function RewardsInjectorConfigurator({
   addressBook,
@@ -91,8 +90,6 @@ function RewardsInjectorConfigurator({
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(
     null,
   );
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -202,13 +199,14 @@ function RewardsInjectorConfigurator({
     const payload = generateInjectorSchedulePayload({
       injectorType: isV2 ? "v2" : "v1",
       injectorAddress: selectedAddress.address,
-      chainId: selectedAddress.network,
+      chainId: getChainId(selectedAddress.network),
       safeAddress: selectedSafe,
       scheduleInputs,
     });
 
     setGeneratedPayload(payload);
   };
+  
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -223,6 +221,11 @@ function RewardsInjectorConfigurator({
       });
     }
   };
+
+   const handleJsonChange = (newJson: string | BatchFile) => {
+    setGeneratedPayload(newJson as BatchFile);
+  };
+
 
   return (
     <Container maxW="container.xl">
@@ -419,15 +422,10 @@ function RewardsInjectorConfigurator({
       <Divider />
 
       {generatedPayload && (
-        <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(JSON.stringify(generatedPayload))}
-          />
-        </Box>
+      <JsonViewerEditor
+          jsonData={generatedPayload}
+          onJsonChange={handleJsonChange}
+        />
       )}
 
       {generatedPayload && (
