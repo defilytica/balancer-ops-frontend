@@ -189,51 +189,61 @@ export const networks: Record<string, NetworkInfo> = {
     logo: MainnetLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
     explorer: "https://etherscan.io/",
+    chainId: "1",
   },
   polygon: {
     logo: PolygonLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=polygon&dkey=",
     explorer: "https://polygonscan.com/",
+    chainId: "137",
   },
   optimism: {
     logo: OptimismLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=optimism&dkey=",
     explorer: "https://optimistic.etherscan.io/",
+    chainId: "10",
   },
   avalanche: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
     explorer: "https://snowscan.xyz/",
+    chainId: "43114",
   },
   arbitrum: {
     logo: ArbitrumLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=arbitrum&dkey=",
     explorer: "https://arbiscan.io/",
+    chainId: "42161",
   },
   gnosis: {
     logo: GnosisLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=gnosis&dkey=",
     explorer: "https://gnosisscan.io/",
+    chainId: "100",
   },
   base: {
     logo: BaseLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=base&dkey=",
     explorer: "https://basescan.org/",
+    chainId: "8453",
   },
   zkevm: {
     logo: zkevmLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey=",
     explorer: "https://gnosisscan.io/",
+    chainId: "1101",
   },
   avalanche_c: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
     explorer: "https://snowscan.xyz/",
+    chainId: "43114",
   },
   ethereum: {
     logo: MainnetLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
     explorer: "https://polygonscan.com/",
+    chainId: "1",
   },
 };
 

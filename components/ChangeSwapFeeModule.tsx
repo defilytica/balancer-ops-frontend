@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -22,8 +22,6 @@ import {
   ListItem,
   Select,
   Spinner,
-  Text,
-  useColorMode,
   useToast,
   useDisclosure,
   Popover,
@@ -40,11 +38,6 @@ import {
   StatGroup,
   Divider,
 } from "@chakra-ui/react";
-import { DollarSign } from "react-feather";
-import dynamic from "next/dynamic";
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
-
 import {
   copyJsonToClipboard,
   generateSwapFeeChangePayload,
@@ -66,6 +59,8 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import { DollarSign } from "react-feather";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -82,9 +77,6 @@ export default function ChangeSwapFeeModule({
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
-
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -383,15 +375,10 @@ export default function ChangeSwapFeeModule({
       <Divider />
 
       {generatedPayload && (
-        <Box mt="20px">
-          <Text fontSize="lg" mb="10px">
-            Generated JSON Payload:
-          </Text>
-          <ReactJson
-            theme={reactJsonTheme}
-            src={JSON.parse(generatedPayload)}
-          />
-        </Box>
+        <JsonViewerEditor
+          jsonData={generatedPayload}
+          onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+        />
       )}
 
       {generatedPayload && (
