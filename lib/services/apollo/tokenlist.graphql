@@ -1,0 +1,10 @@
+query GetTokens($chainIn: [GqlChain!]){
+    tokenGetTokens(chains: $chainIn){
+    chainId
+    address
+    name
+    symbol
+    decimals
+    logoURI
+    }
+}

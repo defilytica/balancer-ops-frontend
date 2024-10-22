@@ -1,10 +1,10 @@
+// src/components/PoolCreator/WeightedPoolConfig.tsx
 import {
     Box,
     Button,
     FormControl,
     FormLabel,
     Grid,
-    Input,
     NumberInput,
     NumberInputField,
     Stack,
@@ -12,17 +12,58 @@ import {
     useToast,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import {Token} from "@/types/interfaces";
+import { useAccount } from 'wagmi'
+import { TokenSelector } from './TokenSelector'
+import { TokenListToken } from '@/types/interfaces'
 
 interface WeightedPoolConfigProps {
-    onConfigUpdate: (tokens: Token[]) => void;
+    onConfigUpdate: (tokens: PoolToken[]) => void;
+}
+
+interface PoolToken {
+    address: string;
+    weight: number;
+    symbol: string;
+    balance: string;
+    decimals?: number;
+    logoURI?: string;
+    name?: string;
 }
 
 export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) => {
-    const [tokens, setTokens] = useState<Token[]>([
+    const { chain } = useAccount()
+    const [tokens, setTokens] = useState<PoolToken[]>([
         { address: '', weight: 0, symbol: '', balance: '' }
     ])
     const toast = useToast()
+
+    // Convert chain.id to network string (adjust mapping as needed) - refactor?
+    const getNetworkString = (chainId?: number) => {
+        switch (chainId) {
+            case 1:
+                return 'MAINNET'
+            case 137:
+                return 'POLYGON'
+            case 42161:
+                return 'ARBITRUM'
+            case 10:
+                return 'OPTIMISM'
+            case 8453:
+                return 'BASE'
+            case 43114:
+                return 'AVALANCHE'
+            case 252:
+                return 'FRAXTAL'
+            case 34443:
+                return 'MODE'
+            case 100:
+                return 'GNOSIS'
+            default:
+                return 'MAINNET'
+        }
+    }
+
+    const selectedNetwork = getNetworkString(chain?.id)
 
     const addToken = () => {
         if (tokens.length >= 8) {
@@ -37,15 +78,52 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
     }
 
     const removeToken = (index: number) => {
+        if (tokens.length <= 1) {
+            toast({
+                title: 'Cannot remove token',
+                description: 'Pool must have at least one token',
+                status: 'warning',
+            })
+            return
+        }
         const newTokens = tokens.filter((_, i) => i !== index)
         setTokens(newTokens)
         onConfigUpdate(newTokens)
     }
 
-    const updateToken = (index: number, field: keyof Token, value: string | number) => {
+    const handleTokenSelect = (index: number, selectedToken: TokenListToken) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
-                return { ...token, [field]: value }
+                return {
+                    ...token,
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI,
+                    name: selectedToken.name,
+                }
+            }
+            return token
+        })
+        setTokens(newTokens)
+        onConfigUpdate(newTokens)
+    }
+
+    const updateTokenAmount = (index: number, amount: string) => {
+        const newTokens = tokens.map((token, i) => {
+            if (i === index) {
+                return { ...token, initialAmount: amount }
+            }
+            return token
+        })
+        setTokens(newTokens)
+        onConfigUpdate(newTokens)
+    }
+
+    const updateWeight = (index: number, value: number) => {
+        const newTokens = tokens.map((token, i) => {
+            if (i === index) {
+                return { ...token, weight: value }
             }
             return token
         })
@@ -69,20 +147,19 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
                 >
                     <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                         <FormControl>
-                            <FormLabel>Token Address</FormLabel>
-                            <Input
-                                value={token.address}
-                                onChange={(e) => updateToken(index, 'address', e.target.value)}
-                                placeholder="0x..."
-                            />
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Symbol</FormLabel>
-                            <Input
-                                value={token.symbol}
-                                onChange={(e) => updateToken(index, 'symbol', e.target.value)}
-                                placeholder="Token Symbol"
+                            <FormLabel>Token</FormLabel>
+                            <TokenSelector
+                                selectedNetwork={selectedNetwork}
+                                onSelect={(selectedToken) => handleTokenSelect(index, selectedToken)}
+                                selectedToken={token.address ? {
+                                    address: token.address,
+                                    symbol: token.symbol,
+                                    decimals: token.decimals!,
+                                    logoURI: token.logoURI!,
+                                    name: token.name!,
+                                    chainId: chain?.id!
+                                } : undefined}
+                                placeholder="Select token"
                             />
                         </FormControl>
 
@@ -90,21 +167,13 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
                             <FormLabel>Weight (%)</FormLabel>
                             <NumberInput
                                 value={token.weight}
-                                onChange={(value) => updateToken(index, 'weight', parseFloat(value))}
+                                onChange={(_, valueNumber) => updateWeight(index, valueNumber)}
                                 min={0}
                                 max={100}
+                                precision={2}
                             >
                                 <NumberInputField />
                             </NumberInput>
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Initial Balance</FormLabel>
-                            <Input
-                                value={token.balance}
-                                onChange={(e) => updateToken(index, 'balance', e.target.value)}
-                                placeholder="0.0"
-                            />
                         </FormControl>
                     </Grid>
 
@@ -124,7 +193,11 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
             ))}
 
             <Box>
-                <Button onClick={addToken} colorScheme="blue">
+                <Button
+                    onClick={addToken}
+                    colorScheme="blue"
+                    isDisabled={tokens.length >= 8}
+                >
                     Add Token
                 </Button>
             </Box>

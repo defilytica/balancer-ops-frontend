@@ -1,6 +1,6 @@
 'use client'
-import {Box, Card, CardBody, CardHeader, Grid, GridItem, Heading} from '@chakra-ui/react';
-import React, { useState } from 'react';
+import {Box, Card, CardBody, CardHeader, Grid, GridItem, Heading, useToast} from '@chakra-ui/react';
+import React, {useCallback, useState} from 'react';
 import {PoolConfig} from "@/types/interfaces";
 import {PoolType} from "@/types/types";
 import {PoolTypeSelector} from "@/components/poolCreator/PoolTypeSelector";
@@ -8,6 +8,9 @@ import {PoolCreatorStepper} from "@/components/poolCreator/PoolCreatorStepper";
 import {ConfigurationCard} from "@/components/poolCreator/ConfigurationCard";
 import {WeightedPoolConfig} from "@/components/poolCreator/WeightedPoolConfig";
 import {ComposableStablePoolConfig} from "@/components/poolCreator/ComposableStablePoolConfig";
+import {StepNavigation} from "@/components/poolCreator/StepNavigation";
+import {PoolSettings} from "@/components/poolCreator/PoolSettings";
+import {PoolReview} from "@/components/poolCreator/PoolReview";
 
 const PoolCreatorPage: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0)
@@ -15,15 +18,144 @@ const PoolCreatorPage: React.FC = () => {
         type: 'weighted',
         tokens: []
     })
+    const toast = useToast()
 
-    const handlePoolTypeSelect = (type: PoolType) => {
-        setPoolConfig(prev => ({ ...prev, type }))
-        setActiveStep(1)
+    const validateStep = useCallback((step: number): boolean => {
+        switch (step) {
+            case 0: // Pool Type Selection
+                return !!poolConfig.type
+
+            case 1: // Token Configuration
+                if (poolConfig.tokens.length === 0) {
+                    toast({
+                        title: 'Validation Error',
+                        description: 'Please add at least one token',
+                        status: 'error',
+                    })
+                    return false
+                }
+
+                if (poolConfig.type === 'weighted') {
+                    const totalWeight = poolConfig.tokens.reduce(
+                        (sum, token) => sum + (token.weight || 0),
+                        0
+                    )
+                    if (totalWeight !== 100) {
+                        toast({
+                            title: 'Validation Error',
+                            description: 'Total weight must equal 100%',
+                            status: 'error',
+                        })
+                        return false
+                    }
+                }
+
+                if (poolConfig.type === 'composableStable' && poolConfig.tokens.length < 2) {
+                    toast({
+                        title: 'Validation Error',
+                        description: 'Composable Stable pools require at least 2 tokens',
+                        status: 'error',
+                    })
+                    return false
+                }
+
+                return poolConfig.tokens.every(token => {
+                    if (!token.address || !token.symbol || !token.balance) {
+                        toast({
+                            title: 'Validation Error',
+                            description: 'Please fill in all token fields',
+                            status: 'error',
+                        })
+                        return false
+                    }
+                    return true
+                })
+
+            case 2: // Pool Settings
+                    // Add validation for pool-specific settings
+                return true
+
+            case 3: // Review
+                return true
+
+            default:
+                return false
+        }
+    }, [poolConfig, toast])
+
+    const handleNext = () => {
+        if (validateStep(activeStep)) {
+            setActiveStep(prev => prev + 1)
+        }
     }
 
-    const handleConfigUpdate = (newConfig: Partial<PoolConfig>) => {
-        setPoolConfig(prev => ({ ...prev, ...newConfig }))
+    const handleBack = () => {
+        setActiveStep(prev => Math.max(0, prev - 1))
     }
+
+    const handleFinish = async () => {
+        if (validateStep(3)) {
+            try {
+                // Add your pool creation logic here
+                toast({
+                    title: 'Success',
+                    description: 'Pool created successfully',
+                    status: 'success',
+                })
+            } catch (error) {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to create pool',
+                    status: 'error',
+                })
+            }
+        }
+    }
+
+    const getStepContent = () => {
+        switch (activeStep) {
+            case 0:
+                return (
+                    <PoolTypeSelector
+                        onSelect={(type) => {
+                            setPoolConfig(prev => ({ ...prev, type }))
+                        }}
+                    />
+                )
+            case 1:
+                return poolConfig.type === 'weighted' ? (
+                    <WeightedPoolConfig
+                        onConfigUpdate={(tokens) => setPoolConfig(prev => ({ ...prev, tokens }))}
+                    />
+                ) : (
+                    <ComposableStablePoolConfig
+                        onConfigUpdate={(config) => setPoolConfig(prev => ({ ...prev, ...config }))}
+                    />
+                )
+            case 2:
+                return (
+                    <PoolSettings
+                        poolType={poolConfig.type}
+                        onSettingsUpdate={(settings) => setPoolConfig(prev => ({ ...prev, ...settings }))}
+                    />
+                )
+            case 3:
+                return <PoolReview config={poolConfig} />
+            default:
+                return null
+        }
+    }
+
+    const isNextDisabled = useCallback(() => {
+        switch (activeStep) {
+            case 0:
+                return !poolConfig.type
+            case 1:
+                return poolConfig.tokens.length === 0
+            default:
+                return false
+        }
+    }, [activeStep, poolConfig])
 
     return (
         <Box p={8}>
@@ -36,19 +168,16 @@ const PoolCreatorPage: React.FC = () => {
                             <Heading size="md">Configure Pool</Heading>
                         </CardHeader>
                         <CardBody>
-                            {activeStep === 0 && (
-                                <PoolTypeSelector onSelect={handlePoolTypeSelect} />
-                            )}
-                            {activeStep === 1 && poolConfig.type === 'weighted' && (
-                                <WeightedPoolConfig
-                                    onConfigUpdate={(tokens) => handleConfigUpdate({ tokens })}
-                                />
-                            )}
-                            {activeStep === 1 && poolConfig.type === 'composableStable' && (
-                                <ComposableStablePoolConfig
-                                    onConfigUpdate={(config) => handleConfigUpdate(config)}
-                                />
-                            )}
+                            {getStepContent()}
+
+                            <StepNavigation
+                                activeStep={activeStep}
+                                isNextDisabled={isNextDisabled()}
+                                onNext={handleNext}
+                                onBack={handleBack}
+                                onFinish={handleFinish}
+                                isLastStep={activeStep === 3}
+                            />
                         </CardBody>
                     </Card>
                 </GridItem>

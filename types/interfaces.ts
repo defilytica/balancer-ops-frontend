@@ -68,3 +68,21 @@ export interface Token {
   symbol: string;
   balance: string;
 }
+
+//TODO: Refactor token interface!
+export interface TokenListToken {
+  chainId: number;
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+}
+
+export interface GetTokensQuery {
+  tokenGetTokens: TokenListToken[];
+}
+
+export interface GetTokensQueryVariables {
+  chainIn: string[];
+}
