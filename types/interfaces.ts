@@ -1,3 +1,5 @@
+import {PoolType} from "@/types/types";
+
 export interface AddressBook {
   active: {
     [network: string]: {
@@ -50,4 +52,19 @@ export interface TokenInfo {
   symbol: string;
   address: string;
   decimals: number;
+}
+
+export interface PoolConfig {
+  type: PoolType;
+  tokens: Token[];
+  weights?: number[]; // For weighted pools
+  amplificationFactor?: number; // For stable pools
+  // Add other pool-specific configurations
+}
+
+export interface Token {
+  address: string;
+  weight?: number;
+  symbol: string;
+  balance: string;
 }

@@ -1,8 +1,9 @@
 import React from "react";
-import { Flex, useColorModeValue, Avatar } from "@chakra-ui/react";
+import {Flex, useColorModeValue, Avatar, Box} from "@chakra-ui/react";
 import DarkModeToggle from "@/components/btns/DarkModeToggle";
 import { SignInButton } from "@/components/SignInButton";
 import { useSession } from "next-auth/react";
+import {ConnectWallet} from "@/lib/modules/web3/ConnectWallet";
 
 const DesktopNav = () => {
   const session = useSession();
@@ -23,7 +24,11 @@ const DesktopNav = () => {
         )}
         <SignInButton />
       </Flex>
+
       <DarkModeToggle />
+      <Box ml={2}>
+        <ConnectWallet />
+      </Box>
     </Flex>
   );
 };
