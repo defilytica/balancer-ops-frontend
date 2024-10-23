@@ -56,7 +56,7 @@ export interface TokenInfo {
 
 export interface PoolConfig {
   type: PoolType;
-  tokens: Token[];
+  tokens: PoolToken[];
   weights?: number[]; // For weighted pools
   amplificationFactor?: number; // For stable pools
   // Add other pool-specific configurations
@@ -67,6 +67,16 @@ export interface Token {
   weight?: number;
   symbol: string;
   balance: string;
+}
+
+export interface PoolToken {
+  address: string;
+  weight: number;
+  symbol: string;
+  amount: string;
+  decimals?: number;
+  logoURI?: string;
+  name?: string;
 }
 
 //TODO: Refactor token interface!

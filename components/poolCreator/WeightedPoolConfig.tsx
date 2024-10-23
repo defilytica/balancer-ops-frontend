@@ -1,4 +1,3 @@
-// src/components/PoolCreator/WeightedPoolConfig.tsx
 import {
     Box,
     Button,
@@ -10,11 +9,14 @@ import {
     Stack,
     Text,
     useToast,
+    Input, IconButton,
 } from '@chakra-ui/react'
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { TokenSelector } from './TokenSelector'
+import { PoolCompositionChart } from './PoolCompositionChart'
 import { TokenListToken } from '@/types/interfaces'
+import {DeleteIcon} from "@chakra-ui/icons";
 
 interface WeightedPoolConfigProps {
     onConfigUpdate: (tokens: PoolToken[]) => void;
@@ -24,7 +26,7 @@ interface PoolToken {
     address: string;
     weight: number;
     symbol: string;
-    balance: string;
+    amount: string;
     decimals?: number;
     logoURI?: string;
     name?: string;
@@ -33,11 +35,10 @@ interface PoolToken {
 export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) => {
     const { chain } = useAccount()
     const [tokens, setTokens] = useState<PoolToken[]>([
-        { address: '', weight: 0, symbol: '', balance: '' }
+        { address: '', weight: 0, symbol: '', amount: '' }
     ])
     const toast = useToast()
 
-    // Convert chain.id to network string (adjust mapping as needed) - refactor?
     const getNetworkString = (chainId?: number) => {
         switch (chainId) {
             case 1:
@@ -74,7 +75,7 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
             })
             return
         }
-        setTokens([...tokens, { address: '', weight: 0, symbol: '', balance: '' }])
+        setTokens([...tokens, { address: '', weight: 0, symbol: '', amount: '' }])
     }
 
     const removeToken = (index: number) => {
@@ -109,10 +110,10 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
         onConfigUpdate(newTokens)
     }
 
-    const updateTokenAmount = (index: number, amount: string) => {
+    const updateAmount = (index: number, amount: string) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
-                return { ...token, initialAmount: amount }
+                return { ...token, amount }
             }
             return token
         })
@@ -131,86 +132,87 @@ export const WeightedPoolConfig = ({ onConfigUpdate }: WeightedPoolConfigProps) 
         onConfigUpdate(newTokens)
     }
 
-    const getTotalWeight = () => tokens.reduce((sum, token) => sum + (token.weight || 0), 0)
+
 
     return (
         <Stack spacing={6}>
-            <Text fontSize="lg" fontWeight="bold">Weighted Pool Configuration</Text>
+            {/* Token Configuration Section */}
+            <Stack spacing={4}>
+                {tokens.map((token, index) => (
+                    <Box
+                        key={index}
+                        p={4}
+                        borderWidth="1px"
+                        borderRadius="md"
+                        position="relative"
+                    >
+                        <Grid templateColumns="repeat(3, 1fr)" gap={3}>
+                            <FormControl>
+                                <FormLabel>Token</FormLabel>
+                                <TokenSelector
+                                    selectedNetwork={selectedNetwork}
+                                    onSelect={(selectedToken) => handleTokenSelect(index, selectedToken)}
+                                    selectedToken={token.address ? {
+                                        address: token.address,
+                                        symbol: token.symbol,
+                                        decimals: token.decimals!,
+                                        logoURI: token.logoURI!,
+                                        name: token.name!,
+                                        chainId: chain?.id!
+                                    } : undefined}
+                                    placeholder="Select token"
+                                />
+                            </FormControl>
 
-            {tokens.map((token, index) => (
-                <Box
-                    key={index}
-                    p={4}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    position="relative"
-                >
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                        <FormControl>
-                            <FormLabel>Token</FormLabel>
-                            <TokenSelector
-                                selectedNetwork={selectedNetwork}
-                                onSelect={(selectedToken) => handleTokenSelect(index, selectedToken)}
-                                selectedToken={token.address ? {
-                                    address: token.address,
-                                    symbol: token.symbol,
-                                    decimals: token.decimals!,
-                                    logoURI: token.logoURI!,
-                                    name: token.name!,
-                                    chainId: chain?.id!
-                                } : undefined}
-                                placeholder="Select token"
-                            />
-                        </FormControl>
+                            <FormControl>
+                                <FormLabel>Weight (%)</FormLabel>
+                                <NumberInput
+                                    value={token.weight}
+                                    onChange={(_, valueNumber) => updateWeight(index, valueNumber)}
+                                    min={0}
+                                    max={100}
+                                    precision={2}
+                                >
+                                    <NumberInputField />
+                                </NumberInput>
+                            </FormControl>
 
-                        <FormControl>
-                            <FormLabel>Weight (%)</FormLabel>
-                            <NumberInput
-                                value={token.weight}
-                                onChange={(_, valueNumber) => updateWeight(index, valueNumber)}
-                                min={0}
-                                max={100}
-                                precision={2}
-                            >
-                                <NumberInputField />
-                            </NumberInput>
-                        </FormControl>
-                    </Grid>
+                            <FormControl>
+                                <FormLabel>Amount</FormLabel>
+                                <NumberInput
+                                    value={token.amount}
+                                    onChange={(valueString) => updateAmount(index, valueString)}
+                                    min={0}
+                                    precision={8}
+                                >
+                                    <NumberInputField />
+                                </NumberInput>
+                            </FormControl>
+                            <FormControl>
+                                {tokens.length > 1 && (
+                                    <IconButton
+                                        icon={<DeleteIcon />}
+                                        size="sm"
+                                        onClick={() => removeToken(index)}
+                                        aria-label={"Delete"}
+                                    />
+                                )}
+                            </FormControl>
+                        </Grid>
 
-                    {tokens.length > 1 && (
-                        <Button
-                            position="absolute"
-                            top={2}
-                            right={2}
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => removeToken(index)}
-                        >
-                            Remove
-                        </Button>
-                    )}
-                </Box>
-            ))}
+                    </Box>
+                ))}
+            </Stack>
 
+            {/* Add Token Button */}
             <Box>
                 <Button
+                    variant="secondary"
                     onClick={addToken}
-                    colorScheme="blue"
                     isDisabled={tokens.length >= 8}
                 >
                     Add Token
                 </Button>
-            </Box>
-
-            <Box
-                p={4}
-                bg={getTotalWeight() === 100 ? 'green.50' : 'red.50'}
-                borderRadius="md"
-            >
-                <Text fontWeight="bold">
-                    Total Weight: {getTotalWeight()}%
-                    {getTotalWeight() !== 100 && ' (Must equal 100%)'}
-                </Text>
             </Box>
         </Stack>
     )

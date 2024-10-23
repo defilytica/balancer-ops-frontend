@@ -60,7 +60,8 @@ const PoolCreatorPage: React.FC = () => {
                 }
 
                 return poolConfig.tokens.every(token => {
-                    if (!token.address || !token.symbol || !token.balance) {
+                    if (!token.address || !token.weight || !token.amount) {
+
                         toast({
                             title: 'Validation Error',
                             description: 'Please fill in all token fields',
@@ -165,7 +166,7 @@ const PoolCreatorPage: React.FC = () => {
                 <GridItem>
                     <Card>
                         <CardHeader>
-                            <Heading size="md">Configure Pool</Heading>
+                            <Heading size="md">Configure Pool: {poolConfig.type}</Heading>
                         </CardHeader>
                         <CardBody>
                             {getStepContent()}

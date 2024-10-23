@@ -122,7 +122,7 @@ export const PoolSettings = ({ poolType, onSettingsUpdate, initialSettings = {} 
                             <NumberDecrementStepper />
                         </NumberInputStepper>
                     </NumberInput>
-                    <InputRightAddon children="%" />
+                    <InputRightAddon />
                 </InputGroup>
             </FormControl>
 

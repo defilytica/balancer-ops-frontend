@@ -16,27 +16,27 @@ import {
     Tooltip, GridItem, CardHeader, Card, Heading, CardBody,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import {PoolConfig, Token} from "@/types/interfaces";
+import {PoolConfig, PoolToken, Token} from "@/types/interfaces";
 import {PoolType} from "@/types/types";
 import {PoolCreatorStepper} from "@/components/poolCreator/PoolCreatorStepper";
 import {PoolTypeSelector} from "@/components/poolCreator/PoolTypeSelector";
 
 interface ComposableStablePoolConfigProps {
     onConfigUpdate: (config: {
-        tokens: Token[];
+        tokens: PoolToken[];
         amplificationFactor: number;
     }) => void;
 }
 
 export const ComposableStablePoolConfig = ({ onConfigUpdate }: ComposableStablePoolConfigProps) => {
-    const [tokens, setTokens] = useState<Token[]>([
-        { address: '', symbol: '', balance: '' }
+    const [tokens, setTokens] = useState<PoolToken[]>([
+        { address: '', symbol: '', amount: '', weight: 0 }
     ])
     const [amplificationFactor, setAmplificationFactor] = useState(100)
     const [showTooltip, setShowTooltip] = useState(false)
 
     const addToken = () => {
-        setTokens([...tokens, { address: '', symbol: '', balance: '' }])
+        setTokens([...tokens, { address: '', symbol: '', amount: '', weight: 0 }])
     }
 
     const removeToken = (index: number) => {
@@ -45,7 +45,7 @@ export const ComposableStablePoolConfig = ({ onConfigUpdate }: ComposableStableP
         updateConfig(newTokens, amplificationFactor)
     }
 
-    const updateToken = (index: number, field: keyof Token, value: string) => {
+    const updateToken = (index: number, field: keyof PoolToken, value: string) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
                 return { ...token, [field]: value }
@@ -56,7 +56,7 @@ export const ComposableStablePoolConfig = ({ onConfigUpdate }: ComposableStableP
         updateConfig(newTokens, amplificationFactor)
     }
 
-    const updateConfig = (newTokens: Token[], newAmp: number) => {
+    const updateConfig = (newTokens: PoolToken[], newAmp: number) => {
         onConfigUpdate({
             tokens: newTokens,
             amplificationFactor: newAmp,
@@ -97,8 +97,8 @@ export const ComposableStablePoolConfig = ({ onConfigUpdate }: ComposableStableP
                         <FormControl>
                             <FormLabel>Initial Balance</FormLabel>
                             <Input
-                                value={token.balance}
-                                onChange={(e) => updateToken(index, 'balance', e.target.value)}
+                                value={token.amount}
+                                onChange={(e) => updateToken(index, 'amount', e.target.value)}
                                 placeholder="0.0"
                             />
                         </FormControl>

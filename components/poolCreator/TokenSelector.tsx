@@ -75,7 +75,7 @@ export const TokenSelector = ({
                 borderRadius="full"
             />
             <Text>{token.symbol}</Text>
-            <Text color="gray.500" fontSize="sm" maxWidth={'150px'}>
+            <Text fontSize="sm" maxWidth={'150px'}>
                 {token.name}
             </Text>
         </Flex>
@@ -85,12 +85,11 @@ export const TokenSelector = ({
         <>
             <InputGroup>
                 <Input
-                    value={selectedToken ? `${selectedToken.symbol} - ${selectedToken.name}` : ''}
+                    value={selectedToken ? `${selectedToken.symbol}` : ''}
                     placeholder={placeholder}
                     onClick={!isDisabled ? onOpen : undefined}
                     readOnly
                     cursor={isDisabled ? 'not-allowed' : 'pointer'}
-                    bg={isDisabled ? 'gray.100' : 'white'}
                 />
                 {selectedToken && (
                     <InputLeftElement>
@@ -98,7 +97,7 @@ export const TokenSelector = ({
                             src={selectedToken.logoURI}
                             fallbackSrc="https://raw.githubusercontent.com/feathericons/feather/master/icons/help-circle.svg"
                             alt={selectedToken.symbol}
-                            boxSize="20px"
+                            boxSize="25px"
                             borderRadius="full"
                         />
                     </InputLeftElement>
