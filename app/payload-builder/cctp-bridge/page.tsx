@@ -263,7 +263,7 @@ export default function CCIPBridge() {
           Generate Payload
         </Button>
         {generatedPayload && (
-          <SimulateTransactionButton batchFile={generatedPayload} />
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />

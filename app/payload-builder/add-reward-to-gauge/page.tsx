@@ -239,7 +239,7 @@ export default function AddRewardToGaugePage() {
           Generate Payload
         </Button>
         {generatedPayload && (
-          <SimulateTransactionButton batchFile={generatedPayload} />
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />
