@@ -5,5 +5,5 @@ export type NetworkInfo = {
   chainId: string;
 };
 
-export type PoolType = 'weighted' | 'composableStable';
+export type PoolType = 'weighted' | 'composableStable' | undefined;
 

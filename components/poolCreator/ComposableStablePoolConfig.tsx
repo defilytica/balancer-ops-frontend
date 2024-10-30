@@ -4,155 +4,147 @@ import {
     FormLabel,
     Grid,
     Input,
-    NumberInput,
-    NumberInputField,
     Stack,
-    Text,
     Button,
     Slider,
     SliderTrack,
     SliderFilledTrack,
     SliderThumb,
-    Tooltip, GridItem, CardHeader, Card, Heading, CardBody,
+    Tooltip,
 } from '@chakra-ui/react'
-import { useState } from 'react'
-import {PoolConfig, PoolToken, Token} from "@/types/interfaces";
-import {PoolType} from "@/types/types";
-import {PoolCreatorStepper} from "@/components/poolCreator/PoolCreatorStepper";
-import {PoolTypeSelector} from "@/components/poolCreator/PoolTypeSelector";
+import { useState, useEffect } from 'react'
+import { PoolConfig, PoolToken } from "@/types/interfaces"
+import { TokenSelector } from './TokenSelector'
+import {useAccount} from "wagmi";
+import {getNetworkString} from "@/lib/utils/getNetworkString";
 
 interface ComposableStablePoolConfigProps {
-    onConfigUpdate: (config: {
-        tokens: PoolToken[];
-        amplificationFactor: number;
-    }) => void;
+    config: PoolConfig;
+    onConfigUpdate: (config: PoolToken[]) => void;
 }
 
-export const ComposableStablePoolConfig = ({ onConfigUpdate }: ComposableStablePoolConfigProps) => {
-    const [tokens, setTokens] = useState<PoolToken[]>([
-        { address: '', symbol: '', amount: '', weight: 0 }
-    ])
-    const [amplificationFactor, setAmplificationFactor] = useState(100)
-    const [showTooltip, setShowTooltip] = useState(false)
+export const ComposableStablePoolConfig = ({
+                                               config,
+                                               onConfigUpdate
+                                           }: ComposableStablePoolConfigProps) => {
+    const [tokens, setTokens] = useState<PoolToken[]>(
+        config.tokens.length ? config.tokens : [
+            { address: '', symbol: '', amount: '', weight: 0 }
+        ]
+    );
+    const { chain } = useAccount()
+    const [showTooltip, setShowTooltip] = useState(false);
+    const selectedNetwork = getNetworkString(chain?.id)
+
+    // Sync local state with parent when config changes
+    useEffect(() => {
+        onConfigUpdate(tokens);
+    }, [tokens, onConfigUpdate]);
 
     const addToken = () => {
-        setTokens([...tokens, { address: '', symbol: '', amount: '', weight: 0 }])
-    }
+        const newTokens = [...tokens, { address: '', symbol: '', amount: '', weight: 0 }];
+        setTokens(newTokens);
+    };
 
     const removeToken = (index: number) => {
-        const newTokens = tokens.filter((_, i) => i !== index)
-        setTokens(newTokens)
-        updateConfig(newTokens, amplificationFactor)
-    }
+        if (tokens.length <= 2) return; // Maintain minimum 2 tokens for stable pools
+        const newTokens = tokens.filter((_, i) => i !== index);
+        setTokens(newTokens);
+    };
 
-    const updateToken = (index: number, field: keyof PoolToken, value: string) => {
+    const handleTokenSelect = (index: number, selectedToken: any) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
-                return { ...token, [field]: value }
+                return {
+                    ...token,
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI,
+                    name: selectedToken.name,
+                };
             }
-            return token
-        })
-        setTokens(newTokens)
-        updateConfig(newTokens, amplificationFactor)
-    }
+            return token;
+        });
+        setTokens(newTokens);
+    };
 
-    const updateConfig = (newTokens: PoolToken[], newAmp: number) => {
-        onConfigUpdate({
-            tokens: newTokens,
-            amplificationFactor: newAmp,
-        })
-    }
+    const updateAmount = (index: number, amount: string) => {
+        const newTokens = tokens.map((token, i) => {
+            if (i === index) {
+                return { ...token, amount };
+            }
+            return token;
+        });
+        setTokens(newTokens);
+    };
 
     return (
         <Stack spacing={6}>
-            <Text fontSize="lg" fontWeight="bold">Composable Stable Pool Configuration</Text>
+            {/* Token Configuration Section */}
+            <Stack spacing={4}>
+                {tokens.map((token, index) => (
+                    <Box
+                        key={index}
+                        p={4}
+                        borderWidth="1px"
+                        borderRadius="md"
+                        position="relative"
+                    >
+                        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                            <FormControl>
+                                <FormLabel>Token</FormLabel>
+                                <TokenSelector
+                                    selectedNetwork={selectedNetwork}
+                                    onSelect={(selectedToken) => handleTokenSelect(index, selectedToken)}
+                                    selectedToken={token.address ? {
+                                        chainId: chain?.id!,
+                                        address: token.address,
+                                        name: token.name!,
+                                        symbol: token.symbol,
+                                        decimals: token.decimals!,
+                                        logoURI: token.logoURI!,
+                                    } : undefined}
+                                    placeholder="Select token"
+                                />
+                            </FormControl>
 
-            {tokens.map((token, index) => (
-                <Box
-                    key={index}
-                    p={4}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    position="relative"
-                >
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                        <FormControl>
-                            <FormLabel>Token Address</FormLabel>
-                            <Input
-                                value={token.address}
-                                onChange={(e) => updateToken(index, 'address', e.target.value)}
-                                placeholder="0x..."
-                            />
-                        </FormControl>
+                            <FormControl>
+                                <FormLabel>Initial Balance</FormLabel>
+                                <Input
+                                    value={token.amount}
+                                    onChange={(e) => updateAmount(index, e.target.value)}
+                                    placeholder="0.0"
+                                />
+                            </FormControl>
+                        </Grid>
 
-                        <FormControl>
-                            <FormLabel>Symbol</FormLabel>
-                            <Input
-                                value={token.symbol}
-                                onChange={(e) => updateToken(index, 'symbol', e.target.value)}
-                                placeholder="Token Symbol"
-                            />
-                        </FormControl>
+                        {tokens.length > 2 && (
+                            <Button
+                                position="absolute"
+                                top={2}
+                                right={2}
+                                size="sm"
+                                colorScheme="red"
+                                onClick={() => removeToken(index)}
+                            >
+                                Remove
+                            </Button>
+                        )}
+                    </Box>
+                ))}
+            </Stack>
 
-                        <FormControl>
-                            <FormLabel>Initial Balance</FormLabel>
-                            <Input
-                                value={token.amount}
-                                onChange={(e) => updateToken(index, 'amount', e.target.value)}
-                                placeholder="0.0"
-                            />
-                        </FormControl>
-                    </Grid>
-
-                    {tokens.length > 2 && (
-                        <Button
-                            position="absolute"
-                            top={2}
-                            right={2}
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => removeToken(index)}
-                        >
-                            Remove
-                        </Button>
-                    )}
-                </Box>
-            ))}
-
+            {/* Add Token Button */}
             <Box>
-                <Button onClick={addToken} colorScheme="blue">
+                <Button
+                    onClick={addToken}
+                    variant="outline"
+                    isDisabled={tokens.length >= 8}
+                >
                     Add Token
                 </Button>
             </Box>
-
-            <FormControl>
-                <FormLabel>Amplification Factor</FormLabel>
-                <Slider
-                    defaultValue={100}
-                    min={1}
-                    max={5000}
-                    onChange={(v) => {
-                        setAmplificationFactor(v)
-                        updateConfig(tokens, v)
-                    }}
-                    onMouseEnter={() => setShowTooltip(true)}
-                    onMouseLeave={() => setShowTooltip(false)}
-                >
-                    <SliderTrack>
-                        <SliderFilledTrack />
-                    </SliderTrack>
-                    <Tooltip
-                        hasArrow
-                        bg='blue.500'
-                        color='white'
-                        placement='top'
-                        isOpen={showTooltip}
-                        label={`${amplificationFactor}`}
-                    >
-                        <SliderThumb />
-                    </Tooltip>
-                </Slider>
-            </FormControl>
         </Stack>
-    )
-}
+    );
+};

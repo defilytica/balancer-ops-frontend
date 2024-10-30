@@ -1,10 +1,8 @@
 import {
-    Box,
     Image,
     Input,
     InputGroup,
     InputLeftElement,
-    Stack,
     Text,
     VStack,
     useDisclosure,
@@ -14,7 +12,6 @@ import {
     ModalHeader,
     ModalBody,
     InputRightElement,
-    Button,
     List,
     ListItem,
     Flex,
@@ -51,6 +48,9 @@ export const TokenSelector = ({
         {
             variables: { chainIn: [selectedNetwork] },
             skip: !selectedNetwork,
+            context: {
+                uri: selectedNetwork === 'SEPOLIA' ? 'https://test-api-v3.balancer.fi/' : 'https://api-v3.balancer.fi/'
+            }
         }
     );
 

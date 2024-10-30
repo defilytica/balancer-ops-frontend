@@ -55,11 +55,9 @@ export interface TokenInfo {
 }
 
 export interface PoolConfig {
-  type: PoolType;
+  type?: PoolType;
   tokens: PoolToken[];
-  weights?: number[]; // For weighted pools
-  amplificationFactor?: number; // For stable pools
-  // Add other pool-specific configurations
+  settings?: PoolSettings;
 }
 
 export interface Token {
@@ -77,6 +75,7 @@ export interface PoolToken {
   decimals?: number;
   logoURI?: string;
   name?: string;
+  rateProvider?: string;
 }
 
 //TODO: Refactor token interface!
@@ -95,4 +94,25 @@ export interface GetTokensQuery {
 
 export interface GetTokensQueryVariables {
   chainIn: string[];
+}
+
+export interface WeightedPoolSpecific {
+  feeManagement: {
+    type: 'fixed' | 'governance' | 'custom';
+    customOwner?: string;
+    owner?: string;
+  };
+}
+
+export interface StablePoolSpecific {
+  amplificationParameter: number;
+  metaStableEnabled: boolean;
+}
+
+export interface PoolSettings {
+  swapFee: number;
+  name: string;
+  symbol: string;
+  weightedSpecific?: WeightedPoolSpecific;
+  stableSpecific?: StablePoolSpecific;
 }

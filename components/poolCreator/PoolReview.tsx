@@ -115,7 +115,7 @@ export const PoolReview = ({ config }: PoolReviewProps) => {
                                             </Text>
                                         </Td>
                                         {config.type === 'weighted' && <Td>{token.weight}%</Td>}
-                                        <Td>{token.balance}</Td>
+                                        <Td>{token.amount}</Td>
                                     </Tr>
                                 ))}
                             </Tbody>

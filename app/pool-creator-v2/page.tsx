@@ -9,16 +9,22 @@ import {ConfigurationCard} from "@/components/poolCreator/ConfigurationCard";
 import {WeightedPoolConfig} from "@/components/poolCreator/WeightedPoolConfig";
 import {ComposableStablePoolConfig} from "@/components/poolCreator/ComposableStablePoolConfig";
 import {StepNavigation} from "@/components/poolCreator/StepNavigation";
-import {PoolSettings} from "@/components/poolCreator/PoolSettings";
+import {PoolSettingsComponent} from "@/components/poolCreator/PoolSettings";
 import {PoolReview} from "@/components/poolCreator/PoolReview";
+import {usePoolCreator} from "@/lib/shared/hooks/usePoolCreator";
 
 const PoolCreatorPage: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0)
-    const [poolConfig, setPoolConfig] = useState<PoolConfig>({
-        type: 'weighted',
-        tokens: []
-    })
     const toast = useToast()
+    const {
+        poolConfig,
+        updatePoolType,
+        updateTokens,
+        updateSettings,
+        isStepValid,
+    } = usePoolCreator();
+
+
 
     const validateStep = useCallback((step: number): boolean => {
         switch (step) {
@@ -85,10 +91,16 @@ const PoolCreatorPage: React.FC = () => {
     }, [poolConfig, toast])
 
     const handleNext = () => {
-        if (validateStep(activeStep)) {
-            setActiveStep(prev => prev + 1)
+        if (isStepValid(activeStep)) {
+            setActiveStep(prev => prev + 1);
+        } else {
+            toast({
+                title: 'Validation Error',
+                description: 'Please complete all required fields',
+                status: 'error',
+            });
         }
-    }
+    };
 
     const handleBack = () => {
         setActiveStep(prev => Math.max(0, prev - 1))
@@ -117,29 +129,33 @@ const PoolCreatorPage: React.FC = () => {
         switch (activeStep) {
             case 0:
                 return (
-                    <PoolTypeSelector
-                        onSelect={(type) => {
-                            setPoolConfig(prev => ({ ...prev, type }))
-                        }}
-                    />
-                )
+                    <Box>
+                        <PoolTypeSelector
+                            selectedType={poolConfig.type}
+                            onSelect={updatePoolType}
+                        />
+                    </Box>
+                );
             case 1:
                 return poolConfig.type === 'weighted' ? (
                     <WeightedPoolConfig
-                        onConfigUpdate={(tokens) => setPoolConfig(prev => ({ ...prev, tokens }))}
+                        config={poolConfig}
+                        onConfigUpdate={updateTokens}
                     />
                 ) : (
                     <ComposableStablePoolConfig
-                        onConfigUpdate={(config) => setPoolConfig(prev => ({ ...prev, ...config }))}
+                        config={poolConfig}
+                        onConfigUpdate={updateTokens}
                     />
-                )
+                );
             case 2:
                 return (
-                    <PoolSettings
+                    <PoolSettingsComponent
                         poolType={poolConfig.type}
-                        onSettingsUpdate={(settings) => setPoolConfig(prev => ({ ...prev, ...settings }))}
+                        initialSettings={poolConfig.settings}
+                        onSettingsUpdate={updateSettings}
                     />
-                )
+                );
             case 3:
                 return <PoolReview config={poolConfig} />
             default:
@@ -161,7 +177,6 @@ const PoolCreatorPage: React.FC = () => {
     return (
         <Box p={8}>
             <PoolCreatorStepper activeStep={activeStep} />
-
             <Grid templateColumns="repeat(2, 1fr)" gap={8} mt={8}>
                 <GridItem>
                     <Card>

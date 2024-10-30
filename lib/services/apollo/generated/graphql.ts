@@ -326,10 +326,28 @@ export enum GqlPoolAprItemType {
   Staking = 'STAKING',
   /** APR boost that can be earned, i.e. via veBAL or maBEETS. */
   StakingBoost = 'STAKING_BOOST',
-  /** Cow AMM specific APR */
+  /**
+   * Cow AMM specific APR
+   * @deprecated Use SURPLUS_24H instead
+   */
   Surplus = 'SURPLUS',
-  /** Represents the swap fee APR in a pool. */
+  /** Surplus APR based on data from the last 7d */
+  Surplus_7D = 'SURPLUS_7D',
+  /** Surplus APR based on data from the last 24h */
+  Surplus_24H = 'SURPLUS_24H',
+  /** Surplus APR based on data from the last 30d */
+  Surplus_30D = 'SURPLUS_30D',
+  /**
+   * Represents the swap fee APR in a pool.
+   * @deprecated Use SWAP_FEE_24H instead
+   */
   SwapFee = 'SWAP_FEE',
+  /** Swap fee APR based on data from the last 7d */
+  SwapFee_7D = 'SWAP_FEE_7D',
+  /** Swap fee APR based on data from the last 24h */
+  SwapFee_24H = 'SWAP_FEE_24H',
+  /** Swap fee APR based on data from the last 30d */
+  SwapFee_30D = 'SWAP_FEE_30D',
   /** Reward APR in a pool from veBAL emissions allocated by gauge votes. Emitted in BAL. */
   VebalEmissions = 'VEBAL_EMISSIONS',
   /** APR that can be earned thourgh voting, i.e. gauge votes */
@@ -2058,6 +2076,8 @@ export type GqlVeBalLockSnapshot = {
   __typename: 'GqlVeBalLockSnapshot';
   /** The locked balance at that time. */
   balance: Scalars['AmountHumanReadable']['output'];
+  bias: Scalars['String']['output'];
+  slope: Scalars['String']['output'];
   /** The timestamp of the snapshot, snapshots are taking at lock events. */
   timestamp: Scalars['Int']['output'];
 };

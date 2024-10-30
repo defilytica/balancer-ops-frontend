@@ -24,6 +24,9 @@ export const tokenDecimals: Record<string, number> = {
   "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
 };
 
+export const GOVERNANCE_ADDRESS = '0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b';
+export const PRESET_FEES = [0.1, 0.3, 1.0];
+
 export const PAYLOAD_OPTIONS = [
   {
     href: "/payload-builder/create-payment",
@@ -245,6 +248,12 @@ export const networks: Record<string, NetworkInfo> = {
     explorer: "https://polygonscan.com/",
     chainId: "1",
   },
+  sepolia: {
+    logo: MainnetLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=sepolia&dkey=",
+    explorer: "https://sepolia.etherscan.io/",
+    chainId: "11155111"
+  }
 };
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
