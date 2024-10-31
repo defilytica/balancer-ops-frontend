@@ -466,6 +466,19 @@ interface GqlPoolBase {
   """The factory contract address from which the pool was created."""
   factory: Bytes
 
+  """
+  Whether at least one token in this pool is considered an ERC4626 token.
+  """
+  hasErc4626: Boolean!
+
+  """
+  Whether at least one token in a nested pool is considered an ERC4626 token.
+  """
+  hasNestedErc4626: Boolean!
+
+  """Hook assigned to a pool"""
+  hook: Hook
+
   """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
 
@@ -564,11 +577,14 @@ type GqlPoolComposableStable implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -596,7 +612,7 @@ type GqlPoolComposableStableNested {
   factory: Bytes
   id: ID!
   name: String!
-  nestingType: GqlPoolNestingType!
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   swapFee: BigDecimal!
   symbol: String!
@@ -675,6 +691,9 @@ type GqlPoolElement implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -839,6 +858,9 @@ type GqlPoolFx implements GqlPoolBase {
   dynamicData: GqlPoolDynamicData!
   epsilon: String!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
@@ -876,12 +898,15 @@ type GqlPoolGyro implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -961,11 +986,14 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -995,6 +1023,9 @@ type GqlPoolMetaStable implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -1048,6 +1079,11 @@ type GqlPoolMinimal {
   Whether at least one token in this pool is considered an ERC4626 token.
   """
   hasErc4626: Boolean!
+
+  """
+  Whether at least one token in a nested pool is considered an ERC4626 token.
+  """
+  hasNestedErc4626: Boolean!
 
   """Hook assigned to a pool"""
   hook: Hook
@@ -1171,6 +1207,9 @@ type GqlPoolStable implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -1606,11 +1645,14 @@ type GqlPoolWeighted implements GqlPoolBase {
   displayTokens: [GqlPoolTokenDisplay!]!
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -2098,7 +2140,7 @@ input GqlSwapCallDataInput {
   slippagePercentage: String!
 }
 
-"""Represents a token"""
+"""Represents a token in the system"""
 type GqlToken {
   """The address of the token"""
   address: String!
@@ -2137,7 +2179,7 @@ type GqlToken {
   priority: Int!
 
   """The rate provider data for the token"""
-  rateProviderData: GqlPriceRateProviderData
+  rateProviderData: GqlPriceRateProviderData @deprecated(reason: "Use priceRateProviderData instead")
 
   """The symbol of the token"""
   symbol: String!

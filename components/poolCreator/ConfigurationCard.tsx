@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
     Box,
     Image,
@@ -28,25 +28,91 @@ import {
 } from '@chakra-ui/react';
 import { IoIosCheckmarkCircle, IoIosCloseCircle } from "react-icons/io";
 import { PoolCompositionChart, PoolCompositionChartToken } from "./PoolCompositionChart";
-import { PoolConfig } from "@/types/interfaces";
+import {PoolConfig, PoolSettings} from "@/types/interfaces";
 
 interface ConfigurationCardProps {
     config: PoolConfig;
+    onSettingsUpdate: (settings: PoolSettings) => void;
 }
 
-export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config }) => {
+export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, onSettingsUpdate }) => {
     const getTotalWeight = () => config.tokens.reduce((sum, token) => sum + (token.weight || 0), 0);
     const totalWeight = getTotalWeight();
 
     const getChartTokens = (): PoolCompositionChartToken[] => {
         return config.tokens
-            .filter(token => token.symbol)
+            .filter(token => token.symbol && (
+                config.type === 'weighted' ?
+                    token.weight !== undefined && token.weight > 0 :
+                    true
+            ))
             .map(token => ({
                 symbol: token.symbol,
-                weight: config.type === 'weighted' ? token.weight : undefined,
+                weight: config.type === 'weighted' ? token.weight : (100 / config.tokens.length),
                 logoURI: token.logoURI,
             }));
     };
+
+    const chartTokens = getChartTokens();
+
+    const generatePoolName = (): string => {
+        if (!config.tokens.length) return '';
+
+        // Filter and sort tokens, ensuring we only use valid tokens
+        const validTokens = config.tokens
+            .filter(token => token.symbol && token.weight !== undefined)
+            .sort((a, b) => (b.weight || 0) - (a.weight || 0));
+
+        if (!validTokens.length) return '';
+
+        let poolName = '';
+        if (config.type === 'weighted') {
+            // Format each token: weight + lowercase symbol
+            poolName = validTokens
+                .map(token => {
+                    const weight = Math.round(token.weight || 0);
+                    const symbol = token.symbol.toUpperCase();
+                    return `${weight}${symbol}`;
+                })
+                .join('-');
+        } else {
+            // For stable pools, just lowercase symbols
+            poolName = validTokens
+                .map(token => token.symbol.toUpperCase())
+                .join('-');
+        }
+
+        // Truncate if longer than 32 chars to allow for possible suffix
+        if (poolName.length > 32) {
+            poolName = poolName.substring(0, 32) + '...';
+        }
+
+        return poolName;
+    };
+
+    useEffect(() => {
+        // Only proceed if we have valid tokens with symbols and weights
+        const validTokens = config.tokens.filter(token =>
+            token.symbol &&
+            (config.type === 'weighted' ? token.weight !== undefined : true)
+        );
+
+        if (validTokens.length >= 2) { // Only generate name with 2+ tokens
+            const generatedName = generatePoolName();
+            if (generatedName && config.settings) {
+                // Only update if name is empty or different from current
+                if (!config.settings.name || config.settings.name !== generatedName) {
+                    onSettingsUpdate({
+                        ...config.settings,
+                        name: generatedName,
+                        symbol: generatedName,
+                    });
+                }
+            }
+        }
+    }, [config.tokens, config.type]);
+
+
 
     const renderTokensTable = () => (
         <Box overflowX="auto">
@@ -205,8 +271,8 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config }) 
                     )}
 
                     {config.tokens.length >= 2 && (
-                        <Box >
-                            <PoolCompositionChart tokens={getChartTokens()} />
+                        <Box>
+                            <PoolCompositionChart tokens={chartTokens} />
                         </Box>
                     )}
 

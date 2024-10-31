@@ -1,167 +1,328 @@
+import React, { useState, useEffect } from 'react';
 import {
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
     Box,
+    Button,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Stack,
+    Text,
+    Alert,
+    AlertIcon,
+    HStack,
+    Spinner,
+    useToast,
+    VStack,
     Table,
     Thead,
     Tbody,
     Tr,
     Th,
-    Td,
-    Tag,
-    Stack,
-    Heading,
-    Text,
-    Divider,
-} from '@chakra-ui/react'
-import {PoolConfig} from "@/types/interfaces";
+    Td
+} from '@chakra-ui/react';
+import {
+    IoCheckmarkCircle,
+    IoWarning
+} from 'react-icons/io5';
+import { ethers } from 'ethers';
+import { PoolType } from "@/types/types";
+import { PoolConfig, PoolToken } from "@/types/interfaces";
+import { PoolSettingsComponent } from './PoolSettings';
+import { ERC20 } from '@/abi/erc20';
 
 interface PoolReviewProps {
-    config: PoolConfig & {
-        swapFee?: number;
-        name?: string;
-        symbol?: string;
-        isPublicSwap?: boolean;
-        owner?: string;
-        weightedSpecific?: {
-            minimumWeightChangeBlock: number;
-        };
-        stableSpecific?: {
-            amplificationParameter: number;
-            metaStableEnabled: boolean;
-        };
+    config: PoolConfig;
+    onBack: () => void;
+}
+
+interface TokenApprovalState {
+    checking: boolean;
+    needsApproval: boolean;
+    approved: boolean;
+    decimals?: number;
+    error?: string;
+}
+
+type ApprovalStates = Record<string, TokenApprovalState>;
+
+const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+
+export const PoolReview: React.FC<PoolReviewProps> = ({
+                                                          config,
+                                                          onBack
+                                                      }) => {
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
+    const [approvalStates, setApprovalStates] = useState<ApprovalStates>({});
+    const [isCreatingPool, setIsCreatingPool] = useState<boolean>(false);
+    const toast = useToast();
+
+    // Check token decimals and store them
+    const checkDecimals = async (tokenAddress: string): Promise<number> => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
+        try {
+            const decimals = await tokenContract.decimals();
+            return decimals;
+        } catch (error) {
+            console.error('Error getting decimals:', error);
+            return 18; // Default to 18 if there's an error
+        }
     };
-}
 
-export const PoolReview = ({ config }: PoolReviewProps) => {
+    // Check if token amount is approved
+    const checkApproval = async (
+        tokenAddress: string,
+        amount: string,
+        decimals: number
+    ): Promise<boolean> => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
+        const requiredAmount = ethers.parseUnits(amount || '0', decimals);
+
+        try {
+            const allowance = await tokenContract.allowance(userAddress, VAULT_ADDRESS);
+            return allowance.gte(requiredAmount);
+        } catch (error) {
+            console.error('Error checking allowance:', error);
+            return false;
+        }
+    };
+
+    // Handle token approval
+    const handleApprove = async (tokenAddress: string): Promise<void> => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20, signer);
+
+        try {
+            const tx = await tokenContract.approve(
+                VAULT_ADDRESS,
+                ethers.MaxUint256
+            );
+
+            setApprovalStates(prev => ({
+                ...prev,
+                [tokenAddress]: {
+                    ...prev[tokenAddress],
+                    checking: true,
+                    error: undefined
+                }
+            }));
+
+            await tx.wait();
+
+            // Verify the approval
+            const token = config.tokens.find(t => t.address === tokenAddress);
+            if (token && token.amount) {
+                const decimals = approvalStates[tokenAddress]?.decimals || 18;
+                const isApproved = await checkApproval(tokenAddress, token.amount, decimals);
+
+                setApprovalStates(prev => ({
+                    ...prev,
+                    [tokenAddress]: {
+                        ...prev[tokenAddress],
+                        checking: false,
+                        approved: isApproved,
+                        needsApproval: !isApproved
+                    }
+                }));
+            }
+        } catch (error) {
+            setApprovalStates(prev => ({
+                ...prev,
+                [tokenAddress]: {
+                    ...prev[tokenAddress],
+                    checking: false,
+                    error: 'Failed to approve token'
+                }
+            }));
+
+            toast({
+                title: 'Error',
+                description: 'Failed to approve token',
+                status: 'error',
+                duration: 5000,
+            });
+        }
+    };
+
+    // Check all token approvals
+    const checkAllApprovals = async () => {
+        setIsApprovalModalOpen(true);
+        const newStates: ApprovalStates = {};
+
+        for (const token of config.tokens) {
+            if (!token.address || !token.amount) continue;
+
+            newStates[token.address] = {
+                checking: true,
+                needsApproval: false,
+                approved: false
+            };
+            setApprovalStates(prev => ({ ...prev, ...newStates }));
+
+            try {
+                const decimals = await checkDecimals(token.address);
+                const isApproved = await checkApproval(token.address, token.amount, decimals);
+
+                newStates[token.address] = {
+                    checking: false,
+                    needsApproval: !isApproved,
+                    approved: isApproved,
+                    decimals
+                };
+                setApprovalStates(prev => ({ ...prev, ...newStates }));
+            } catch (error) {
+                newStates[token.address] = {
+                    checking: false,
+                    needsApproval: true,
+                    approved: false,
+                    error: 'Error checking approval'
+                };
+                setApprovalStates(prev => ({ ...prev, ...newStates }));
+            }
+        }
+    };
+
+    const handleCreatePool = async (): Promise<void> => {
+        // Pool creation logic here
+        setIsCreatingPool(true);
+        try {
+            // Add pool creation transaction
+            toast({
+                title: "Success",
+                description: "Pool created successfully!",
+                status: "success",
+                duration: 5000,
+            });
+            setIsApprovalModalOpen(false);
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : 'Failed to create pool',
+                status: "error",
+                duration: 5000,
+            });
+        } finally {
+            setIsCreatingPool(false);
+        }
+    };
+
+    const allTokensApproved = Object.values(approvalStates).every(
+        state => state.approved && !state.checking
+    );
+
     return (
-        <Stack spacing={6}>
-            <Box>
-                <Heading size="md" mb={4}>Pool Configuration Review</Heading>
-                <Tag size="lg" colorScheme={config.type === 'weighted' ? 'blue' : 'green'}>
-                    {config.type === 'weighted' ? 'Weighted Pool' : 'Composable Stable Pool'}
-                </Tag>
-            </Box>
+        <Box>
+            <VStack spacing={8} align="stretch">
+                <PoolSettingsComponent
+                    poolType={config.type}
+                    initialSettings={config.settings}
+                    onSettingsUpdate={() => {}}
+                    readOnly={true}
+                />
 
-            <Divider />
+                <HStack spacing={4} justify="flex-end">
+                    <Button
+                        variant="secondary"
+                        onClick={checkAllApprovals}
+                        isDisabled={isCreatingPool}
+                    >
+                        Create Pool
+                    </Button>
+                </HStack>
+            </VStack>
 
-            <Accordion defaultIndex={[0, 1]} allowMultiple>
-                <AccordionItem>
-                    <AccordionButton>
-                        <Box flex="1" textAlign="left" fontWeight="bold">
-                            Basic Settings
-                        </Box>
-                        <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel>
-                        <Table variant="simple" size="sm">
-                            <Tbody>
-                                <Tr>
-                                    <Th>Pool Name</Th>
-                                    <Td>{config.name}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Th>Pool Symbol</Th>
-                                    <Td>{config.symbol}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Th>Swap Fee</Th>
-                                    <Td>{config.swapFee}%</Td>
-                                </Tr>
-                                <Tr>
-                                    <Th>Owner</Th>
-                                    <Td>{config.owner}</Td>
-                                </Tr>
-                                <Tr>
-                                    <Th>Public Swapping</Th>
-                                    <Td>
-                                        <Tag colorScheme={config.isPublicSwap ? 'green' : 'red'}>
-                                            {config.isPublicSwap ? 'Enabled' : 'Disabled'}
-                                        </Tag>
-                                    </Td>
-                                </Tr>
-                            </Tbody>
-                        </Table>
-                    </AccordionPanel>
-                </AccordionItem>
-
-                <AccordionItem>
-                    <AccordionButton>
-                        <Box flex="1" textAlign="left" fontWeight="bold">
-                            Token Configuration
-                        </Box>
-                        <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel>
-                        <Table variant="simple" size="sm">
-                            <Thead>
-                                <Tr>
-                                    <Th>Token</Th>
-                                    <Th>Address</Th>
-                                    {config.type === 'weighted' && <Th>Weight</Th>}
-                                    <Th>Initial Balance</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {config.tokens.map((token, index) => (
-                                    <Tr key={index}>
-                                        <Td>{token.symbol}</Td>
-                                        <Td>
-                                            <Text fontSize="sm" fontFamily="monospace">
-                                                {`${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}`}
-                                            </Text>
-                                        </Td>
-                                        {config.type === 'weighted' && <Td>{token.weight}%</Td>}
-                                        <Td>{token.amount}</Td>
-                                    </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
-                    </AccordionPanel>
-                </AccordionItem>
-
-                <AccordionItem>
-                    <AccordionButton>
-                        <Box flex="1" textAlign="left" fontWeight="bold">
-                            Advanced Settings
-                        </Box>
-                        <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel>
-                        {config.type === 'weighted' && config.weightedSpecific && (
+            <Modal
+                isOpen={isApprovalModalOpen}
+                onClose={() => !isCreatingPool && setIsApprovalModalOpen(false)}
+                closeOnOverlayClick={false}
+                size="xl"
+            >
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Token Approvals Required</ModalHeader>
+                    <ModalBody>
+                        <VStack spacing={4} align="stretch">
                             <Table variant="simple" size="sm">
-                                <Tbody>
+                                <Thead>
                                     <Tr>
-                                        <Th>Minimum Weight Change Block</Th>
-                                        <Td>{config.weightedSpecific.minimumWeightChangeBlock}</Td>
+                                        <Th>Token</Th>
+                                        <Th>Amount</Th>
+                                        <Th>Status</Th>
+                                        <Th>Action</Th>
                                     </Tr>
+                                </Thead>
+                                <Tbody>
+                                    {config.tokens.map((token, index) => {
+                                        if (!token.address || !token.amount) return null;
+                                        const state = approvalStates[token.address];
+
+                                        return (
+                                            <Tr key={token.address}>
+                                                <Td>{token.symbol || 'Unknown'}</Td>
+                                                <Td>{token.amount}</Td>
+                                                <Td>
+                                                    {state?.checking ? (
+                                                        <Spinner size="sm" />
+                                                    ) : state?.approved ? (
+                                                        <IoCheckmarkCircle color="green" />
+                                                    ) : (
+                                                        <IoWarning color="orange" />
+                                                    )}
+                                                </Td>
+                                                <Td>
+                                                    <Button
+                                                        size="sm"
+                                                        colorScheme={state?.approved ? 'green' : 'blue'}
+                                                        isDisabled={state?.approved || state?.checking}
+                                                        onClick={() => handleApprove(token.address!)}
+                                                    >
+                                                        {state?.approved ? 'Approved' : 'Approve'}
+                                                    </Button>
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })}
                                 </Tbody>
                             </Table>
-                        )}
-                        {config.type === 'composableStable' && config.stableSpecific && (
-                            <Table variant="simple" size="sm">
-                                <Tbody>
-                                    <Tr>
-                                        <Th>Amplification Parameter</Th>
-                                        <Td>{config.stableSpecific.amplificationParameter}</Td>
-                                    </Tr>
-                                    <Tr>
-                                        <Th>Meta-Stable</Th>
-                                        <Td>
-                                            <Tag colorScheme={config.stableSpecific.metaStableEnabled ? 'green' : 'red'}>
-                                                {config.stableSpecific.metaStableEnabled ? 'Enabled' : 'Disabled'}
-                                            </Tag>
-                                        </Td>
-                                    </Tr>
-                                </Tbody>
-                            </Table>
-                        )}
-                    </AccordionPanel>
-                </AccordionItem>
-            </Accordion>
-        </Stack>
-    )
-}
+
+                            {allTokensApproved && (
+                                <Alert status="success">
+                                    <AlertIcon />
+                                    All tokens approved! Ready to create pool.
+                                </Alert>
+                            )}
+                        </VStack>
+                    </ModalBody>
+
+                    <ModalFooter>
+                        <Button
+                            variant="ghost"
+                            mr={3}
+                            onClick={() => setIsApprovalModalOpen(false)}
+                            isDisabled={isCreatingPool}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            colorScheme="blue"
+                            onClick={handleCreatePool}
+                            isDisabled={!allTokensApproved || isCreatingPool}
+                            isLoading={isCreatingPool}
+                            loadingText="Creating Pool"
+                        >
+                            Create Pool
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        </Box>
+    );
+};

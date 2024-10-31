@@ -28,13 +28,7 @@ export const StepNavigation = ({
             </Button>
             <ButtonGroup>
                 {isLastStep ? (
-                    <Button
-                        colorScheme="green"
-                        onClick={onFinish}
-                        isDisabled={isNextDisabled}
-                    >
-                        Create Pool
-                    </Button>
+                   <></>
                 ) : (
                     <Button
                         colorScheme="blue"

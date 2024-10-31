@@ -157,7 +157,7 @@ const PoolCreatorPage: React.FC = () => {
                     />
                 );
             case 3:
-                return <PoolReview config={poolConfig} />
+                return <PoolReview config={poolConfig} onBack={handleBack} />
             default:
                 return null
         }
@@ -199,7 +199,7 @@ const PoolCreatorPage: React.FC = () => {
                 </GridItem>
 
                 <GridItem>
-                    <ConfigurationCard config={poolConfig} />
+                    <ConfigurationCard config={poolConfig} onSettingsUpdate={updateSettings} />
                 </GridItem>
             </Grid>
         </Box>

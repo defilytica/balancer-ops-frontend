@@ -7,7 +7,10 @@ import AvalancheLogo from "@/public/imgs/avalancheLogo.svg";
 import ArbitrumLogo from "@/public/imgs/arbitrum.svg";
 import GnosisLogo from "@/public/imgs/gnosis.svg";
 import BaseLogo from "@/public/imgs/base.svg";
-import zkevmLogo from "@/public/imgs/Polygon-zkEVM.png";
+import zkevmLogo from "@/public/imgs/zkevm.svg";
+import sepoliaLogo from "@/public/imgs/sepolia.svg";
+import fraxtalLogo from "@/public/imgs/fraxtal.svg";
+import modeLogo from "@/public/imgs/mode.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
@@ -185,6 +188,13 @@ export const NETWORK_OPTIONS = [
     maxiSafe: "0x7BBAc709a9535464690A435ca7361256496f13Ce",
     entrypoint: "0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88",
   },
+  {
+    label: "Mode",
+    apiID: "MODE",
+    chainId: "34443",
+    maxiSafe: "",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -249,10 +259,22 @@ export const networks: Record<string, NetworkInfo> = {
     chainId: "1",
   },
   sepolia: {
-    logo: MainnetLogo.src,
+    logo: sepoliaLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=sepolia&dkey=",
     explorer: "https://sepolia.etherscan.io/",
     chainId: "11155111"
+  },
+  fraxtal: {
+    logo: fraxtalLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=fraxtal&dkey=",
+    explorer: "https://fraxscan.com",
+    chainId: "252"
+  },
+  mode: {
+    logo: modeLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=mode&dkey=",
+    explorer: "https://explorer.mode.network/",
+    chainId: "34443"
   }
 };
 

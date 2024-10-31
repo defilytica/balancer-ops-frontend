@@ -1,4 +1,3 @@
-// src/components/PoolCreator/PoolSettings.tsx
 import {
     FormControl,
     FormLabel,
@@ -13,21 +12,33 @@ import {
     NumberDecrementStepper,
     Tooltip,
     InputGroup,
-    InputRightAddon, ButtonGroup, Button, HStack, Icon, RadioGroup, Radio,
+    InputRightAddon,
+    ButtonGroup,
+    Button,
+    HStack,
+    Icon,
+    RadioGroup,
+    Radio,
 } from '@chakra-ui/react'
-import { useState, useCallback } from 'react'
-import {PoolType} from "@/types/types";
-import {GOVERNANCE_ADDRESS, PRESET_FEES} from "@/constants/constants";
-import {InfoIcon} from "@chakra-ui/icons";
-import {PoolSettings, StablePoolSpecific, WeightedPoolSpecific} from "@/types/interfaces";
+import { useState, useCallback, useEffect } from 'react'
+import { PoolType } from "@/types/types";
+import { GOVERNANCE_ADDRESS, PRESET_FEES } from "@/constants/constants";
+import { InfoIcon } from "@chakra-ui/icons";
+import { PoolSettings, StablePoolSpecific, WeightedPoolSpecific } from "@/types/interfaces";
 
 interface PoolSettingsProps {
     poolType: PoolType;
     onSettingsUpdate: (settings: PoolSettings) => void;
     initialSettings?: Partial<PoolSettings>;
+    readOnly?: boolean;
 }
 
-export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSettings = {} }: PoolSettingsProps) => {
+export const PoolSettingsComponent = ({
+                                          poolType,
+                                          onSettingsUpdate,
+                                          initialSettings = {},
+                                          readOnly = false
+                                      }: PoolSettingsProps) => {
     const [settings, setSettings] = useState<PoolSettings>(() => ({
         swapFee: 0.1,
         name: '',
@@ -49,50 +60,45 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
         ...initialSettings
     }));
 
+    useEffect(() => {
+        if (!readOnly) {
+            onSettingsUpdate(settings);
+        }
+    }, [onSettingsUpdate, settings, readOnly]);
+
     const updateSettings = useCallback((field: string, value: any) => {
-        setSettings(prev => {
-            const newSettings = {
-                ...prev,
-                [field]: value
-            };
-            onSettingsUpdate(newSettings);
-            return newSettings;
+        if (readOnly) return;
+
+        const newSettings = (prev: PoolSettings) => ({
+            ...prev,
+            [field]: value
         });
-    }, [onSettingsUpdate]);
+
+        setSettings(newSettings);
+        onSettingsUpdate(settings);
+    }, [onSettingsUpdate, settings, readOnly]);
 
     const updateWeightedSettings = useCallback((field: keyof WeightedPoolSpecific, value: any) => {
-        setSettings(prev => {
-            if (!prev.weightedSpecific) return prev;
+        if (readOnly) return;
 
-            const newSettings = {
+        const newSettings = (prev: PoolSettings) => {
+            if (!prev.weightedSpecific) return prev;
+            return {
                 ...prev,
                 weightedSpecific: {
                     ...prev.weightedSpecific,
                     [field]: value
                 }
             };
-            onSettingsUpdate(newSettings);
-            return newSettings;
-        });
-    }, [onSettingsUpdate]);
+        };
 
-    const updateStableSettings = useCallback((field: keyof StablePoolSpecific, value: any) => {
-        setSettings(prev => {
-            if (!prev.stableSpecific) return prev;
-
-            const newSettings = {
-                ...prev,
-                stableSpecific: {
-                    ...prev.stableSpecific,
-                    [field]: value
-                }
-            };
-            onSettingsUpdate(newSettings);
-            return newSettings;
-        });
-    }, [onSettingsUpdate]);
+        setSettings(newSettings);
+        onSettingsUpdate(settings);
+    }, [onSettingsUpdate, settings, readOnly]);
 
     const handleFeeManagementChange = useCallback((type: 'fixed' | 'governance' | 'custom') => {
+        if (readOnly) return;
+
         setSettings(prev => {
             const newSettings = {
                 ...prev,
@@ -108,24 +114,26 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
             onSettingsUpdate(newSettings);
             return newSettings;
         });
-    }, [onSettingsUpdate]);
+    }, [onSettingsUpdate, readOnly]);
 
     const renderWeightedPoolSettings = () => (
         <>
             <FormControl>
                 <FormLabel>Initial Swap Fee</FormLabel>
                 <Stack spacing={4}>
-                    <ButtonGroup size="sm" isAttached variant="outline">
-                        {PRESET_FEES.map(fee => (
-                            <Button
-                                key={fee}
-                                onClick={() => updateSettings('swapFee', fee)}
-                                colorScheme={settings.swapFee === fee ? 'blue' : 'gray'}
-                            >
-                                {fee}%
-                            </Button>
-                        ))}
-                    </ButtonGroup>
+                    {!readOnly && (
+                        <ButtonGroup size="sm" isAttached variant="outline">
+                            {PRESET_FEES.map(fee => (
+                                <Button
+                                    key={fee}
+                                    onClick={() => updateSettings('swapFee', fee)}
+                                    colorScheme={settings.swapFee === fee ? 'blue' : 'gray'}
+                                >
+                                    {fee}%
+                                </Button>
+                            ))}
+                        </ButtonGroup>
+                    )}
                     <InputGroup>
                         <NumberInput
                             value={settings.swapFee}
@@ -134,12 +142,15 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                             min={0.0001}
                             max={10}
                             precision={4}
+                            isReadOnly={readOnly}
                         >
                             <NumberInputField />
-                            <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                            </NumberInputStepper>
+                            {!readOnly && (
+                                <NumberInputStepper>
+                                    <NumberIncrementStepper />
+                                    <NumberDecrementStepper />
+                                </NumberInputStepper>
+                            )}
                         </NumberInput>
                         <InputRightAddon>%</InputRightAddon>
                     </InputGroup>
@@ -160,6 +171,8 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                     isChecked={settings.weightedSpecific?.feeManagement.type === 'governance'}
                     onChange={(e) => handleFeeManagementChange(e.target.checked ? 'governance' : 'fixed')}
                     mt={2}
+                    isReadOnly={readOnly}
+                    isDisabled={readOnly}
                 />
             </FormControl>
 
@@ -169,6 +182,7 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                     <RadioGroup
                         value={settings.weightedSpecific?.feeManagement.type}
                         onChange={(value) => handleFeeManagementChange(value as 'fixed' | 'custom')}
+                        isDisabled={readOnly}
                     >
                         <Stack>
                             <Radio value="fixed">Permanently fix fees to the initial rate</Radio>
@@ -184,6 +198,7 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                     <Input
                         value={settings.weightedSpecific.feeManagement.customOwner || ''}
                         onChange={(e) => {
+                            if (readOnly) return;
                             const value = e.target.value;
                             setSettings(prev => ({
                                 ...prev,
@@ -198,24 +213,24 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                             }));
                         }}
                         placeholder="0x..."
+                        isReadOnly={readOnly}
                     />
                 </FormControl>
             )}
         </>
     );
 
-
     return (
         <Stack spacing={6}>
             <Text fontSize="lg" fontWeight="bold">Pool Settings</Text>
 
-            {/* Basic Settings */}
             <FormControl>
                 <FormLabel>Pool Name</FormLabel>
                 <Input
                     value={settings.name}
                     onChange={(e) => updateSettings('name', e.target.value)}
                     placeholder="My Balancer Pool"
+                    isReadOnly={readOnly}
                 />
             </FormControl>
 
@@ -225,12 +240,12 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                     value={settings.symbol}
                     onChange={(e) => updateSettings('symbol', e.target.value)}
                     placeholder="BPT"
+                    isReadOnly={readOnly}
                 />
             </FormControl>
 
-            {/* Pool Type Specific Settings */}
             {poolType === 'weighted' && renderWeightedPoolSettings()}
-            {/* Stable pool settings remain unchanged */}
+
             {poolType === 'composableStable' && settings.stableSpecific && (
                 <>
                     <FormControl>
@@ -242,16 +257,19 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                         <NumberInput
                             value={settings.stableSpecific.amplificationParameter}
                             onChange={(valueString) =>
-                                updateStableSettings('amplificationParameter', parseInt(valueString))
+                                updateSettings('amplificationParameter', parseInt(valueString))
                             }
                             min={1}
                             max={5000}
+                            isReadOnly={readOnly}
                         >
                             <NumberInputField />
-                            <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                            </NumberInputStepper>
+                            {!readOnly && (
+                                <NumberInputStepper>
+                                    <NumberIncrementStepper />
+                                    <NumberDecrementStepper />
+                                </NumberInputStepper>
+                            )}
                         </NumberInput>
                     </FormControl>
 
@@ -264,12 +282,14 @@ export const PoolSettingsComponent = ({ poolType, onSettingsUpdate, initialSetti
                         <Switch
                             isChecked={settings.stableSpecific.metaStableEnabled}
                             onChange={(e) =>
-                                updateStableSettings('metaStableEnabled', e.target.checked)
+                                updateSettings('metaStableEnabled', e.target.checked)
                             }
+                            isReadOnly={readOnly}
+                            isDisabled={readOnly}
                         />
                     </FormControl>
                 </>
             )}
         </Stack>
-    )
-}
+    );
+};

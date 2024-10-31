@@ -393,6 +393,12 @@ export type GqlPoolBase = {
   dynamicData: GqlPoolDynamicData;
   /** The factory contract address from which the pool was created. */
   factory?: Maybe<Scalars['Bytes']['output']>;
+  /** Whether at least one token in this pool is considered an ERC4626 token. */
+  hasErc4626: Scalars['Boolean']['output'];
+  /** Whether at least one token in a nested pool is considered an ERC4626 token. */
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  /** Hook assigned to a pool */
+  hook?: Maybe<Hook>;
   /** The pool id. This is equal to the address for protocolVersion 3 pools */
   id: Scalars['ID']['output'];
   /**
@@ -484,11 +490,15 @@ export type GqlPoolComposableStable = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
   owner: Scalars['Bytes']['output'];
   poolTokens: Array<GqlPoolTokenDetail>;
@@ -520,6 +530,7 @@ export type GqlPoolComposableStableNested = {
   factory?: Maybe<Scalars['Bytes']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
   owner: Scalars['Bytes']['output'];
   swapFee: Scalars['BigDecimal']['output'];
@@ -598,6 +609,9 @@ export type GqlPoolElement = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -755,6 +769,9 @@ export type GqlPoolFx = GqlPoolBase & {
   dynamicData: GqlPoolDynamicData;
   epsilon: Scalars['String']['output'];
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -796,12 +813,16 @@ export type GqlPoolGyro = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
   lambda: Scalars['String']['output'];
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
   owner: Scalars['Bytes']['output'];
   poolTokens: Array<GqlPoolTokenDetail>;
@@ -889,11 +910,15 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
   owner: Scalars['Bytes']['output'];
   poolTokens: Array<GqlPoolTokenDetail>;
@@ -927,6 +952,9 @@ export type GqlPoolMetaStable = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -972,6 +1000,8 @@ export type GqlPoolMinimal = {
   factory?: Maybe<Scalars['Bytes']['output']>;
   /** Whether at least one token in this pool is considered an ERC4626 token. */
   hasErc4626: Scalars['Boolean']['output'];
+  /** Whether at least one token in a nested pool is considered an ERC4626 token. */
+  hasNestedErc4626: Scalars['Boolean']['output'];
   /** Hook assigned to a pool */
   hook?: Maybe<Hook>;
   /** The pool id. This is equal to the address for protocolVersion 3 pools */
@@ -1080,6 +1110,9 @@ export type GqlPoolStable = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -1474,11 +1507,15 @@ export type GqlPoolWeighted = GqlPoolBase & {
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
   factory?: Maybe<Scalars['Bytes']['output']>;
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<Hook>;
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
   owner: Scalars['Bytes']['output'];
   poolTokens: Array<GqlPoolTokenDetail>;
@@ -1883,7 +1920,7 @@ export type GqlSwapCallDataInput = {
   slippagePercentage: Scalars['String']['input'];
 };
 
-/** Represents a token */
+/** Represents a token in the system */
 export type GqlToken = {
   __typename: 'GqlToken';
   /** The address of the token */
@@ -1910,7 +1947,10 @@ export type GqlToken = {
   priceRateProviderData?: Maybe<GqlPriceRateProviderData>;
   /** The priority of the token, can be used for sorting. */
   priority: Scalars['Int']['output'];
-  /** The rate provider data for the token */
+  /**
+   * The rate provider data for the token
+   * @deprecated Use priceRateProviderData instead
+   */
   rateProviderData?: Maybe<GqlPriceRateProviderData>;
   /** The symbol of the token */
   symbol: Scalars['String']['output'];
