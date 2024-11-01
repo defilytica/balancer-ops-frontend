@@ -76,7 +76,6 @@ export default function RewardsInjectorContainer({
     [addressBook],
   );
 
-
   useEffect(() => {
     loadAddresses(isV2);
   }, [loadAddresses, isV2]);
@@ -159,11 +158,7 @@ export default function RewardsInjectorContainer({
         ? `/rewards-injector/${address.address}?version=${isV2 ? "v2" : "v1"}`
         : `/payload-builder/injector-configurator/${address.address}?version=${isV2 ? "v2" : "v1"}`;
 
-      window.history.replaceState(
-        { ...window.history.state },
-        '',
-        newUrl
-      );
+      window.history.replaceState({ ...window.history.state }, "", newUrl);
     },
     [isViewer, isV2, fetchInjectorData],
   );
@@ -174,7 +169,6 @@ export default function RewardsInjectorContainer({
     setInjectorData(null);
     setSelectedAddress(null);
     setAddresses([]);
-
   }, [isV2, pathname, router]);
 
   const commonProps = {
@@ -190,11 +184,9 @@ export default function RewardsInjectorContainer({
 
   return isViewer ? (
     <RewardsInjector {...commonProps} />
+  ) : isV2 ? (
+    <RewardsInjectorConfiguratorV2 {...commonProps} />
   ) : (
-    isV2 ? (
-      <RewardsInjectorConfiguratorV2 {...commonProps} />
-    ) : (
-      <RewardsInjectorConfigurator {...commonProps} />
-    )
+    <RewardsInjectorConfigurator {...commonProps} />
   );
 }

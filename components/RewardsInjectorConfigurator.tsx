@@ -101,7 +101,6 @@ function RewardsInjectorConfigurator({
     }
   }, [selectedAddress, injectorData]);
 
-
   const handleConfigChange = (newConfig: RewardsInjectorData[]) => {
     setCurrentConfig(newConfig);
   };
@@ -359,13 +358,13 @@ function RewardsInjectorConfigurator({
             <Heading as="h2" size="lg" mb={4}>
               Current Configuration
             </Heading>
-  
-              <EditableInjectorConfig
-                data={currentConfig}
-                tokenSymbol={tokenSymbol}
-                tokenDecimals={tokenDecimals}
-                onConfigChange={handleConfigChange}
-              />
+
+            <EditableInjectorConfig
+              data={currentConfig}
+              tokenSymbol={tokenSymbol}
+              tokenDecimals={tokenDecimals}
+              onConfigChange={handleConfigChange}
+            />
           </Box>
         </>
       )}
