@@ -31,7 +31,7 @@ const RewardsInjectorStatusPage = () => {
   const fetchInjectorsData = async (forceReload = false) => {
     setIsLoading(true);
     try {
-      const version = isV2 ? 'v2' : 'v1';
+      const version = isV2 ? "v2" : "v1";
       const url = forceReload
         ? `/api/injector/${version}/all?forceReload=${forceReload}`
         : `/api/injector/${version}/all?forceReload=${forceReload}`;
@@ -108,7 +108,7 @@ const RewardsInjectorStatusPage = () => {
     fetchInjectorsData(true);
   };
 
-    const handleVersionToggle = () => {
+  const handleVersionToggle = () => {
     setIsV2(!isV2);
   };
 
@@ -119,7 +119,7 @@ const RewardsInjectorStatusPage = () => {
   if (isLoading) {
     return <Skeleton height="400px" />;
   }
-  
+
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
       <VStack spacing={4} align="stretch">

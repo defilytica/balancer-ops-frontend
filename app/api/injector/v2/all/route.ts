@@ -19,7 +19,8 @@ const rateLimiter = new RateLimiter({
 
 export async function GET(request: NextRequest) {
   const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
-  const forceReload = request.nextUrl.searchParams.get("forceReload") === "true";
+  const forceReload =
+    request.nextUrl.searchParams.get("forceReload") === "true";
 
   if (forceReload) {
     const isRateLimited = rateLimiter.limit(ip);
@@ -33,7 +34,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // Fetch all injectors from the factory
-    const factoryResponse =  await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/injector/v2/factory`);
+    const factoryResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/injector/v2/factory`,
+    );
     console.log(`${process.env.NEXT_PUBLIC_BASE_URL}/api/injector/v2/factory`);
     console.log(factoryResponse);
     if (!factoryResponse.ok) {
@@ -67,7 +70,9 @@ export async function GET(request: NextRequest) {
         let injectorData;
 
         if (shouldFetchFreshData) {
-          console.log(`Fetching fresh data for injector ${injectorAddress} on ${network}...`);
+          console.log(
+            `Fetching fresh data for injector ${injectorAddress} on ${network}...`,
+          );
           const freshData = await fetchFreshDataV2(injectorAddress, network);
           // Update the database with fresh data
           injectorData = await updateDatabaseV2(

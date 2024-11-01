@@ -8,6 +8,8 @@ import ArbitrumLogo from "@/public/imgs/arbitrum.svg";
 import GnosisLogo from "@/public/imgs/gnosis.svg";
 import BaseLogo from "@/public/imgs/base.svg";
 import zkevmLogo from "@/public/imgs/Polygon-zkEVM.png";
+import FraxtalLogo from "@/public/imgs/frax.svg";
+import ModeLogo from "@/public/imgs/mode.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
@@ -244,6 +246,18 @@ export const networks: Record<string, NetworkInfo> = {
     rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
     explorer: "https://polygonscan.com/",
     chainId: "1",
+  },
+  fraxtal: {
+    logo: FraxtalLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=fraxtal&dkey=",
+    explorer: "https://fraxscan.io/",
+    chainId: "252",
+  },
+  mode: {
+    logo: ModeLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=mode&dkey=",
+    explorer: "https://explorer.mode.network/",
+    chainId: "34443",
   },
 };
 

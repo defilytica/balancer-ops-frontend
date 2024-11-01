@@ -45,7 +45,6 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 
-
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
     { id: "", network: "Ethereum" },

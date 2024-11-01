@@ -42,7 +42,6 @@ import { VscGithubInverted } from "react-icons/vsc";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 
-
 export default function KillGaugePage() {
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);

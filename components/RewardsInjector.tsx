@@ -347,7 +347,9 @@ function RewardsInjector({
                 <Link
                   href={
                     "/payload-builder/injector-configurator/" +
-                    selectedAddress?.address
+                    selectedAddress?.address +
+                    "?version=" +
+                    (isV2 ? "v2" : "v1")
                   }
                 >
                   <Button variant="secondary">{"Modify configuration"}</Button>

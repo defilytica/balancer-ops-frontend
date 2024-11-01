@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -28,22 +28,16 @@ import {
   AlertTitle,
   AlertDescription,
   Divider,
-  useColorMode,
   Spinner,
 } from "@chakra-ui/react";
 import {
-  AddIcon,
   ChevronDownIcon,
   CopyIcon,
   DownloadIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons";
-import {
-  fetchAddressBook,
-  getNetworks,
-  getCategoryData,
-} from "@/lib/data/maxis/addressBook";
-import { AddressBook, AddressOption } from "@/types/interfaces";
+
+import { AddressOption } from "@/types/interfaces";
 import SimulateTransactionButton, {
   BatchFile,
 } from "@/components/btns/SimulateTransactionButton";
@@ -60,29 +54,30 @@ import { formatTokenName } from "@/lib/utils/formatTokenName";
 import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
-import {getChainId} from "@/lib/utils/getChainId";
+import { getChainId } from "@/lib/utils/getChainId";
 
 type RewardsInjectorConfiguratorProps = {
-  addressBook: AddressBook;
+  addresses: AddressOption[];
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
   selectedSafe: string;
   injectorData: any;
   isLoading: boolean;
+  onVersionToggle: () => void;
+  isV2: boolean;
 };
 
 function RewardsInjectorConfigurator({
-  addressBook,
+  addresses,
   selectedAddress,
   onAddressSelect,
   selectedSafe,
   injectorData,
   isLoading,
+  isV2,
+  onVersionToggle,
 }: RewardsInjectorConfiguratorProps) {
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
-  const [injectorType, setInjectorType] = useState<"v1" | "v2">("v1");
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [isV2, setIsV2] = useState(false);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
@@ -94,6 +89,8 @@ function RewardsInjectorConfigurator({
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  console.log(currentConfig);
+
   useEffect(() => {
     if (selectedAddress && injectorData) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
@@ -104,39 +101,6 @@ function RewardsInjectorConfigurator({
     }
   }, [selectedAddress, injectorData]);
 
-  const loadAddresses = useCallback(() => {
-    let allAddressesWithOptions = [];
-
-    const networks = getNetworks(addressBook);
-    for (const network of networks) {
-      const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-      if (maxiKeepers) {
-        const injectors = isV2
-          ? maxiKeepers.gaugeRewardsInjectorsV2
-          : maxiKeepers.gaugeRewardsInjectors;
-        if (injectors) {
-          for (const [token, address] of Object.entries(injectors)) {
-            allAddressesWithOptions.push({
-              network,
-              address,
-              token,
-            });
-          }
-        }
-      }
-    }
-    setAddresses(allAddressesWithOptions);
-  }, [addressBook, isV2]);
-
-  useEffect(() => {
-    loadAddresses();
-  }, [loadAddresses]);
-
-  const handleVersionSwitch = () => {
-    setIsV2(!isV2);
-    setGauges([]);
-    setCurrentConfig([]);
-  };
 
   const handleConfigChange = (newConfig: RewardsInjectorData[]) => {
     setCurrentConfig(newConfig);
@@ -206,7 +170,6 @@ function RewardsInjectorConfigurator({
 
     setGeneratedPayload(payload);
   };
-  
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -222,10 +185,9 @@ function RewardsInjectorConfigurator({
     }
   };
 
-   const handleJsonChange = (newJson: string | BatchFile) => {
+  const handleJsonChange = (newJson: string | BatchFile) => {
     setGeneratedPayload(newJson as BatchFile);
   };
-
 
   return (
     <Container maxW="container.xl">
@@ -330,7 +292,11 @@ function RewardsInjectorConfigurator({
             size={"lg"}
             id="version-switch"
             isChecked={isV2}
-            onChange={handleVersionSwitch}
+            onChange={() => {
+              setGauges([]);
+              setCurrentConfig([]);
+              onVersionToggle();
+            }}
           />
           <FormLabel htmlFor="version-switch" mb="0" ml={2}>
             V2
@@ -393,12 +359,13 @@ function RewardsInjectorConfigurator({
             <Heading as="h2" size="lg" mb={4}>
               Current Configuration
             </Heading>
-            <EditableInjectorConfig
-              data={currentConfig}
-              tokenSymbol={tokenSymbol}
-              tokenDecimals={tokenDecimals}
-              onConfigChange={handleConfigChange}
-            />
+  
+              <EditableInjectorConfig
+                data={currentConfig}
+                tokenSymbol={tokenSymbol}
+                tokenDecimals={tokenDecimals}
+                onConfigChange={handleConfigChange}
+              />
           </Box>
         </>
       )}
@@ -422,7 +389,7 @@ function RewardsInjectorConfigurator({
       <Divider />
 
       {generatedPayload && (
-      <JsonViewerEditor
+        <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={handleJsonChange}
         />
@@ -453,7 +420,7 @@ function RewardsInjectorConfigurator({
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"injector-schedule"}
+            type={"injector-configurator"}
             isOpen={isOpen}
             onClose={onClose}
             payload={

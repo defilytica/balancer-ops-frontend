@@ -50,7 +50,7 @@ interface RewardsInjectorCardProps {
 const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
   data,
   networks,
-  v2
+  v2,
 }) => {
   const {
     address,
@@ -100,7 +100,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
             <IconButton
               aria-label="View on explorer"
               as="a"
-              href={`rewards-injector/${address}?version=${v2 ? 'v2' : 'v1'}`}
+              href={`rewards-injector/${address}?version=${v2 ? "v2" : "v1"}`}
               target="_blank"
               rel="noopener noreferrer"
               size="sm"

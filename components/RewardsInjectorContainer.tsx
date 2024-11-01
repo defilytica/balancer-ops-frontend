@@ -6,6 +6,7 @@ import RewardsInjector from "./RewardsInjector";
 import { AddressBook, AddressOption } from "@/types/interfaces";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import RewardsInjectorConfigurator from "@/components/RewardsInjectorConfigurator";
+import RewardsInjectorConfiguratorV2 from "./RewardsInjectorConfiguratorV2";
 
 type RewardsInjectorContainerProps = {
   addressBook: AddressBook;
@@ -75,6 +76,7 @@ export default function RewardsInjectorContainer({
     [addressBook],
   );
 
+
   useEffect(() => {
     loadAddresses(isV2);
   }, [loadAddresses, isV2]);
@@ -132,7 +134,7 @@ export default function RewardsInjectorContainer({
   );
 
   useEffect(() => {
-    if (pathname) {
+    if (pathname && addresses.length > 0) {
       const addressFromPath = pathname.split("/").pop();
       if (addressFromPath) {
         const matchingAddress = findAddressOption(addressFromPath);
@@ -146,19 +148,25 @@ export default function RewardsInjectorContainer({
         }
       }
     }
-  }, [pathname, findAddressOption, fetchInjectorData, selectedAddress]);
+  }, [pathname, addresses, findAddressOption, fetchInjectorData, isV2]);
 
   const handleAddressSelect = useCallback(
     (address: AddressOption) => {
       setSelectedAddress(address);
-      const route = isViewer
+      fetchInjectorData(address, isV2);
+
+      const newUrl = isViewer
         ? `/rewards-injector/${address.address}?version=${isV2 ? "v2" : "v1"}`
         : `/payload-builder/injector-configurator/${address.address}?version=${isV2 ? "v2" : "v1"}`;
-      router.push(route, { scroll: false });
-    },
-    [router, isViewer, isV2],
-  );
 
+      window.history.replaceState(
+        { ...window.history.state },
+        '',
+        newUrl
+      );
+    },
+    [isViewer, isV2, fetchInjectorData],
+  );
   const handleVersionToggle = useCallback(() => {
     const newVersion = isV2 ? "v1" : "v2";
     const newRoute = pathname + "?version=" + newVersion;
@@ -166,6 +174,7 @@ export default function RewardsInjectorContainer({
     setInjectorData(null);
     setSelectedAddress(null);
     setAddresses([]);
+
   }, [isV2, pathname, router]);
 
   const commonProps = {
@@ -176,18 +185,16 @@ export default function RewardsInjectorContainer({
     isLoading,
     isV2,
     onVersionToggle: handleVersionToggle,
+    selectedSafe: owner,
   };
 
   return isViewer ? (
     <RewardsInjector {...commonProps} />
   ) : (
-    <RewardsInjectorConfigurator
-      addressBook={addressBook}
-      selectedAddress={selectedAddress}
-      selectedSafe={owner}
-      onAddressSelect={handleAddressSelect}
-      injectorData={injectorData}
-      isLoading={isLoading}
-    />
+    isV2 ? (
+      <RewardsInjectorConfiguratorV2 {...commonProps} />
+    ) : (
+      <RewardsInjectorConfigurator {...commonProps} />
+    )
   );
 }
