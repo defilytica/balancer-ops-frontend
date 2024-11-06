@@ -345,7 +345,7 @@ function RewardsInjectorConfiguratorV2({
               <Text>Select an injector</Text>
             )}
           </MenuButton>
-          <MenuList w="135%">
+          <MenuList w="135%" maxHeight="60vh" overflowY="auto">
             {addresses.map((address) => (
               <MenuItem
                 key={address.network + address.token}

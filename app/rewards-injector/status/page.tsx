@@ -14,6 +14,9 @@ import {
   IconButton,
   Tooltip,
   Switch,
+  Alert,
+  AlertIcon,
+  AlertDescription,
 } from "@chakra-ui/react";
 import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
@@ -96,6 +99,8 @@ const RewardsInjectorStatusPage = () => {
     }
   };
 
+  console.log(injectorsData);
+
   useEffect(() => {
     fetchInjectorsData();
   }, [isV2]);
@@ -136,6 +141,16 @@ const RewardsInjectorStatusPage = () => {
             />
           </Tooltip>
         </HStack>
+        <Alert status="warning" mr={4}>
+          <AlertIcon />
+          <Box>
+            <AlertDescription>
+              This data is cached and was last updated on{" "}
+              {new Date(injectorsData[0]?.updatedAt).toLocaleString()}. You can
+              refresh the data manually.
+            </AlertDescription>
+          </Box>
+        </Alert>
         <HStack justifyContent="space-between" alignItems="center">
           <Text>
             Showing {filteredInjectors.length} of {injectorsData.length}{" "}
