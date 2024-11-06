@@ -6,11 +6,11 @@
   },
   "crons": [
     {
-      "path": "api/injector/v1/all?forceReload=true",
+      "path": "/api/injector/v1/all?forceReload=true",
       "schedule": "0 */2 * * *"
     },
     {
-      "path": "api/injector/v2/all?forceReload=true",
+      "path": "/api/injector/v2/all?forceReload=true",
       "schedule": "0 */2 * * *"
     }
   ]
