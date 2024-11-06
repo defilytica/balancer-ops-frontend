@@ -181,7 +181,7 @@ const PoolCreatorPage: React.FC = () => {
                 <GridItem>
                     <Card>
                         <CardHeader>
-                            <Heading size="md">Configure Pool: {poolConfig.type}</Heading>
+                            <Heading size="md" variant="special">Configure Pool: {poolConfig.type}</Heading>
                         </CardHeader>
                         <CardBody>
                             {getStepContent()}

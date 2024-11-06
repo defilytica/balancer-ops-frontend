@@ -123,6 +123,8 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                         <Th>Address</Th>
                         {config.type === 'weighted' && <Th isNumeric>Weight</Th>}
                         <Th isNumeric>Amount</Th>
+                        <Th isNumeric>Price</Th>
+                        <Th isNumeric>Value (USD)</Th>
                     </Tr>
                 </Thead>
                 <Tbody>
@@ -156,6 +158,13 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                                 <Td isNumeric>{token.weight}%</Td>
                             )}
                             <Td isNumeric>{Number(token.amount || 0).toFixed(6)}</Td>
+                            <Td isNumeric>${token.price ? token.price.toFixed(2) : '-'}</Td>
+                            <Td isNumeric>
+                                ${token.price && token.amount
+                                ? (token.price * Number(token.amount)).toFixed(2)
+                                : '-'
+                            }
+                            </Td>
                         </Tr>
                     ))}
                 </Tbody>

@@ -11,150 +11,155 @@ import {
     IconButton,
     Text,
     HStack,
-    Tooltip,
+    Tooltip, VStack,
 } from '@chakra-ui/react'
-import React, { useEffect, useState } from 'react'
+import React, {useCallback, useEffect, useState } from 'react'
 import { useAccount, useBalance } from 'wagmi'
 import { TokenSelector } from './TokenSelector'
-import {PoolConfig, PoolToken, TokenListToken} from '@/types/interfaces'
-import { DeleteIcon } from "@chakra-ui/icons"
+import {PoolConfig, PoolToken, TokenListToken, TokenWithBalance} from '@/types/interfaces'
+import {DeleteIcon, SettingsIcon} from "@chakra-ui/icons"
 import { FaWallet } from "react-icons/fa";
 import { getNetworkString } from "@/lib/utils/getNetworkString"
 import { formatUnits } from 'viem'
+import {useQuery} from "@apollo/client";
+import {CurrentTokenPricesDocument, GqlChain} from "@/lib/services/apollo/generated/graphql";
+import {TokenRow} from "@/components/poolCreator/TokenRow";
 
 interface WeightedPoolConfigProps {
     config: PoolConfig;
     onConfigUpdate: (tokens: PoolToken[]) => void;
 }
 
-interface TokenWithBalance extends PoolToken {
-    balance?: string;
-    formattedBalance?: string;
-}
+const optimizeAmounts = (tokens: TokenWithBalance[]): TokenWithBalance[] => {
+    // Filter tokens with valid weights and prices
+    const validTokens = tokens.filter(t =>
+        t.price &&
+        t.weight &&
+        !isNaN(t.price) &&
+        t.price > 0 &&
+        t.weight > 0
+    );
 
-// Create a separate component for token row to handle balance
-const TokenRow = ({
-                      token,
-                      index,
-                      onTokenSelect,
-                      onWeightChange,
-                      onAmountChange,
-                      onRemove,
-                      showRemove,
-                      chainId,
-                      selectedNetwork
-                  }: {
-    token: TokenWithBalance;
-    index: number;
-    onTokenSelect: (index: number, token: TokenListToken) => void;
-    onWeightChange: (index: number, value: number) => void;
-    onAmountChange: (index: number, value: string) => void;
-    onRemove: (index: number) => void;
-    showRemove: boolean;
-    chainId?: number;
-    selectedNetwork: string;
-}) => {
-    const { address: walletAddress } = useAccount();
-    const { data: balanceData } = useBalance({
-        address: walletAddress,
-        token: token.address as `0x${string}`,
-        chainId,
+    if (validTokens.length < 2) return tokens;
+
+    // Check if we have any pre-filled amounts
+    const hasPrefilledAmounts = validTokens.some(t => parseFloat(t.amount || '0') > 0);
+
+    // Calculate maximum possible ratio for each token based on its balance
+    const tokenRatios = validTokens.map(token => {
+        const maxBalance = token.balance ? parseFloat(token.balance) : Infinity;
+        const maxUsdValue = maxBalance * token.price!;
+        const ratioPerWeight = maxUsdValue / token.weight!;
+
+        return {
+            token,
+            maxBalance,
+            maxUsdValue,
+            ratioPerWeight
+        };
     });
 
-    const handleMaxAmount = () => {
-        if (balanceData) {
-            const formattedBalance = formatUnits(balanceData.value, balanceData.decimals);
-            onAmountChange(index, formattedBalance);
+    // Find the limiting ratio (lowest USD per weight that satisfies all balance constraints)
+    const limitingRatio = tokenRatios.reduce((minRatio, { ratioPerWeight }) => {
+        if (ratioPerWeight < minRatio) {
+            return ratioPerWeight;
         }
-    };
+        return minRatio;
+    }, Infinity);
 
-    return (
-        <Box
-            p={4}
-            borderWidth="1px"
-            borderRadius="md"
-            position="relative"
-        >
-            <Grid templateColumns="repeat(3, 1fr)" gap={3}>
-                <FormControl>
-                    <FormLabel>Token</FormLabel>
-                    <TokenSelector
-                        selectedNetwork={selectedNetwork}
-                        onSelect={(selectedToken) => onTokenSelect(index, selectedToken)}
-                        selectedToken={token.address ? {
-                            address: token.address,
-                            symbol: token.symbol,
-                            decimals: token.decimals!,
-                            logoURI: token.logoURI!,
-                            name: token.name!,
-                            chainId: chainId!
-                        } : undefined}
-                        placeholder="Select token"
-                    />
-                </FormControl>
+    if (hasPrefilledAmounts) {
+        // Find valid reference token with lowest USD/weight ratio from pre-filled amounts
+        let referenceToken = validTokens[0]; // Start with first token
+        let lowestRatio = Infinity;
 
-                <FormControl>
-                    <FormLabel>Weight (%)</FormLabel>
-                    <NumberInput
-                        value={token.weight}
-                        onChange={(_, valueNumber) => onWeightChange(index, valueNumber)}
-                        min={0}
-                        max={100}
-                        precision={2}
-                    >
-                        <NumberInputField />
-                    </NumberInput>
-                </FormControl>
+        validTokens.forEach(token => {
+            const amount = parseFloat(token.amount || '0');
+            if (amount > 0) {
+                const usdValue = amount * token.price!;
+                const ratio = usdValue / token.weight!;
 
-                <FormControl>
-                    <FormLabel>Amount</FormLabel>
-                    <Box>
-                        <NumberInput
-                            value={token.amount}
-                            onChange={(valueString) => onAmountChange(index, valueString)}
-                            min={0}
-                            precision={8}
-                        >
-                            <NumberInputField />
-                        </NumberInput>
+                // Check if this ratio would exceed any balance limits
+                const wouldExceedBalance = validTokens.some(otherToken => {
+                    if (!otherToken.balance) return false;
+                    const requiredAmount = (ratio * otherToken.weight! / otherToken.price!);
+                    return requiredAmount > parseFloat(otherToken.balance);
+                });
 
-                        {token.address && balanceData && (
-                            <HStack
-                                spacing={1}
-                                mt={1}
-                                fontSize="sm"
-                                color="gray.500"
-                                cursor="pointer"
-                                onClick={handleMaxAmount}
-                                _hover={{ color: 'blue.500' }}
-                            >
-                                <FaWallet size={12} />
-                                <Tooltip
-                                    label="Click to use max balance"
-                                    placement="bottom"
-                                >
-                                    <Text>
-                                        Balance: {Number(formatUnits(balanceData.value, balanceData.decimals)).toFixed(4)} {token.symbol}
-                                    </Text>
-                                </Tooltip>
-                            </HStack>
-                        )}
-                    </Box>
-                </FormControl>
+                if (ratio < lowestRatio && !wouldExceedBalance) {
+                    lowestRatio = ratio;
+                    referenceToken = token;
+                }
+            }
+        });
 
-                <FormControl>
-                    {showRemove && (
-                        <IconButton
-                            icon={<DeleteIcon />}
-                            size="sm"
-                            onClick={() => onRemove(index)}
-                            aria-label={"Delete"}
-                        />
-                    )}
-                </FormControl>
-            </Grid>
-        </Box>
-    );
+        if (lowestRatio === Infinity) {
+            // If no valid pre-filled amounts, use balance-based calculation
+            return tokens.map(token => {
+                if (!token.price || !token.weight) return token;
+
+                let optimalAmount: string;
+                if (limitingRatio === Infinity) {
+                    // No balance constraints - use default value
+                    const defaultUsdPerWeight = 1;
+                    optimalAmount = ((defaultUsdPerWeight * token.weight) / token.price).toFixed(8);
+                } else {
+                    // Use balance-constrained amount
+                    optimalAmount = ((limitingRatio * token.weight) / token.price).toFixed(8);
+                }
+
+                // Final balance check
+                if (token.balance) {
+                    const maxAmount = parseFloat(token.balance);
+                    optimalAmount = Math.min(parseFloat(optimalAmount), maxAmount).toFixed(8);
+                }
+
+                return { ...token, amount: optimalAmount };
+            });
+        }
+
+        // Use the reference token to calculate others, respecting balance limits
+        const referenceAmount = parseFloat(referenceToken.amount || '0');
+        const referenceUsdValue = referenceAmount * referenceToken.price!;
+        const ratioPerWeight = referenceUsdValue / referenceToken.weight!;
+
+        return tokens.map(token => {
+            if (!token.price || !token.weight) return token;
+
+            // Calculate optimal amount based on reference
+            let optimalAmount = ((ratioPerWeight * token.weight) / token.price).toFixed(8);
+
+            // Respect balance limits
+            if (token.balance) {
+                const maxAmount = parseFloat(token.balance);
+                optimalAmount = Math.min(parseFloat(optimalAmount), maxAmount).toFixed(8);
+            }
+
+            return { ...token, amount: optimalAmount };
+        });
+    }
+
+    // No pre-filled amounts - use balance-based optimization
+    return tokens.map(token => {
+        if (!token.price || !token.weight) return token;
+
+        let optimalAmount: string;
+        if (limitingRatio === Infinity) {
+            // No balance constraints - use default value
+            const defaultUsdPerWeight = 1;
+            optimalAmount = ((defaultUsdPerWeight * token.weight) / token.price).toFixed(8);
+        } else {
+            // Use balance-constrained amount
+            optimalAmount = ((limitingRatio * token.weight) / token.price).toFixed(8);
+        }
+
+        // Final balance check
+        if (token.balance) {
+            const maxAmount = parseFloat(token.balance);
+            optimalAmount = Math.min(parseFloat(optimalAmount), maxAmount).toFixed(8);
+        }
+
+        return { ...token, amount: optimalAmount };
+    });
 };
 
 export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfigProps) => {
@@ -164,6 +169,63 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
     );
     const toast = useToast()
     const selectedNetwork = getNetworkString(chain?.id)
+
+    // Store previous network to detect changes
+    const [previousNetwork, setPreviousNetwork] = useState<string | undefined>(selectedNetwork);
+
+    // Network change effect
+    useEffect(() => {
+        if (previousNetwork && selectedNetwork !== previousNetwork) {
+            // Reset tokens when network changes
+            setTokens([{ address: '', weight: 0, symbol: '', amount: '' }]);
+            toast({
+                title: 'Network Changed',
+                description: 'Token selection has been reset for the new network',
+                status: 'info',
+            });
+        }
+        setPreviousNetwork(selectedNetwork);
+    }, [selectedNetwork, previousNetwork, toast]);
+
+    // Fetch token prices
+    const { data: priceData } = useQuery(CurrentTokenPricesDocument, {
+        variables: { chains: [selectedNetwork as GqlChain] },
+        skip: !selectedNetwork,
+        context: {
+            uri: selectedNetwork === 'SEPOLIA' ? 'https://test-api-v3.balancer.fi/' : 'https://api-v3.balancer.fi/'
+        }
+    });
+    console.log(priceData)
+    // Modify the price update effect to properly handle state updates
+    useEffect(() => {
+        if (priceData?.tokenGetCurrentPrices) {
+            setTokens(currentTokens => {
+                const updatedTokens = currentTokens.map(token => {
+                    if (!token.address) return token;
+
+                    const priceInfo = priceData.tokenGetCurrentPrices.find(
+                        p => p.address.toLowerCase() === token.address.toLowerCase()
+                    );
+
+                    // Only update if we have new price info
+                    if (priceInfo) {
+                        return {
+                            ...token,
+                            price: priceInfo.price
+                        };
+                    }
+                    return token;
+                });
+
+                // Only trigger update if tokens actually changed
+                const pricesChanged = updatedTokens.some((token, index) =>
+                    token.price !== currentTokens[index].price
+                );
+
+                return pricesChanged ? updatedTokens : currentTokens;
+            });
+        }
+    }, [priceData?.tokenGetCurrentPrices]);
 
     useEffect(() => {
         onConfigUpdate(tokens);
@@ -197,6 +259,10 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
     const handleTokenSelect = (index: number, selectedToken: TokenListToken) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
+                const priceInfo = priceData?.tokenGetCurrentPrices?.find(
+                    p => p.address.toLowerCase() === selectedToken.address.toLowerCase()
+                );
+
                 return {
                     ...token,
                     address: selectedToken.address,
@@ -204,12 +270,14 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                     decimals: selectedToken.decimals,
                     logoURI: selectedToken.logoURI,
                     name: selectedToken.name,
-                }
+                    price: priceInfo?.price // Set price immediately if available
+                };
             }
-            return token
-        })
-        setTokens(newTokens)
-    }
+            return token;
+        });
+        setTokens(newTokens);
+        onConfigUpdate(newTokens);
+    };
 
     const updateAmount = (index: number, amount: string) => {
         const newTokens = tokens.map((token, i) => {
@@ -231,6 +299,16 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
         setTokens(newTokens)
     }
 
+    const handleOptimize = () => {
+        const optimizedTokens = optimizeAmounts(tokens);
+        setTokens(optimizedTokens);
+        toast({
+            title: 'Amounts Optimized',
+            description: 'Token amounts have been optimized based on weights and prices',
+            status: 'success',
+        });
+    };
+
     return (
         <Stack spacing={6}>
             <Stack spacing={4}>
@@ -250,7 +328,7 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                 ))}
             </Stack>
 
-            <Box>
+            <HStack spacing={4}>
                 <Button
                     variant="secondary"
                     onClick={addToken}
@@ -258,7 +336,14 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                 >
                     Add Token
                 </Button>
-            </Box>
+                <Button
+                    leftIcon={<SettingsIcon />}
+                    onClick={handleOptimize}
+                    isDisabled={tokens.length < 2 || !tokens.every(t => t.price && t.weight)}
+                >
+                    Optimize Amounts
+                </Button>
+            </HStack>
         </Stack>
     );
 };

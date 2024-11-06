@@ -76,6 +76,7 @@ export interface PoolToken {
   logoURI?: string;
   name?: string;
   rateProvider?: string;
+  price?: number;
 }
 
 //TODO: Refactor token interface!
@@ -86,6 +87,11 @@ export interface TokenListToken {
   symbol: string;
   decimals: number;
   logoURI: string;
+}
+
+export interface TokenWithBalance extends PoolToken {
+  balance?: string;
+  formattedBalance?: string;
 }
 
 export interface GetTokensQuery {
