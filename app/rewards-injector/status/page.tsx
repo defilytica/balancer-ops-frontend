@@ -24,7 +24,7 @@ import { calculateDistributionAmounts } from "@/lib/data/injector/helpers";
 import { RefreshCw } from "react-feather";
 
 const RewardsInjectorStatusPage = () => {
-  const [injectorsData, setInjectorsData] = useState([]);
+  const [injectorsData, setInjectorsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -146,7 +146,7 @@ const RewardsInjectorStatusPage = () => {
           <Box>
             <AlertDescription>
               This data is cached and was last updated on{" "}
-              {new Date(injectorsData[0]?.updatedAt).toLocaleString()}. You can
+              {new Date(injectorsData[0].updatedAt).toLocaleString()}. You can
               refresh the data manually.
             </AlertDescription>
           </Box>
