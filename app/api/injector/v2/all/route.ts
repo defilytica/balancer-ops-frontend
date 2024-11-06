@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
   try {
     // Fetch all injectors from the factory
     const factoryResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/injector/v2/factory`,
+      `${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`,
     );
-    console.log(`${process.env.NEXT_PUBLIC_BASE_URL}/api/injector/v2/factory`);
+    console.log(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`);
     console.log(factoryResponse);
     if (!factoryResponse.ok) {
       throw new Error("Failed to fetch injectors from factory");
