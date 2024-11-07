@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
   try {
     // Fetch all injectors from the factory
     const factoryResponse = await fetch(
-      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/api/injector/v2/factory`,
+      `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`,
     );
     console.log(
-      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/api/injector/v2/factory`,
+      `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`,
     );
     console.log(factoryResponse);
     if (!factoryResponse.ok) {
