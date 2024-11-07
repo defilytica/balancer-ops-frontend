@@ -51,31 +51,28 @@ type Recipient = {
 };
 
 type RewardsInjectorProps = {
-  addressBook: AddressBook;
+  addresses: AddressOption[];
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
   injectorData: any;
   isLoading: boolean;
+  isV2: boolean;
+  onVersionToggle: () => void;
 };
 
 function RewardsInjector({
-  addressBook,
+  addresses,
   selectedAddress,
   onAddressSelect,
   injectorData,
   isLoading,
+  isV2,
+  onVersionToggle,
 }: RewardsInjectorProps) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [isV2, setIsV2] = useState(false);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
-
-  const handleVersionSwitch = () => {
-    setIsV2(!isV2);
-    setGauges([]);
-  };
 
   useEffect(() => {
     if (
@@ -89,34 +86,6 @@ function RewardsInjector({
       setContractBalance(injectorData.contractBalance);
     }
   }, [selectedAddress, injectorData]);
-
-  const loadAddresses = useCallback(() => {
-    let allAddressesWithOptions = [];
-
-    const networks = getNetworks(addressBook);
-    for (const network of networks) {
-      const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-      if (maxiKeepers) {
-        const injectors = isV2
-          ? maxiKeepers.gaugeRewardsInjectorsV2
-          : maxiKeepers.gaugeRewardsInjectors;
-        if (injectors) {
-          for (const [token, address] of Object.entries(injectors)) {
-            allAddressesWithOptions.push({
-              network,
-              address,
-              token,
-            });
-          }
-        }
-      }
-    }
-    setAddresses(allAddressesWithOptions);
-  }, [addressBook, isV2]);
-
-  useEffect(() => {
-    loadAddresses();
-  }, [loadAddresses]);
 
   const calculateDistributionAmounts = () => {
     let total = 0;
@@ -209,7 +178,7 @@ function RewardsInjector({
                 <Text>Select an injector</Text>
               )}
             </MenuButton>
-            <MenuList w="135%">
+            <MenuList w="135%" maxHeight="60vh" overflowY="auto">
               {addresses.map((address) => (
                 <MenuItem
                   key={address.network + address.token}
@@ -263,7 +232,10 @@ function RewardsInjector({
               size={"lg"}
               id="version-switch"
               isChecked={isV2}
-              onChange={handleVersionSwitch}
+              onChange={() => {
+                setGauges([]);
+                onVersionToggle();
+              }}
             />
             <FormLabel htmlFor="version-switch" mb="0" ml={2}>
               V2
@@ -375,7 +347,9 @@ function RewardsInjector({
                 <Link
                   href={
                     "/payload-builder/injector-configurator/" +
-                    selectedAddress?.address
+                    selectedAddress?.address +
+                    "?version=" +
+                    (isV2 ? "v2" : "v1")
                   }
                 >
                   <Button variant="secondary">{"Modify configuration"}</Button>

@@ -35,6 +35,7 @@ export interface BatchFile {
     createdFromOwnerAddress: string;
     checksum: string;
   };
+
   transactions: Transaction[];
 }
 

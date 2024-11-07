@@ -45,18 +45,20 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import {
   copyJsonToClipboard,
   generateInjectorSchedulePayload,
+  generateInjectorSchedulePayloadV2,
   handleDownloadClick,
   InjectorScheduleInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
 import { networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
-import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
+import { RewardsInjectorConfigurationViewerV2 } from "./RewardsInjectorConfigurationViewerV2";
+import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
 
-type RewardsInjectorConfiguratorProps = {
+type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
   selectedAddress: AddressOption | null;
   onAddressSelect: (address: AddressOption) => void;
@@ -67,7 +69,15 @@ type RewardsInjectorConfiguratorProps = {
   isV2: boolean;
 };
 
-function RewardsInjectorConfigurator({
+interface RecipientConfigData {
+  recipients: string[];
+  amountPerPeriod: string;
+  maxPeriods: string;
+  doNotStartBeforeTimestamp: string;
+  rawAmountPerPeriod: string;
+}
+
+function RewardsInjectorConfiguratorV2({
   addresses,
   selectedAddress,
   onAddressSelect,
@@ -76,20 +86,32 @@ function RewardsInjectorConfigurator({
   isLoading,
   isV2,
   onVersionToggle,
-}: RewardsInjectorConfiguratorProps) {
+}: RewardsInjectorConfiguratorV2Props) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
-  const [currentConfig, setCurrentConfig] = useState<RewardsInjectorData[]>([]);
+  const [addConfig, setAddConfig] = useState<RecipientConfigData>({
+    recipients: [""],
+    amountPerPeriod: "",
+    maxPeriods: "",
+    doNotStartBeforeTimestamp: "0",
+    rawAmountPerPeriod: "0",
+  });
+  const [removeConfig, setRemoveConfig] = useState<RecipientConfigData>({
+    recipients: [""],
+    amountPerPeriod: "0",
+    maxPeriods: "0",
+    doNotStartBeforeTimestamp: "0",
+    rawAmountPerPeriod: "0",
+  });
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(
     null,
   );
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-
-  console.log(currentConfig);
+  const [operation, setOperation] = useState<"add" | "remove" | null>(null);
 
   useEffect(() => {
     if (selectedAddress && injectorData) {
@@ -97,33 +119,105 @@ function RewardsInjectorConfigurator({
       setTokenDecimals(injectorData.tokenInfo.symbol === "USDC" ? 6 : 18);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
-      setCurrentConfig(injectorData.gauges);
     }
   }, [selectedAddress, injectorData]);
 
-  const handleConfigChange = (newConfig: RewardsInjectorData[]) => {
-    setCurrentConfig(newConfig);
+  const handleConfigChange = (newConfig: RecipientConfigData) => {
+    if (operation === "add") {
+      setAddConfig(newConfig);
+    } else if (operation === "remove") {
+      setRemoveConfig(newConfig);
+    }
   };
 
-  const calculateDistributionAmounts = (config: RewardsInjectorData[]) => {
-    let total = 0;
-    let distributed = 0;
-    let remaining = 0;
+  const calculateCurrentDistribution = (gauges: RewardsInjectorData[]) => {
+    const distribution = gauges.reduce(
+      (acc, gauge) => {
+        const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+        const maxPeriods = parseInt(gauge.maxPeriods) || 0;
+        const periodNumber = parseInt(gauge.periodNumber) || 0;
 
-    config.forEach((gauge) => {
-      const amount = parseFloat(gauge.amountPerPeriod!) || 0;
-      const maxPeriods = parseInt(gauge.maxPeriods) || 0;
-      const currentPeriod = parseInt(gauge.periodNumber) || 0;
+        const gaugeTotal = amountPerPeriod * maxPeriods;
+        const gaugeDistributed = amountPerPeriod * periodNumber;
+        const gaugeRemaining = gaugeTotal - gaugeDistributed;
 
-      const gaugeTotal = amount * maxPeriods;
-      const gaugeDistributed = amount * currentPeriod;
+        return {
+          total: acc.total + gaugeTotal,
+          distributed: acc.distributed + gaugeDistributed,
+          remaining: acc.remaining + gaugeRemaining,
+        };
+      },
+      {
+        total: 0,
+        distributed: 0,
+        remaining: 0,
+      },
+    );
 
-      total += gaugeTotal;
-      distributed += gaugeDistributed;
-      remaining += gaugeTotal - gaugeDistributed;
-    });
+    return distribution;
+  };
 
-    return { total, distributed, remaining };
+  const calculateNewDistribution = (
+    operation: "add" | "remove" | null,
+    addConfig: RecipientConfigData,
+    removeConfig: RecipientConfigData,
+  ) => {
+    const currentDist = calculateCurrentDistribution(gauges);
+    let newTotal = currentDist.total;
+    let newDistributed = currentDist.distributed;
+    let newRemaining = currentDist.remaining;
+
+    if (operation === "add") {
+      const amount = parseFloat(addConfig.amountPerPeriod) || 0;
+      const periods = parseInt(addConfig.maxPeriods) || 0;
+      const validRecipients = addConfig.recipients.filter((r) =>
+        r.trim(),
+      ).length;
+
+      const additionalTotal = amount * periods * validRecipients;
+      newTotal += additionalTotal;
+      newRemaining += additionalTotal;
+    } else if (operation === "remove") {
+      const removedAddresses = removeConfig.recipients.filter((r) => r.trim());
+
+      removedAddresses.forEach((address) => {
+        const gauge = gauges.find(
+          (g) => g.gaugeAddress.toLowerCase() === address.toLowerCase(),
+        );
+        if (gauge) {
+          const gaugeAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+          const gaugeMaxPeriods = parseInt(gauge.maxPeriods) || 0;
+          const gaugePeriodNumber = parseInt(gauge.periodNumber) || 0;
+
+          const gaugeTotal = gaugeAmountPerPeriod * gaugeMaxPeriods;
+          const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
+          const gaugeRemaining = gaugeTotal - gaugeDistributed;
+
+          newTotal -= gaugeTotal;
+          newDistributed -= gaugeDistributed;
+          newRemaining -= gaugeRemaining;
+        }
+      });
+    }
+
+    return {
+      total: newTotal,
+      distributed: newDistributed,
+      remaining: newRemaining,
+    };
+  };
+
+  const calculateDistributionAmounts = (addConfig: RecipientConfigData) => {
+    if (!addConfig.amountPerPeriod || !addConfig.maxPeriods) {
+      return { total: 0, distributed: 0, remaining: 0 };
+    }
+
+    const amount = parseFloat(addConfig.amountPerPeriod) || 0;
+    const maxPeriods = parseInt(addConfig.maxPeriods) || 0;
+    const totalRecipients = addConfig.recipients.filter((r) => r.trim()).length;
+
+    const total = amount * maxPeriods * totalRecipients;
+    return { total, distributed: 0, remaining: total };
   };
 
   const formatAmount = (amount: number) => {
@@ -133,16 +227,19 @@ function RewardsInjectorConfigurator({
     });
   };
 
-  const currentDistribution = calculateDistributionAmounts(gauges);
-  const newDistribution = calculateDistributionAmounts(currentConfig);
+  const currentDistribution = calculateCurrentDistribution(gauges);
+  const newDistribution = calculateNewDistribution(
+    operation,
+    addConfig,
+    removeConfig,
+  );
   const distributionDelta = newDistribution.total - currentDistribution.total;
 
   const generatePayload = () => {
-    if (!selectedAddress || currentConfig.length === 0) {
+    if (!selectedAddress) {
       toast({
         title: "Invalid Input",
-        description:
-          "Please select an injector and configure at least one gauge.",
+        description: "Please select an injector.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -150,24 +247,35 @@ function RewardsInjectorConfigurator({
       return;
     }
 
-    const scheduleInputs: InjectorScheduleInput[] = currentConfig.map(
-      (gauge) => ({
-        gaugeAddress: gauge.gaugeAddress,
-        amountPerPeriod: gauge.amountPerPeriod,
-        rawAmountPerPeriod: gauge.rawAmountPerPeriod,
-        maxPeriods: gauge.maxPeriods,
-      }),
-    );
+    try {
+      const payload = generateInjectorSchedulePayloadV2({
+        injectorAddress: selectedAddress.address,
+        chainId: Number(getChainId(selectedAddress.network)),
+        safeAddress: selectedSafe,
+        operation: operation || "add",
+        scheduleInputs:
+          operation === "add"
+            ? addConfig.recipients.map((recipient) => ({
+                gaugeAddress: recipient,
+                rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
+                maxPeriods: addConfig.maxPeriods,
+                doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
+              }))
+            : removeConfig.recipients.map((recipient) => ({
+                gaugeAddress: recipient,
+              })),
+      });
 
-    const payload = generateInjectorSchedulePayload({
-      injectorType: isV2 ? "v2" : "v1",
-      injectorAddress: selectedAddress.address,
-      chainId: getChainId(selectedAddress.network),
-      safeAddress: selectedSafe,
-      scheduleInputs,
-    });
-
-    setGeneratedPayload(payload);
+      setGeneratedPayload(payload);
+    } catch (error) {
+      toast({
+        title: "Error Generating Payload",
+        description: error instanceof Error ? error.message : "Unknown error",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleOpenPRModal = () => {
@@ -293,7 +401,6 @@ function RewardsInjectorConfigurator({
             isChecked={isV2}
             onChange={() => {
               setGauges([]);
-              setCurrentConfig([]);
               onVersionToggle();
             }}
           />
@@ -358,11 +465,26 @@ function RewardsInjectorConfigurator({
             <Heading as="h2" size="lg" mb={4}>
               Current Configuration
             </Heading>
-
-            <EditableInjectorConfig
-              data={currentConfig}
+            <RewardsInjectorConfigurationViewerV2
+              data={gauges}
               tokenSymbol={tokenSymbol}
               tokenDecimals={tokenDecimals}
+            />
+          </Box>
+          <Box mt={6} gap={4}>
+            <Button onClick={() => setOperation("add")} mr={4}>
+              Add Recipients
+            </Button>
+            <Button onClick={() => setOperation("remove")}>
+              Remove Recipients
+            </Button>
+          </Box>
+          <Box mt={6}>
+            <EditableInjectorConfigV2
+              initialData={operation === "add" ? addConfig : removeConfig}
+              tokenSymbol={tokenSymbol}
+              tokenDecimals={tokenDecimals}
+              operation={operation}
               onConfigChange={handleConfigChange}
             />
           </Box>
@@ -434,4 +556,4 @@ function RewardsInjectorConfigurator({
   );
 }
 
-export default RewardsInjectorConfigurator;
+export default RewardsInjectorConfiguratorV2;

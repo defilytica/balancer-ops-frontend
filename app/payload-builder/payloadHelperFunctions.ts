@@ -421,6 +421,123 @@ export interface InjectorScheduleInput {
   maxPeriods: string;
 }
 
+interface PayloadGeneratorInputV2 {
+  injectorAddress: string;
+  chainId: number;
+  safeAddress: string;
+  operation: "add" | "remove";
+  scheduleInputs: {
+    gaugeAddress: string;
+    amountPerPeriod?: string;
+    rawAmountPerPeriod?: string;
+    maxPeriods?: string;
+    doNotStartBeforeTimestamp?: string;
+  }[];
+}
+
+export function generateInjectorSchedulePayloadV2({
+  injectorAddress,
+  chainId,
+  safeAddress,
+  operation,
+  scheduleInputs,
+}: PayloadGeneratorInputV2): BatchFile {
+  const contractMethods = {
+    add: {
+      inputs: [
+        {
+          name: "recipients",
+          type: "address[]",
+          internalType: "address[]",
+        },
+        {
+          name: "amountPerPeriod",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "maxPeriods",
+          type: "uint32",
+          internalType: "uint32",
+        },
+        {
+          name: "doNotStartBeforeTimestamp",
+          type: "uint56",
+          internalType: "uint56",
+        },
+      ],
+      name: "add",
+      payable: false,
+    },
+    remove: {
+      inputs: [
+        {
+          name: "recipients",
+          type: "address[]",
+          internalType: "address[]",
+        },
+      ],
+      name: "remove",
+      payable: false,
+    },
+  };
+
+  const contractMethod = contractMethods[operation];
+
+  let parameters: any[];
+  if (operation === "add") {
+    const firstConfig = scheduleInputs.find(
+      (input) =>
+        input.rawAmountPerPeriod &&
+        input.maxPeriods &&
+        input.doNotStartBeforeTimestamp,
+    );
+
+    if (!firstConfig) {
+      throw new Error("Invalid add configuration: missing required parameters");
+    }
+
+    parameters = [
+      scheduleInputs.map((input) => input.gaugeAddress),
+      firstConfig.rawAmountPerPeriod,
+      firstConfig.maxPeriods,
+      firstConfig.doNotStartBeforeTimestamp || "0",
+    ];
+  } else {
+    parameters = [scheduleInputs.map((input) => input.gaugeAddress)];
+  }
+
+  const batchTransaction = {
+    to: injectorAddress,
+    value: "0",
+    data: null,
+    contractMethod,
+    contractInputsValues: {
+      recipients: `[${parameters[0].join(", ")}]`,
+      amountPerPeriod: parameters[1],
+      maxPeriods: parameters[2],
+      doNotStartBeforeTimestamp: parameters[3],
+    },
+  };
+
+  const batchFile: BatchFile = {
+    version: "1.0",
+    chainId: chainId.toString(),
+    createdAt: Math.floor(Date.now() / 1000),
+    meta: {
+      name: `Rewards Injector Schedule - ${operation.toUpperCase()}`,
+      description: `Configure rewards injector schedule to ${operation} recipients`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: safeAddress,
+      createdFromOwnerAddress: "",
+      checksum: "0x" + Math.random().toString(16).substring(2, 64),
+    },
+    transactions: [batchTransaction],
+  };
+
+  return batchFile;
+}
+
 export interface PayloadGeneratorInput {
   injectorType: "v1" | "v2";
   injectorAddress: string;

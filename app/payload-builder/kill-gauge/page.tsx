@@ -40,6 +40,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { VscGithubInverted } from "react-icons/vsc";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import OpenPRButton from "@/components/btns/OpenPRButton";
 
 export default function KillGaugePage() {
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
@@ -184,13 +185,7 @@ export default function KillGaugePage() {
           >
             Copy Payload to Clipboard
           </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<VscGithubInverted />}
-            onClick={() => handleOpenPRModal()}
-          >
-            Open PR
-          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
         </Box>
 
         {humanReadableText && (

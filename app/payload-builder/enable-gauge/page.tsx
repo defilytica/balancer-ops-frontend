@@ -43,6 +43,7 @@ import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import OpenPRButton from "@/components/btns/OpenPRButton";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -213,13 +214,7 @@ export default function EnableGaugePage() {
           >
             Copy Payload to Clipboard
           </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<VscGithubInverted />}
-            onClick={() => handleOpenPRModal()}
-          >
-            Open PR
-          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
         </Box>
 
         {humanReadableText && (
