@@ -1,37 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState} from 'react';
 import {
-    Box,
-    Button,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Stack,
-    Text,
     Alert,
     AlertIcon,
-    HStack,
+    Box,
+    Button, FormControl, FormLabel,
+    HStack, Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
     Spinner,
-    useToast,
-    VStack,
     Table,
-    Thead,
+    Text,
     Tbody,
-    Tr,
+    Td,
     Th,
-    Td
+    Thead,
+    Tr,
+    useToast,
+    VStack
 } from '@chakra-ui/react';
-import {
-    IoCheckmarkCircle,
-    IoWarning
-} from 'react-icons/io5';
-import { ethers } from 'ethers';
-import { PoolType } from "@/types/types";
-import { PoolConfig, PoolToken } from "@/types/interfaces";
-import { PoolSettingsComponent } from './PoolSettings';
-import { ERC20 } from '@/abi/erc20';
+import {IoCheckmarkCircle, IoWarning} from 'react-icons/io5';
+import {ethers} from 'ethers';
+import {PoolConfig} from "@/types/interfaces";
+import {PoolSettingsComponent} from './PoolSettings';
+import {ERC20} from '@/abi/erc20';
+import {CreateWeightedABI} from "@/abi/WeightedPoolFactory";
+import {FactoryAddressWeighted} from "@/constants/constants";
+import {weightedPool} from "@/abi/WeightedPool";
+import {getNetworkString} from "@/lib/utils/getNetworkString";
+import {vaultABI} from "@/abi/BalVault";
 
 interface PoolReviewProps {
     config: PoolConfig;
@@ -46,7 +46,9 @@ interface TokenApprovalState {
     error?: string;
 }
 
+type NetworkString = ReturnType<typeof getNetworkString>;
 type ApprovalStates = Record<string, TokenApprovalState>;
+
 
 const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
 
@@ -57,6 +59,11 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
     const [approvalStates, setApprovalStates] = useState<ApprovalStates>({});
     const [isCreatingPool, setIsCreatingPool] = useState<boolean>(false);
+    const [isJoiningPool, setIsJoiningPool] = useState<boolean>(false);
+    const [poolId, setPoolId] = useState<string>("");
+    const [poolAddress, setPoolAddress] = useState<string>("");
+    const [isJoinModalOpen, setIsJoinModalOpen] = useState<boolean>(false);
+    const [lookupPoolAddress, setLookupPoolAddress] = useState<string>("");
     const toast = useToast();
 
     // Check token decimals and store them
@@ -64,8 +71,7 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
         const provider = new ethers.BrowserProvider(window.ethereum);
         const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
         try {
-            const decimals = await tokenContract.decimals();
-            return decimals;
+            return await tokenContract.decimals();
         } catch (error) {
             console.error('Error getting decimals:', error);
             return 18; // Default to 18 if there's an error
@@ -87,7 +93,7 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
 
         try {
             const allowance = await tokenContract.allowance(userAddress, VAULT_ADDRESS);
-            return allowance.gte(requiredAmount);
+            return Number(allowance) >= requiredAmount
         } catch (error) {
             console.error('Error checking allowance:', error);
             return false;
@@ -191,18 +197,26 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
     };
 
     const handleCreatePool = async (): Promise<void> => {
-        // Pool creation logic here
         setIsCreatingPool(true);
         try {
-            // Add pool creation transaction
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            const networkName = getNetworkString(Number(network.chainId));
+
+            const newPoolId = await createWeightedPool(provider, networkName, config);
+            setPoolId(newPoolId);
+
             toast({
                 title: "Success",
-                description: "Pool created successfully!",
+                description: `Pool created successfully! Pool ID: ${newPoolId}`,
                 status: "success",
                 duration: 5000,
             });
             setIsApprovalModalOpen(false);
+            // Show join modal after successful creation
+            setIsJoinModalOpen(true);
         } catch (error) {
+            console.error('Pool creation error:', error);
             toast({
                 title: "Error",
                 description: error instanceof Error ? error.message : 'Failed to create pool',
@@ -217,6 +231,173 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
     const allTokensApproved = Object.values(approvalStates).every(
         state => state.approved && !state.checking
     );
+
+    const createWeightedPool = async (
+        provider: ethers.BrowserProvider,
+        networkName: NetworkString,
+        config: PoolConfig
+    ): Promise<string> => {
+        const signer = await provider.getSigner();
+        const factoryAddress = FactoryAddressWeighted[networkName];
+
+        if (!factoryAddress) {
+            throw new Error(`Network ${networkName} not supported`);
+        }
+
+        // Sort tokens by address
+        const sortedTokens = [...config.tokens].sort((a, b) =>
+            ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
+        );
+
+        // Parse weights to correct format
+        const weights = sortedTokens.map(token =>
+            ethers.parseUnits((Number(token.weight) / 100).toString(), 18)
+        );
+
+        // Generate random salt
+        const salt = ethers.hexlify(ethers.randomBytes(32));
+
+        // Get rate providers (default to zero address if not specified)
+        const rateProviders = sortedTokens.map(token =>
+            token.rateProvider || ethers.ZeroAddress
+        );
+
+        const swapFeePercentage = ethers.parseUnits(
+            (Number(config.settings?.swapFee) / 100).toString(),
+            18
+        );
+
+        const factory = new ethers.Contract(
+            factoryAddress,
+            CreateWeightedABI,
+            signer
+        );
+
+        const tx = await factory.create(
+            config.settings?.name,
+            config.settings?.symbol,
+            sortedTokens.map(t => t.address),
+            weights,
+            rateProviders,
+            swapFeePercentage,
+            config.settings?.weightedSpecific?.feeManagement?.owner || await signer.getAddress(),
+            salt
+        );
+
+        const receipt = await tx.wait();
+        const poolAddress = receipt.logs[0].address;
+
+        // Get pool ID
+        const poolContract = new ethers.Contract(
+            poolAddress,
+            weightedPool,
+            signer
+        );
+
+        return await poolContract.getPoolId();
+    };
+
+    const initJoinPool = async (): Promise<void> => {
+        setIsJoiningPool(true);
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const userAddress = await signer.getAddress();
+
+            const vaultContract = new ethers.Contract(VAULT_ADDRESS, vaultABI, signer);
+
+            // Sort and prepare assets and amounts
+            const sortedTokens = [...config.tokens]
+                .filter(token => token.address && token.amount)
+                .sort((a, b) =>
+                    ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
+                );
+
+            // Prepare amounts with proper decimals
+            const amountsWithDecimals = await Promise.all(
+                sortedTokens.map(async token => {
+                    const decimals = await checkDecimals(token.address!);
+                    return ethers.parseUnits(token.amount!, decimals);
+                })
+            );
+
+            const assets = sortedTokens.map(token => token.address!);
+            const maxAmountsIn = amountsWithDecimals.map(amount => amount.toString());
+
+            // Encode join data
+            const JOIN_KIND_INIT = 0;
+            const userData = ethers.AbiCoder.defaultAbiCoder().encode(
+                ["uint256", "uint256[]"],
+                [JOIN_KIND_INIT, maxAmountsIn]
+            );
+
+            const joinRequest = {
+                assets,
+                maxAmountsIn,
+                userData,
+                fromInternalBalance: false
+            };
+
+            const tx = await vaultContract.joinPool(
+                poolId,
+                userAddress,
+                userAddress,
+                joinRequest
+            );
+
+            await tx.wait();
+
+            toast({
+                title: "Success",
+                description: "Successfully joined the pool!",
+                status: "success",
+                duration: 5000,
+            });
+
+        } catch (error) {
+            console.error('Join pool error:', error);
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : 'Failed to join pool',
+                status: "error",
+                duration: 5000,
+            });
+        } finally {
+            setIsJoiningPool(false);
+        }
+    };
+
+    const checkPoolOwnership = async (): Promise<boolean> => {
+        if (!poolAddress) return false;
+
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const userAddress = await signer.getAddress();
+
+            const poolContract = new ethers.Contract(
+                poolAddress,
+                weightedPool,
+                provider
+            );
+
+            const owner = await poolContract.getOwner();
+            return owner.toLowerCase() === userAddress.toLowerCase();
+        } catch (error) {
+            console.error('Error checking pool ownership:', error);
+            return false;
+        }
+    };
+
+    const retrievePoolId = async (poolAddress: string): Promise<string> => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const poolContract = new ethers.Contract(
+            poolAddress,
+            weightedPool,
+            provider
+        );
+        return await poolContract.getPoolId();
+    };
 
     return (
         <Box>
@@ -238,6 +419,70 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
                     </Button>
                 </HStack>
             </VStack>
+
+            <Modal
+                isOpen={isJoinModalOpen}
+                onClose={() => !isJoiningPool && setIsJoinModalOpen(false)}
+                closeOnOverlayClick={false}
+                size="xl"
+            >
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Join Pool</ModalHeader>
+                    <ModalBody>
+                        <VStack spacing={6} align="stretch">
+                            {[
+                                <Alert key="alert" status="info" borderRadius="md">
+                                    <AlertIcon />
+                                    Pool has been created successfully!
+                                </Alert>,
+                                <Box key="pool-info" borderWidth="1px" borderRadius="lg" p={4} >
+                                    <VStack align="stretch" spacing={3}>
+                                        <Box>
+                                            <Text fontWeight="semibold"  fontSize="sm">
+                                                Pool ID
+                                            </Text>
+                                            <Text fontSize="md" fontFamily="mono" mt={1} wordBreak="break-all">
+                                                {poolId}
+                                            </Text>
+                                        </Box>
+                                        <Box>
+                                            <Text fontWeight="semibold"  fontSize="sm">
+                                                Pool Address
+                                            </Text>
+                                            <Text fontSize="md" fontFamily="mono" mt={1} wordBreak="break-all">
+                                                {poolAddress}
+                                            </Text>
+                                        </Box>
+                                        <Alert status="warning" size="sm" mt={2}>
+                                            <AlertIcon />
+                                            Save these details for future reference
+                                        </Alert>
+                                    </VStack>
+                                </Box>
+                            ]}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="ghost"
+                            mr={3}
+                            onClick={() => setIsJoinModalOpen(false)}
+                            isDisabled={isJoiningPool}
+                        >
+                            Later
+                        </Button>
+                        <Button
+                            colorScheme="blue"
+                            onClick={initJoinPool}
+                            isLoading={isJoiningPool}
+                            loadingText="Joining Pool"
+                        >
+                            Join Now
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             <Modal
                 isOpen={isApprovalModalOpen}
@@ -323,6 +568,30 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <Box mt={4}>
+                <FormControl>
+                    <FormLabel>Look up existing pool</FormLabel>
+                    <Input
+                        placeholder="Enter pool address"
+                        value={lookupPoolAddress}
+                        onChange={(e) => setLookupPoolAddress(e.target.value)}
+                    />
+                    <Button
+                        mt={2}
+                        onClick={async () => {
+                            if (lookupPoolAddress) {
+                                const id = await retrievePoolId(lookupPoolAddress);
+                                setPoolId(id);
+                                setPoolAddress(lookupPoolAddress);
+                                setIsJoinModalOpen(true);
+                            }
+                        }}
+                    >
+                        Look Up Pool
+                    </Button>
+                </FormControl>
+            </Box>
         </Box>
     );
 };
