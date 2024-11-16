@@ -10,13 +10,13 @@ interface StepNavigationProps {
 }
 
 export const StepNavigation = ({
-                                   activeStep,
-                                   isNextDisabled = false,
-                                   onNext,
-                                   onBack,
-                                   onFinish,
-                                   isLastStep = false,
-                               }: StepNavigationProps) => {
+    activeStep,
+    isNextDisabled = false,
+    onNext,
+    onBack,
+    onFinish,
+    isLastStep = false,
+}: StepNavigationProps) => {
     return (
         <Flex justifyContent="space-between" mt={6}>
             <Button
@@ -28,10 +28,10 @@ export const StepNavigation = ({
             </Button>
             <ButtonGroup>
                 {isLastStep ? (
-                   <></>
+                    <></>
                 ) : (
                     <Button
-                        colorScheme="blue"
+                        variant="primary"
                         onClick={onNext}
                         isDisabled={isNextDisabled}
                     >

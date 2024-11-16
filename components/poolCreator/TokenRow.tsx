@@ -10,12 +10,12 @@ import {
     Tooltip,
     Flex,
 } from '@chakra-ui/react';
-import { DeleteIcon } from '@chakra-ui/icons';
+import { DeleteIcon, LockIcon, UnlockIcon } from '@chakra-ui/icons';
 import { FaWallet } from 'react-icons/fa';
 import { formatUnits } from 'viem';
 import { useAccount, useBalance } from 'wagmi';
 import { TokenSelector } from './TokenSelector';
-import { PoolToken, TokenListToken, TokenWithBalance } from '@/types/interfaces';
+import { TokenListToken, TokenWithBalance } from '@/types/interfaces';
 
 interface TokenRowProps {
     token: TokenWithBalance;
@@ -23,6 +23,7 @@ interface TokenRowProps {
     onTokenSelect: (index: number, token: TokenListToken) => void;
     onWeightChange: (index: number, value: number) => void;
     onAmountChange: (index: number, value: string) => void;
+    onLockChange: (index: number, value: boolean) => void;
     onRemove: (index: number) => void;
     showRemove: boolean;
     chainId?: number;
@@ -35,6 +36,7 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                                                       onTokenSelect,
                                                       onWeightChange,
                                                       onAmountChange,
+                                                      onLockChange,
                                                       onRemove,
                                                       showRemove,
                                                       chainId,
@@ -98,23 +100,39 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                         />
                         {token.price && (
                             <Text fontSize="sm" mt={1}>
-                                ${token.price.toFixed(4)}
+                                ${token.price.toFixed(2)}
                             </Text>
                         )}
                     </Box>
                 </FormControl>
 
                 <FormControl flex={1}>
-                    <NumberInput
-                        value={token.weight}
-                        onChange={(_, valueNumber) => onWeightChange(index, valueNumber)}
-                        min={0}
-                        max={100}
-                        precision={2}
-                        size="md"
-                    >
-                        <NumberInputField placeholder="Enter weight" />
-                    </NumberInput>
+                    <Flex gap={2}>
+                        <NumberInput
+                            value={token.weight}
+                            onChange={(_, valueNumber) => onWeightChange(index, valueNumber)}
+                            min={0}
+                            max={100}
+                            precision={2}
+                            size="md"
+                            isReadOnly={token.locked}
+                        >
+                            <NumberInputField placeholder="Enter weight" />
+                        </NumberInput>
+                        <Tooltip label={token.locked ? "Unlock weight" : "Lock weight"}>
+                            <IconButton
+                                icon={token.locked ? <LockIcon /> : <UnlockIcon />}
+                                size="md"
+                                variant="ghost"
+                                onClick={() => onLockChange(index, !token.locked)}
+                                aria-label={token.locked ? "Unlock weight" : "Lock weight"}
+                                color={token.locked ? "blue.500" : "gray.400"}
+                                _hover={{
+                                    color: token.locked ? "blue.600" : "blue.500"
+                                }}
+                            />
+                        </Tooltip>
+                    </Flex>
                 </FormControl>
 
                 <FormControl flex={1.5}>
@@ -123,7 +141,6 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                             value={token.amount}
                             onChange={(valueString) => onAmountChange(index, valueString)}
                             min={0}
-                            precision={8}
                             size="md"
                         >
                             <NumberInputField placeholder="Enter amount" />

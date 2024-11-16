@@ -1,30 +1,17 @@
 import {
-    Box,
     Button,
-    FormControl,
-    FormLabel,
-    Grid,
-    NumberInput,
-    NumberInputField,
     Stack,
     useToast,
-    IconButton,
-    Text,
     HStack,
-    Tooltip, VStack,
 } from '@chakra-ui/react'
-import React, {useCallback, useEffect, useState } from 'react'
-import { useAccount, useBalance } from 'wagmi'
-import { TokenSelector } from './TokenSelector'
-import {PoolConfig, PoolToken, TokenListToken, TokenWithBalance} from '@/types/interfaces'
-import {DeleteIcon, SettingsIcon} from "@chakra-ui/icons"
-import { FaWallet } from "react-icons/fa";
+import React, {useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
+import { PoolConfig, PoolToken, TokenListToken, TokenWithBalance } from '@/types/interfaces'
 import { getNetworkString } from "@/lib/utils/getNetworkString"
-import { formatUnits } from 'viem'
 import {useQuery} from "@apollo/client";
 import {CurrentTokenPricesDocument, GqlChain} from "@/lib/services/apollo/generated/graphql";
 import {TokenRow} from "@/components/poolCreator/TokenRow";
-
+import {SettingsIcon} from "@chakra-ui/icons";
 interface WeightedPoolConfigProps {
     config: PoolConfig;
     onConfigUpdate: (tokens: PoolToken[]) => void;
@@ -165,7 +152,7 @@ const optimizeAmounts = (tokens: TokenWithBalance[]): TokenWithBalance[] => {
 export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfigProps) => {
     const { chain } = useAccount()
     const [tokens, setTokens] = useState<TokenWithBalance[]>(
-        config.tokens.length ? config.tokens : [{ address: '', weight: 0, symbol: '', amount: '' }]
+        config.tokens.length ? config.tokens : [{ address: '', weight: 0, symbol: '', amount: '', locked: false }, { address: '', weight: 0, symbol: '', amount: '', locked: false }]
     );
     const toast = useToast()
     const selectedNetwork = getNetworkString(chain?.id)
@@ -289,16 +276,93 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
         setTokens(newTokens)
     }
 
-    const updateWeight = (index: number, value: number) => {
+    const updateLock = (index: number, locked: boolean) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {
-                return { ...token, weight: value }
+                return { ...token, locked }
             }
             return token
         })
         setTokens(newTokens)
     }
 
+    const updateWeight = (index: number, newWeight: number) => {
+        const newTokens = [...tokens];
+        const oldWeight = tokens[index].weight || 0;
+        const weightDifference = newWeight - oldWeight;
+        
+        if (tokens[index].locked) {
+            toast({
+                title: 'Token is locked',
+                description: 'Cannot modify weight of a locked token',
+                status: 'warning',
+            });
+            return;
+        }
+    
+        const adjustableTokens = tokens.filter((t, i) => 
+            i !== index && 
+            t.weight > 0 && 
+            !t.locked
+        );
+    
+        const lockedWeight = tokens.reduce((sum, t, i) => 
+            i !== index && t.locked ? sum + (t.weight || 0) : sum, 
+            0
+        );
+    
+        if (adjustableTokens.length === 0) {
+            const newTotal = lockedWeight + newWeight;
+            if (newTotal > 100) {
+                toast({
+                    title: 'Invalid weight',
+                    description: 'Total weight cannot exceed 100%',
+                    status: 'warning',
+                });
+                return;
+            }
+            newTokens[index] = { ...tokens[index], weight: newWeight };
+            setTokens(newTokens);
+            return;
+        }
+    
+        const totalAdjustableWeight = adjustableTokens.reduce((sum, t) => sum + (t.weight || 0), 0);
+        
+        if (lockedWeight + newWeight > 100) {
+            toast({
+                title: 'Invalid weight',
+                description: 'Change would exceed 100% when considering locked tokens',
+                status: 'warning',
+            });
+            return;
+        }
+    
+        const remainingWeight = 100 - lockedWeight - newWeight;
+        const adjustmentRatio = remainingWeight / totalAdjustableWeight;
+    
+        newTokens.forEach((token, i) => {
+            if (i === index) {
+                newTokens[i] = { ...token, weight: newWeight };
+            } else if (token.weight > 0 && !token.locked) {
+                const adjustedWeight = Math.max(0, Math.round(token.weight * adjustmentRatio));
+                newTokens[i] = { ...token, weight: adjustedWeight };
+            }
+        });
+    
+        const newTotal = newTokens.reduce((sum, t) => sum + (t.weight || 0), 0);
+        if (newTotal !== 100 && adjustableTokens.length > 0) {
+            const largestAdjustableToken = newTokens
+                .map((t, i) => ({ weight: t.weight || 0, index: i }))
+                .filter(t => t.index !== index && t.weight > 0 && !t.locked)
+                .sort((a, b) => b.weight - a.weight)[0];
+                
+            if (largestAdjustableToken) {
+                newTokens[largestAdjustableToken.index].weight += (100 - newTotal);
+            }
+        }
+    
+        setTokens(newTokens);
+    };
     const handleOptimize = () => {
         const optimizedTokens = optimizeAmounts(tokens);
         setTokens(optimizedTokens);
@@ -320,6 +384,7 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                         onTokenSelect={handleTokenSelect}
                         onWeightChange={updateWeight}
                         onAmountChange={updateAmount}
+                        onLockChange={updateLock}
                         onRemove={removeToken}
                         showRemove={tokens.length > 1}
                         chainId={chain?.id}
@@ -339,7 +404,7 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                 <Button
                     leftIcon={<SettingsIcon />}
                     onClick={handleOptimize}
-                    isDisabled={tokens.length < 2 || !tokens.every(t => t.price && t.weight)}
+                    isDisabled={tokens.length < 2 || !tokens.every(t => t.price && t.weight) || tokens.reduce((sum, t) => sum + t.weight, 0) !== 100}
                 >
                     Optimize Amounts
                 </Button>

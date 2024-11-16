@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import {
     Box,
     Image,
@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react';
 import { IoIosCheckmarkCircle, IoIosCloseCircle } from "react-icons/io";
 import { PoolCompositionChart, PoolCompositionChartToken } from "./PoolCompositionChart";
-import {PoolConfig, PoolSettings} from "@/types/interfaces";
+import { PoolConfig, PoolSettings } from "@/types/interfaces";
 
 interface ConfigurationCardProps {
     config: PoolConfig;
@@ -120,8 +120,6 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                 <Thead>
                     <Tr>
                         <Th>Token</Th>
-                        <Th>Address</Th>
-                        {config.type === 'weighted' && <Th isNumeric>Weight</Th>}
                         <Th isNumeric>Amount</Th>
                         <Th isNumeric>Price</Th>
                         <Th isNumeric>Value (USD)</Th>
@@ -141,29 +139,20 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                                             borderRadius="full"
                                         />
                                     )}
-                                    <Text fontSize="sm">{token.symbol || 'Select Token'}</Text>
+                                    <Tooltip label={token.address}>
+                                        <Text fontSize="sm">{token.symbol || 'Select Token'}</Text>
+                                    </Tooltip>
                                 </HStack>
                             </Td>
-                            <Td>
-                                <Tooltip label={token.address}>
-                                    <Text fontSize="xs" fontFamily="mono">
-                                        {token.address ?
-                                            `${token.address.substring(0, 6)}...${token.address.substring(token.address.length - 4)}` :
-                                            'Not set'
-                                        }
-                                    </Text>
-                                </Tooltip>
-                            </Td>
-                            {config.type === 'weighted' && (
-                                <Td isNumeric>{token.weight}%</Td>
-                            )}
-                            <Td isNumeric>{Number(token.amount || 0).toFixed(6)}</Td>
+                       
+                     
+                            <Td isNumeric>{Number(token.amount || 0).toFixed(2)}</Td>
                             <Td isNumeric>${token.price ? token.price.toFixed(2) : '-'}</Td>
                             <Td isNumeric>
                                 ${token.price && token.amount
-                                ? (token.price * Number(token.amount)).toFixed(2)
-                                : '-'
-                            }
+                                    ? (token.price * Number(token.amount)).toFixed(2)
+                                    : '-'
+                                }
                             </Td>
                         </Tr>
                     ))}
@@ -250,10 +239,6 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                         <Box>
                             <Text fontSize="sm" color="gray.500">Type</Text>
                             <Text fontWeight="medium">{config.type === 'weighted' ? 'Weighted pool' : 'Composable Stable Pool'}</Text>
-                        </Box>
-                        <Box>
-                            <Text fontSize="sm" color="gray.500">Tokens</Text>
-                            <Text fontWeight="medium">{config.tokens.length}</Text>
                         </Box>
                     </Grid>
 

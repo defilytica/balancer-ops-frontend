@@ -92,6 +92,7 @@ export interface TokenListToken {
 export interface TokenWithBalance extends PoolToken {
   balance?: string;
   formattedBalance?: string;
+  locked?: boolean;
 }
 
 export interface GetTokensQuery {

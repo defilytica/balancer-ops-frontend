@@ -177,11 +177,11 @@ const PoolCreatorPage: React.FC = () => {
     return (
         <Box p={8}>
             <PoolCreatorStepper activeStep={activeStep} />
-            <Grid templateColumns="repeat(2, 1fr)" gap={8} mt={8}>
+            <Grid templateColumns="5fr 1fr" gap={8} mt={8}>
                 <GridItem>
                     <Card>
                         <CardHeader>
-                            <Heading size="md" variant="special">Configure Pool: {poolConfig.type}</Heading>
+                            <Heading size="md" variant="special">Configure Pool: {poolConfig.type ? poolConfig.type.charAt(0).toUpperCase() + poolConfig.type.slice(1) : ''}</Heading>
                         </CardHeader>
                         <CardBody>
                             {getStepContent()}
