@@ -1,6 +1,9 @@
 {
   "functions": {
-    "app/api/injector/all/route.ts": {
+    "app/api/injector/v1/all/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/injector/v2/all/route.ts": {
       "maxDuration": 60
     }
   },
