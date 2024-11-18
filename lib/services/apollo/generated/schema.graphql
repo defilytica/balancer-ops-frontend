@@ -8,6 +8,26 @@ scalar Bytes
 
 scalar Date
 
+"""
+The review data for the ERC4626 token
+"""
+type Erc4626ReviewData {
+  """
+  The filename of the review of the ERC4626
+  """
+  reviewFile: String!
+
+  """
+  A summary of the ERC4626 review, usually just says safe or unsafe
+  """
+  summary: String!
+
+  """
+  Warnings associated with the ERC4626
+  """
+  warnings: [String!]!
+}
+
 type GqlBalancePoolAprItem {
   apr: GqlPoolAprValue!
   id: ID!
@@ -124,7 +144,7 @@ type GqlNestedPool {
   address: Bytes!
 
   """
-  Price rate of the Balancer Pool Token (BPT).
+  Price rate of this pool or the Balancer Pool Token (BPT).
   """
   bptPriceRate: BigDecimal!
 
@@ -137,6 +157,11 @@ type GqlNestedPool {
   Address of the factory contract that created the pool, if applicable.
   """
   factory: Bytes
+
+  """
+  Hook assigned to a pool
+  """
+  hook: Hook
 
   """
   Unique identifier of the pool.
@@ -553,12 +578,42 @@ enum GqlPoolAprItemType {
   """
   Cow AMM specific APR
   """
-  SURPLUS
+  SURPLUS @deprecated(reason: "Use SURPLUS_24H instead")
+
+  """
+  Surplus APR based on data from the last 7d
+  """
+  SURPLUS_7D
+
+  """
+  Surplus APR based on data from the last 24h
+  """
+  SURPLUS_24H
+
+  """
+  Surplus APR based on data from the last 30d
+  """
+  SURPLUS_30D
 
   """
   Represents the swap fee APR in a pool.
   """
-  SWAP_FEE
+  SWAP_FEE @deprecated(reason: "Use SWAP_FEE_24H instead")
+
+  """
+  Swap fee APR based on data from the last 7d
+  """
+  SWAP_FEE_7D
+
+  """
+  Swap fee APR based on data from the last 24h
+  """
+  SWAP_FEE_24H
+
+  """
+  Swap fee APR based on data from the last 30d
+  """
+  SWAP_FEE_30D
 
   """
   Reward APR in a pool from veBAL emissions allocated by gauge votes. Emitted in BAL.
@@ -592,7 +647,7 @@ interface GqlPoolBase {
   address: Bytes!
 
   """
-  Returns all pool tokens, including any nested tokens and phantom BPTs on one level.
+  Returns all pool tokens, including any nested tokens and phantom BPTs as a flattened array.
   """
   allTokens: [GqlPoolTokenExpanded!]!
     @deprecated(reason: "Use poolTokens instead")
@@ -634,6 +689,21 @@ interface GqlPoolBase {
   factory: Bytes
 
   """
+  Whether at least one token in this pool is considered an ERC4626 token.
+  """
+  hasErc4626: Boolean!
+
+  """
+  Whether at least one token in a nested pool is considered an ERC4626 token.
+  """
+  hasNestedErc4626: Boolean!
+
+  """
+  Hook assigned to a pool
+  """
+  hook: Hook
+
+  """
   The pool id. This is equal to the address for protocolVersion 3 pools
   """
   id: ID!
@@ -660,7 +730,7 @@ interface GqlPoolBase {
   owner: Bytes
 
   """
-  Returns all pool tokens, including BPTs and nested pools if there are any. Only one nested level deep.
+  Returns pool tokens, including BPTs and nested pools and their pool tokens if there are any. Only one nested level deep.
   """
   poolTokens: [GqlPoolTokenDetail!]!
 
@@ -748,6 +818,7 @@ type GqlPoolBatchSwapSwap {
 type GqlPoolComposableStable implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
   bptPriceRate: BigDecimal!
   categories: [GqlPoolFilterCategory]
@@ -755,14 +826,19 @@ type GqlPoolComposableStable implements GqlPoolBase {
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   nestingType: GqlPoolNestingType!
+    @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -792,6 +868,7 @@ type GqlPoolComposableStableNested {
   id: ID!
   name: String!
   nestingType: GqlPoolNestingType!
+    @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   swapFee: BigDecimal!
   symbol: String!
@@ -875,14 +952,19 @@ type GqlPoolDynamicData {
 type GqlPoolElement implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   baseToken: Bytes!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
@@ -1070,6 +1152,7 @@ enum GqlPoolFilterCategory {
 type GqlPoolFx implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   alpha: String!
   beta: String!
   categories: [GqlPoolFilterCategory]
@@ -1078,9 +1161,13 @@ type GqlPoolFx implements GqlPoolBase {
   decimals: Int!
   delta: String!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   epsilon: String!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
@@ -1109,6 +1196,7 @@ type GqlPoolFx implements GqlPoolBase {
 type GqlPoolGyro implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   alpha: String!
   beta: String!
   c: String!
@@ -1118,8 +1206,12 @@ type GqlPoolGyro implements GqlPoolBase {
   dSq: String!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
@@ -1127,6 +1219,7 @@ type GqlPoolGyro implements GqlPoolBase {
   liquidityManagement: LiquidityManagement
   name: String!
   nestingType: GqlPoolNestingType!
+    @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -1200,19 +1293,25 @@ enum GqlPoolJoinExitType {
 type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   nestingType: GqlPoolNestingType!
+    @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -1235,14 +1334,19 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
 type GqlPoolMetaStable implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
@@ -1276,6 +1380,7 @@ type GqlPoolMinimal {
   Returns all pool tokens, including any nested tokens and phantom BPTs
   """
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
 
   """
   List of categories assigned by the team based on external factors
@@ -1301,6 +1406,7 @@ type GqlPoolMinimal {
   Only returns main or underlying tokens, also known as leave tokens. Wont return any nested BPTs. Used for displaying the tokens that the pool consists of.
   """
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
 
   """
   Dynamic data such as token balances, swap fees or volume
@@ -1316,6 +1422,11 @@ type GqlPoolMinimal {
   Whether at least one token in this pool is considered an ERC4626 token.
   """
   hasErc4626: Boolean!
+
+  """
+  Whether at least one token in a nested pool is considered an ERC4626 token.
+  """
+  hasNestedErc4626: Boolean!
 
   """
   Hook assigned to a pool
@@ -1346,6 +1457,11 @@ type GqlPoolMinimal {
   The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
   """
   owner: Bytes
+
+  """
+  Returns all pool tokens, including BPTs and nested pools if there are any. Only one nested level deep.
+  """
+  poolTokens: [GqlPoolTokenDetail!]!
 
   """
   The protocol version on which the pool is deployed, 1, 2 or 3
@@ -1465,14 +1581,20 @@ enum GqlPoolSnapshotDataRange {
 type GqlPoolStable implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
+  bptPriceRate: BigDecimal!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
@@ -1849,6 +1971,11 @@ type GqlPoolTokenDetail {
   decimals: Int!
 
   """
+  The ERC4626 review data for the token
+  """
+  erc4626ReviewData: Erc4626ReviewData
+
+  """
   Indicates whether this token is a BPT and therefor has a nested pool.
   """
   hasNestedPool: Boolean!
@@ -1909,7 +2036,7 @@ type GqlPoolTokenDetail {
   symbol: String!
 
   """
-  If it is an Erc4262, this will be the underlying token if present in the API.
+  If it is an ERC4626, this will be the underlying token if present in the API.
   """
   underlyingToken: GqlToken
 
@@ -2011,19 +2138,25 @@ type GqlPoolUserSwapVolume {
 type GqlPoolWeighted implements GqlPoolBase {
   address: Bytes!
   allTokens: [GqlPoolTokenExpanded!]!
+    @deprecated(reason: "Use poolTokens instead")
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]!
+    @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: Hook
   id: ID!
   investConfig: GqlPoolInvestConfig!
     @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   nestingType: GqlPoolNestingType!
+    @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -2685,7 +2818,7 @@ input GqlSwapCallDataInput {
 }
 
 """
-Represents a token
+Represents a token in the system
 """
 type GqlToken {
   """
@@ -2724,6 +2857,11 @@ type GqlToken {
   discordUrl: String
 
   """
+  The ERC4626 review data for the token
+  """
+  erc4626ReviewData: Erc4626ReviewData
+
+  """
   Whether the token is considered an ERC4626 token.
   """
   isErc4626: Boolean!
@@ -2752,6 +2890,7 @@ type GqlToken {
   The rate provider data for the token
   """
   rateProviderData: GqlPriceRateProviderData
+    @deprecated(reason: "Use priceRateProviderData instead")
 
   """
   The symbol of the token
@@ -2772,6 +2911,11 @@ type GqlToken {
   The Twitter username of the token
   """
   twitterUsername: String
+
+  """
+  The ERC4626 underlying token address, if applicable.
+  """
+  underlyingTokenAddress: String
 
   """
   The website URL of the token
@@ -2892,6 +3036,16 @@ type GqlTokenDynamicData {
 }
 
 """
+Provide filters for tokens
+"""
+input GqlTokenFilter {
+  """
+  Only return tokens with these addresses
+  """
+  tokensIn: [String!]
+}
+
+"""
 Result of the poolReloadPools mutation
 """
 type GqlTokenMutationResult {
@@ -2991,6 +3145,8 @@ type GqlVeBalLockSnapshot {
   The locked balance at that time.
   """
   balance: AmountHumanReadable!
+  bias: String!
+  slope: String!
 
   """
   The timestamp of the snapshot, snapshots are taking at lock events.
@@ -3127,6 +3283,11 @@ type Hook {
   List of pools using the hook
   """
   poolsIds: [String]
+
+  """
+  The review for this hook if applicable.
+  """
+  reviewData: HookReviewData
   shouldCallAfterAddLiquidity: Boolean!
   shouldCallAfterInitialize: Boolean!
   shouldCallAfterRemoveLiquidity: Boolean!
@@ -3145,6 +3306,31 @@ type HookData {
   addLiquidityFeePercentage: String
   removeLiquidityFeePercentage: String
   swapFeePercentage: String
+}
+
+"""
+Represents the review data for the hook
+"""
+type HookReviewData {
+  """
+  The name of the hook
+  """
+  name: String!
+
+  """
+  The filename of the review of the hook
+  """
+  reviewFile: String!
+
+  """
+  A summary of the hook review, usually just says safe or unsafe
+  """
+  summary: String!
+
+  """
+  Warnings associated with the hook
+  """
+  warnings: [String!]!
 }
 
 """
@@ -3511,7 +3697,7 @@ type Query {
   """
   Returns all allowed tokens for a given chain or chains
   """
-  tokenGetTokens(chains: [GqlChain!]): [GqlToken!]!
+  tokenGetTokens(chains: [GqlChain!], where: GqlTokenFilter): [GqlToken!]!
 
   """
   Returns meta data for a given set of tokens such as description, website, etc.
