@@ -18,11 +18,6 @@ import {
     Tr,
     Th,
     Td,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
     Tag,
     Tooltip,
 } from '@chakra-ui/react';
@@ -115,116 +110,115 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
 
 
     const renderTokensTable = () => (
-        <Box overflowX="auto">
-            <Table size="sm" variant="simple">
-                <Thead>
-                    <Tr>
-                        <Th>Token</Th>
-                        <Th isNumeric>Amount</Th>
-                        <Th isNumeric>Price</Th>
-                        <Th isNumeric>Value (USD)</Th>
-                    </Tr>
-                </Thead>
-                <Tbody>
-                    {config.tokens.map((token, idx) => (
-                        <Tr key={idx}>
-                            <Td>
-                                <HStack spacing={2}>
-                                    {token.logoURI && (
-                                        <Image
-                                            src={token.logoURI}
-                                            fallbackSrc="https://raw.githubusercontent.com/feathericons/feather/master/icons/help-circle.svg"
-                                            alt={token.symbol}
-                                            boxSize="24px"
-                                            borderRadius="full"
-                                        />
-                                    )}
-                                    <Tooltip label={token.address}>
-                                        <Text fontSize="sm">{token.symbol || 'Select Token'}</Text>
-                                    </Tooltip>
-                                </HStack>
-                            </Td>
-                       
-                     
-                            <Td isNumeric>{Number(token.amount || 0).toFixed(2)}</Td>
-                            <Td isNumeric>${token.price ? token.price.toFixed(2) : '-'}</Td>
-                            <Td isNumeric>
-                                ${token.price && token.amount
-                                    ? (token.price * Number(token.amount)).toFixed(2)
-                                    : '-'
-                                }
-                            </Td>
+        <Box>
+            <Box borderRadius="md" borderWidth="1px" overflow="hidden">
+                <Table size="sm" variant="simple">
+                    <Thead>
+                        <Tr>
+                            <Th>Token</Th>
+                            <Th isNumeric>Amount</Th>
+                            <Th isNumeric>Price</Th>
+                            <Th isNumeric>Value (USD)</Th>
                         </Tr>
-                    ))}
-                </Tbody>
-            </Table>
+                    </Thead>
+                    <Tbody>
+                        {config.tokens.map((token, idx) => (
+                            <Tr key={idx}>
+                                <Td>
+                                    <HStack spacing={2}>
+                                        {token.logoURI && (
+                                            <Image
+                                                src={token.logoURI}
+                                                fallbackSrc="https://raw.githubusercontent.com/feathericons/feather/master/icons/help-circle.svg"
+                                                alt={token.symbol}
+                                                boxSize="24px"
+                                                borderRadius="full"
+                                            />
+                                        )}
+                                        <Tooltip label={token.address}>
+                                            <Text fontSize="sm">{token.symbol || 'Select Token'}</Text>
+                                        </Tooltip>
+                                    </HStack>
+                                </Td>
+                                <Td isNumeric>{Number(token.amount || 0).toFixed(2)}</Td>
+                                <Td isNumeric>${token.price ? token.price.toFixed(2) : '-'}</Td>
+                                <Td isNumeric>
+                                    ${token.price && token.amount ? (token.price * Number(token.amount)).toFixed(2) : '-'}
+                                </Td>
+                            </Tr>
+                        ))}
+                    </Tbody>
+                </Table>
+            </Box>
         </Box>
     );
 
     const renderPoolSettings = () => (
-        <Box overflowX="auto">
-            <Table size="sm" variant="simple">
-                <Tbody>
-                    {config.settings && (
-                        <>
-                            <Tr>
-                                <Td fontWeight="medium">Pool Name</Td>
-                                <Td>{config.settings.name}</Td>
-                            </Tr>
-                            <Tr>
-                                <Td fontWeight="medium">Symbol</Td>
-                                <Td>{config.settings.symbol}</Td>
-                            </Tr>
-                            <Tr>
-                                <Td fontWeight="medium">Swap Fee</Td>
-                                <Td>{config.settings.swapFee}%</Td>
-                            </Tr>
-                            <Tr>
-                            </Tr>
-                            {config.type === 'weighted' && config.settings.weightedSpecific && (
-                                <>
-                                    <Tr>
-                                        <Td fontWeight="medium">Fee Management</Td>
-                                        <Td>
-                                            <Tag size="sm" colorScheme={config.settings.weightedSpecific.feeManagement ? 'green' : 'red'}>
-                                                {config.settings.weightedSpecific.feeManagement.type}
-                                            </Tag>
-
-                                        </Td>
-
-                                    </Tr>
-                                    <Tr>
-                                        <Td fontWeight="medium">Owner </Td>
-                                        <Td>
-                                            {config.settings.weightedSpecific.feeManagement.owner && (
-                                                <Text fontSize="xs" fontFamily="mono" mt={1}>
-                                                    {config.settings.weightedSpecific.feeManagement.owner}
-                                                </Text>
-                                            )}
-                                        </Td>
-                                    </Tr>
-                                </>
-                            )}
-                            {config.type === 'composableStable' && config.settings.stableSpecific && (
-                                <>
-                                    <Tr>
-                                        <Td fontWeight="medium">Amplification Parameter</Td>
-                                        <Td>{config.settings.stableSpecific.amplificationParameter}</Td>
-                                    </Tr>
-                                    <Tr>
-                                        <Td fontWeight="medium">Meta-Stable</Td>
-                                        <Td>
-                                            <Tag size="sm" colorScheme={config.settings.stableSpecific.metaStableEnabled ? 'green' : 'red'}>
-                                                {config.settings.stableSpecific.metaStableEnabled ? 'Enabled' : 'Disabled'}
-                                            </Tag>
-                                        </Td>
-                                    </Tr>
-                                </>
-                            )}
-                        </>
-                    )}
-                </Tbody>
-            </Table>
+        <Box>
+            <Box borderRadius="md" borderWidth="1px">
+                <Table size="sm" variant="simple">
+                    <Tbody>
+                        {config.settings && (
+                            <>
+                                <Tr>
+                                    <Td fontWeight="medium"> <Text fontSize="sm">Pool Name </Text></Td>
+                                    <Td>{config.settings.name}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td fontWeight="medium"> <Text fontSize="sm">Symbol </Text></Td>
+                                    <Td>{config.settings.symbol}</Td>
+                                </Tr>
+                                <Tr>
+                                    <Td fontWeight="medium"> <Text fontSize="sm">Swap Fee </Text></Td>
+                                    <Td>{config.settings.swapFee}%</Td>
+                                </Tr>
+                                {config.type === 'weighted' && config.settings.weightedSpecific && (
+                                    <>
+                                        <Tr>
+                                            <Td fontWeight="medium"> <Text fontSize="sm">Fee Management </Text></Td>
+                                            <Td>
+                                                <Tag size="sm" colorScheme={config.settings.weightedSpecific.feeManagement ? 'green' : 'red'}>
+                                                    {config.settings.weightedSpecific.feeManagement.type}
+                                                </Tag>
+                                            </Td>
+                                        </Tr>
+                                        <Tr>
+                                            <Td fontWeight="medium"> <Text fontSize="sm">Owner </Text></Td>
+                                            <Td>
+                                                {config.settings.weightedSpecific.feeManagement.owner ? (
+                                                    <Tooltip label={config.settings.weightedSpecific.feeManagement.owner}>
+                                                        <Text fontSize="xs" fontFamily="mono">
+                                                            {`${config.settings.weightedSpecific.feeManagement.owner.slice(0, 6)}...${config.settings.weightedSpecific.feeManagement.owner.slice(-4)}`}
+                                                        </Text>
+                                                    </Tooltip>
+                                                ) : (
+                                                    <Text fontSize="xs" fontFamily="mono">N/A</Text>
+                                                )}
+                                            </Td>
+                                        </Tr>
+                                    </>
+                                )}
+                                {config.type === 'composableStable' && config.settings.stableSpecific && (
+                                    <>
+                                        <Tr>
+                                            <Td fontWeight="medium">Amplification Parameter</Td>
+                                            <Td>{config.settings.stableSpecific.amplificationParameter}</Td>
+                                        </Tr>
+                                        <Tr>
+                                            <Td fontWeight="medium">Meta-Stable</Td>
+                                            <Td>
+                                                <Tag size="sm" colorScheme={config.settings.stableSpecific.metaStableEnabled ? 'green' : 'red'}>
+                                                    {config.settings.stableSpecific.metaStableEnabled ? 'Enabled' : 'Disabled'}
+                                                </Tag>
+                                            </Td>
+                                        </Tr>
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </Tbody>
+                </Table>
+            </Box>
         </Box>
     );
 
@@ -270,29 +264,13 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                         </Box>
                     )}
 
-                    <Accordion allowMultiple defaultIndex={[0]} size="sm">
-                        <AccordionItem>
-                            <AccordionButton px={2} py={1}>
-                                <Text fontSize="sm" fontWeight="medium">Token Details</Text>
-                                <AccordionIcon ml="auto" />
-                            </AccordionButton>
-                            <AccordionPanel pb={4} px={0}>
-                                {renderTokensTable()}
-                            </AccordionPanel>
-                        </AccordionItem>
+                    <Text fontSize="sm" fontWeight="medium">Token Details</Text>
+                    {renderTokensTable()}
+                    <Text fontSize="sm" fontWeight="medium">Pool Settings</Text>
+                    {renderPoolSettings()}
 
-                        <AccordionItem>
-                            <AccordionButton px={2} py={1}>
-                                <Text fontSize="sm" fontWeight="medium">Pool Settings</Text>
-                                <AccordionIcon ml="auto" />
-                            </AccordionButton>
-                            <AccordionPanel pb={4} px={0}>
-                                {renderPoolSettings()}
-                            </AccordionPanel>
-                        </AccordionItem>
-                    </Accordion>
                 </Stack>
             </CardBody>
-        </Card>
+        </Card >
     );
 };
