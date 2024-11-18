@@ -10,7 +10,7 @@ import {
 } from "@/lib/data/injector/helpers";
 import { RateLimiter } from "@/lib/services/rateLimiter";
 
-const CACHE_DURATION = 1440 * 60 * 1000; // 1 day in milliseconds
+const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
 const rateLimiter = new RateLimiter({
   windowSize: 3600 * 1000, // 1 hour
