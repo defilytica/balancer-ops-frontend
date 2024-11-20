@@ -43,10 +43,8 @@ export const PoolSettingsComponent = ({
         swapFee: 0.1,
         name: '',
         symbol: '',
-        isPublicSwap: true,
         ...(poolType === 'weighted' ? {
             weightedSpecific: {
-                minimumWeightChangeBlock: 0,
                 feeManagement: {
                     type: 'fixed'
                 }
@@ -55,6 +53,11 @@ export const PoolSettingsComponent = ({
             stableSpecific: {
                 amplificationParameter: 100,
                 metaStableEnabled: false,
+                rateCacheDuration: '60', // Default 1 minute
+                yieldFeeExempt: false,
+                feeManagement: {
+                    type: 'fixed'
+                }
             }
         }),
         ...initialSettings
@@ -66,159 +69,178 @@ export const PoolSettingsComponent = ({
         }
     }, [onSettingsUpdate, settings, readOnly]);
 
+    const getFeeManagement = () => {
+        if (poolType === 'weighted') {
+            return settings.weightedSpecific?.feeManagement;
+        }
+        return settings.stableSpecific?.feeManagement;
+    };
+
     const updateSettings = useCallback((field: string, value: any) => {
         if (readOnly) return;
 
-        const newSettings = (prev: PoolSettings) => ({
-            ...prev,
-            [field]: value
+        setSettings(prev => {
+            const newSettings = { ...prev, [field]: value };
+            return newSettings;
         });
-
-        setSettings(newSettings);
-        onSettingsUpdate(settings);
-    }, [onSettingsUpdate, settings, readOnly]);
-
-    const updateWeightedSettings = useCallback((field: keyof WeightedPoolSpecific, value: any) => {
-        if (readOnly) return;
-
-        const newSettings = (prev: PoolSettings) => {
-            if (!prev.weightedSpecific) return prev;
-            return {
-                ...prev,
-                weightedSpecific: {
-                    ...prev.weightedSpecific,
-                    [field]: value
-                }
-            };
-        };
-
-        setSettings(newSettings);
-        onSettingsUpdate(settings);
-    }, [onSettingsUpdate, settings, readOnly]);
+    }, [readOnly]);
 
     const handleFeeManagementChange = useCallback((type: 'fixed' | 'governance' | 'custom') => {
         if (readOnly) return;
 
         setSettings(prev => {
-            const newSettings = {
-                ...prev,
-                weightedSpecific: {
-                    ...prev.weightedSpecific!,
-                    feeManagement: {
-                        type,
-                        customOwner: type === 'custom' ? '' : undefined,
-                        owner: type === 'governance' ? GOVERNANCE_ADDRESS : undefined,
+            const feeManagement = {
+                type,
+                customOwner: type === 'custom' ? '' : undefined,
+                owner: type === 'governance' ? GOVERNANCE_ADDRESS : undefined,
+            };
+
+            if (poolType === 'weighted' && prev.weightedSpecific) {
+                return {
+                    ...prev,
+                    weightedSpecific: {
+                        ...prev.weightedSpecific,
+                        feeManagement
                     }
+                };
+            } else if (prev.stableSpecific) {
+                return {
+                    ...prev,
+                    stableSpecific: {
+                        ...prev.stableSpecific,
+                        feeManagement
+                    }
+                };
+            }
+            return prev;
+        });
+    }, [poolType, readOnly]);
+
+    const updateStableSettings = useCallback((field: keyof StablePoolSpecific, value: any) => {
+        if (readOnly) return;
+
+        setSettings(prev => {
+            if (!prev.stableSpecific) return prev;
+            return {
+                ...prev,
+                stableSpecific: {
+                    ...prev.stableSpecific,
+                    [field]: value
                 }
             };
-            onSettingsUpdate(newSettings);
-            return newSettings;
         });
-    }, [onSettingsUpdate, readOnly]);
+    }, [readOnly]);
 
-    const renderWeightedPoolSettings = () => (
-        <>
-            <FormControl>
-                <FormLabel>Initial Swap Fee</FormLabel>
-                <Stack spacing={4}>
-                    {!readOnly && (
-                        <ButtonGroup size="sm" isAttached variant="outline">
-                            {PRESET_FEES.map(fee => (
-                                <Button
-                                    key={fee}
-                                    onClick={() => updateSettings('swapFee', fee)}
-                                    colorScheme={settings.swapFee === fee ? 'blue' : 'gray'}
-                                >
-                                    {fee}%
-                                </Button>
-                            ))}
-                        </ButtonGroup>
-                    )}
-                    <InputGroup>
-                        <NumberInput
-                            value={settings.swapFee}
-                            onChange={(valueString) => updateSettings('swapFee', parseFloat(valueString))}
-                            step={0.0001}
-                            min={0.0001}
-                            max={10}
-                            precision={4}
-                            isReadOnly={readOnly}
-                        >
-                            <NumberInputField />
-                            {!readOnly && (
-                                <NumberInputStepper>
-                                    <NumberIncrementStepper />
-                                    <NumberDecrementStepper />
-                                </NumberInputStepper>
-                            )}
-                        </NumberInput>
-                        <InputRightAddon>%</InputRightAddon>
-                    </InputGroup>
-                </Stack>
-            </FormControl>
+    const renderFeeSettings = () => {
+        const feeManagement = getFeeManagement();
 
-            <FormControl>
-                <HStack>
-                    <FormLabel mb="0">Allow Balancer Governance to manage fees</FormLabel>
-                    <Tooltip
-                        label="Enable Balancer Governance to dynamically manage fees of this pool in order to maximize profits"
-                        hasArrow
-                    >
-                        <Icon as={InfoIcon} />
-                    </Tooltip>
-                </HStack>
-                <Switch
-                    isChecked={settings.weightedSpecific?.feeManagement.type === 'governance'}
-                    onChange={(e) => handleFeeManagementChange(e.target.checked ? 'governance' : 'fixed')}
-                    mt={2}
-                    isReadOnly={readOnly}
-                    isDisabled={readOnly}
-                />
-            </FormControl>
-
-            {settings.weightedSpecific?.feeManagement.type !== 'governance' && (
+        return (
+            <>
                 <FormControl>
-                    <FormLabel>Fee Management</FormLabel>
-                    <RadioGroup
-                        value={settings.weightedSpecific?.feeManagement.type}
-                        onChange={(value) => handleFeeManagementChange(value as 'fixed' | 'custom')}
-                        isDisabled={readOnly}
-                    >
-                        <Stack>
-                            <Radio value="fixed">Permanently fix fees to the initial rate</Radio>
-                            <Radio value="custom">Allow dynamic fees from an address I choose</Radio>
-                        </Stack>
-                    </RadioGroup>
+                    <FormLabel>Initial Swap Fee</FormLabel>
+                    <Stack spacing={4}>
+                        {!readOnly && (
+                            <ButtonGroup size="sm" isAttached variant="outline">
+                                {PRESET_FEES.map(fee => (
+                                    <Button
+                                        key={fee}
+                                        onClick={() => updateSettings('swapFee', fee)}
+                                        colorScheme={settings.swapFee === fee ? 'blue' : 'gray'}
+                                    >
+                                        {fee}%
+                                    </Button>
+                                ))}
+                            </ButtonGroup>
+                        )}
+                        <InputGroup>
+                            <NumberInput
+                                value={settings.swapFee}
+                                onChange={(valueString) => updateSettings('swapFee', parseFloat(valueString))}
+                                step={0.0001}
+                                min={0.0001}
+                                max={10}
+                                precision={4}
+                                isReadOnly={readOnly}
+                            >
+                                <NumberInputField />
+                                {!readOnly && (
+                                    <NumberInputStepper>
+                                        <NumberIncrementStepper />
+                                        <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                )}
+                            </NumberInput>
+                            <InputRightAddon>%</InputRightAddon>
+                        </InputGroup>
+                    </Stack>
                 </FormControl>
-            )}
 
-            {settings.weightedSpecific?.feeManagement.type === 'custom' && (
                 <FormControl>
-                    <FormLabel>Owner Address</FormLabel>
-                    <Input
-                        value={settings.weightedSpecific.feeManagement.customOwner || ''}
-                        onChange={(e) => {
-                            if (readOnly) return;
-                            const value = e.target.value;
-                            setSettings(prev => ({
-                                ...prev,
-                                weightedSpecific: {
-                                    ...prev.weightedSpecific!,
-                                    feeManagement: {
-                                        ...prev.weightedSpecific!.feeManagement,
-                                        customOwner: value,
-                                        owner: value
-                                    }
-                                }
-                            }));
-                        }}
-                        placeholder="0x..."
+                    <HStack>
+                        <FormLabel mb="0">Allow Balancer Governance to manage fees</FormLabel>
+                        <Tooltip
+                            label="Enable Balancer Governance to dynamically manage fees of this pool in order to maximize profits"
+                            hasArrow
+                        >
+                            <Icon as={InfoIcon} />
+                        </Tooltip>
+                    </HStack>
+                    <Switch
+                        isChecked={feeManagement?.type === 'governance'}
+                        onChange={(e) => handleFeeManagementChange(e.target.checked ? 'governance' : 'fixed')}
+                        mt={2}
                         isReadOnly={readOnly}
+                        isDisabled={readOnly}
                     />
                 </FormControl>
-            )}
-        </>
-    );
+
+                {feeManagement?.type !== 'governance' && (
+                    <FormControl>
+                        <FormLabel>Fee Management</FormLabel>
+                        <RadioGroup
+                            value={feeManagement?.type}
+                            onChange={(value) => handleFeeManagementChange(value as 'fixed' | 'custom')}
+                            isDisabled={readOnly}
+                        >
+                            <Stack>
+                                <Radio value="fixed">Permanently fix fees to the initial rate</Radio>
+                                <Radio value="custom">Allow dynamic fees from an address I choose</Radio>
+                            </Stack>
+                        </RadioGroup>
+                    </FormControl>
+                )}
+
+                {feeManagement?.type === 'custom' && (
+                    <FormControl>
+                        <FormLabel>Owner Address</FormLabel>
+                        <Input
+                            value={feeManagement.customOwner || ''}
+                            onChange={(e) => {
+                                if (readOnly) return;
+                                const value = e.target.value;
+                                setSettings(prev => {
+                                    const specific = poolType === 'weighted' ? 'weightedSpecific' : 'stableSpecific';
+                                    return {
+                                        ...prev,
+                                        [specific]: {
+                                            ...prev[specific]!,
+                                            feeManagement: {
+                                                ...prev[specific]!.feeManagement,
+                                                customOwner: value,
+                                                owner: value
+                                            }
+                                        }
+                                    };
+                                });
+                            }}
+                            placeholder="0x..."
+                            isReadOnly={readOnly}
+                        />
+                    </FormControl>
+                )}
+            </>
+        );
+    };
 
     return (
         <Stack spacing={6}>
@@ -244,7 +266,7 @@ export const PoolSettingsComponent = ({
                 />
             </FormControl>
 
-            {poolType === 'weighted' && renderWeightedPoolSettings()}
+            {renderFeeSettings()}
 
             {poolType === 'composableStable' && settings.stableSpecific && (
                 <>
@@ -257,7 +279,7 @@ export const PoolSettingsComponent = ({
                         <NumberInput
                             value={settings.stableSpecific.amplificationParameter}
                             onChange={(valueString) =>
-                                updateSettings('amplificationParameter', parseInt(valueString))
+                                updateStableSettings('amplificationParameter', parseInt(valueString))
                             }
                             min={1}
                             max={5000}
@@ -273,17 +295,65 @@ export const PoolSettingsComponent = ({
                         </NumberInput>
                     </FormControl>
 
-                    <FormControl display='flex' alignItems='center'>
-                        <FormLabel mb='0'>
-                            <Tooltip label="Enable meta-stable features for rate providers">
-                                Enable Meta-Stable
+                    <FormControl>
+                        <FormLabel>
+                            <Tooltip label="Duration (in seconds) that the oracle cache is considered valid">
+                                Rate Cache Duration
                             </Tooltip>
                         </FormLabel>
+                        <InputGroup>
+                            <NumberInput
+                                value={settings.stableSpecific.rateCacheDuration}
+                                onChange={(valueString) =>
+                                    updateStableSettings('rateCacheDuration', valueString)
+                                }
+                                min={1}
+                                isReadOnly={readOnly}
+                                width="full"
+                            >
+                                <NumberInputField />
+                                {!readOnly && (
+                                    <NumberInputStepper>
+                                        <NumberIncrementStepper />
+                                        <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                )}
+                            </NumberInput>
+                            <InputRightAddon>seconds</InputRightAddon>
+                        </InputGroup>
+                    </FormControl>
+
+                    <FormControl>
+                        <HStack>
+                            <FormLabel mb="0">
+                                Enable Meta-Stable
+                            </FormLabel>
+                            <Tooltip label="Enable meta-stable features for rate providers">
+                                <Icon as={InfoIcon} />
+                            </Tooltip>
+                        </HStack>
                         <Switch
                             isChecked={settings.stableSpecific.metaStableEnabled}
-                            onChange={(e) =>
-                                updateSettings('metaStableEnabled', e.target.checked)
-                            }
+                            onChange={(e) => updateStableSettings('metaStableEnabled', e.target.checked)}
+                            mt={2}
+                            isReadOnly={readOnly}
+                            isDisabled={readOnly}
+                        />
+                    </FormControl>
+
+                    <FormControl>
+                        <HStack>
+                            <FormLabel mb="0">
+                                Yield Fee Exempt
+                            </FormLabel>
+                            <Tooltip label="Exempt this pool from yield fees">
+                                <Icon as={InfoIcon} />
+                            </Tooltip>
+                        </HStack>
+                        <Switch
+                            isChecked={settings.stableSpecific.yieldFeeExempt}
+                            onChange={(e) => updateStableSettings('yieldFeeExempt', e.target.checked)}
+                            mt={2}
                             isReadOnly={readOnly}
                             isDisabled={readOnly}
                         />

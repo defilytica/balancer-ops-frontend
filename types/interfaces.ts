@@ -114,6 +114,13 @@ export interface WeightedPoolSpecific {
 export interface StablePoolSpecific {
   amplificationParameter: number;
   metaStableEnabled: boolean;
+  rateCacheDuration: string;
+  yieldFeeExempt: boolean;
+  feeManagement: {
+    type: 'fixed' | 'governance' | 'custom';
+    customOwner?: string;
+    owner?: string;
+  };
 }
 
 export interface PoolSettings {

@@ -28,10 +28,12 @@ import {PoolConfig} from "@/types/interfaces";
 import {PoolSettingsComponent} from './PoolSettings';
 import {ERC20} from '@/abi/erc20';
 import {CreateWeightedABI} from "@/abi/WeightedPoolFactory";
-import {FactoryAddressWeighted} from "@/constants/constants";
+import {FactoryAddressComposable, FactoryAddressWeighted} from "@/constants/constants";
 import {weightedPool} from "@/abi/WeightedPool";
 import {getNetworkString} from "@/lib/utils/getNetworkString";
 import {vaultABI} from "@/abi/BalVault";
+import {CreateComposableABI} from "@/abi/ComposableStableFactory";
+import {composablePool} from "@/abi/ComposablePool";
 
 interface PoolReviewProps {
     config: PoolConfig;
@@ -203,7 +205,10 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
             const network = await provider.getNetwork();
             const networkName = getNetworkString(Number(network.chainId));
 
-            const newPoolId = await createWeightedPool(provider, networkName, config);
+            const newPoolId = config.type === 'weighted'
+                ? await createWeightedPool(provider, networkName, config)
+                : await createComposableStablePool(provider, networkName, config);
+
             setPoolId(newPoolId);
 
             toast({
@@ -213,7 +218,6 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
                 duration: 5000,
             });
             setIsApprovalModalOpen(false);
-            // Show join modal after successful creation
             setIsJoinModalOpen(true);
         } catch (error) {
             console.error('Pool creation error:', error);
@@ -306,22 +310,36 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
 
             const vaultContract = new ethers.Contract(VAULT_ADDRESS, vaultABI, signer);
 
-            // Sort and prepare assets and amounts
-            const sortedTokens = [...config.tokens]
+            // For composable stable pools, we need to include the pool token itself
+            const assets = [...config.tokens]
                 .filter(token => token.address && token.amount)
                 .sort((a, b) =>
                     ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
-                );
+                )
+                .map(token => token.address!);
 
-            // Prepare amounts with proper decimals
+            if (config.type === 'composableStable') {
+                assets.push(poolAddress);
+            }
+
+            // Prepare amounts
             const amountsWithDecimals = await Promise.all(
-                sortedTokens.map(async token => {
-                    const decimals = await checkDecimals(token.address!);
-                    return ethers.parseUnits(token.amount!, decimals);
-                })
+                config.tokens
+                    .filter(token => token.address && token.amount)
+                    .sort((a, b) =>
+                        ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
+                    )
+                    .map(async token => {
+                        const decimals = await checkDecimals(token.address!);
+                        return ethers.parseUnits(token.amount!, decimals);
+                    })
             );
 
-            const assets = sortedTokens.map(token => token.address!);
+            // For composable stable pools, add the BPT amount
+            if (config.type === 'composableStable') {
+                amountsWithDecimals.push(ethers.parseUnits("5192296858534827.628530496329", 18));
+            }
+
             const maxAmountsIn = amountsWithDecimals.map(amount => amount.toString());
 
             // Encode join data
@@ -365,6 +383,74 @@ export const PoolReview: React.FC<PoolReviewProps> = ({
         } finally {
             setIsJoiningPool(false);
         }
+    };
+
+    const createComposableStablePool = async (
+        provider: ethers.BrowserProvider,
+        networkName: NetworkString,
+        config: PoolConfig
+    ): Promise<string> => {
+        const signer = await provider.getSigner();
+        const factoryAddress = FactoryAddressComposable[networkName];
+
+        if (!factoryAddress) {
+            throw new Error(`Network ${networkName} not supported`);
+        }
+
+        // Sort tokens by address
+        const sortedTokens = [...config.tokens].sort((a, b) =>
+            ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
+        );
+
+        // Get rate providers (default to zero address if not specified)
+        const rateProviders = sortedTokens.map(token =>
+            token.rateProvider || ethers.ZeroAddress
+        );
+
+        // Create rate cache durations array
+        const rateCacheDurations = sortedTokens.map(() =>
+            config.settings?.stableSpecific?.rateCacheDuration || '60'
+        );
+
+        const swapFeePercentage = ethers.parseUnits(
+            (Number(config.settings?.swapFee) / 100).toString(),
+            18
+        );
+
+        // Generate random salt
+        const salt = ethers.hexlify(ethers.randomBytes(32));
+
+        const factory = new ethers.Contract(
+            factoryAddress,
+            CreateComposableABI,
+            signer
+        );
+
+        const tx = await factory.create(
+            config.settings?.name,
+            config.settings?.symbol,
+            sortedTokens.map(t => t.address),
+            config.settings?.stableSpecific?.amplificationParameter || 100,
+            rateProviders,
+            rateCacheDurations,
+            config.settings?.stableSpecific?.yieldFeeExempt || false,
+            swapFeePercentage,
+            config.settings?.stableSpecific?.feeManagement?.owner || await signer.getAddress(),
+            salt
+        );
+
+        const receipt = await tx.wait();
+        const poolAddress = receipt.logs[0].address;
+        setPoolAddress(poolAddress); // Store pool address for join operation
+
+        // Get pool ID
+        const poolContract = new ethers.Contract(
+            poolAddress,
+            composablePool,
+            signer
+        );
+
+        return await poolContract.getPoolId();
     };
 
     const checkPoolOwnership = async (): Promise<boolean> => {
