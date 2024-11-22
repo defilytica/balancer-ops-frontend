@@ -79,6 +79,18 @@ export const PAYLOAD_OPTIONS = [
     prTypePath: "MaxiOps/add_rewards/[chain]/",
   },
   {
+    href: "/payload-builder/set-reward-distributor-to-gauge",
+    key: "set-reward-distributor-to-gauge",
+    label: "Set Gauge Reward Distributor to a Gauge",
+    button_label: "Set Reward Distributor",
+    description: "Set a rewards distributor to distribute rewards to a Gauge.",
+    icon: FaGift,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/set-reward-distributor-to-gauge",
+    prNamePlaceholder: "Set Reward Distributor to Gauge XYZ",
+    prTypePath: "MaxiOps/add_rewards/[chain]/",
+  },
+  {
     href: "/payload-builder/cctp-bridge",
     key: "cctp-bridge",
     label: "Bridge USDC via CCTP",
