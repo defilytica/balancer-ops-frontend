@@ -13,7 +13,7 @@ import {
 import { FiHome } from "react-icons/fi";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
-import { TbTransactionBitcoin } from "react-icons/tb";
+import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
 import NavItem from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
@@ -59,6 +59,12 @@ const LinkItems = [
     icon: MdPool,
     target: "/pool-creator-v2",
     description: "Create weighted and composable stable pools for Balancer v2",
+  },
+  {
+    name: "Gauge Creator",
+    icon: TbGaugeFilled,
+    target: "/gauge-creator",
+    description: "Create a staking gauge for Balancer pools",
   },
 ];
 
