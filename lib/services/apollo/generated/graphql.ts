@@ -147,6 +147,48 @@ export type GqlHistoricalTokenPriceEntry = {
   updatedBy?: Maybe<Scalars["String"]["output"]>;
 };
 
+/** Hook data */
+export type GqlHook = {
+  __typename: "GqlHook";
+  address: Scalars["String"]["output"];
+  /** Data points changing over time */
+  dynamicData?: Maybe<GqlHookData>;
+  /** True when hook can change the amounts send to the vault. Necessary to deduct the fees. */
+  enableHookAdjustedAmounts: Scalars["Boolean"]["output"];
+  /** The review for this hook if applicable. */
+  reviewData?: Maybe<GqlHookReviewData>;
+  shouldCallAfterAddLiquidity: Scalars["Boolean"]["output"];
+  shouldCallAfterInitialize: Scalars["Boolean"]["output"];
+  shouldCallAfterRemoveLiquidity: Scalars["Boolean"]["output"];
+  shouldCallAfterSwap: Scalars["Boolean"]["output"];
+  shouldCallBeforeAddLiquidity: Scalars["Boolean"]["output"];
+  shouldCallBeforeInitialize: Scalars["Boolean"]["output"];
+  shouldCallBeforeRemoveLiquidity: Scalars["Boolean"]["output"];
+  shouldCallBeforeSwap: Scalars["Boolean"]["output"];
+  shouldCallComputeDynamicSwapFee: Scalars["Boolean"]["output"];
+};
+
+/** Collection of hook specific data. Percentage format is 0.01 -> 0.01%. */
+export type GqlHookData = {
+  __typename: "GqlHookData";
+  addLiquidityFeePercentage?: Maybe<Scalars["String"]["output"]>;
+  maxSurgeFeePercentage?: Maybe<Scalars["String"]["output"]>;
+  removeLiquidityFeePercentage?: Maybe<Scalars["String"]["output"]>;
+  surgeThresholdPercentage?: Maybe<Scalars["String"]["output"]>;
+  swapFeePercentage?: Maybe<Scalars["String"]["output"]>;
+};
+
+/** Represents the review data for the hook */
+export type GqlHookReviewData = {
+  __typename: "GqlHookReviewData";
+  /** The filename of the review of the hook */
+  reviewFile: Scalars["String"]["output"];
+  /** A summary of the hook review, usually just says safe or unsafe */
+  summary: Scalars["String"]["output"];
+  /** Warnings associated with the hook */
+  warnings: Array<Scalars["String"]["output"]>;
+};
+
 export type GqlLatestSyncedBlocks = {
   __typename: "GqlLatestSyncedBlocks";
   poolSyncBlock: Scalars["BigInt"]["output"];
@@ -166,7 +208,7 @@ export type GqlNestedPool = {
   /** Address of the factory contract that created the pool, if applicable. */
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   /** Hook assigned to a pool */
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   /** Unique identifier of the pool. */
   id: Scalars["ID"]["output"];
   /** Liquidity management settings for v3 pools. */
@@ -257,7 +299,7 @@ export type GqlPoolAggregator = {
   /** The factory contract address from which the pool was created. */
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   /** Hook assigned to a pool */
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   /** The pool id. This is equal to the address for protocolVersion 3 pools */
   id: Scalars["ID"]["output"];
   /** Data specific to gyro/fx pools */
@@ -424,7 +466,7 @@ export type GqlPoolBase = {
   /** Whether at least one token in a nested pool is considered an ERC4626 token. */
   hasNestedErc4626: Scalars["Boolean"]["output"];
   /** Hook assigned to a pool */
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   /** The pool id. This is equal to the address for protocolVersion 3 pools */
   id: Scalars["ID"]["output"];
   /**
@@ -520,7 +562,7 @@ export type GqlPoolComposableStable = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -641,7 +683,7 @@ export type GqlPoolElement = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -805,7 +847,7 @@ export type GqlPoolFx = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -851,7 +893,7 @@ export type GqlPoolGyro = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -950,7 +992,7 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -994,7 +1036,7 @@ export type GqlPoolMetaStable = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -1049,7 +1091,7 @@ export type GqlPoolMinimal = {
   /** Whether at least one token in a nested pool is considered an ERC4626 token. */
   hasNestedErc4626: Scalars["Boolean"]["output"];
   /** Hook assigned to a pool */
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   /** The pool id. This is equal to the address for protocolVersion 3 pools */
   id: Scalars["ID"]["output"];
   /** Pool is receiving rewards when liquidity tokens are staked */
@@ -1163,7 +1205,7 @@ export type GqlPoolStable = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -1572,7 +1614,7 @@ export type GqlPoolWeighted = GqlPoolBase & {
   factory?: Maybe<Scalars["Bytes"]["output"]>;
   hasErc4626: Scalars["Boolean"]["output"];
   hasNestedErc4626: Scalars["Boolean"]["output"];
-  hook?: Maybe<Hook>;
+  hook?: Maybe<GqlHook>;
   id: Scalars["ID"]["output"];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
@@ -2255,51 +2297,6 @@ export type GqlVotingPool = {
   type: GqlPoolType;
 };
 
-/** Hook data */
-export type Hook = {
-  __typename: "Hook";
-  address: Scalars["String"]["output"];
-  chain: GqlChain;
-  /** Data points changing over time */
-  dynamicData?: Maybe<HookData>;
-  /** True when hook can change the amounts send to the vault. Necessary to deduct the fees. */
-  enableHookAdjustedAmounts: Scalars["Boolean"]["output"];
-  /** List of pools using the hook */
-  poolsIds?: Maybe<Array<Maybe<Scalars["String"]["output"]>>>;
-  /** The review for this hook if applicable. */
-  reviewData?: Maybe<HookReviewData>;
-  shouldCallAfterAddLiquidity: Scalars["Boolean"]["output"];
-  shouldCallAfterInitialize: Scalars["Boolean"]["output"];
-  shouldCallAfterRemoveLiquidity: Scalars["Boolean"]["output"];
-  shouldCallAfterSwap: Scalars["Boolean"]["output"];
-  shouldCallBeforeAddLiquidity: Scalars["Boolean"]["output"];
-  shouldCallBeforeInitialize: Scalars["Boolean"]["output"];
-  shouldCallBeforeRemoveLiquidity: Scalars["Boolean"]["output"];
-  shouldCallBeforeSwap: Scalars["Boolean"]["output"];
-  shouldCallComputeDynamicSwapFee: Scalars["Boolean"]["output"];
-};
-
-/** Collection of hook specific data. Percentage format is 0.01 -> 0.01%. */
-export type HookData = {
-  __typename: "HookData";
-  addLiquidityFeePercentage?: Maybe<Scalars["String"]["output"]>;
-  removeLiquidityFeePercentage?: Maybe<Scalars["String"]["output"]>;
-  swapFeePercentage?: Maybe<Scalars["String"]["output"]>;
-};
-
-/** Represents the review data for the hook */
-export type HookReviewData = {
-  __typename: "HookReviewData";
-  /** The name of the hook */
-  name: Scalars["String"]["output"];
-  /** The filename of the review of the hook */
-  reviewFile: Scalars["String"]["output"];
-  /** A summary of the hook review, usually just says safe or unsafe */
-  summary: Scalars["String"]["output"];
-  /** Warnings associated with the hook */
-  warnings: Array<Scalars["String"]["output"]>;
-};
-
 /** Liquidity management settings for v3 pools. */
 export type LiquidityManagement = {
   __typename: "LiquidityManagement";
@@ -2419,8 +2416,6 @@ export type Query = {
   blocksGetBlocksPerSecond: Scalars["Float"]["output"];
   blocksGetBlocksPerYear: Scalars["Float"]["output"];
   contentGetNewsItems: Array<GqlContentNewsItem>;
-  /** Returns list of hooks. */
-  hooks?: Maybe<Array<Hook>>;
   latestSyncedBlocks: GqlLatestSyncedBlocks;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
@@ -2531,10 +2526,6 @@ export type QueryContentGetNewsItemsArgs = {
   chain?: InputMaybe<GqlChain>;
 };
 
-export type QueryHooksArgs = {
-  chain?: InputMaybe<GqlChain>;
-};
-
 export type QueryPoolEventsArgs = {
   first?: InputMaybe<Scalars["Int"]["input"]>;
   skip?: InputMaybe<Scalars["Int"]["input"]>;
@@ -2632,6 +2623,8 @@ export type QuerySftmxGetWithdrawalRequestsArgs = {
 export type QuerySorGetSwapPathsArgs = {
   callDataInput?: InputMaybe<GqlSwapCallDataInput>;
   chain: GqlChain;
+  considerPoolsWithHooks?: InputMaybe<Scalars["Boolean"]["input"]>;
+  poolIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
   queryBatchSwap?: InputMaybe<Scalars["Boolean"]["input"]>;
   swapAmount: Scalars["AmountHumanReadable"]["input"];
   swapType: GqlSorSwapType;
