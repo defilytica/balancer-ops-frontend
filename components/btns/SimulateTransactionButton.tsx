@@ -65,43 +65,63 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({
 
       // Check if transactions exist and is an array
       if (Array.isArray(modifiedBatchFile.transactions)) {
-        modifiedBatchFile.transactions = modifiedBatchFile.transactions.map((tx: Transaction) => {
-          if (tx.contractInputsValues && tx.contractMethod?.inputs) {
-            tx.contractMethod.inputs.forEach((input) => {
-              const inputName = input.name;
-              let inputValue = tx.contractInputsValues![inputName];
+        modifiedBatchFile.transactions = modifiedBatchFile.transactions.map(
+          (tx: Transaction) => {
+            if (tx.contractInputsValues && tx.contractMethod?.inputs) {
+              tx.contractMethod.inputs.forEach((input) => {
+                const inputName = input.name;
+                let inputValue = tx.contractInputsValues![inputName];
 
-              // Process array inputs
-              if (input.type.includes('[]') && typeof inputValue === 'string') {
-                inputValue = inputValue.replace(/^\[|\]$/g, '').split(',').map(x => x.trim());
-              }
+                // Process array inputs
+                if (
+                  input.type.includes("[]") &&
+                  typeof inputValue === "string"
+                ) {
+                  inputValue = inputValue
+                    .replace(/^\[|\]$/g, "")
+                    .split(",")
+                    .map((x) => x.trim());
+                }
 
-              // Process based on input type
-              if (input.type.includes('bool')) {
-                tx.contractInputsValues![inputName] = Array.isArray(inputValue)
-                    ? inputValue.map(x => x.toLowerCase() === 'true')
-                    : inputValue.toLowerCase() === 'true';
-              } else if (input.type.includes('int')) {
-                tx.contractInputsValues![inputName] = Array.isArray(inputValue)
-                    ? inputValue.map(x => BigInt(x).toString())
+                // Process based on input type
+                if (input.type.includes("bool")) {
+                  tx.contractInputsValues![inputName] = Array.isArray(
+                    inputValue,
+                  )
+                    ? inputValue.map((x) => x.toLowerCase() === "true")
+                    : inputValue.toLowerCase() === "true";
+                } else if (input.type.includes("int")) {
+                  tx.contractInputsValues![inputName] = Array.isArray(
+                    inputValue,
+                  )
+                    ? inputValue.map((x) => BigInt(x).toString())
                     : BigInt(inputValue).toString();
-              } else if (input.type.includes('address')) {
-                // Ensure addresses start with '0x'
-                tx.contractInputsValues![inputName] = Array.isArray(inputValue)
-                    ? inputValue.map(x => x.startsWith('0x') ? x : `0x${x}`)
-                    : inputValue.startsWith('0x') ? inputValue : `0x${inputValue}`;
-              } else {
-                // Catchall: cast to string
-                tx.contractInputsValues![inputName] = Array.isArray(inputValue)
-                    ? inputValue.map(x => x.toString())
+                } else if (input.type.includes("address")) {
+                  // Ensure addresses start with '0x'
+                  tx.contractInputsValues![inputName] = Array.isArray(
+                    inputValue,
+                  )
+                    ? inputValue.map((x) => (x.startsWith("0x") ? x : `0x${x}`))
+                    : inputValue.startsWith("0x")
+                      ? inputValue
+                      : `0x${inputValue}`;
+                } else {
+                  // Catchall: cast to string
+                  tx.contractInputsValues![inputName] = Array.isArray(
+                    inputValue,
+                  )
+                    ? inputValue.map((x) => x.toString())
                     : inputValue.toString();
-              }
-            });
-          }
-          return tx;
-        });
+                }
+              });
+            }
+            return tx;
+          },
+        );
       } else {
-        throw new Error("Invalid batch file structure: transactions is not an array");
+        throw new Error(
+          "Invalid batch file structure: transactions is not an array",
+        );
       }
 
       const response = await axios.post<SimulationResult>(

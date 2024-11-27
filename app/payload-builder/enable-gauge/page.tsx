@@ -185,7 +185,9 @@ export default function EnableGaugePage() {
             Generate Payload
           </Button>
           {generatedPayload && (
-            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+            <SimulateTransactionButton
+              batchFile={JSON.parse(generatedPayload)}
+            />
           )}
         </Flex>
         <Divider />

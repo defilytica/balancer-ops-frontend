@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { ethers } from "ethers";
 import IGnosisSafeABI from "@/abi/IGnosisSafe.json";
+import { networks } from "@/constants/constants";
 
 const TENDERLY_API_URL =
   "https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulate";
@@ -44,10 +45,27 @@ interface BatchFile {
   transactions: Transaction[];
 }
 
+async function getProviderForNetwork(
+  chainId: string,
+): Promise<ethers.Provider> {
+  // Find the network info by chainId
+  const networkEntry = Object.entries(networks).find(
+    ([_, info]) => info.chainId === chainId,
+  );
+
+  if (!networkEntry) {
+    throw new Error(`Unsupported chain ID: ${chainId}`);
+  }
+
+  const rpcUrl = `${networkEntry[1].rpc}${process.env.DRPC_API_KEY}`;
+  return new ethers.JsonRpcProvider(rpcUrl);
+}
+
 async function getSafeOwners(
   safeAddress: string,
-  provider: ethers.Provider,
+  chainId: string,
 ): Promise<string[]> {
+  const provider = await getProviderForNetwork(chainId);
   const safeContract = new ethers.Contract(
     safeAddress,
     IGnosisSafeABI,
@@ -107,8 +125,11 @@ export async function POST(request: NextRequest) {
     const safeAddress = batchFile.meta.createdFromSafeAddress;
     const networkId = batchFile.chainId;
 
-    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-    const owners = await getSafeOwners(safeAddress, provider);
+    // Get owners using the correct network
+    const owners = await getSafeOwners(safeAddress, networkId);
+
+    // Get provider for the specific network for subsequent operations
+    const provider = await getProviderForNetwork(networkId);
 
     const signatures = owners
       .map((owner) => {

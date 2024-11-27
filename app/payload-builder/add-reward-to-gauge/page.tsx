@@ -60,14 +60,12 @@ interface RewardActionState {
 }
 
 const validateFormInputs = (
-    targetGauge: string,
-    rewardToken: string,
-    distributorAddress: string
+  targetGauge: string,
+  rewardToken: string,
+  distributorAddress: string,
 ): boolean => {
   return Boolean(
-      targetGauge.trim() &&
-      rewardToken.trim() &&
-      distributorAddress.trim()
+    targetGauge.trim() && rewardToken.trim() && distributorAddress.trim(),
   );
 };
 
@@ -79,24 +77,30 @@ export default function AddRewardToGaugePage() {
   const [distributorAddress, setDistributorAddress] = useState("");
   const [rewardAdds, setRewardAdds] = useState<AddRewardInput[]>([]);
   const [authorizerAdaptorEntrypoint, setEntrypoint] = useState(
-      "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA"
+    "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
   const [safeAddress, setSafeAddress] = useState(
-      "0xc38c5f97B34E175FFd35407fc91a937300E33860"
+    "0xc38c5f97B34E175FFd35407fc91a937300E33860",
   );
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(
+    null,
+  );
   const [uiState, setUiState] = useState<RewardActionState>({
     hasAddedReward: false,
-    isFormValid: false
+    isFormValid: false,
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
-    setUiState(prev => ({
+    setUiState((prev) => ({
       ...prev,
-      isFormValid: validateFormInputs(targetGauge, rewardToken, distributorAddress)
+      isFormValid: validateFormInputs(
+        targetGauge,
+        rewardToken,
+        distributorAddress,
+      ),
     }));
   }, [targetGauge, rewardToken, distributorAddress]);
 
@@ -116,7 +120,7 @@ export default function AddRewardToGaugePage() {
 
   const handleNetworkChange = (selectedNetwork: string) => {
     const selectedOption = NETWORK_OPTIONS.find(
-        (option) => option.label === selectedNetwork
+      (option) => option.label === selectedNetwork,
     );
     if (selectedOption) {
       setNetwork(selectedNetwork);
@@ -131,7 +135,7 @@ export default function AddRewardToGaugePage() {
     updatedRewards.splice(index, 1);
     setRewardAdds(updatedRewards);
     if (updatedRewards.length === 0) {
-      setUiState(prev => ({ ...prev, hasAddedReward: false }));
+      setUiState((prev) => ({ ...prev, hasAddedReward: false }));
     }
   };
 
@@ -169,215 +173,238 @@ export default function AddRewardToGaugePage() {
     setTargetGauge("");
     setRewardToken("");
     setDistributorAddress("");
-    setUiState(prev => ({ ...prev, hasAddedReward: true }));
+    setUiState((prev) => ({ ...prev, hasAddedReward: true }));
   };
 
   return (
-      <Container maxW="container.lg">
-        <Box mb="10px">
-          <Heading as="h2" size="lg" variant="special">
-            Create Payload to Add Rewards to a Gauge
-          </Heading>
-        </Box>
+    <Container maxW="container.lg">
+      <Box mb="10px">
+        <Heading as="h2" size="lg" variant="special">
+          Create Payload to Add Rewards to a Gauge
+        </Heading>
+      </Box>
 
-        <Alert status="info" mt={4} mb={4} py={2}>
-          <Box flex="1">
-            <Flex align="center" mb={1}>
-              <AlertIcon />
-              <AlertTitle>Quick Guide</AlertTitle>
-            </Flex>
-            <AlertDescription display="block">
-              <List spacing={1} fontSize="sm">
-                <ListItem>
-                  <ListIcon as={ChevronRightIcon} />
-                  Fill in the gauge details below and click &quot;Add Reward&quot; to start building your payload
-                </ListItem>
-                <ListItem>
-                  <ListIcon as={ChevronRightIcon} />
-                  Make sure to select the correct network for the gauge
-                </ListItem>
-              </List>
-            </AlertDescription>
-          </Box>
-        </Alert>
-
-        <Card p={4} mb="10px">
-          <FormControl mb={4} maxWidth="md">
-            <FormLabel>Network</FormLabel>
-            <Select
-                value={network}
-                onChange={(e) => handleNetworkChange(e.target.value)}
-            >
-              {NETWORK_OPTIONS.map((option) => (
-                  <option key={option.label} value={option.label}>
-                    {option.label}
-                  </option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={4}>
-            <FormControl isRequired>
-              <FormLabel>Target Gauge</FormLabel>
-              <Input
-                  value={targetGauge}
-                  onChange={(e) => setTargetGauge(e.target.value)}
-                  placeholder="Enter target gauge"
-              />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel>Reward Token</FormLabel>
-              <Input
-                  value={rewardToken}
-                  onChange={(e) => setRewardToken(e.target.value)}
-                  placeholder="Enter reward token"
-              />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel>Distributor Address</FormLabel>
-              <Input
-                  value={distributorAddress}
-                  onChange={(e) => setDistributorAddress(e.target.value)}
-                  placeholder="Enter distributor address"
-              />
-            </FormControl>
-          </SimpleGrid>
-
-          <Flex justifyContent="flex-end">
-            <Button
-                variant="secondary"
-                leftIcon={<AddIcon />}
-                onClick={addRewardRow}
-                isDisabled={!uiState.isFormValid}
-            >
-              Add Reward
-            </Button>
+      <Alert status="info" mt={4} mb={4} py={2}>
+        <Box flex="1">
+          <Flex align="center" mb={1}>
+            <AlertIcon />
+            <AlertTitle>Quick Guide</AlertTitle>
           </Flex>
-        </Card>
+          <AlertDescription display="block">
+            <List spacing={1} fontSize="sm">
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                Fill in the gauge details below and click &quot;Add Reward&quot;
+                to start building your payload
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                Make sure to select the correct network for the gauge
+              </ListItem>
+            </List>
+          </AlertDescription>
+        </Box>
+      </Alert>
 
-        {rewardAdds.length === 0 ? (
-            <Alert status="info" variant="subtle" mt={2} mb={4}>
-              <AlertIcon />
-              <AlertDescription>
-                Add at least one reward to generate a payload
-              </AlertDescription>
-            </Alert>
-        ) : (
-            <>
-              <Flex align="center" mb={2}>
-                <Text fontSize="md" fontWeight="medium">
-                  Added Rewards ({rewardAdds.length})
-                </Text>
-              </Flex>
-              {rewardAdds.map((reward, index) => (
-                  <Card key={`reward-${index}`} mb={3} p={4}>
-                    <Flex justify="space-between">
-                      <Box flex="1">
-                        <Flex justify="space-between" align="center" mb={2}>
-                          <Text fontSize="sm" color="gray.500">
-                            Reward {index + 1}
-                          </Text>
-                          <IconButton
-                              icon={<DeleteIcon />}
-                              onClick={() => handleRemoveReward(index)}
-                              aria-label="Delete reward"
-                              variant="ghost"
-                              colorScheme="red"
-                              size="sm"
-                          />
-                        </Flex>
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                          <Box>
-                            <Text fontSize="sm" fontWeight="medium">Core Parameters</Text>
-                            <Text fontSize="sm">Target Gauge: {reward.targetGauge}</Text>
-                            <Text fontSize="sm">Reward Token: {reward.rewardToken}</Text>
-                            <Text fontSize="sm">Distributor: {reward.distributorAddress}</Text>
-                          </Box>
-                          <Box>
-                            <Text fontSize="sm" fontWeight="medium">Contract Details</Text>
-                            <Text fontSize="sm" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis" title={reward.safeAddress}>
-                              Safe: {reward.safeAddress}
-                            </Text>
-                            <Text fontSize="sm" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis" title={reward.authorizerAdaptorEntrypoint}>
-                              Auth/Adaptor: {reward.authorizerAdaptorEntrypoint}
-                            </Text>
-                            <Text fontSize="sm">Chain ID: {reward.chainId}</Text>
-                          </Box>
-                        </SimpleGrid>
-                      </Box>
-                    </Flex>
-                  </Card>
-              ))}
-            </>
-        )}
-
-        <Flex justifyContent="space-between" alignItems="center" mt={4} mb={4}>
-          <Button
-              variant="primary"
-              onClick={handleGenerateClick}
-              isDisabled={!uiState.hasAddedReward || rewardAdds.length === 0}
+      <Card p={4} mb="10px">
+        <FormControl mb={4} maxWidth="md">
+          <FormLabel>Network</FormLabel>
+          <Select
+            value={network}
+            onChange={(e) => handleNetworkChange(e.target.value)}
           >
-            Generate Payload
+            {NETWORK_OPTIONS.map((option) => (
+              <option key={option.label} value={option.label}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={4}>
+          <FormControl isRequired>
+            <FormLabel>Target Gauge</FormLabel>
+            <Input
+              value={targetGauge}
+              onChange={(e) => setTargetGauge(e.target.value)}
+              placeholder="Enter target gauge"
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel>Reward Token</FormLabel>
+            <Input
+              value={rewardToken}
+              onChange={(e) => setRewardToken(e.target.value)}
+              placeholder="Enter reward token"
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel>Distributor Address</FormLabel>
+            <Input
+              value={distributorAddress}
+              onChange={(e) => setDistributorAddress(e.target.value)}
+              placeholder="Enter distributor address"
+            />
+          </FormControl>
+        </SimpleGrid>
+
+        <Flex justifyContent="flex-end">
+          <Button
+            variant="secondary"
+            leftIcon={<AddIcon />}
+            onClick={addRewardRow}
+            isDisabled={!uiState.isFormValid}
+          >
+            Add Reward
           </Button>
-          {generatedPayload && (
-              <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-          )}
         </Flex>
+      </Card>
 
-        {generatedPayload && (
-            <>
-              <Divider my={4} />
-              <JsonViewerEditor
-                  jsonData={generatedPayload}
-                  onJsonChange={(newJson) => setGeneratedPayload(newJson)}
-              />
-
-              <Flex mt={4} mb={4} gap={2}>
-                <Button
-                    variant="secondary"
-                    leftIcon={<DownloadIcon />}
-                    onClick={() => handleDownloadClick(generatedPayload)}
-                >
-                  Download Payload
-                </Button>
-                <Button
-                    variant="secondary"
-                    leftIcon={<CopyIcon />}
-                    onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-                >
-                  Copy Payload
-                </Button>
-                <OpenPRButton onClick={handleOpenPRModal} />
-              </Flex>
-
-              {humanReadableText && (
-                  <Box mt={4}>
-                    <Text fontSize="lg" fontWeight="medium" mb={2}>
-                      Human-readable Summary
+      {rewardAdds.length === 0 ? (
+        <Alert status="info" variant="subtle" mt={2} mb={4}>
+          <AlertIcon />
+          <AlertDescription>
+            Add at least one reward to generate a payload
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          <Flex align="center" mb={2}>
+            <Text fontSize="md" fontWeight="medium">
+              Added Rewards ({rewardAdds.length})
+            </Text>
+          </Flex>
+          {rewardAdds.map((reward, index) => (
+            <Card key={`reward-${index}`} mb={3} p={4}>
+              <Flex justify="space-between">
+                <Box flex="1">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Text fontSize="sm" color="gray.500">
+                      Reward {index + 1}
                     </Text>
-                    <Box p={4} borderWidth="1px" borderRadius="lg" mb={3}>
-                      <Text>{humanReadableText}</Text>
+                    <IconButton
+                      icon={<DeleteIcon />}
+                      onClick={() => handleRemoveReward(index)}
+                      aria-label="Delete reward"
+                      variant="ghost"
+                      colorScheme="red"
+                      size="sm"
+                    />
+                  </Flex>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        Core Parameters
+                      </Text>
+                      <Text fontSize="sm">
+                        Target Gauge: {reward.targetGauge}
+                      </Text>
+                      <Text fontSize="sm">
+                        Reward Token: {reward.rewardToken}
+                      </Text>
+                      <Text fontSize="sm">
+                        Distributor: {reward.distributorAddress}
+                      </Text>
                     </Box>
-                    <Button
-                        variant="secondary"
-                        leftIcon={<CopyIcon />}
-                        onClick={() => copyTextToClipboard(humanReadableText, toast)}
-                    >
-                      Copy Summary
-                    </Button>
-                  </Box>
-              )}
-            </>
-        )}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        Contract Details
+                      </Text>
+                      <Text
+                        fontSize="sm"
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        title={reward.safeAddress}
+                      >
+                        Safe: {reward.safeAddress}
+                      </Text>
+                      <Text
+                        fontSize="sm"
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        title={reward.authorizerAdaptorEntrypoint}
+                      >
+                        Auth/Adaptor: {reward.authorizerAdaptorEntrypoint}
+                      </Text>
+                      <Text fontSize="sm">Chain ID: {reward.chainId}</Text>
+                    </Box>
+                  </SimpleGrid>
+                </Box>
+              </Flex>
+            </Card>
+          ))}
+        </>
+      )}
 
-        <Box mt={8} />
-        <PRCreationModal
-            type="add-reward-to-gauge"
-            network={network}
-            isOpen={isOpen}
-            onClose={onClose}
-            payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-        />
-      </Container>
+      <Flex justifyContent="space-between" alignItems="center" mt={4} mb={4}>
+        <Button
+          variant="primary"
+          onClick={handleGenerateClick}
+          isDisabled={!uiState.hasAddedReward || rewardAdds.length === 0}
+        >
+          Generate Payload
+        </Button>
+        {generatedPayload && (
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
+      </Flex>
+
+      {generatedPayload && (
+        <>
+          <Divider my={4} />
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+          />
+
+          <Flex mt={4} mb={4} gap={2}>
+            <Button
+              variant="secondary"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} />
+          </Flex>
+
+          {humanReadableText && (
+            <Box mt={4}>
+              <Text fontSize="lg" fontWeight="medium" mb={2}>
+                Human-readable Summary
+              </Text>
+              <Box p={4} borderWidth="1px" borderRadius="lg" mb={3}>
+                <Text>{humanReadableText}</Text>
+              </Box>
+              <Button
+                variant="secondary"
+                leftIcon={<CopyIcon />}
+                onClick={() => copyTextToClipboard(humanReadableText, toast)}
+              >
+                Copy Summary
+              </Button>
+            </Box>
+          )}
+        </>
+      )}
+
+      <Box mt={8} />
+      <PRCreationModal
+        type="add-reward-to-gauge"
+        network={network}
+        isOpen={isOpen}
+        onClose={onClose}
+        payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+      />
+    </Container>
   );
 }
