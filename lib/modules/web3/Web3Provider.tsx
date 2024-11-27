@@ -8,7 +8,7 @@ import {
   lightTheme,
 } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { useTheme } from "@chakra-ui/react";
+import { theme, useTheme } from "@chakra-ui/react";
 import { merge } from "lodash";
 import { PropsWithChildren } from "react";
 import { WagmiConfig } from "./WagmiConfig";
@@ -24,45 +24,50 @@ export function Web3Provider({
                                wagmiConfig,
                              }: PropsWithChildren<{ wagmiConfig: WagmiConfig }>) {
   const isMounted = useIsMounted();
-  const theme = useTheme();
+  const { colors, radii, shadows } = useTheme();
   const colorMode = useThemeColorMode();
-  const colorModeKey = colorMode === "light" ? "default" : "_dark";
 
   if (!isMounted) return null;
 
-  // Safe access to theme properties with defaults
   const sharedConfig = {
     fonts: {
       body: theme.fonts?.body ?? "system-ui, sans-serif",
     },
     radii: {
-      connectButton: theme.radii?.md ?? "0.375rem",
-      actionButton: theme.radii?.md ?? "0.375rem",
-      menuButton: theme.radii?.md ?? "0.375rem",
-      modal: theme.radii?.md ?? "0.375rem",
-      modalMobile: theme.radii?.md ?? "0.375rem",
+      connectButton: radii.md,
+      actionButton: radii.md,
+      menuButton: radii.md,
+      modal: radii.md,
+      modalMobile: radii.md,
     },
     shadows: {
-      connectButton: theme.shadows?.md ?? "none",
-      dialog: theme.shadows?.xl ?? "none",
-      profileDetailsAction: theme.shadows?.md ?? "none",
-      selectedOption: theme.shadows?.md ?? "none",
-      selectedWallet: theme.shadows?.md ?? "none",
-      walletLogo: theme.shadows?.md ?? "none",
+      connectButton: shadows.md,
+      dialog: shadows.xl,
+      profileDetailsAction: shadows.md,
+      selectedOption: shadows.md,
+      selectedWallet: shadows.md,
+      walletLogo: shadows.md,
     },
     colors: {
-      accentColor: theme.colors?.purple?.[500] ?? "#7C3AED",
-      modalBackground: theme.semanticTokens?.colors?.background?.level0?.[colorModeKey] ??
-          (colorMode === "dark" ? "#1A1B1F" : "#FFFFFF"),
-      modalText: theme.semanticTokens?.colors?.font?.primary?.[colorModeKey] ??
-          (colorMode === "dark" ? "#FFFFFF" : "#000000"),
+      accentColor: colors.purple[500],
+      modalBackground: colorMode === 'light'
+          ? colors.light?.background?.level0 ?? '#FFFFFF'
+          : colors.dark?.background?.level0 ?? '#363d45',
+      modalText: colorMode === 'light'
+          ? colors.light?.text?.primary ?? '#000000'
+          : colors.dark?.text?.primary ?? '#FFFFFF',
     },
   };
 
-  const customTheme = merge(
-      colorMode === "dark" ? darkTheme() : lightTheme(),
-      sharedConfig as Theme,
-  );
+  const _lightTheme = merge(lightTheme(), {
+    ...sharedConfig,
+  } as Theme);
+
+  const _darkTheme = merge(darkTheme(), {
+    ...sharedConfig,
+  } as Theme);
+
+  const customTheme = colorMode === 'dark' ? _darkTheme : _lightTheme;
 
   return (
       <QueryClientProvider client={queryClient}>

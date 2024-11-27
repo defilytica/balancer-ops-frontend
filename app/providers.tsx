@@ -13,15 +13,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <ApolloClientProvider>
+        <ChakraProvider>
         <Web3Provider wagmiConfig={wagmiConfig}>
           <CacheProvider>
-            <ChakraProvider>
               <ColorThemeProvider defaultTheme={DEFAULT_THEME_COLOR_MODE}>
                 <ThemeProvider>{children}</ThemeProvider>
               </ColorThemeProvider>
-            </ChakraProvider>
           </CacheProvider>
         </Web3Provider>
+        </ChakraProvider>
       </ApolloClientProvider>
     </SessionProvider>
   );
