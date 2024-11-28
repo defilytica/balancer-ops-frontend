@@ -67,6 +67,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
 
   const sortedData = [...data].sort((a, b) => {
     if (!sortColumn) return 0;
+    if (a[sortColumn] === undefined || b[sortColumn] === undefined) return 0;
     if (a[sortColumn] < b[sortColumn]) return sortDirection === "asc" ? -1 : 1;
     if (a[sortColumn] > b[sortColumn]) return sortDirection === "asc" ? 1 : -1;
     return 0;
@@ -211,7 +212,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td isNumeric>{row.periodNumber}</Td>
               <Td isNumeric>{row.maxPeriods}</Td>
               <Td>{formatDate(row.lastInjectionTimeStamp)}</Td>
-              {isV2 && (
+              {isV2 && row.doNotStartBeforeTimestamp && (
                 <Td>{formatDatetime(row.doNotStartBeforeTimestamp)}</Td>
               )}
             </Tr>
