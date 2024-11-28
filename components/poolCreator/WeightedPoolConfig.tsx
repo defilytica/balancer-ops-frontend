@@ -16,17 +16,19 @@ import {optimizeAmounts} from "@/lib/utils/optimizeTokenAmounts";
 interface WeightedPoolConfigProps {
     config: PoolConfig;
     onConfigUpdate: (tokens: PoolToken[]) => void;
+    skipCreate: boolean;
 }
 
 
 
-export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfigProps) => {
+export const WeightedPoolConfig = ({ config, onConfigUpdate, skipCreate }: WeightedPoolConfigProps) => {
     const { chain } = useAccount()
     const [tokens, setTokens] = useState<TokenWithBalance[]>(
         config.tokens.length ? config.tokens : [{ address: '', weight: 0, symbol: '', amount: '', locked: false }, { address: '', weight: 0, symbol: '', amount: '', locked: false }]
     );
     const toast = useToast()
     const selectedNetwork = getNetworkString(chain?.id)
+
 
     // Store previous network to detect changes
     const [previousNetwork, setPreviousNetwork] = useState<string | undefined>(selectedNetwork);
@@ -262,6 +264,7 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                         showRemove={tokens.length > 1}
                         chainId={chain?.id}
                         selectedNetwork={selectedNetwork}
+                        skipCreate={skipCreate}
                     />
                 ))}
             </Stack>
@@ -270,7 +273,7 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate }: WeightedPoolConfi
                 <Button
                     variant="secondary"
                     onClick={addToken}
-                    isDisabled={tokens.length >= 8}
+                    isDisabled={tokens.length >= 8 || skipCreate}
                 >
                     Add Token
                 </Button>

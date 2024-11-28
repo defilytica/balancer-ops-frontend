@@ -1,30 +1,29 @@
 'use client'
-import {Box, Card, CardBody, CardHeader, Grid, GridItem, Heading, useToast} from '@chakra-ui/react';
-import React, {useCallback, useState} from 'react';
-import {PoolConfig} from "@/types/interfaces";
-import {PoolType} from "@/types/types";
-import {PoolTypeSelector} from "@/components/poolCreator/PoolTypeSelector";
-import {PoolCreatorStepper} from "@/components/poolCreator/PoolCreatorStepper";
-import {ConfigurationCard} from "@/components/poolCreator/ConfigurationCard";
-import {WeightedPoolConfig} from "@/components/poolCreator/WeightedPoolConfig";
-import {ComposableStablePoolConfig} from "@/components/poolCreator/ComposableStablePoolConfig";
-import {StepNavigation} from "@/components/poolCreator/StepNavigation";
-import {PoolSettingsComponent} from "@/components/poolCreator/PoolSettings";
-import {PoolReview} from "@/components/poolCreator/PoolReview";
-import {usePoolCreator} from "@/lib/shared/hooks/usePoolCreator";
+import { Box, Card, CardBody, CardHeader, Divider, Flex, Grid, GridItem, Heading, Stack, useToast } from '@chakra-ui/react';
+import React, { useCallback, useState } from 'react';
+import { PoolTypeSelector } from "@/components/poolCreator/PoolTypeSelector";
+import { PoolCreatorStepper } from "@/components/poolCreator/PoolCreatorStepper";
+import { ConfigurationCard } from "@/components/poolCreator/ConfigurationCard";
+import { WeightedPoolConfig } from "@/components/poolCreator/WeightedPoolConfig";
+import { ComposableStablePoolConfig } from "@/components/poolCreator/ComposableStablePoolConfig";
+import { StepNavigation } from "@/components/poolCreator/StepNavigation";
+import { PoolSettingsComponent } from "@/components/poolCreator/PoolSettings";
+import { initialConfig, usePoolCreator } from "@/lib/shared/hooks/usePoolCreator";
+import PoolLookup from '@/components/poolCreator/PoolLookup';
+import { PoolConfig } from '@/types/interfaces';
 
 const PoolCreatorPage: React.FC = () => {
-    const [activeStep, setActiveStep] = useState(0)
+    const [activeStep, setActiveStep] = useState(0);
+    const [skipCreate, setSkipCreate] = useState(false);
     const toast = useToast()
     const {
         poolConfig,
+        setPoolConfig,
         updatePoolType,
         updateTokens,
         updateSettings,
         isStepValid,
     } = usePoolCreator();
-
-
 
     const validateStep = useCallback((step: number): boolean => {
         switch (step) {
@@ -79,10 +78,7 @@ const PoolCreatorPage: React.FC = () => {
                 })
 
             case 2: // Pool Settings
-                    // Add validation for pool-specific settings
-                return true
-
-            case 3: // Review
+                // Add validation for pool-specific settings
                 return true
 
             default:
@@ -92,6 +88,10 @@ const PoolCreatorPage: React.FC = () => {
 
     const handleNext = () => {
         if (isStepValid(activeStep)) {
+            if (activeStep === 0) {
+                setSkipCreate(false)
+                setPoolConfig({ ...initialConfig, type: poolConfig.type })
+            }
             setActiveStep(prev => prev + 1);
         } else {
             toast({
@@ -107,9 +107,8 @@ const PoolCreatorPage: React.FC = () => {
     }
 
     const handleFinish = async () => {
-        if (validateStep(3)) {
+        if (validateStep(2)) {
             try {
-                // Add your pool creation logic here
                 toast({
                     title: 'Success',
                     description: 'Pool created successfully',
@@ -129,35 +128,46 @@ const PoolCreatorPage: React.FC = () => {
         switch (activeStep) {
             case 0:
                 return (
-                    <Box>
-                        <PoolTypeSelector
-                            selectedType={poolConfig.type}
-                            onSelect={updatePoolType}
-                        />
-                    </Box>
+                    <>
+                        <Box>
+                            <PoolTypeSelector
+                                selectedType={poolConfig.type}
+                                onSelect={updatePoolType}
+                            />
+                        </Box>
+                        <Flex align="center" my={4} gap={4}>
+                            <Divider />
+                            <Box color="gray.500" fontSize="xl" whiteSpace="nowrap">
+                                or
+                            </Box>
+                            <Divider />
+                        </Flex>
+                        <PoolLookup onPoolFound={handlePoolFound} />
+                    </>
                 );
             case 1:
                 return poolConfig.type === 'weighted' ? (
                     <WeightedPoolConfig
                         config={poolConfig}
                         onConfigUpdate={updateTokens}
+                        skipCreate={skipCreate}
                     />
                 ) : (
                     <ComposableStablePoolConfig
                         config={poolConfig}
                         onConfigUpdate={updateTokens}
+                        skipCreate={skipCreate}
                     />
                 );
             case 2:
                 return (
                     <PoolSettingsComponent
-                        poolType={poolConfig.type}
-                        initialSettings={poolConfig.settings}
+                        config={poolConfig}
+                        setConfig={setPoolConfig}
                         onSettingsUpdate={updateSettings}
+                        readOnly={skipCreate}
                     />
                 );
-            case 3:
-                return <PoolReview config={poolConfig} onBack={handleBack} />
             default:
                 return null
         }
@@ -173,6 +183,12 @@ const PoolCreatorPage: React.FC = () => {
                 return false
         }
     }, [activeStep, poolConfig])
+
+    async function handlePoolFound(poolConfig: PoolConfig) {
+        setPoolConfig(poolConfig)
+        setSkipCreate(true)
+        setActiveStep(1)
+    }
 
     return (
         <Box p={8}>
@@ -192,7 +208,7 @@ const PoolCreatorPage: React.FC = () => {
                                 onNext={handleNext}
                                 onBack={handleBack}
                                 onFinish={handleFinish}
-                                isLastStep={activeStep === 3}
+                                isLastStep={activeStep === 2}
                             />
                         </CardBody>
                     </Card>

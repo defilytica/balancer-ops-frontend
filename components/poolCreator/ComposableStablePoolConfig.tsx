@@ -12,13 +12,15 @@ import {optimizeAmounts} from "@/lib/utils/optimizeTokenAmounts";
 interface ComposableStablePoolConfigProps {
     config: PoolConfig;
     onConfigUpdate: (config: PoolToken[]) => void;
+    skipCreate: boolean;
 }
 
 const defaultRateProvider = "0x0000000000000000000000000000000000000000";
 
 export const ComposableStablePoolConfig = ({
                                                config,
-                                               onConfigUpdate
+                                               onConfigUpdate,
+                                               skipCreate
                                            }: ComposableStablePoolConfigProps) => {
     const [tokens, setTokens] = useState<TokenWithBalance[]>(
         config.tokens.length ? distributeWeights(config.tokens) : distributeWeights([
@@ -213,6 +215,7 @@ export const ComposableStablePoolConfig = ({
                         showRemove={tokens.length > 2}
                         chainId={chain?.id}
                         selectedNetwork={selectedNetwork}
+                        skipCreate={skipCreate}
                     />
                 ))}
             </Stack>
@@ -221,7 +224,7 @@ export const ComposableStablePoolConfig = ({
                 <Button
                     variant="outline"
                     onClick={addToken}
-                    isDisabled={tokens.length >= 5}
+                    isDisabled={tokens.length >= 5 || skipCreate}
                 >
                     Add Token
                 </Button>

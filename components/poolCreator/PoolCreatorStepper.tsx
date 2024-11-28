@@ -4,7 +4,6 @@ const steps = [
     { title: 'Pool Type', description: 'Select pool type' },
     { title: 'Tokens', description: 'Configure tokens' },
     { title: 'Settings', description: 'Additional settings' },
-    { title: 'Review', description: 'Confirm configuration' }
 ];
 
 export const PoolCreatorStepper = ({ activeStep }: { activeStep: number }) => {

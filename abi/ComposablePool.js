@@ -235,6 +235,13 @@ export const composablePool = [
     type: "function",
   },
   {
+    inputs: [],
+    name: 'isExemptFromYieldProtocolFee',
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "isTokenExemptFromYieldProtocolFee",
     outputs: [{ internalType: "bool", name: "", type: "bool" }],

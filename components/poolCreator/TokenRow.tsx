@@ -28,20 +28,22 @@ interface TokenRowProps {
     showRemove: boolean;
     chainId?: number;
     selectedNetwork: string;
+    skipCreate: boolean;
 }
 
 export const TokenRow: React.FC<TokenRowProps> = ({
-                                                      token,
-                                                      index,
-                                                      onTokenSelect,
-                                                      onWeightChange,
-                                                      onAmountChange,
-                                                      onLockChange,
-                                                      onRemove,
-                                                      showRemove,
-                                                      chainId,
-                                                      selectedNetwork,
-                                                  }) => {
+    token,
+    index,
+    onTokenSelect,
+    onWeightChange,
+    onAmountChange,
+    onLockChange,
+    onRemove,
+    showRemove,
+    chainId,
+    selectedNetwork,
+    skipCreate
+}) => {
     const { address: walletAddress } = useAccount();
     const { data: balanceData } = useBalance({
         address: walletAddress,
@@ -97,6 +99,7 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                                     : undefined
                             }
                             placeholder="Select token"
+                            isDisabled={skipCreate}
                         />
                         {token.price && (
                             <Text fontSize="sm" mt={1}>
@@ -115,23 +118,25 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                             max={100}
                             precision={2}
                             size="md"
-                            isReadOnly={token.locked}
+                            isReadOnly={token.locked || skipCreate}
                         >
                             <NumberInputField placeholder="Enter weight" />
                         </NumberInput>
-                        <Tooltip label={token.locked ? "Unlock weight" : "Lock weight"}>
-                            <IconButton
-                                icon={token.locked ? <LockIcon /> : <UnlockIcon />}
-                                size="md"
-                                variant="ghost"
-                                onClick={() => onLockChange(index, !token.locked)}
-                                aria-label={token.locked ? "Unlock weight" : "Lock weight"}
-                                color={token.locked ? "blue.500" : "gray.400"}
-                                _hover={{
-                                    color: token.locked ? "blue.600" : "blue.500"
-                                }}
-                            />
-                        </Tooltip>
+                        {!skipCreate && (
+                            <Tooltip label={token.locked ? "Unlock weight" : "Lock weight"}>
+                                <IconButton
+                                    icon={token.locked ? <LockIcon /> : <UnlockIcon />}
+                                    size="md"
+                                    variant="ghost"
+                                    onClick={() => onLockChange(index, !token.locked)}
+                                    aria-label={token.locked ? "Unlock weight" : "Lock weight"}
+                                    color={token.locked ? "blue.500" : "gray.400"}
+                                    _hover={{
+                                        color: token.locked ? "blue.600" : "blue.500"
+                                    }}
+                                />
+                            </Tooltip>
+                        )}
                     </Flex>
                 </FormControl>
 
@@ -167,7 +172,7 @@ export const TokenRow: React.FC<TokenRowProps> = ({
                     </Box>
                 </FormControl>
 
-                {showRemove && (
+                {showRemove && !skipCreate && (
                     <IconButton
                         icon={<DeleteIcon />}
                         size="sm"

@@ -5,6 +5,7 @@ import { GOVERNANCE_ADDRESS } from "@/constants/constants";
 
 interface UsePoolCreatorReturn {
     poolConfig: PoolConfig;
+    setPoolConfig: (config: PoolConfig) => void;
     updatePoolType: (type: PoolType) => void;
     updateTokens: (tokens: PoolToken[]) => void;
     updateSettings: (settings: PoolSettings) => void;
@@ -24,7 +25,7 @@ const defaultSettings: PoolSettings = {
     }
 };
 
-const initialConfig: PoolConfig = {
+export const initialConfig: PoolConfig = {
     type: undefined,
     tokens: [],
     settings: defaultSettings,
@@ -193,6 +194,7 @@ export const usePoolCreator = (): UsePoolCreatorReturn => {
 
     return {
         poolConfig,
+        setPoolConfig,
         updatePoolType,
         updateTokens,
         updateSettings,

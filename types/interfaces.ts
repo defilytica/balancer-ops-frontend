@@ -55,6 +55,8 @@ export interface TokenInfo {
 }
 
 export interface PoolConfig {
+  poolId?: string;
+  poolAddress?: string;
   type?: PoolType;
   tokens: PoolToken[];
   settings?: PoolSettings;

@@ -29,6 +29,7 @@ interface ComposableStableTokenRowProps {
     showRemove: boolean;
     chainId?: number;
     selectedNetwork: string;
+    skipCreate: boolean;
 }
 
 const defaultRateProvider = "0x0000000000000000000000000000000000000000";
@@ -44,6 +45,7 @@ export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> =
                                                                                       showRemove,
                                                                                       chainId,
                                                                                       selectedNetwork,
+                                                                                      skipCreate
                                                                                   }) => {
     const { address: walletAddress } = useAccount();
     const { data: balanceData } = useBalance({
@@ -100,6 +102,7 @@ export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> =
                                     : undefined
                             }
                             placeholder="Select token"
+                            isDisabled={skipCreate}
                         />
                         {token.price && (
                             <Text fontSize="sm" mt={1}>
@@ -149,6 +152,7 @@ export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> =
                                 onChange={(e) => onRateProviderChange(index, e.target.value)}
                                 placeholder="Rate provider address"
                                 size="md"
+                                isDisabled={skipCreate}
                             />
                         </Box>
                         <Tooltip label="Set default rate provider (0x000...)">
@@ -158,6 +162,7 @@ export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> =
                                 variant="ghost"
                                 onClick={() => onSetDefaultRateProvider(index)}
                                 aria-label="Set default rate provider"
+                                isDisabled={skipCreate}
                             />
                         </Tooltip>
                         <Tooltip label="Rate provider info">

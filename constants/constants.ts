@@ -15,6 +15,8 @@ import { TbSettingsDollar } from "react-icons/tb";
 import { NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
 
+export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+
 export const tokenDecimals: Record<string, number> = {
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
   "0x2791bca1f2de4661ed88a30c99a7a9449aa84174": 6, // polygon

@@ -55,9 +55,10 @@ export const TokenSelector = ({
     );
 
     const filteredTokens = data?.tokenGetTokens.filter(token =>
-        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
         token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.address.toLowerCase().includes(searchQuery.toLowerCase())
+        token.address.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        token.symbol.toLowerCase() !== 'eth'
     ) || [];
 
     const handleSelect = (token: TokenListToken) => {
