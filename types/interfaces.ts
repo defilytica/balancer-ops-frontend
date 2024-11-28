@@ -73,7 +73,7 @@ export interface PoolToken {
   address: string;
   weight: number;
   symbol: string;
-  amount: string;
+  amount?: string;
   decimals?: number;
   logoURI?: string;
   name?: string;

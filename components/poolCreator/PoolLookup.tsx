@@ -25,7 +25,7 @@ import { useQuery } from '@apollo/client';
 import { useAccount, usePublicClient } from 'wagmi';
 import { getNetworkString } from '@/lib/utils/getNetworkString';
 import { FactoryAddressWeighted, VAULT_ADDRESS } from '@/constants/constants';
-import { parseAbiItem } from 'viem';
+import { getAddress, parseAbiItem } from 'viem';
 
 const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => void }) => {
     const [poolAddress, setPoolAddress] = useState('');
@@ -60,7 +60,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
             // Verify contract exists
             const contractCode = await publicClient.getBytecode({
-                address: poolAddress
+                address: getAddress(poolAddress)
             });
 
             if (!contractCode) {
@@ -81,7 +81,8 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
             // Determine pool type
             const isWeightedPool = await publicClient.readContract({
-                ...factoryContract,
+                address: getAddress(factoryAddress),
+                abi: CreateWeightedABI,
                 functionName: 'isPoolFromFactory',
                 args: [poolAddress]
             });
@@ -91,7 +92,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
             // Verify pool is not initialized
             const totalSupply = await publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
                 functionName: 'totalSupply'
             }).catch(error => {
@@ -107,15 +108,16 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
             // Get Pool ID and tokens
             const poolId = await publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
                 functionName: 'getPoolId'
             });
 
             const [rawTokens, balances, lastChangeBlock] = await publicClient.readContract({
-                ...vaultContract,
+                address: getAddress(VAULT_ADDRESS),
+                abi: vaultABI,
                 functionName: 'getPoolTokens',
-                args: [poolId]
+                args: [poolId],
             }) as [string[], bigint[], bigint];
 
             const validTokens = await Promise.all(
@@ -123,7 +125,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                     try {
                         // Try to call getPoolId on the token address
                         await publicClient.readContract({
-                            address: tokenAddress,
+                            address: getAddress(tokenAddress),
                             abi: [parseAbiItem('function getPoolId() view returns (bytes32)')],
                             functionName: 'getPoolId'
                         });
@@ -135,7 +137,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                     }
                 })
             );
-            
+
             const tokens = validTokens.filter((token): token is string => token !== null);
 
 
@@ -151,8 +153,8 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                     fetchTokenDetails(
                         tokenAddress,
                         index,
-                        isWeightedPool ? poolSettings.weights : undefined,
-                        isWeightedPool ? poolSettings.rateProviders : undefined
+                        isWeightedPool ? (poolSettings as any).weights : undefined,
+                        isWeightedPool ? (poolSettings as any).rateProviders : undefined
                     )
                 )
             );
@@ -163,7 +165,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                 type: poolType,
                 tokens: poolTokens,
                 settings: {
-                    ...poolSettings.commonSettings,
+                    ...(poolSettings as any).commonSettings,
                     ...(isWeightedPool
                         ? { weightedSpecific: poolSettings.specificSettings }
                         : { stableSpecific: poolSettings.specificSettings }
@@ -179,36 +181,43 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
     };
 
     const fetchWeightedPoolData = async (poolAddress: string, poolABI: any) => {
+        if (!publicClient) throw new Error('Public client not initialized');
         const [weights, swapFee, name, symbol, rateProviders, owner] = await Promise.all([
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getNormalizedWeights'
+                functionName: 'getNormalizedWeights',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getSwapFeePercentage'
+                functionName: 'getSwapFeePercentage',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'name'
+                functionName: 'name',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'symbol'
+                functionName: 'symbol',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getRateProviders'
+                functionName: 'getRateProviders',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getOwner'
+                functionName: 'getOwner',
+                args: []
             })
         ]);
 
@@ -216,14 +225,14 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
             weights,
             rateProviders,
             commonSettings: {
-                swapFee: Number(formatUnits(swapFee, 18)) * 100,
+                swapFee: Number(formatUnits(swapFee as bigint, 18)) * 100,
                 name,
                 symbol,
             },
             specificSettings: {
                 feeManagement: {
                     owner,
-                    type: owner.toLowerCase() === '0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B'.toLowerCase()
+                    type: (owner as string).toLowerCase() === '0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B'.toLowerCase()
                         ? 'governance'
                         : 'fixed'
                 }
@@ -232,36 +241,43 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
     };
 
     const fetchComposableStablePoolData = async (poolAddress: string, poolABI: any, tokens: string[]) => {
+        if (!publicClient) throw new Error('Public client not initialized');
         const [amplificationParameter, swapFee, name, symbol, owner, yieldFeeExempt] = await Promise.all([
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getAmplificationParameter'
+                functionName: 'getAmplificationParameter',
+                args: []
+            }) as Promise<[bigint, boolean, bigint]>,
+            publicClient.readContract({
+                address: getAddress(poolAddress),
+                abi: poolABI,
+                functionName: 'getSwapFeePercentage',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getSwapFeePercentage'
+                functionName: 'name',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'name'
+                functionName: 'symbol',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'symbol'
+                functionName: 'getOwner',
+                args: []
             }),
             publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
-                functionName: 'getOwner'
-            }),
-            publicClient.readContract({
-                address: poolAddress,
-                abi: poolABI,
-                functionName: 'isExemptFromYieldProtocolFee'
+                functionName: 'isExemptFromYieldProtocolFee',
+                args: []
             })
         ]);
 
@@ -269,11 +285,11 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
         let rateCacheDuration: bigint = BigInt(0);
         try {
             rateCacheDuration = await publicClient.readContract({
-                address: poolAddress,
+                address: getAddress(poolAddress),
                 abi: poolABI,
                 functionName: 'getTokenRateCache',
                 args: [tokens[0]]
-            });
+            }) as bigint;
         } catch (error) {
             console.warn('Failed to fetch rate cache duration, defaulting to 0:', error);
             // Silently continue with default value
@@ -281,7 +297,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
         return {
             commonSettings: {
-                swapFee: Number(formatUnits(swapFee, 18)) * 100,
+                swapFee: Number(formatUnits(swapFee as bigint, 18)) * 100,
                 name,
                 symbol,
             },
@@ -303,9 +319,13 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
         weights?: bigint[],
         rateProviders?: string[]
     ): Promise<PoolToken> => {
+        if (!publicClient) {
+            throw new Error('No public client found');
+        }
+
         const [symbol, decimals] = await Promise.all([
             publicClient.readContract({
-                address: tokenAddress,
+                address: getAddress(tokenAddress),
                 abi: [
                     parseAbiItem('function symbol() view returns (string)'),
                     parseAbiItem('function decimals() view returns (uint8)')
@@ -313,7 +333,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                 functionName: 'symbol'
             }),
             publicClient.readContract({
-                address: tokenAddress,
+                address: getAddress(tokenAddress),
                 abi: [
                     parseAbiItem('function symbol() view returns (string)'),
                     parseAbiItem('function decimals() view returns (uint8)')
@@ -326,7 +346,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
             address: tokenAddress,
             symbol,
             decimals,
-            weight: weights ? Number(formatUnits(weights[index], 18)) * 100 : undefined,
+            weight: weights ? Number(formatUnits(weights[index], 18)) * 100 : 0,
             rateProvider: rateProviders ? rateProviders[index] : undefined,
             logoURI: tokensData?.tokenGetTokens.find(
                 token => token.address === tokenAddress.toLowerCase()
