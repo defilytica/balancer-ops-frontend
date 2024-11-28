@@ -421,6 +421,123 @@ export interface InjectorScheduleInput {
   maxPeriods: string;
 }
 
+interface PayloadGeneratorInputV2 {
+  injectorAddress: string;
+  chainId: number;
+  safeAddress: string;
+  operation: "add" | "remove";
+  scheduleInputs: {
+    gaugeAddress: string;
+    amountPerPeriod?: string;
+    rawAmountPerPeriod?: string;
+    maxPeriods?: string;
+    doNotStartBeforeTimestamp?: string;
+  }[];
+}
+
+export function generateInjectorSchedulePayloadV2({
+  injectorAddress,
+  chainId,
+  safeAddress,
+  operation,
+  scheduleInputs,
+}: PayloadGeneratorInputV2): BatchFile {
+  const contractMethods = {
+    add: {
+      inputs: [
+        {
+          name: "recipients",
+          type: "address[]",
+          internalType: "address[]",
+        },
+        {
+          name: "amountPerPeriod",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "maxPeriods",
+          type: "uint32",
+          internalType: "uint32",
+        },
+        {
+          name: "doNotStartBeforeTimestamp",
+          type: "uint56",
+          internalType: "uint56",
+        },
+      ],
+      name: "add",
+      payable: false,
+    },
+    remove: {
+      inputs: [
+        {
+          name: "recipients",
+          type: "address[]",
+          internalType: "address[]",
+        },
+      ],
+      name: "remove",
+      payable: false,
+    },
+  };
+
+  const contractMethod = contractMethods[operation];
+
+  let parameters: any[];
+  if (operation === "add") {
+    const firstConfig = scheduleInputs.find(
+      (input) =>
+        input.rawAmountPerPeriod &&
+        input.maxPeriods &&
+        input.doNotStartBeforeTimestamp,
+    );
+
+    if (!firstConfig) {
+      throw new Error("Invalid add configuration: missing required parameters");
+    }
+
+    parameters = [
+      scheduleInputs.map((input) => input.gaugeAddress),
+      firstConfig.rawAmountPerPeriod,
+      firstConfig.maxPeriods,
+      firstConfig.doNotStartBeforeTimestamp || "0",
+    ];
+  } else {
+    parameters = [scheduleInputs.map((input) => input.gaugeAddress)];
+  }
+
+  const batchTransaction = {
+    to: injectorAddress,
+    value: "0",
+    data: null,
+    contractMethod,
+    contractInputsValues: {
+      recipients: `[${parameters[0].join(", ")}]`,
+      amountPerPeriod: parameters[1],
+      maxPeriods: parameters[2],
+      doNotStartBeforeTimestamp: parameters[3],
+    },
+  };
+
+  const batchFile: BatchFile = {
+    version: "1.0",
+    chainId: chainId.toString(),
+    createdAt: Math.floor(Date.now() / 1000),
+    meta: {
+      name: `Rewards Injector Schedule - ${operation.toUpperCase()}`,
+      description: `Configure rewards injector schedule to ${operation} recipients`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: safeAddress,
+      createdFromOwnerAddress: "",
+      checksum: "0x" + Math.random().toString(16).substring(2, 64),
+    },
+    transactions: [batchTransaction],
+  };
+
+  return batchFile;
+}
+
 export interface PayloadGeneratorInput {
   injectorType: "v1" | "v2";
   injectorAddress: string;
@@ -611,4 +728,68 @@ export function generateSwapFeeChangePayload(
     },
     transactions: [transaction],
   };
+}
+
+// --- SET NEW DISTRIBUTOR ---
+export interface SetDistributorInput {
+  targetGauge: string;
+  rewardToken: string;
+  distributorAddress: string;
+  safeAddress: string;
+  authorizerAdaptorEntrypoint: string;
+  chainId: string;
+}
+
+export function generateSetDistributorPayload(inputs: SetDistributorInput[]) {
+  const transactions = inputs.map((input) => ({
+    to: input.authorizerAdaptorEntrypoint,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        { internalType: "address", name: "target", type: "address" },
+        { internalType: "bytes", name: "data", type: "bytes" },
+      ],
+      name: "performAction",
+      payable: true,
+    },
+    contractInputsValues: {
+      target: input.targetGauge,
+      data: `0x058a3a24000000000000000000000000${input.rewardToken.slice(2)}000000000000000000000000${input.distributorAddress.slice(2)}`,
+    },
+  }));
+
+  return {
+    version: "1.0",
+    chainId: inputs.length > 0 ? inputs[0].chainId : "",
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: "",
+      txBuilderVersion: "1.16.5",
+      createdFromSafeAddress: inputs.length > 0 ? inputs[0].safeAddress : "",
+      createdFromOwnerAddress: "",
+      checksum:
+        "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
+    },
+    transactions: [...transactions], // Using array notation to handle multiple transactions
+  };
+}
+
+export function generateHumanReadableSetDistributor(
+  inputs: SetDistributorInput[],
+): string {
+  if (inputs.length === 0) {
+    return ""; // Handle case where inputs array is empty
+  }
+
+  const readableInputs = inputs
+    .map((input) => {
+      return `Set Distributor:\nTarget (Gauge Address): ${input.targetGauge}\nTo (Authorizer Adaptor Entrypoint): ${input.authorizerAdaptorEntrypoint}\nReward Token: ${input.rewardToken}\nDistributor Address: ${input.distributorAddress}`;
+    })
+    .join("\n\n");
+
+  const safeAddress = inputs[0].safeAddress || "Unknown"; // Default value if safeAddress is undefined
+
+  return `The Maxi Multisig ${safeAddress} will interact with the following gauges:\n${readableInputs}`;
 }

@@ -29,6 +29,7 @@ import {
 import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
+import OpenPRButton from "@/components/btns/OpenPRButton";
 import { CodeiumEditor } from "@codeium/react-code-editor";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
@@ -51,7 +52,7 @@ const addressMapping: { [key: string]: string } = {
   "7": "0xc38c5f97B34E175FFd35407fc91a937300E33860", // Polygon
 };
 
-export default function CCIPBridge() {
+export default function CCTPBridge() {
   const { colorMode } = useColorMode();
   const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [inputs, setInputs] = useState<CCTPBridgeInput[]>([
@@ -184,7 +185,7 @@ export default function CCIPBridge() {
         <Heading as="h2" size="lg" variant="special">
           Create Bridge Transaction
         </Heading>
-        <Text mb={4}>Further logic for creating a CCIP payment goes here.</Text>
+        <Text mb={4}>Further logic for creating a CCTP payment goes here.</Text>
       </Box>
       <Box>
         {inputs.map((input, index) => (
@@ -263,7 +264,7 @@ export default function CCIPBridge() {
           Generate Payload
         </Button>
         {generatedPayload && (
-          <SimulateTransactionButton batchFile={generatedPayload} />
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />
@@ -315,13 +316,7 @@ export default function CCIPBridge() {
         >
           Copy Payload to Clipboard
         </Button>
-        <Button
-          variant="secondary"
-          leftIcon={<VscGithubInverted />}
-          onClick={() => handleOpenPRModal()}
-        >
-          Open PR
-        </Button>
+        <OpenPRButton onClick={handleOpenPRModal} />
       </Box>
 
       {humanReadableText && (
@@ -342,7 +337,7 @@ export default function CCIPBridge() {
       {/* Spacer at the bottom */}
       <Box mt={8} />
       <PRCreationModal
-        type={"ccip-bridge"}
+        type={"cctp-bridge"}
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}

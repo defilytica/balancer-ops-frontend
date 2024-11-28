@@ -44,6 +44,50 @@ export async function fetchTokenInfo(
   return { name, symbol };
 }
 
+export async function fetchGaugeInfoV2(
+  gaugeAddresses: string[],
+  contract: Contract,
+  provider: JsonRpcProvider,
+  injectTokenAddress: string,
+  injectorAddress: string,
+  network: string,
+) {
+  const gaugePromises = gaugeAddresses.map(async (gaugeAddress) => {
+    const [
+      {
+        amountPerPeriod,
+        isActive,
+        maxPeriods,
+        periodNumber,
+        lastInjectionTimestamp,
+        doNotStartBeforeTimestamp,
+      },
+      balance,
+    ] = await Promise.all([
+      contract.getGaugeInfo(gaugeAddress),
+      getInjectTokenBalanceForAddress(
+        injectTokenAddress,
+        gaugeAddress,
+        provider,
+      ),
+    ]);
+
+    return {
+      address: gaugeAddress,
+      amountPerPeriod: amountPerPeriod.toString(),
+      isActive,
+      maxPeriods: maxPeriods.toString(),
+      periodNumber: periodNumber.toString(),
+      lastInjectionTimestamp: lastInjectionTimestamp.toString(),
+      doNotStartBeforeTimestamp: doNotStartBeforeTimestamp.toString(),
+      balance: balance.toString(),
+      network,
+    };
+  });
+
+  return Promise.all(gaugePromises);
+}
+
 export async function fetchGaugeInfo(
   gaugeAddresses: string[],
   contract: Contract,

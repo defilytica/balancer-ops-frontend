@@ -58,6 +58,7 @@ import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
 
@@ -368,7 +369,7 @@ export default function ChangeSwapFeeModule({
           Generate Payload
         </Button>
         {generatedPayload && (
-          <SimulateTransactionButton batchFile={generatedPayload} />
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />
@@ -398,13 +399,7 @@ export default function ChangeSwapFeeModule({
           >
             Copy Payload to Clipboard
           </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<VscGithubInverted />}
-            onClick={() => handleOpenPRModal()}
-          >
-            Open PR
-          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
             type={"set-swapfee"}

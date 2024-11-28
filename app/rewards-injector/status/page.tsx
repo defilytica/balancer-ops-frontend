@@ -13,6 +13,10 @@ import {
   HStack,
   IconButton,
   Tooltip,
+  Switch,
+  Alert,
+  AlertIcon,
+  AlertDescription,
 } from "@chakra-ui/react";
 import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
@@ -20,21 +24,23 @@ import { calculateDistributionAmounts } from "@/lib/data/injector/helpers";
 import { RefreshCw } from "react-feather";
 
 const RewardsInjectorStatusPage = () => {
-  const [injectorsData, setInjectorsData] = useState([]);
+  const [injectorsData, setInjectorsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [isV2, setIsV2] = useState(false);
   const toast = useToast();
 
   const fetchInjectorsData = async (forceReload = false) => {
     setIsLoading(true);
     try {
+      const version = isV2 ? "v2" : "v1";
       const url = forceReload
-        ? "/api/injector/all?forceReload=true"
-        : "/api/injector/all";
+        ? `/api/injector/${version}/all?forceReload=${forceReload}`
+        : `/api/injector/${version}/all?forceReload=${forceReload}`;
       const response = await fetch(url);
       if (response.status === 429) {
-        throw new Error(`Too many requests. Please try again in later.`);
+        throw new Error(`Too many requests. Please try again later.`);
       }
 
       if (!response.ok) {
@@ -93,9 +99,11 @@ const RewardsInjectorStatusPage = () => {
     }
   };
 
+  console.log(injectorsData);
+
   useEffect(() => {
     fetchInjectorsData();
-  }, []);
+  }, [isV2]);
 
   const toggleHideCompleted = () => {
     setHideCompleted(!hideCompleted);
@@ -103,6 +111,10 @@ const RewardsInjectorStatusPage = () => {
 
   const handleRefresh = () => {
     fetchInjectorsData(true);
+  };
+
+  const handleVersionToggle = () => {
+    setIsV2(!isV2);
   };
 
   const filteredInjectors = hideCompleted
@@ -129,18 +141,36 @@ const RewardsInjectorStatusPage = () => {
             />
           </Tooltip>
         </HStack>
+        <Alert status="warning" mr={4}>
+          <AlertIcon />
+          <Box>
+            <AlertDescription>
+              This data is cached and was last updated on{" "}
+              {new Date(injectorsData[0].updatedAt).toLocaleString()}. You can
+              refresh the data manually.
+            </AlertDescription>
+          </Box>
+        </Alert>
         <HStack justifyContent="space-between" alignItems="center">
           <Text>
             Showing {filteredInjectors.length} of {injectorsData.length}{" "}
             injectors
           </Text>
-          <Button onClick={toggleHideCompleted}>
-            {hideCompleted ? "Show All" : "Hide Completed"}
-          </Button>
+          <HStack>
+            <Button onClick={toggleHideCompleted}>
+              {hideCompleted ? "Show All" : "Hide Completed"}
+            </Button>
+            <HStack>
+              <Text>V1</Text>
+              <Switch isChecked={isV2} onChange={handleVersionToggle} />
+              <Text>V2</Text>
+            </HStack>
+          </HStack>
         </HStack>
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
           {filteredInjectors.map((injector: any) => (
             <RewardsInjectorCard
+              v2={isV2}
               key={injector.address + injector.network}
               data={injector}
               networks={networks}

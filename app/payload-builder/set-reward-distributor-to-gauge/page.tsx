@@ -35,8 +35,8 @@ import React, { useEffect, useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
-  generateAddRewardPayload,
-  generateHumanReadableAddReward,
+  generateSetDistributorPayload,
+  generateHumanReadableSetDistributor,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS } from "@/constants/constants";
@@ -45,7 +45,7 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
-export interface AddRewardInput {
+export interface SetDistributorInput {
   targetGauge: string;
   rewardToken: string;
   distributorAddress: string;
@@ -69,13 +69,13 @@ const validateFormInputs = (
   );
 };
 
-export default function AddRewardToGaugePage() {
+export default function SetRewardDistributorPage() {
   const toast = useToast();
   const [network, setNetwork] = useState("Ethereum");
   const [targetGauge, setTargetGauge] = useState("");
   const [rewardToken, setRewardToken] = useState("");
   const [distributorAddress, setDistributorAddress] = useState("");
-  const [rewardAdds, setRewardAdds] = useState<AddRewardInput[]>([]);
+  const [rewardAdds, setRewardAdds] = useState<SetDistributorInput[]>([]);
   const [authorizerAdaptorEntrypoint, setEntrypoint] = useState(
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
@@ -140,8 +140,8 @@ export default function AddRewardToGaugePage() {
   };
 
   const handleGenerateClick = () => {
-    let payload = generateAddRewardPayload(rewardAdds);
-    let text = generateHumanReadableAddReward(rewardAdds);
+    let payload = generateSetDistributorPayload(rewardAdds);
+    let text = generateHumanReadableSetDistributor(rewardAdds);
     setGeneratedPayload(JSON.stringify(payload, null, 4));
     setHumanReadableText(text);
   };
@@ -180,7 +180,7 @@ export default function AddRewardToGaugePage() {
     <Container maxW="container.lg">
       <Box mb="10px">
         <Heading as="h2" size="lg" variant="special">
-          Create Payload to Add Rewards to a Gauge
+          Create Payload to Set Reward Distributor on a Gauge
         </Heading>
       </Box>
 
@@ -399,7 +399,7 @@ export default function AddRewardToGaugePage() {
 
       <Box mt={8} />
       <PRCreationModal
-        type="add-reward-to-gauge"
+        type="set-reward-distributor"
         network={network}
         isOpen={isOpen}
         onClose={onClose}
