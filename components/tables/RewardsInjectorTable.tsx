@@ -33,18 +33,21 @@ export interface RewardsInjectorData {
   maxPeriods: string;
   isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
+  doNotStartBeforeTimestamp: string;
 }
 
 interface RewardsInjectorTableProps {
   data: RewardsInjectorData[];
   tokenSymbol: string;
   network: string;
+  isV2: boolean;
 }
 
 export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   data,
   tokenSymbol,
   network,
+  isV2,
 }) => {
   const [sortColumn, setSortColumn] = useState<
     keyof RewardsInjectorData | null
@@ -78,6 +81,17 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     }
 
     return date.toLocaleDateString();
+  };
+
+  const formatDatetime = (timestamp: string) => {
+    const date = new Date(Number(timestamp) * 1000);
+
+    // Check if the date is January 1, 1970 (Unix epoch start)
+    if (date.getTime() === 0) {
+      return "-";
+    }
+
+    return date.toLocaleString([], { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
   };
 
   const SortableHeader: React.FC<{
@@ -143,7 +157,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
       </VStack>
     );
   }
-
+  console.log(sortedData);
   return sortedData.length > 0 ? (
     <Card overflowX="auto">
       <Table variant="simple" size="sm">
@@ -152,9 +166,11 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
             <Th>
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
-            <Th>
-              <SortableHeader column="poolName" label="Name" />
-            </Th>
+            {!isV2 && (
+              <Th>
+                <SortableHeader column="poolName" label="Name" />
+              </Th>
+            )}
             <Th>
               <SortableHeader
                 column="amountPerPeriod"
@@ -173,6 +189,11 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
                 label="Last Injection"
               />
             </Th>
+            {isV2 && (
+              <Th>
+                <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
+              </Th>
+            )}
           </Tr>
         </Thead>
         <Tbody>
@@ -181,14 +202,18 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-
-              <Td>{row.poolName}</Td>
+              {!isV2 && (
+                <Td>{row.poolName}</Td>
+              )}
               <Td
                 isNumeric
               >{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
               <Td isNumeric>{row.periodNumber}</Td>
               <Td isNumeric>{row.maxPeriods}</Td>
               <Td>{formatDate(row.lastInjectionTimeStamp)}</Td>
+              {isV2 && (
+                <Td>{formatDatetime(row.doNotStartBeforeTimestamp)}</Td>
+              )}
             </Tr>
           ))}
         </Tbody>

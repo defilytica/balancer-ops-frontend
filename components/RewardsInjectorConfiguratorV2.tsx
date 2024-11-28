@@ -193,9 +193,10 @@ function RewardsInjectorConfiguratorV2({
           const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
           const gaugeRemaining = gaugeTotal - gaugeDistributed;
 
-          newTotal -= gaugeTotal;
-          newDistributed -= gaugeDistributed;
-          newRemaining -= gaugeRemaining;
+          console.log(gaugeTotal, gaugeDistributed, gaugeRemaining);
+          newTotal -= gaugeTotal / 10 ** tokenDecimals;
+          newDistributed -= gaugeDistributed / 10 ** tokenDecimals;
+          newRemaining -= gaugeRemaining / 10 ** tokenDecimals;
         }
       });
     }

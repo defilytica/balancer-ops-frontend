@@ -118,9 +118,11 @@ function RewardsInjectorConfigurator({
       const gaugeTotal = amount * maxPeriods;
       const gaugeDistributed = amount * currentPeriod;
 
-      total += gaugeTotal;
-      distributed += gaugeDistributed;
-      remaining += gaugeTotal - gaugeDistributed;
+      total += gaugeTotal / 10 ** tokenDecimals;
+      distributed += gaugeDistributed / 10 ** tokenDecimals;
+      remaining +=
+        gaugeTotal / 10 ** tokenDecimals -
+        gaugeDistributed / 10 ** tokenDecimals;
     });
 
     return { total, distributed, remaining };

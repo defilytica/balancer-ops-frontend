@@ -36,10 +36,8 @@ import {
   RewardsInjectorData,
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
-import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
-import { AddressBook, AddressOption } from "@/types/interfaces";
+import { AddressOption } from "@/types/interfaces";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
-import { TbSettingsDollar } from "react-icons/tb";
 
 type Recipient = {
   gaugeAddress: string;
@@ -72,6 +70,7 @@ function RewardsInjector({
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
+  const [tokenDecimals, setTokenDecimals] = useState(0);
   const [isMobile] = useMediaQuery("(max-width: 48em)");
 
   useEffect(() => {
@@ -170,8 +169,12 @@ function RewardsInjector({
                         ? `${selectedAddress.address.slice(0, 6)}...`
                         : selectedAddress.address}
                     </Text>
-                    {" - "}
-                    {formatTokenName(selectedAddress.token)}
+                    {!isV2 && (
+                      <>
+                        {" - "}
+                        {formatTokenName(selectedAddress.token)}
+                      </>
+                    )}
                   </Text>
                 </Flex>
               ) : (
@@ -196,8 +199,12 @@ function RewardsInjector({
                       <Text as="span" fontFamily="mono" isTruncated>
                         {address.address}
                       </Text>
-                      {" - "}
-                      {formatTokenName(address.token)}
+                      {!isV2 && (
+                        <>
+                          {" - "}
+                          {formatTokenName(address.token)}
+                        </>
+                      )}
                     </Text>
                   </Flex>
                 </MenuItem>
@@ -338,6 +345,7 @@ function RewardsInjector({
             <RewardsInjectorTable
               data={gauges}
               tokenSymbol={tokenSymbol}
+              isV2={isV2}
               network={
                 selectedAddress ? selectedAddress.network.toLowerCase() : ""
               }

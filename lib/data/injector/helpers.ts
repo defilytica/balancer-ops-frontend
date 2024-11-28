@@ -73,12 +73,13 @@ export async function fetchGaugeInfoV2(
     ]);
 
     return {
-      address: gaugeAddress,
-      amountPerPeriod: amountPerPeriod.toString(),
+      gaugeAddress: gaugeAddress,
+      amountPerPeriod: formatTokenAmount(amountPerPeriod, injectTokenAddress),
+      rawAmountPerPeriod: amountPerPeriod.toString(),
       isActive,
       maxPeriods: maxPeriods.toString(),
       periodNumber: periodNumber.toString(),
-      lastInjectionTimestamp: lastInjectionTimestamp.toString(),
+      lastInjectionTimeStamp: lastInjectionTimestamp.toString(),
       doNotStartBeforeTimestamp: doNotStartBeforeTimestamp.toString(),
       balance: balance.toString(),
       network,
