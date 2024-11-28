@@ -118,6 +118,52 @@ type GqlHistoricalTokenPriceEntry {
   updatedBy: String
 }
 
+"""Hook data"""
+type GqlHook {
+  address: String!
+
+  """Data points changing over time"""
+  dynamicData: GqlHookData
+
+  """
+  True when hook can change the amounts send to the vault. Necessary to deduct the fees.
+  """
+  enableHookAdjustedAmounts: Boolean!
+
+  """The review for this hook if applicable."""
+  reviewData: GqlHookReviewData
+  shouldCallAfterAddLiquidity: Boolean!
+  shouldCallAfterInitialize: Boolean!
+  shouldCallAfterRemoveLiquidity: Boolean!
+  shouldCallAfterSwap: Boolean!
+  shouldCallBeforeAddLiquidity: Boolean!
+  shouldCallBeforeInitialize: Boolean!
+  shouldCallBeforeRemoveLiquidity: Boolean!
+  shouldCallBeforeSwap: Boolean!
+  shouldCallComputeDynamicSwapFee: Boolean!
+}
+
+"""Collection of hook specific data. Percentage format is 0.01 -> 0.01%."""
+type GqlHookData {
+  addLiquidityFeePercentage: String
+  maxSurgeFeePercentage: String
+  removeLiquidityFeePercentage: String
+  surgeThresholdPercentage: String
+  swapFeePercentage: String
+}
+
+"""Represents the review data for the hook"""
+type GqlHookReviewData {
+  """The filename of the review of the hook"""
+  reviewFile: String!
+
+  """A summary of the hook review, usually just says safe or unsafe"""
+  summary: String!
+
+  """Warnings associated with the hook"""
+  warnings: [String!]!
+}
+
 type GqlLatestSyncedBlocks {
   poolSyncBlock: BigInt!
   userStakeSyncBlock: BigInt!
@@ -141,7 +187,7 @@ type GqlNestedPool {
   factory: Bytes
 
   """Hook assigned to a pool"""
-  hook: Hook
+  hook: GqlHook
 
   """Unique identifier of the pool."""
   id: ID!
@@ -271,7 +317,7 @@ type GqlPoolAggregator {
   factory: Bytes
 
   """Hook assigned to a pool"""
-  hook: Hook
+  hook: GqlHook
 
   """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
@@ -492,7 +538,7 @@ interface GqlPoolBase {
   hasNestedErc4626: Boolean!
 
   """Hook assigned to a pool"""
-  hook: Hook
+  hook: GqlHook
 
   """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
@@ -594,7 +640,7 @@ type GqlPoolComposableStable implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -708,7 +754,7 @@ type GqlPoolElement implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -875,7 +921,7 @@ type GqlPoolFx implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
@@ -915,7 +961,7 @@ type GqlPoolGyro implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
@@ -1003,7 +1049,7 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -1040,7 +1086,7 @@ type GqlPoolMetaStable implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -1101,7 +1147,7 @@ type GqlPoolMinimal {
   hasNestedErc4626: Boolean!
 
   """Hook assigned to a pool"""
-  hook: Hook
+  hook: GqlHook
 
   """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
@@ -1230,7 +1276,7 @@ type GqlPoolStable implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -1671,7 +1717,7 @@ type GqlPoolWeighted implements GqlPoolBase {
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
-  hook: Hook
+  hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
@@ -2476,57 +2522,6 @@ type GqlVotingPool {
   type: GqlPoolType!
 }
 
-"""Hook data"""
-type Hook {
-  address: String!
-  chain: GqlChain!
-
-  """Data points changing over time"""
-  dynamicData: HookData
-
-  """
-  True when hook can change the amounts send to the vault. Necessary to deduct the fees.
-  """
-  enableHookAdjustedAmounts: Boolean!
-
-  """List of pools using the hook"""
-  poolsIds: [String]
-
-  """The review for this hook if applicable."""
-  reviewData: HookReviewData
-  shouldCallAfterAddLiquidity: Boolean!
-  shouldCallAfterInitialize: Boolean!
-  shouldCallAfterRemoveLiquidity: Boolean!
-  shouldCallAfterSwap: Boolean!
-  shouldCallBeforeAddLiquidity: Boolean!
-  shouldCallBeforeInitialize: Boolean!
-  shouldCallBeforeRemoveLiquidity: Boolean!
-  shouldCallBeforeSwap: Boolean!
-  shouldCallComputeDynamicSwapFee: Boolean!
-}
-
-"""Collection of hook specific data. Percentage format is 0.01 -> 0.01%."""
-type HookData {
-  addLiquidityFeePercentage: String
-  removeLiquidityFeePercentage: String
-  swapFeePercentage: String
-}
-
-"""Represents the review data for the hook"""
-type HookReviewData {
-  """The name of the hook"""
-  name: String!
-
-  """The filename of the review of the hook"""
-  reviewFile: String!
-
-  """A summary of the hook review, usually just says safe or unsafe"""
-  summary: String!
-
-  """Warnings associated with the hook"""
-  warnings: [String!]!
-}
-
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -2604,9 +2599,6 @@ type Query {
   blocksGetBlocksPerSecond: Float!
   blocksGetBlocksPerYear: Float!
   contentGetNewsItems(chain: GqlChain): [GqlContentNewsItem!]!
-
-  """Returns list of hooks."""
-  hooks(chain: GqlChain): [Hook!]
   latestSyncedBlocks: GqlLatestSyncedBlocks!
 
   """Getting swap, add and remove events with paging"""
@@ -2672,6 +2664,9 @@ type Query {
     Whether it should consider pools that have hooks. Default is false if not provided.
     """
     considerPoolsWithHooks: Boolean
+
+    """Use specified poolIds only"""
+    poolIds: [String!]
 
     """
     Whether to run queryBatchSwap to update the return amount with most up-to-date on-chain values, default: false
