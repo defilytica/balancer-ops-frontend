@@ -98,6 +98,7 @@ model Gauge {
   periodNumber           String
   lastInjectionTimeStamp String
   isRewardTokenSetup     Boolean  @default(true)
+  doNotStartBeforeTimestamp String?
   injector               Injector @relation(fields: [injectorId], references: [id])
   injectorId             String
 }
