@@ -97,6 +97,7 @@ model Gauge {
   maxPeriods             String
   periodNumber           String
   lastInjectionTimeStamp String
+  isRewardTokenSetup     Boolean
   injector               Injector @relation(fields: [injectorId], references: [id])
   injectorId             String
 }

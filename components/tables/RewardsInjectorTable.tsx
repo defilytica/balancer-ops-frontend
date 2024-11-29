@@ -31,6 +31,7 @@ export interface RewardsInjectorData {
   rawAmountPerPeriod: string;
   periodNumber: string;
   maxPeriods: string;
+  isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
   doNotStartBeforeTimestamp?: string;
 }

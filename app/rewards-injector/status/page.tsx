@@ -58,6 +58,9 @@ const RewardsInjectorStatusPage = () => {
             ? remaining - injector.contractBalance
             : 0;
 
+        const incorrectlySetupGauges = injector.gauges.filter(
+          (gauge: any) => !gauge.isRewardTokenSetup,
+        );
 
         return {
           ...injector,
