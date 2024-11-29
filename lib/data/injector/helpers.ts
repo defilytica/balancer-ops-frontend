@@ -62,14 +62,8 @@ export async function fetchGaugeInfoV2(
         lastInjectionTimestamp,
         doNotStartBeforeTimestamp,
       },
-      balance,
     ] = await Promise.all([
       contract.getGaugeInfo(gaugeAddress),
-      getInjectTokenBalanceForAddress(
-        injectTokenAddress,
-        gaugeAddress,
-        provider,
-      ),
     ]);
 
     return {
@@ -80,7 +74,6 @@ export async function fetchGaugeInfoV2(
       periodNumber: periodNumber.toString(),
       lastInjectionTimeStamp: lastInjectionTimestamp.toString(),
       doNotStartBeforeTimestamp: doNotStartBeforeTimestamp.toString(),
-      balance: balance.toString(),
       network,
     };
   });
