@@ -91,7 +91,7 @@ model TokenInfo {
 model Gauge {
   id                     String   @id @default(cuid())
   gaugeAddress           String
-  poolName               String
+  poolName               String?
   amountPerPeriod        String
   rawAmountPerPeriod     String
   maxPeriods             String
