@@ -86,14 +86,15 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
 
   const formatDatetime = (timestamp: string) => {
     const date = new Date(Number(timestamp) * 1000);
-
-    // Check if the date is January 1, 1970 (Unix epoch start)
-    if (date.getTime() === 0) {
-      return "-";
-    }
-
-    return date.toLocaleString([], { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+    if (date.getTime() === 0) return "-";
+    return date.toLocaleString([], {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
   };
+
 
   const SortableHeader: React.FC<{
     column: keyof RewardsInjectorData;
@@ -152,6 +153,12 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
                 <Text>Last Injection:</Text>
                 <Text>{formatDate(row.lastInjectionTimeStamp)}</Text>
               </HStack>
+              {isV2 && row.doNotStartBeforeTimestamp && (
+                <HStack justify="space-between">
+                  <Text>Starts At:</Text>
+                  <Text>{formatDatetime(row.doNotStartBeforeTimestamp)}</Text>
+                </HStack>
+              )}
             </VStack>
           </Card>
         ))}
@@ -164,34 +171,34 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
       <Table variant="simple" size="sm">
         <Thead>
           <Tr>
-            <Th>
+          <Th width="25%">
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
             {!isV2 && (
-              <Th>
+              <Th width="20%">
                 <SortableHeader column="poolName" label="Name" />
               </Th>
             )}
-            <Th>
+            <Th width="20%">
               <SortableHeader
                 column="amountPerPeriod"
                 label="Amount Per Period"
               />
             </Th>
-            <Th>
+            <Th width="8%">
               <SortableHeader column="periodNumber" label="Period Number" />
             </Th>
-            <Th>
+            <Th width="8%">
               <SortableHeader column="maxPeriods" label="Max Periods" />
             </Th>
-            <Th>
+            <Th width="15%">
               <SortableHeader
                 column="lastInjectionTimeStamp"
                 label="Last Injection"
               />
             </Th>
             {isV2 && (
-              <Th>
+          <Th width="24%">
                 <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
               </Th>
             )}
