@@ -78,7 +78,6 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
       rawAmountPerPeriod: "0",
       periodNumber: "0",
       maxPeriods: "",
-      isRewardTokenSetup: true,
       lastInjectionTimeStamp: "0",
     };
     setConfig([...config, newRow]);

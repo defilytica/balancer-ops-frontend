@@ -26,7 +26,6 @@ interface RewardsInjectorData {
   rawAmountPerPeriod: string;
   periodNumber: string;
   maxPeriods: string;
-  isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
 }
 
@@ -90,13 +89,6 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                         {gauge.poolName}
                       </Text>
                     </VStack>
-                    <Badge
-                      colorScheme={
-                        gauge.isRewardTokenSetup ? "green" : "yellow"
-                      }
-                    >
-                      {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
-                    </Badge>
                   </HStack>
 
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>

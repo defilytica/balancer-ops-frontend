@@ -23,7 +23,6 @@ interface GaugeInfo {
   maxPeriods: string;
   periodNumber: string;
   lastInjectionTimeStamp: string;
-  isRewardTokenSetup: boolean;
 }
 
 interface DistributionAmounts {
@@ -111,15 +110,10 @@ export async function fetchGaugeInfo(
           .catch(() => null),
       ]);
 
-      const isRewardTokenSetup =
-        network === "mainnet" ||
-        (rewardData !== null && rewardData[0] === injectorAddress);
-
       return {
         gaugeAddress: address,
         accountInfo,
         lpToken,
-        isRewardTokenSetup,
       };
     },
   );
@@ -139,7 +133,6 @@ export async function fetchGaugeInfo(
       periodNumber: info.accountInfo.periodNumber.toString(),
       lastInjectionTimeStamp:
         info.accountInfo.lastInjectionTimeStamp.toString(),
-      isRewardTokenSetup: info.isRewardTokenSetup,
     })),
   );
 }

@@ -124,9 +124,6 @@ function RewardsInjector({
       ? totalAmountRemaining - contractBalance
       : 0;
 
-  const incorrectlySetupGauges = gauges.filter(
-    (gauge) => !gauge.isRewardTokenSetup,
-  );
 
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
