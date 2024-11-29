@@ -33,18 +33,21 @@ export interface RewardsInjectorData {
   maxPeriods: string;
   isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
+  doNotStartBeforeTimestamp?: string;
 }
 
 interface RewardsInjectorTableProps {
   data: RewardsInjectorData[];
   tokenSymbol: string;
   network: string;
+  isV2: boolean;
 }
 
 export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   data,
   tokenSymbol,
   network,
+  isV2,
 }) => {
   const [sortColumn, setSortColumn] = useState<
     keyof RewardsInjectorData | null
@@ -64,6 +67,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
 
   const sortedData = [...data].sort((a, b) => {
     if (!sortColumn) return 0;
+    if (a[sortColumn] === undefined || b[sortColumn] === undefined) return 0;
     if (a[sortColumn] < b[sortColumn]) return sortDirection === "asc" ? -1 : 1;
     if (a[sortColumn] > b[sortColumn]) return sortDirection === "asc" ? 1 : -1;
     return 0;
@@ -79,6 +83,18 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
 
     return date.toLocaleDateString();
   };
+
+  const formatDatetime = (timestamp: string) => {
+    const date = new Date(Number(timestamp) * 1000);
+    if (date.getTime() === 0) return "-";
+    return date.toLocaleString([], {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
+  };
+
 
   const SortableHeader: React.FC<{
     column: keyof RewardsInjectorData;
@@ -137,42 +153,55 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
                 <Text>Last Injection:</Text>
                 <Text>{formatDate(row.lastInjectionTimeStamp)}</Text>
               </HStack>
+              {isV2 && row.doNotStartBeforeTimestamp && (
+                <HStack justify="space-between">
+                  <Text>Starts At:</Text>
+                  <Text>{formatDatetime(row.doNotStartBeforeTimestamp)}</Text>
+                </HStack>
+              )}
             </VStack>
           </Card>
         ))}
       </VStack>
     );
   }
-
+  console.log(sortedData);
   return sortedData.length > 0 ? (
     <Card overflowX="auto">
       <Table variant="simple" size="sm">
         <Thead>
           <Tr>
-            <Th>
+          <Th width="25%">
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
-            <Th>
-              <SortableHeader column="poolName" label="Name" />
-            </Th>
-            <Th>
+            {!isV2 && (
+              <Th width="20%">
+                <SortableHeader column="poolName" label="Name" />
+              </Th>
+            )}
+            <Th width="20%">
               <SortableHeader
                 column="amountPerPeriod"
                 label="Amount Per Period"
               />
             </Th>
-            <Th>
+            <Th width="8%">
               <SortableHeader column="periodNumber" label="Period Number" />
             </Th>
-            <Th>
+            <Th width="8%">
               <SortableHeader column="maxPeriods" label="Max Periods" />
             </Th>
-            <Th>
+            <Th width="15%">
               <SortableHeader
                 column="lastInjectionTimeStamp"
                 label="Last Injection"
               />
             </Th>
+            {isV2 && (
+          <Th width="24%">
+                <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
+              </Th>
+            )}
           </Tr>
         </Thead>
         <Tbody>
@@ -181,14 +210,18 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-
-              <Td>{row.poolName}</Td>
+              {!isV2 && (
+                <Td>{row.poolName}</Td>
+              )}
               <Td
                 isNumeric
               >{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
               <Td isNumeric>{row.periodNumber}</Td>
               <Td isNumeric>{row.maxPeriods}</Td>
               <Td>{formatDate(row.lastInjectionTimeStamp)}</Td>
+              {isV2 && row.doNotStartBeforeTimestamp && (
+                <Td>{formatDatetime(row.doNotStartBeforeTimestamp)}</Td>
+              )}
             </Tr>
           ))}
         </Tbody>

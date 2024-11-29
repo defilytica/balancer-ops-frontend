@@ -4,7 +4,7 @@ import { InjectorABIV2 } from "@/abi/InjectorV2";
 import { networks } from "@/constants/constants";
 import { prisma } from "@/prisma/prisma";
 import {
-  fetchGaugeInfo,
+  fetchGaugeInfoV2,
   fetchTokenInfo,
   getInjectTokenBalanceForAddress,
 } from "@/lib/data/injector/helpers";
@@ -123,7 +123,7 @@ async function fetchFreshDataV2(address: string, network: string) {
   ]);
 
   const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
-  const gauges = await fetchGaugeInfo(
+  const gauges = await fetchGaugeInfoV2(
     activeGaugeList,
     contract,
     provider,

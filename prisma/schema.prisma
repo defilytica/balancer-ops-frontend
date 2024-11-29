@@ -91,13 +91,14 @@ model TokenInfo {
 model Gauge {
   id                     String   @id @default(cuid())
   gaugeAddress           String
-  poolName               String
+  poolName               String?
   amountPerPeriod        String
   rawAmountPerPeriod     String
   maxPeriods             String
   periodNumber           String
   lastInjectionTimeStamp String
-  isRewardTokenSetup     Boolean
+  isRewardTokenSetup     Boolean  @default(true)
+  doNotStartBeforeTimestamp String?
   injector               Injector @relation(fields: [injectorId], references: [id])
   injectorId             String
 }
