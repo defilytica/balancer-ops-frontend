@@ -74,7 +74,6 @@ export async function fetchGaugeInfoV2(
       periodNumber: periodNumber.toString(),
       lastInjectionTimeStamp: lastInjectionTimestamp.toString(),
       doNotStartBeforeTimestamp: doNotStartBeforeTimestamp.toString(),
-      network,
     };
   });
 
