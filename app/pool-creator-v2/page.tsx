@@ -1,5 +1,5 @@
 'use client'
-import { Box, Card, CardBody, CardHeader, Divider, Flex, Grid, GridItem, Heading, Stack, useToast } from '@chakra-ui/react';
+import { Box, Card, CardBody, CardHeader, Divider, Flex, Grid, GridItem, Heading, Stack, useToast, Text } from '@chakra-ui/react';
 import React, { useCallback, useState } from 'react';
 import { PoolTypeSelector } from "@/components/poolCreator/PoolTypeSelector";
 import { PoolCreatorStepper } from "@/components/poolCreator/PoolCreatorStepper";
@@ -11,6 +11,7 @@ import { PoolSettingsComponent } from "@/components/poolCreator/PoolSettings";
 import { initialConfig, usePoolCreator } from "@/lib/shared/hooks/usePoolCreator";
 import PoolLookup from '@/components/poolCreator/PoolLookup';
 import { PoolConfig } from '@/types/interfaces';
+import { AlertCircle } from 'react-feather';
 
 const PoolCreatorPage: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0);
@@ -217,7 +218,19 @@ const PoolCreatorPage: React.FC = () => {
                 <GridItem>
                     <ConfigurationCard config={poolConfig} onSettingsUpdate={updateSettings} />
                 </GridItem>
+
+                <Card variant="outline">
+                    <CardBody>
+                        <Flex align="center">
+                            <AlertCircle color="red" />
+                            <Text fontSize="sm" color="white" ml={2}>
+                                Creating and adding liquidity to pools involves significant risks. Carefully review all pool parameters and ensure you understand the implications before deployment. We are not responsible for any losses incurred through pool creation or management using this tool.
+                            </Text>
+                        </Flex>
+                    </CardBody>
+                </Card>
             </Grid>
+
         </Box>
     )
 };
