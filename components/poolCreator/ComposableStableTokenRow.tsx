@@ -32,8 +32,6 @@ interface ComposableStableTokenRowProps {
     skipCreate: boolean;
 }
 
-const defaultRateProvider = "0x0000000000000000000000000000000000000000";
-
 export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> = ({
                                                                                       token,
                                                                                       index,
@@ -163,14 +161,6 @@ export const ComposableStableTokenRow: React.FC<ComposableStableTokenRowProps> =
                                 onClick={() => onSetDefaultRateProvider(index)}
                                 aria-label="Set default rate provider"
                                 isDisabled={skipCreate}
-                            />
-                        </Tooltip>
-                        <Tooltip label="Rate provider info">
-                            <IconButton
-                                icon={<InfoIcon />}
-                                size="sm"
-                                variant="ghost"
-                                aria-label="Rate provider information"
                             />
                         </Tooltip>
                     </HStack>

@@ -162,17 +162,18 @@ export const ComposableStablePoolConfig = ({
 
     const handleRateProviderChange = (index: number, rateProvider: string) => {
         const newTokens = tokens.map((token, i) => {
-            if (i === index) {
-                const newRateProvider = !rateProvider || !rateProvider.match(/^0x[a-fA-F0-9]{40}$/)
-                    ? token.rateProvider
-                    : rateProvider;
+            if (i === index) { 
+                const newRateProvider = rateProvider === '' || rateProvider.match(/^0x[a-fA-F0-9]{40}$/)
+                    ? rateProvider
+                    : token.rateProvider;
                 return { ...token, rateProvider: newRateProvider };
             }
             return token;
         });
-        setTokens(newTokens); // No need to redistribute weights here
+        setTokens(newTokens);
     };
 
+    
     const handleSetDefaultRateProvider = (index: number) => {
         const newTokens = tokens.map((token, i) => {
             if (i === index) {

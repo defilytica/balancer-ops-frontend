@@ -390,7 +390,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
     return (
         <Card variant="elevated" mt={8}>
             <CardHeader>
-                <Heading size="md">Pool Lookup</Heading>
+                <Heading size="md">Provide Initial Liquidity to an Existing Pool</Heading>
             </CardHeader>
             <CardBody>
                 <VStack spacing={4} align="stretch">

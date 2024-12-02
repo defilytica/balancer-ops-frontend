@@ -79,7 +79,8 @@ export const PoolSettingsComponent = ({
         ...(config.type === 'weighted' ? {
             weightedSpecific: {
                 feeManagement: {
-                    type: 'fixed'
+                    type: 'governance',
+                    owner: GOVERNANCE_ADDRESS
                 }
             }
         } : {
@@ -89,7 +90,8 @@ export const PoolSettingsComponent = ({
                 rateCacheDuration: '60', // Default 1 minute
                 yieldFeeExempt: false,
                 feeManagement: {
-                    type: 'fixed'
+                    type: 'governance',
+                    owner: GOVERNANCE_ADDRESS
                 }
             }
         }),

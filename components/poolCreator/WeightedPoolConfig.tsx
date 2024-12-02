@@ -160,10 +160,15 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate, skipCreate }: Weigh
     }
 
     const updateWeight = (index: number, newWeight: number) => {
+        // Handle empty/invalid input
+        if (isNaN(newWeight)) {
+            newWeight = 0;
+        }
+    
         const newTokens = [...tokens];
         const oldWeight = tokens[index].weight || 0;
         const weightDifference = newWeight - oldWeight;
-
+    
         if (tokens[index].locked) {
             toast({
                 title: 'Token is locked',
@@ -172,18 +177,19 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate, skipCreate }: Weigh
             });
             return;
         }
-
+    
+        // Find adjustable tokens (excluding the current one and any locked ones)
         const adjustableTokens = tokens.filter((t, i) =>
             i !== index &&
-            t.weight > 0 &&
             !t.locked
         );
-
+    
         const lockedWeight = tokens.reduce((sum, t, i) =>
             i !== index && t.locked ? sum + (t.weight || 0) : sum,
             0
         );
-
+    
+        // If no other adjustable tokens, just validate total
         if (adjustableTokens.length === 0) {
             const newTotal = lockedWeight + newWeight;
             if (newTotal > 100) {
@@ -198,9 +204,8 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate, skipCreate }: Weigh
             setTokens(newTokens);
             return;
         }
-
-        const totalAdjustableWeight = adjustableTokens.reduce((sum, t) => sum + (t.weight || 0), 0);
-
+    
+        // Check if the new weight plus locked weights exceeds 100
         if (lockedWeight + newWeight > 100) {
             toast({
                 title: 'Invalid weight',
@@ -209,35 +214,50 @@ export const WeightedPoolConfig = ({ config, onConfigUpdate, skipCreate }: Weigh
             });
             return;
         }
-
+    
+        // Calculate remaining weight to distribute
         const remainingWeight = 100 - lockedWeight - newWeight;
-        const adjustmentRatio = remainingWeight / totalAdjustableWeight;
-
+        
+        // Get total of current adjustable weights
+        const totalAdjustableWeight = adjustableTokens.reduce((sum, t) => sum + (t.weight || 0), 0);
+        
+        // Calculate adjustment ratio (if total adjustable weight is 0, distribute equally)
+        const adjustmentRatio = totalAdjustableWeight === 0 
+            ? remainingWeight / adjustableTokens.length 
+            : remainingWeight / totalAdjustableWeight;
+    
+        // Update all tokens
         newTokens.forEach((token, i) => {
             if (i === index) {
                 newTokens[i] = { ...token, weight: newWeight };
-            } else if (token.weight > 0 && !token.locked) {
-                const adjustedWeight = Math.max(0, Math.round(token.weight * adjustmentRatio));
+            } else if (!token.locked) {
+                let adjustedWeight;
+                if (totalAdjustableWeight === 0) {
+                    // If all adjustable weights were 0, distribute remaining weight equally
+                    adjustedWeight = Math.round(remainingWeight / adjustableTokens.length);
+                } else {
+                    adjustedWeight = Math.max(0, Math.round((token.weight || 0) * adjustmentRatio));
+                }
                 newTokens[i] = { ...token, weight: adjustedWeight };
             }
         });
-
+    
+        // Handle rounding errors to ensure total is exactly 100
         const newTotal = newTokens.reduce((sum, t) => sum + (t.weight || 0), 0);
         if (newTotal !== 100 && adjustableTokens.length > 0) {
             const largestAdjustableToken = newTokens
-                .map((t, i) => ({ weight: t.weight || 0, index: i,
-                    locked: false
-                }))
-                .filter(t => t.index !== index && t.weight > 0 && !t.locked)
+                .map((t, i) => ({ weight: t.weight || 0, index: i, locked: t.locked }))
+                .filter(t => t.index !== index && !t.locked)
                 .sort((a, b) => b.weight - a.weight)[0];
-
+    
             if (largestAdjustableToken) {
                 newTokens[largestAdjustableToken.index].weight += (100 - newTotal);
             }
         }
-
+    
         setTokens(newTokens);
     };
+
     const handleOptimize = () => {
         const optimizedTokens = optimizeAmounts(tokens);
         setTokens(optimizedTokens);

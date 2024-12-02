@@ -84,11 +84,10 @@ export const TokenSelector = ({
 
     return (
         <>
-            <InputGroup>
+            <InputGroup onClick={!isDisabled ? onOpen : undefined}>
                 <Input
                     value={selectedToken ? `${selectedToken.symbol}` : ''}
                     placeholder={placeholder}
-                    onClick={!isDisabled ? onOpen : undefined}
                     readOnly
                     cursor={isDisabled ? 'not-allowed' : 'pointer'}
                 />
