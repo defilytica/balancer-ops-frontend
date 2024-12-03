@@ -137,7 +137,7 @@ export const NETWORK_OPTIONS = [
     label: "Ethereum",
     apiID: "MAINNET",
     chainId: "1",
-    maxiSafe: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    maxiSafe: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   },
   {
