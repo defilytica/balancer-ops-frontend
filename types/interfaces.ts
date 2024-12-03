@@ -42,6 +42,11 @@ export interface Pool {
   version: string;
   createTime: string;
   owner: string;
+  staking: {
+    gauge: {
+      id: string;
+    }
+  }
   dynamicData: {
     swapFee: string;
     poolId: string;

@@ -39,7 +39,7 @@ import {
     Popover,
     PopoverTrigger,
     PopoverContent,
-    PopoverBody, VStack, Center, UnorderedList, OrderedList, HStack, Badge,
+    PopoverBody, VStack, Center, UnorderedList, OrderedList, HStack, Badge, InputGroup, InputRightElement, IconButton,
 } from "@chakra-ui/react";
 import {useAccount, useSwitchChain} from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
@@ -47,7 +47,7 @@ import { ethers } from 'ethers';
 import { GetPoolsDocument, GetPoolsQuery, GetPoolsQueryVariables } from "@/lib/services/apollo/generated/graphql";
 import { AddressBook, Pool } from "@/types/interfaces";
 import {GAUGE_WEIGHT_CAPS, MAINNET_GAUGE_FACTORY, NETWORK_OPTIONS} from "@/constants/constants";
-import { ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
+import {CloseIcon, ExternalLinkIcon, InfoIcon} from "@chakra-ui/icons";
 import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
 import { ChildGaugeFactory } from "@/abi/ChildGaugeFactory";
@@ -64,8 +64,15 @@ interface TransactionState {
     address?: string;
 }
 
-
-
+interface PoolItem {
+    name: string;
+    address: string;
+    staking?: {
+        gauge?: {
+            id: string;
+        };
+    };
+}
 
 const getContract = (address: string, abi: any, signer: ethers.Signer) => {
     return new ethers.Contract(address, abi, signer);
@@ -78,6 +85,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     const [activeStep, setActiveStep] = useState(0);
     const [weightCap, setWeightCap] = useState<WeightCapType>(GAUGE_WEIGHT_CAPS.TWO_PERCENT);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
 
     const toast = useToast();
     const { address } = useAccount();
@@ -101,6 +109,25 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                 pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
         );
     }, [data?.poolGetPools, searchTerm]);
+
+    // Add condition to check for existing gauge
+    const hasExistingGauge = useMemo(() => {
+        return selectedPool?.staking?.gauge?.id != null;
+    }, [selectedPool]);
+    console.log("selectedPool", selectedPool);
+
+    // Add pool selection handler
+    const handlePoolSelect = (pool: Pool) => {
+        setSelectedPool(pool);
+        setIsOpen(false); // Close popover after selection
+        setSearchTerm(""); // Reset search term
+    };
+
+    // Add a function to reset selection
+    const clearPoolSelection = () => {
+        setSelectedPool(null);
+        setSearchTerm("");
+    };
 
     const getChildChainFactoryForNetwork = useCallback((network: string) => {
         const childChainFactory = addressBook.active[network.toLowerCase()]?.["20230316-child-chain-gauge-factory-v2"]?.["ChildChainGaugeFactory"];
@@ -284,6 +311,26 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         }
     };
 
+    // Format pool display function
+    const formatPoolDisplay = (pool: PoolItem) => {
+        const hasGauge = pool.staking?.gauge?.id != null;
+        return (
+            <HStack justify="space-between" width="100%">
+                <Text isTruncated maxW="60%">{pool.name}</Text>
+                <HStack spacing={2}>
+                    {hasGauge && (
+                        <Badge colorScheme="blue" fontSize="xs">
+                            Has Gauge
+                        </Badge>
+                    )}
+                    <Text color="gray.500" fontSize="sm">
+                        {pool.address.slice(0, 6)}...{pool.address.slice(-4)}
+                    </Text>
+                </HStack>
+            </HStack>
+        );
+    };
+
     return (
         <Container maxW="container.lg">
             {/* Header Section */}
@@ -311,6 +358,19 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                         </UnorderedList>
                     </AlertDescription>
                 </Alert>
+
+                {hasExistingGauge && (
+                <Alert status="warning" mt={4}>
+                    <AlertIcon />
+                    <AlertDescription>
+                        <Text fontWeight="bold" mb={2}>Existing Gauge Detected</Text>
+                        <Text>
+                            This pool already has a gauge (ID: {selectedPool?.staking?.gauge?.id}).
+                            Creating a new gauge is not necessary and could cause issues.
+                        </Text>
+                    </AlertDescription>
+                </Alert>
+                )}
             </Box>
 
             {/* Configuration Section */}
@@ -336,41 +396,99 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                     {selectedNetwork && (
                         <FormControl>
                             <FormLabel>Pool</FormLabel>
-                            <Popover>
+                            <Popover
+                                isOpen={isOpen}
+                                onClose={() => setIsOpen(false)}
+                                autoFocus={false}
+                            >
                                 <PopoverTrigger>
-                                    <Input
-                                        value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
-                                        placeholder="Search and select a pool"
-                                        readOnly
-                                    />
+                                    <InputGroup>
+                                        <Input
+                                            value={selectedPool ? selectedPool.name : ""}
+                                            placeholder="Search and select a pool"
+                                            onClick={() => setIsOpen(true)}
+                                            readOnly
+                                        />
+                                        {selectedPool && (
+                                            <InputRightElement>
+                                                <IconButton
+                                                    aria-label="Clear selection"
+                                                    icon={<CloseIcon />}
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        clearPoolSelection();
+                                                    }}
+                                                />
+                                            </InputRightElement>
+                                        )}
+                                    </InputGroup>
                                 </PopoverTrigger>
-                                <PopoverContent width="100%">
+                                <PopoverContent width={["400px", "400px", "600px", "800px"]}>
                                     <PopoverBody>
                                         <VStack align="stretch" spacing={3}>
-                                            <Input
-                                                placeholder="Search pools..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                            />
+                                            <InputGroup>
+                                                <Input
+                                                    placeholder="Search by name or address..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                {searchTerm && (
+                                                    <InputRightElement>
+                                                        <IconButton
+                                                            aria-label="Clear search"
+                                                            icon={<CloseIcon />}
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => setSearchTerm("")}
+                                                        />
+                                                    </InputRightElement>
+                                                )}
+                                            </InputGroup>
+
                                             {loading ? (
-                                                <Center><Spinner /></Center>
+                                                <Center py={4}><Spinner /></Center>
                                             ) : error ? (
                                                 <Alert status="error">
                                                     <AlertIcon />
                                                     <AlertDescription>{error.message}</AlertDescription>
                                                 </Alert>
+                                            ) : filteredPools.length === 0 ? (
+                                                <Text color="gray.500" textAlign="center" py={4}>
+                                                    No pools found
+                                                </Text>
                                             ) : (
-                                                <List maxH="200px" overflowY="auto">
+                                                <List
+                                                    maxH="300px"
+                                                    overflowY="auto"
+                                                    borderRadius="md"
+                                                    css={{
+                                                        '&::-webkit-scrollbar': {
+                                                            width: '4px',
+                                                        },
+                                                        '&::-webkit-scrollbar-track': {
+                                                            width: '6px',
+                                                        },
+                                                        '&::-webkit-scrollbar-thumb': {
+                                                            background: 'gray.200',
+                                                            borderRadius: '24px',
+                                                        },
+                                                    }}
+                                                >
                                                     {filteredPools.map((pool) => (
                                                         <ListItem
                                                             key={pool.address}
-                                                            onClick={() => setSelectedPool(pool as unknown as Pool)}
+                                                            onClick={() => handlePoolSelect(pool as unknown as Pool)}
                                                             cursor="pointer"
-                                                            _hover={{ bg: "gray.100" }}
-                                                            p={2}
-                                                            borderRadius="md"
+                                                            _hover={{ bg: "gray.50" }}
+                                                            p={3}
+                                                            borderBottomWidth="1px"
+                                                            borderBottomColor="gray.100"
+                                                            transition="background-color 0.2s"
                                                         >
-                                                            {pool.name} - {pool.address.slice(0, 6)}...{pool.address.slice(-4)}
+                                                            {formatPoolDisplay(pool as unknown as Pool)}
                                                         </ListItem>
                                                     ))}
                                                 </List>
