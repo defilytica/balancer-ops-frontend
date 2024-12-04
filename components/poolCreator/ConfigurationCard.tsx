@@ -172,27 +172,39 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                                     <Td fontWeight="medium"> <Text fontSize="sm">Swap Fee </Text></Td>
                                     <Td>{config.settings.swapFee}%</Td>
                                 </Tr>
-                                {config.type === 'weighted' && config.settings.weightedSpecific && (
+                                {config.settings && (
                                     <>
                                         <Tr>
                                             <Td fontWeight="medium"> <Text fontSize="sm">Fee Management </Text></Td>
                                             <Td>
-                                                <Tag size="sm" colorScheme={config.settings.weightedSpecific.feeManagement ? 'green' : 'red'}>
-                                                    {config.settings.weightedSpecific.feeManagement.type}
+                                                <Tag size="sm" colorScheme={config.settings.weightedSpecific?.feeManagement || config.settings.stableSpecific?.feeManagement ? 'green' : 'red'}>
+                                                    {config.type === 'weighted' ? config.settings.weightedSpecific?.feeManagement.type : config.settings.stableSpecific?.feeManagement.type}
                                                 </Tag>
                                             </Td>
                                         </Tr>
                                         <Tr>
                                             <Td fontWeight="medium"> <Text fontSize="sm">Owner </Text></Td>
                                             <Td>
-                                                {config.settings.weightedSpecific.feeManagement.owner ? (
-                                                    <Tooltip label={config.settings.weightedSpecific.feeManagement.owner}>
-                                                        <Text fontSize="xs" fontFamily="mono">
-                                                            {`${config.settings.weightedSpecific.feeManagement.owner.slice(0, 6)}...${config.settings.weightedSpecific.feeManagement.owner.slice(-4)}`}
-                                                        </Text>
-                                                    </Tooltip>
+                                                {config.type === 'weighted' ? (
+                                                    config.settings.weightedSpecific?.feeManagement.owner ? (
+                                                        <Tooltip label={config.settings.weightedSpecific.feeManagement.owner}>
+                                                            <Text fontSize="xs" fontFamily="mono">
+                                                                {`${config.settings.weightedSpecific.feeManagement.owner.slice(0, 6)}...${config.settings.weightedSpecific.feeManagement.owner.slice(-4)}`}
+                                                            </Text>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Text fontSize="xs" fontFamily="mono">N/A</Text>
+                                                    )
                                                 ) : (
-                                                    <Text fontSize="xs" fontFamily="mono">N/A</Text>
+                                                    config.settings.stableSpecific?.feeManagement.owner ? (
+                                                        <Tooltip label={config.settings.stableSpecific.feeManagement.owner}>
+                                                            <Text fontSize="xs" fontFamily="mono">
+                                                                {`${config.settings.stableSpecific.feeManagement.owner.slice(0, 6)}...${config.settings.stableSpecific.feeManagement.owner.slice(-4)}`}
+                                                            </Text>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Text fontSize="xs" fontFamily="mono">N/A</Text>
+                                                    )
                                                 )}
                                             </Td>
                                         </Tr>
@@ -201,16 +213,8 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                                 {config.type === 'composableStable' && config.settings.stableSpecific && (
                                     <>
                                         <Tr>
-                                            <Td fontWeight="medium">Amplification Parameter</Td>
+                                            <Td fontWeight="medium"><Text fontSize="sm">Amplification Parameter</Text></Td>
                                             <Td>{config.settings.stableSpecific.amplificationParameter}</Td>
-                                        </Tr>
-                                        <Tr>
-                                            <Td fontWeight="medium">Meta-Stable</Td>
-                                            <Td>
-                                                <Tag size="sm" colorScheme={config.settings.stableSpecific.metaStableEnabled ? 'green' : 'red'}>
-                                                    {config.settings.stableSpecific.metaStableEnabled ? 'Enabled' : 'Disabled'}
-                                                </Tag>
-                                            </Td>
                                         </Tr>
                                     </>
                                 )}

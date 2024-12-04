@@ -28,6 +28,8 @@ export const ApprovalModal = ({ isOpen, onClose, config, approvalStates, handleA
         state => state.approved && !state.checking
     );
 
+    console.log(approvalStates)
+
     return (
         <Modal
             isOpen={isOpen}

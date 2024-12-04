@@ -45,21 +45,20 @@ export const usePoolCreator = (): UsePoolCreatorReturn => {
                 ...(type === 'weighted' ? {
                     weightedSpecific: {
                         feeManagement: {
-                            type: 'fixed',
+                            type: 'governance',
                             customOwner: undefined,
-                            owner: undefined
+                            owner: GOVERNANCE_ADDRESS
                         }
                     }
                 } : {
                     stableSpecific: {
                         amplificationParameter: 200,
-                        metaStableEnabled: false,
                         rateCacheDuration: '60',
                         yieldFeeExempt: false,
                         feeManagement: {
-                            type: 'fixed',
+                            type: 'governance',
                             customOwner: undefined,
-                            owner: undefined
+                            owner: GOVERNANCE_ADDRESS
                         }
                     }
                 })
@@ -86,7 +85,7 @@ export const usePoolCreator = (): UsePoolCreatorReturn => {
                         ...settings.weightedSpecific,
                         feeManagement: {
                             ...settings.weightedSpecific?.feeManagement,
-                            type: settings.weightedSpecific?.feeManagement.type || 'fixed',
+                            type: settings.weightedSpecific?.feeManagement.type || 'governance',
                             owner: settings.weightedSpecific?.feeManagement.type === 'governance'
                                 ? GOVERNANCE_ADDRESS
                                 : settings.weightedSpecific?.feeManagement.customOwner,
@@ -103,11 +102,10 @@ export const usePoolCreator = (): UsePoolCreatorReturn => {
                     ...settings,
                     stableSpecific: {
                         amplificationParameter: settings.stableSpecific?.amplificationParameter ?? 200,
-                        metaStableEnabled: settings.stableSpecific?.metaStableEnabled ?? false,
                         rateCacheDuration: settings.stableSpecific?.rateCacheDuration ?? '60',
                         yieldFeeExempt: settings.stableSpecific?.yieldFeeExempt ?? false,
                         feeManagement: {
-                            type: settings.stableSpecific?.feeManagement?.type || 'fixed',
+                            type: settings.stableSpecific?.feeManagement?.type || 'governance',
                             owner: settings.stableSpecific?.feeManagement?.type === 'governance'
                                 ? GOVERNANCE_ADDRESS
                                 : settings.stableSpecific?.feeManagement?.customOwner,

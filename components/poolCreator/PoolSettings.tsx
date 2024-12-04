@@ -86,7 +86,6 @@ export const PoolSettingsComponent = ({
         } : {
             stableSpecific: {
                 amplificationParameter: 100,
-                metaStableEnabled: false,
                 rateCacheDuration: '60', // Default 1 minute
                 yieldFeeExempt: false,
                 feeManagement: {
@@ -303,34 +302,43 @@ export const PoolSettingsComponent = ({
 
             const vaultContract = new ethers.Contract(VAULT_ADDRESS, vaultABI, signer);
 
-            // For composable stable pools, we need to include the pool token itself
-            const assets = [...config.tokens]
-                .filter(token => token.address && token.amount)
-                .sort((a, b) =>
-                    ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
-                )
-                .map(token => token.address!);
+            const { tokens: poolTokens } = await vaultContract.getPoolTokens(config.poolId);
 
+            // For composable stable pools, we need to include the pool token itself
+            const sortedTokenConfigs = config.tokens
+                .filter(token => token.address && token.amount)
+                .sort((a, b) => {
+                    const aIndex = poolTokens.findIndex((addr:string) =>
+                        ethers.getAddress(addr) === ethers.getAddress(a.address!));
+                    const bIndex = poolTokens.findIndex((addr: string) =>
+                        ethers.getAddress(addr) === ethers.getAddress(b.address!));
+                    return aIndex - bIndex;
+                });
+
+            const assets = sortedTokenConfigs.map(token => token.address!);
+
+            // For composable stable pools, include the pool token
             if (config.type === 'composableStable') {
-                assets.splice(1, 0, config.poolAddress!);
+                const poolTokenIndex = poolTokens.findIndex((addr: string) =>
+                    ethers.getAddress(addr) === ethers.getAddress(config.poolAddress!));
+                assets.splice(poolTokenIndex, 0, config.poolAddress!);
             }
+
 
             // Prepare amounts
             const amountsWithDecimals = await Promise.all(
-                config.tokens
-                    .filter(token => token.address && token.amount)
-                    .sort((a, b) =>
-                        ethers.getAddress(a.address!) < ethers.getAddress(b.address!) ? -1 : 1
-                    )
-                    .map(async token => {
-                        const decimals = await checkDecimals(token.address!);
-                        return ethers.parseUnits(token.amount!, decimals);
-                    })
+                sortedTokenConfigs.map(async token => {
+                    const decimals = await checkDecimals(token.address!);
+                    return ethers.parseUnits(token.amount!, decimals);
+                })
             );
 
             // For composable stable pools, add the BPT amount
             if (config.type === 'composableStable') {
-                amountsWithDecimals.splice(1, 0, ethers.parseUnits("5192296858534827.628530496329", 18));
+                const poolTokenIndex = poolTokens.findIndex((addr: string) =>
+                    ethers.getAddress(addr) === ethers.getAddress(config.poolAddress!));
+                amountsWithDecimals.splice(poolTokenIndex, 0, 
+                    ethers.parseUnits("5192296858534827.628530496329", 18));
             }
 
             const maxAmountsIn = amountsWithDecimals.map(amount => amount.toString());
@@ -423,6 +431,8 @@ export const PoolSettingsComponent = ({
             signer
         );
 
+        console.log(sortedTokens.map(t => t.address))
+
         const tx = await factory.create(
             config.settings?.name,
             config.settings?.symbol,
@@ -441,7 +451,7 @@ export const PoolSettingsComponent = ({
         console.log(receipt.logs)
         console.log(receipt.logs[0])
         const poolAddress = receipt.logs[0].address;
-        
+
         // Get pool ID
         const poolContract = new ethers.Contract(
             poolAddress,
@@ -464,7 +474,7 @@ export const PoolSettingsComponent = ({
         provider: ethers.BrowserProvider,
         networkName: NetworkString,
         config: PoolConfig
-    )  => {
+    ) => {
         const signer = await provider.getSigner();
         const factoryAddress = FactoryAddressWeighted[networkName];
 
@@ -514,7 +524,7 @@ export const PoolSettingsComponent = ({
 
         const receipt = await tx.wait();
         const poolAddress = receipt.logs[0].address;
- 
+
         // Get pool ID
         const poolContract = new ethers.Contract(
             poolAddress,
@@ -688,7 +698,7 @@ export const PoolSettingsComponent = ({
                 poolId={config.poolId!}
                 poolAddress={config.poolAddress!}
                 isJoiningPool={isJoiningPool}
-                onJoin={() => { setIsApprovalModalOpen(true); setIsJoinModalOpen(false) }}
+                onJoin={() => { setIsJoinModalOpen(false); checkAllApprovals() }}
             />
             <ApprovalModal
                 isOpen={isApprovalModalOpen}
@@ -784,24 +794,6 @@ export const PoolSettingsComponent = ({
                                     </NumberInput>
                                     <InputRightAddon>seconds</InputRightAddon>
                                 </InputGroup>
-                            </FormControl>
-
-                            <FormControl>
-                                <HStack>
-                                    <FormLabel mb="0">
-                                        Enable Meta-Stable
-                                    </FormLabel>
-                                    <Tooltip label="Enable meta-stable features for rate providers">
-                                        <Icon as={InfoIcon} />
-                                    </Tooltip>
-                                </HStack>
-                                <Switch
-                                    isChecked={settings.stableSpecific.metaStableEnabled}
-                                    onChange={(e) => updateStableSettings('metaStableEnabled', e.target.checked)}
-                                    mt={2}
-                                    isReadOnly={readOnly}
-                                    isDisabled={readOnly}
-                                />
                             </FormControl>
 
                             <FormControl>

@@ -282,19 +282,20 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
         ]);
 
         // Fetch rate cache duration separately to handle potential failures
-        let rateCacheDuration: bigint = BigInt(0);
+        let rateCacheDuration: [bigint, bigint, bigint] = [BigInt(0), BigInt(0), BigInt(0)];
         try {
             rateCacheDuration = await publicClient.readContract({
                 address: getAddress(poolAddress),
                 abi: poolABI,
                 functionName: 'getTokenRateCache',
                 args: [tokens[0]]
-            }) as bigint;
+            }) as [bigint, bigint, bigint];
         } catch (error) {
-            console.warn('Failed to fetch rate cache duration, defaulting to 0:', error);
+            console.warn('Failed to fetch rate cache duration, defaulting to [0, 0, 0]:', error);
             // Silently continue with default value
         }
 
+        console.log(yieldFeeExempt)
         return {
             commonSettings: {
                 swapFee: Number(formatUnits(swapFee as bigint, 18)) * 100,
@@ -302,12 +303,14 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                 symbol,
             },
             specificSettings: {
-                amplificationParameter: Number(amplificationParameter[0]),
-                metaStableEnabled: false,
-                rateCacheDuration: rateCacheDuration.toString(),
+                amplificationParameter: Number(amplificationParameter[0]) / Number(amplificationParameter[2]),
+                rateCacheDuration: Number(rateCacheDuration[2]),
                 yieldFeeExempt,
                 feeManagement: {
-                    type: 'fixed'
+                    owner,
+                    type: (owner as string).toLowerCase() === '0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B'.toLowerCase()
+                        ? 'governance'
+                        : 'fixed'
                 }
             }
         };
