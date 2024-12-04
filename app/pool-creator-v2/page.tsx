@@ -193,6 +193,9 @@ const PoolCreatorPage: React.FC = () => {
 
     return (
         <Box p={8}>
+            <Heading as="h2" size="lg" variant="special" mb={6}>
+                Balancer v2 Pool Creator
+            </Heading>
             <PoolCreatorStepper activeStep={activeStep} />
             <Grid templateColumns="5fr 1fr" gap={8} mt={8}>
                 <GridItem>

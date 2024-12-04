@@ -451,9 +451,11 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
             {/* Header Section */}
             <Box mb={8}>
                 <Heading as="h2" size="lg" variant="special" mb={4}>
-                    Create Staking Gauge
+                    Balancer Staking Gauge Creator
                 </Heading>
-
+                <Text mb={4}>
+                    Easily create a staking gauge for a Balancer pool so it can receive BAL and/or secondary rewards on our platform.
+                </Text>
                 <Alert status="info">
                     <AlertIcon />
                     <AlertDescription>

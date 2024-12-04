@@ -56,7 +56,7 @@ const LinkItems = [
     description: "View Chainlink Automation Upkeeps",
   },
   {
-    name: "Pool Creator",
+    name: "Pool Creator (v2)",
     icon: MdPool,
     target: "/pool-creator-v2",
     description: "Create weighted and composable stable pools for Balancer v2",
