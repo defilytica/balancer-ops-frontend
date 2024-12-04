@@ -19,12 +19,23 @@ const config: CodegenConfig = {
           AmountHumanReadable: "string",
           GqlBigNumber: "string",
         },
+        // Add these ESLint-related configurations
+        eslint: {
+          disabled: true,
+        },
+        ignoreNoDocuments: true,
+      },
+      // Add presetConfig to further customize the output
+      presetConfig: {
+        gqlTagName: 'gql',
+        fragmentMasking: false
       },
     },
   },
-  hooks: {
-    afterAllFileWrite: ["yarn run lint:fix"],
-  },
+  // Remove the lint:fix hook as it's causing issues
+  // hooks: {
+  //   afterAllFileWrite: ["yarn run lint:fix"],
+  // },
 };
 
 export default config;

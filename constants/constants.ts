@@ -7,12 +7,15 @@ import AvalancheLogo from "@/public/imgs/avalancheLogo.svg";
 import ArbitrumLogo from "@/public/imgs/arbitrum.svg";
 import GnosisLogo from "@/public/imgs/gnosis.svg";
 import BaseLogo from "@/public/imgs/base.svg";
-import zkevmLogo from "@/public/imgs/Polygon-zkEVM.png";
-import FraxtalLogo from "@/public/imgs/frax.svg";
-import ModeLogo from "@/public/imgs/mode.svg";
+import zkevmLogo from "@/public/imgs/zkevm.svg";
+import sepoliaLogo from "@/public/imgs/sepolia.svg";
+import fraxtalLogo from "@/public/imgs/fraxtal.svg";
+import modeLogo from "@/public/imgs/mode.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
+
+export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
 
 export const tokenDecimals: Record<string, number> = {
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
@@ -25,6 +28,9 @@ export const tokenDecimals: Record<string, number> = {
   "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6, // base USDbC
   "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
 };
+
+export const GOVERNANCE_ADDRESS = '0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b';
+export const PRESET_FEES = [0.1, 0.3, 1.0];
 
 export const PAYLOAD_OPTIONS = [
   {
@@ -196,6 +202,13 @@ export const NETWORK_OPTIONS = [
     maxiSafe: "0x7BBAc709a9535464690A435ca7361256496f13Ce",
     entrypoint: "0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88",
   },
+  {
+    label: "Mode",
+    apiID: "MODE",
+    chainId: "34443",
+    maxiSafe: "",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -259,18 +272,24 @@ export const networks: Record<string, NetworkInfo> = {
     explorer: "https://polygonscan.com/",
     chainId: "1",
   },
+  sepolia: {
+    logo: sepoliaLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=sepolia&dkey=",
+    explorer: "https://sepolia.etherscan.io/",
+    chainId: "11155111"
+  },
   fraxtal: {
-    logo: FraxtalLogo.src,
+    logo: fraxtalLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=fraxtal&dkey=",
-    explorer: "https://fraxscan.io/",
-    chainId: "252",
+    explorer: "https://fraxscan.com",
+    chainId: "252"
   },
   mode: {
-    logo: ModeLogo.src,
+    logo: modeLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=mode&dkey=",
     explorer: "https://explorer.mode.network/",
-    chainId: "34443",
-  },
+    chainId: "34443"
+  }
 };
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
@@ -346,4 +365,32 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
     },
     // Add more Goerli tokens as needed
   ],
+};
+
+// TODO: import from address book
+export const FactoryAddressWeighted = {
+  MAINNET: "0x897888115Ada5773E02aA29F775430BFB5F34c51",
+  POLYGON: "0xFc8a407Bba312ac761D8BFe04CE1201904842B76",
+  ARBITRUM: "0xc7E5ED1054A24Ef31D827E6F86caA58B3Bc168d7",
+  GNOSIS: "0x6CaD2ea22BFA7F4C14Aae92E47F510Cd5C509bc7",
+  ZKEVM: "0x03F3Fb107e74F2EAC9358862E91ad3c692712054",
+  AVALANCHE: "0x230a59F4d9ADc147480f03B0D3fFfeCd56c3289a",
+  BASE: "0x4C32a8a8fDa4E24139B51b456B42290f51d6A1c4",
+  OPTIMISM: "0x230a59F4d9ADc147480f03B0D3fFfeCd56c3289a",
+  FRAXTAL: "0x9dA18982a33FD0c7051B19F0d7C76F2d5E7e017c",
+  MODE: "0xc3ccacE87f6d3A81724075ADcb5ddd85a8A1bB68",
+  SEPOLIA: "0x7920BFa1b2041911b354747CA7A6cDD2dfC50Cfd",
+};
+export const FactoryAddressComposable = {
+  MAINNET: "0x5B42eC6D40f7B7965BE5308c70e2603c0281C1E9",
+  POLYGON: "0xEAedc32a51c510d35ebC11088fD5fF2b47aACF2E",
+  ARBITRUM: "0x4bdCc2fb18AEb9e2d281b0278D946445070EAda7",
+  GNOSIS: "0x47B489bf5836f83ABD928C316F8e39bC0587B020",
+  ZKEVM: "0xf23b4DB826DbA14c0e857029dfF076b1c0264843",
+  AVALANCHE: "0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88",
+  BASE: "0x956CCab09898C0AF2aCa5e6C229c3aD4E93d9288",
+  OPTIMISM: "0x4bdCc2fb18AEb9e2d281b0278D946445070EAda7",
+  FRAXTAL: "0x4bdCc2fb18AEb9e2d281b0278D946445070EAda7",
+  MODE: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
+  SEPOLIA: "0x05503B3aDE04aCA81c8D6F88eCB73Ba156982D2B",
 };

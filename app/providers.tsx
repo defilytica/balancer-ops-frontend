@@ -7,17 +7,21 @@ import { ThemeProvider } from "@/lib/services/chakra/ThemeProvider";
 import { ChakraProvider } from "@chakra-ui/react";
 import { CacheProvider } from "@chakra-ui/next-js";
 import { ApolloClientProvider } from "@/lib/services/apollo/ApolloClientprovider";
+import { Web3Provider } from "@/lib/modules/web3/Web3Provider";
+import { wagmiConfig } from "@/lib/modules/web3/WagmiConfig";
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <ApolloClientProvider>
-        <CacheProvider>
-          <ChakraProvider>
-            <ColorThemeProvider defaultTheme={DEFAULT_THEME_COLOR_MODE}>
-              <ThemeProvider>{children}</ThemeProvider>
-            </ColorThemeProvider>
-          </ChakraProvider>
-        </CacheProvider>
+        <ChakraProvider>
+        <Web3Provider wagmiConfig={wagmiConfig}>
+          <CacheProvider>
+              <ColorThemeProvider defaultTheme={DEFAULT_THEME_COLOR_MODE}>
+                <ThemeProvider>{children}</ThemeProvider>
+              </ColorThemeProvider>
+          </CacheProvider>
+        </Web3Provider>
+        </ChakraProvider>
       </ApolloClientProvider>
     </SessionProvider>
   );

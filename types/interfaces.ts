@@ -1,3 +1,5 @@
+import {PoolType} from "@/types/types";
+
 export interface AddressBook {
   active: {
     [network: string]: {
@@ -50,4 +52,82 @@ export interface TokenInfo {
   symbol: string;
   address: string;
   decimals: number;
+}
+
+export interface PoolConfig {
+  poolId?: string;
+  poolAddress?: string;
+  type?: PoolType;
+  tokens: PoolToken[];
+  settings?: PoolSettings;
+}
+
+export interface Token {
+  address: string;
+  weight?: number;
+  symbol: string;
+  balance: string;
+}
+
+export interface PoolToken {
+  address: string;
+  weight: number;
+  symbol: string;
+  amount?: string;
+  decimals?: number;
+  logoURI?: string;
+  name?: string;
+  rateProvider?: string;
+  price?: number;
+}
+
+//TODO: Refactor token interface!
+export interface TokenListToken {
+  chainId: number;
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+}
+
+export interface TokenWithBalance extends PoolToken {
+  balance?: string;
+  formattedBalance?: string;
+  locked?: boolean;
+}
+
+export interface GetTokensQuery {
+  tokenGetTokens: TokenListToken[];
+}
+
+export interface GetTokensQueryVariables {
+  chainIn: string[];
+}
+
+export interface WeightedPoolSpecific {
+  feeManagement: {
+    type: 'fixed' | 'governance' | 'custom';
+    customOwner?: string;
+    owner?: string;
+  };
+}
+
+export interface StablePoolSpecific {
+  amplificationParameter: number;
+  rateCacheDuration: string;
+  yieldFeeExempt: boolean;
+  feeManagement: {
+    type: 'fixed' | 'governance' | 'custom';
+    customOwner?: string;
+    owner?: string;
+  };
+}
+
+export interface PoolSettings {
+  swapFee: number;
+  name: string;
+  symbol: string;
+  weightedSpecific?: WeightedPoolSpecific;
+  stableSpecific?: StablePoolSpecific;
 }

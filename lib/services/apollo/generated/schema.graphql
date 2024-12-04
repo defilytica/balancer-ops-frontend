@@ -8,23 +8,15 @@ scalar Bytes
 
 scalar Date
 
-"""
-The review data for the ERC4626 token
-"""
+"""The review data for the ERC4626 token"""
 type Erc4626ReviewData {
-  """
-  The filename of the review of the ERC4626
-  """
+  """The filename of the review of the ERC4626"""
   reviewFile: String!
 
-  """
-  A summary of the ERC4626 review, usually just says safe or unsafe
-  """
+  """A summary of the ERC4626 review, usually just says safe or unsafe"""
   summary: String!
 
-  """
-  Warnings associated with the ERC4626
-  """
+  """Warnings associated with the ERC4626"""
   warnings: [String!]!
 }
 
@@ -81,34 +73,32 @@ type GqlFeaturePoolGroupItemExternalLink {
   image: String!
 }
 
-"""
-Configuration options for SOR V2
-"""
+"""Configuration options for SOR V2"""
 input GqlGraphTraversalConfigInput {
   """
   Max number of paths to return (can be less)
-
+  
   Default: 5
   """
   approxPathsToReturn: Int
 
   """
   The max hops in a path.
-
+  
   Default: 6
   """
   maxDepth: Int
 
   """
   Limit non boosted hop tokens in a boosted path.
-
+  
   Default: 2
   """
   maxNonBoostedHopTokensInBoostedPath: Int
 
   """
   Limit of "non-boosted" pools for efficiency.
-
+  
   Default: 6
   """
   maxNonBoostedPathDepth: Int
@@ -128,15 +118,11 @@ type GqlHistoricalTokenPriceEntry {
   updatedBy: String
 }
 
-"""
-Hook data
-"""
+"""Hook data"""
 type GqlHook {
   address: String!
 
-  """
-  Data points changing over time
-  """
+  """Data points changing over time"""
   dynamicData: GqlHookData
 
   """
@@ -144,9 +130,7 @@ type GqlHook {
   """
   enableHookAdjustedAmounts: Boolean!
 
-  """
-  The review for this hook if applicable.
-  """
+  """The review for this hook if applicable."""
   reviewData: GqlHookReviewData
   shouldCallAfterAddLiquidity: Boolean!
   shouldCallAfterInitialize: Boolean!
@@ -159,9 +143,7 @@ type GqlHook {
   shouldCallComputeDynamicSwapFee: Boolean!
 }
 
-"""
-Collection of hook specific data. Percentage format is 0.01 -> 0.01%.
-"""
+"""Collection of hook specific data. Percentage format is 0.01 -> 0.01%."""
 type GqlHookData {
   addLiquidityFeePercentage: String
   maxSurgeFeePercentage: String
@@ -170,23 +152,15 @@ type GqlHookData {
   swapFeePercentage: String
 }
 
-"""
-Represents the review data for the hook
-"""
+"""Represents the review data for the hook"""
 type GqlHookReviewData {
-  """
-  The filename of the review of the hook
-  """
+  """The filename of the review of the hook"""
   reviewFile: String!
 
-  """
-  A summary of the hook review, usually just says safe or unsafe
-  """
+  """A summary of the hook review, usually just says safe or unsafe"""
   summary: String!
 
-  """
-  Warnings associated with the hook
-  """
+  """Warnings associated with the hook"""
   warnings: [String!]!
 }
 
@@ -200,99 +174,61 @@ type GqlLatestSyncedBlocks {
 All info on the nested pool if the token is a BPT. It will only support 1 level of nesting.
 """
 type GqlNestedPool {
-  """
-  Address of the pool.
-  """
+  """Address of the pool."""
   address: Bytes!
 
-  """
-  Price rate of this pool or the Balancer Pool Token (BPT).
-  """
+  """Price rate of this pool or the Balancer Pool Token (BPT)."""
   bptPriceRate: BigDecimal!
 
-  """
-  Timestamp of when the pool was created.
-  """
+  """Timestamp of when the pool was created."""
   createTime: Int!
 
-  """
-  Address of the factory contract that created the pool, if applicable.
-  """
+  """Address of the factory contract that created the pool, if applicable."""
   factory: Bytes
 
-  """
-  Hook assigned to a pool
-  """
+  """Hook assigned to a pool"""
   hook: GqlHook
 
-  """
-  Unique identifier of the pool.
-  """
+  """Unique identifier of the pool."""
   id: ID!
 
-  """
-  Liquidity management settings for v3 pools.
-  """
+  """Liquidity management settings for v3 pools."""
   liquidityManagement: LiquidityManagement
 
-  """
-  Name of the pool.
-  """
+  """Name of the pool."""
   name: String!
 
-  """
-  Total liquidity of the parent pool in the nested pool in USD.
-  """
+  """Total liquidity of the parent pool in the nested pool in USD."""
   nestedLiquidity: BigDecimal!
 
-  """
-  Percentage of the parents pool shares inside the nested pool.
-  """
+  """Percentage of the parents pool shares inside the nested pool."""
   nestedPercentage: BigDecimal!
 
-  """
-  Number of shares of the parent pool in the nested pool.
-  """
+  """Number of shares of the parent pool in the nested pool."""
   nestedShares: BigDecimal!
 
-  """
-  Address of the pool's owner.
-  """
+  """Address of the pool's owner."""
   owner: Bytes!
 
-  """
-  Fee charged for swapping tokens in the pool as %. 0.01 -> 0.01%
-  """
+  """Fee charged for swapping tokens in the pool as %. 0.01 -> 0.01%"""
   swapFee: BigDecimal!
 
-  """
-  Symbol of the pool.
-  """
+  """Symbol of the pool."""
   symbol: String!
 
-  """
-  List of all tokens in the pool.
-  """
+  """List of all tokens in the pool."""
   tokens: [GqlPoolTokenDetail!]!
 
-  """
-  Total liquidity in the pool in USD.
-  """
+  """Total liquidity in the pool in USD."""
   totalLiquidity: BigDecimal!
 
-  """
-  Total number of shares in the pool.
-  """
+  """Total number of shares in the pool."""
   totalShares: BigDecimal!
 
-  """
-  Type of the pool.
-  """
+  """Type of the pool."""
   type: GqlPoolType!
 
-  """
-  Version of the pool.
-  """
+  """Version of the pool."""
   version: Int!
 }
 
@@ -300,161 +236,99 @@ type GqlNestedPool {
 Represents an event that occurs when liquidity is added or removed from a pool.
 """
 type GqlPoolAddRemoveEventV3 implements GqlPoolEvent {
-  """
-  The block number of the event.
-  """
+  """The block number of the event."""
   blockNumber: Int!
 
-  """
-  The block timestamp of the event.
-  """
+  """The block timestamp of the event."""
   blockTimestamp: Int!
 
-  """
-  The chain on which the event occurred.
-  """
+  """The chain on which the event occurred."""
   chain: GqlChain!
 
-  """
-  The unique identifier of the event.
-  """
+  """The unique identifier of the event."""
   id: ID!
 
-  """
-  The log index of the event.
-  """
+  """The log index of the event."""
   logIndex: Int!
 
-  """
-  The pool ID associated with the event.
-  """
+  """The pool ID associated with the event."""
   poolId: String!
 
-  """
-  The sender of the event.
-  """
+  """The sender of the event."""
   sender: String!
 
-  """
-  The timestamp of the event.
-  """
+  """The timestamp of the event."""
   timestamp: Int!
 
-  """
-  The tokens involved in the event. Ordered by poolToken index.
-  """
+  """The tokens involved in the event. Ordered by poolToken index."""
   tokens: [GqlPoolEventAmount!]!
 
-  """
-  The transaction hash of the event.
-  """
+  """The transaction hash of the event."""
   tx: String!
 
-  """
-  The type of the event.
-  """
+  """The type of the event."""
   type: GqlPoolEventType!
 
-  """
-  The user address associated with the event.
-  """
+  """The user address associated with the event."""
   userAddress: String!
 
-  """
-  The value of the event in USD.
-  """
+  """The value of the event in USD."""
   valueUSD: Float!
 }
 
 type GqlPoolAggregator {
-  """
-  The contract address of the pool.
-  """
+  """The contract address of the pool."""
   address: Bytes!
 
-  """
-  Data specific to gyro/fx pools
-  """
+  """Data specific to gyro/fx pools"""
   alpha: String
 
-  """
-  Data specific to stable pools
-  """
+  """Data specific to stable pools"""
   amp: BigInt
 
-  """
-  Data specific to gyro/fx pools
-  """
+  """Data specific to gyro/fx pools"""
   beta: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   c: String
 
-  """
-  The chain on which the pool is deployed
-  """
+  """The chain on which the pool is deployed"""
   chain: GqlChain!
 
-  """
-  The timestamp the pool was created.
-  """
+  """The timestamp the pool was created."""
   createTime: Int!
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   dSq: String
 
-  """
-  The decimals of the BPT, usually 18
-  """
+  """The decimals of the BPT, usually 18"""
   decimals: Int!
 
-  """
-  Data specific to fx pools
-  """
+  """Data specific to fx pools"""
   delta: String
 
-  """
-  Dynamic data such as token balances, swap fees or volume
-  """
+  """Dynamic data such as token balances, swap fees or volume"""
   dynamicData: GqlPoolDynamicData!
 
-  """
-  Data specific to fx pools
-  """
+  """Data specific to fx pools"""
   epsilon: String
 
-  """
-  The factory contract address from which the pool was created.
-  """
+  """The factory contract address from which the pool was created."""
   factory: Bytes
 
-  """
-  Hook assigned to a pool
-  """
+  """Hook assigned to a pool"""
   hook: GqlHook
 
-  """
-  The pool id. This is equal to the address for protocolVersion 3 pools
-  """
+  """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
 
-  """
-  Data specific to gyro/fx pools
-  """
+  """Data specific to gyro/fx pools"""
   lambda: String
 
-  """
-  Liquidity management settings for v3 pools.
-  """
+  """Liquidity management settings for v3 pools."""
   liquidityManagement: LiquidityManagement
 
-  """
-  The name of the pool as per contract
-  """
+  """The name of the pool as per contract"""
   name: String!
 
   """
@@ -467,84 +341,52 @@ type GqlPoolAggregator {
   """
   poolTokens: [GqlPoolTokenDetail!]!
 
-  """
-  The protocol version on which the pool is deployed, 1, 2 or 3
-  """
+  """The protocol version on which the pool is deployed, 1, 2 or 3"""
   protocolVersion: Int!
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   root3Alpha: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   s: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   sqrtAlpha: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   sqrtBeta: String
 
-  """
-  The token symbol of the pool as per contract
-  """
+  """The token symbol of the pool as per contract"""
   symbol: String!
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   tauAlphaX: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   tauAlphaY: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   tauBetaX: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   tauBetaY: String
 
-  """
-  The pool type, such as weighted, stable, etc.
-  """
+  """The pool type, such as weighted, stable, etc."""
   type: GqlPoolType!
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   u: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   v: String
 
-  """
-  The version of the pool type.
-  """
+  """The version of the pool type."""
   version: Int!
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   w: String
 
-  """
-  Data specific to gyro pools
-  """
+  """Data specific to gyro pools"""
   z: String
 }
 
@@ -557,49 +399,30 @@ type GqlPoolApr {
   thirdPartyApr: GqlPoolAprValue!
 }
 
-"""
-All APRs for a pool
-"""
+"""All APRs for a pool"""
 type GqlPoolAprItem {
-  """
-  The APR value in % -> 0.2 = 0.2%
-  """
+  """The APR value in % -> 0.2 = 0.2%"""
   apr: Float!
 
-  """
-  The id of the APR item
-  """
+  """The id of the APR item"""
   id: ID!
 
-  """
-  The reward token address, if the APR originates from token emissions
-  """
+  """The reward token address, if the APR originates from token emissions"""
   rewardTokenAddress: String
 
-  """
-  The reward token symbol, if the APR originates from token emissions
-  """
+  """The reward token symbol, if the APR originates from token emissions"""
   rewardTokenSymbol: String
 
-  """
-  The title of the APR item, a human readable form
-  """
-  title: String!
-    @deprecated(reason: "No replacement, should be built client side")
+  """The title of the APR item, a human readable form"""
+  title: String! @deprecated(reason: "No replacement, should be built client side")
 
-  """
-  Specific type of this APR
-  """
+  """Specific type of this APR"""
   type: GqlPoolAprItemType!
 }
 
-"""
-Enum representing the different types of the APR in a pool.
-"""
+"""Enum representing the different types of the APR in a pool."""
 enum GqlPoolAprItemType {
-  """
-  APR that pools earns when BPT is staked on AURA.
-  """
+  """APR that pools earns when BPT is staked on AURA."""
   AURA
 
   """
@@ -607,9 +430,7 @@ enum GqlPoolAprItemType {
   """
   IB_YIELD
 
-  """
-  APR in a pool that can be earned through locking, i.e. veBAL
-  """
+  """APR in a pool that can be earned through locking, i.e. veBAL"""
   LOCKING
 
   """
@@ -617,64 +438,40 @@ enum GqlPoolAprItemType {
   """
   MABEETS_EMISSIONS
 
-  """
-  Rewards distributed by merkl.xyz
-  """
+  """Rewards distributed by merkl.xyz"""
   MERKL
 
-  """
-  Represents if the APR items comes from a nested pool.
-  """
+  """Represents if the APR items comes from a nested pool."""
   NESTED
 
-  """
-  Staking reward APR in a pool from a reward token.
-  """
+  """Staking reward APR in a pool from a reward token."""
   STAKING
 
-  """
-  APR boost that can be earned, i.e. via veBAL or maBEETS.
-  """
+  """APR boost that can be earned, i.e. via veBAL or maBEETS."""
   STAKING_BOOST
 
-  """
-  Cow AMM specific APR
-  """
+  """Cow AMM specific APR"""
   SURPLUS @deprecated(reason: "Use SURPLUS_24H instead")
 
-  """
-  Surplus APR based on data from the last 7d
-  """
+  """Surplus APR based on data from the last 7d"""
   SURPLUS_7D
 
-  """
-  Surplus APR based on data from the last 24h
-  """
+  """Surplus APR based on data from the last 24h"""
   SURPLUS_24H
 
-  """
-  Surplus APR based on data from the last 30d
-  """
+  """Surplus APR based on data from the last 30d"""
   SURPLUS_30D
 
-  """
-  Represents the swap fee APR in a pool.
-  """
+  """Represents the swap fee APR in a pool."""
   SWAP_FEE @deprecated(reason: "Use SWAP_FEE_24H instead")
 
-  """
-  Swap fee APR based on data from the last 7d
-  """
+  """Swap fee APR based on data from the last 7d"""
   SWAP_FEE_7D
 
-  """
-  Swap fee APR based on data from the last 24h
-  """
+  """Swap fee APR based on data from the last 24h"""
   SWAP_FEE_24H
 
-  """
-  Swap fee APR based on data from the last 30d
-  """
+  """Swap fee APR based on data from the last 30d"""
   SWAP_FEE_30D
 
   """
@@ -682,9 +479,7 @@ enum GqlPoolAprItemType {
   """
   VEBAL_EMISSIONS
 
-  """
-  APR that can be earned thourgh voting, i.e. gauge votes
-  """
+  """APR that can be earned thourgh voting, i.e. gauge votes"""
   VOTING
 }
 
@@ -699,55 +494,37 @@ type GqlPoolAprTotal {
 
 union GqlPoolAprValue = GqlPoolAprRange | GqlPoolAprTotal
 
-"""
-The base type as returned by poolGetPool (specific pool query)
-"""
+"""The base type as returned by poolGetPool (specific pool query)"""
 interface GqlPoolBase {
-  """
-  The contract address of the pool.
-  """
+  """The contract address of the pool."""
   address: Bytes!
 
   """
   Returns all pool tokens, including any nested tokens and phantom BPTs as a flattened array.
   """
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
 
-  """
-  List of categories assigned by the team based on external factors
-  """
+  """List of categories assigned by the team based on external factors"""
   categories: [GqlPoolFilterCategory]
 
-  """
-  The chain on which the pool is deployed
-  """
+  """The chain on which the pool is deployed"""
   chain: GqlChain!
 
-  """
-  The timestamp the pool was created.
-  """
+  """The timestamp the pool was created."""
   createTime: Int!
 
-  """
-  The decimals of the BPT, usually 18
-  """
+  """The decimals of the BPT, usually 18"""
   decimals: Int!
 
   """
   Only returns main tokens, also known as leave tokens. Wont return any nested BPTs. Used for displaying the tokens that the pool consists of.
   """
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
 
-  """
-  Dynamic data such as token balances, swap fees or volume
-  """
+  """Dynamic data such as token balances, swap fees or volume"""
   dynamicData: GqlPoolDynamicData!
 
-  """
-  The factory contract address from which the pool was created.
-  """
+  """The factory contract address from which the pool was created."""
   factory: Bytes
 
   """
@@ -760,30 +537,19 @@ interface GqlPoolBase {
   """
   hasNestedErc4626: Boolean!
 
-  """
-  Hook assigned to a pool
-  """
+  """Hook assigned to a pool"""
   hook: GqlHook
 
-  """
-  The pool id. This is equal to the address for protocolVersion 3 pools
-  """
+  """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
 
-  """
-  Deprecated
-  """
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  """Deprecated"""
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
 
-  """
-  Liquidity management settings for v3 pools.
-  """
+  """Liquidity management settings for v3 pools."""
   liquidityManagement: LiquidityManagement
 
-  """
-  The name of the pool as per contract
-  """
+  """The name of the pool as per contract"""
   name: String!
 
   """
@@ -796,29 +562,19 @@ interface GqlPoolBase {
   """
   poolTokens: [GqlPoolTokenDetail!]!
 
-  """
-  The protocol version on which the pool is deployed, 1, 2 or 3
-  """
+  """The protocol version on which the pool is deployed, 1, 2 or 3"""
   protocolVersion: Int!
 
-  """
-  Staking options of this pool which emit additional rewards
-  """
+  """Staking options of this pool which emit additional rewards"""
   staking: GqlPoolStaking
 
-  """
-  The token symbol of the pool as per contract
-  """
+  """The token symbol of the pool as per contract"""
   symbol: String!
 
-  """
-  List of tags assigned by the team based on external factors
-  """
+  """List of tags assigned by the team based on external factors"""
   tags: [String]
 
-  """
-  The pool type, such as weighted, stable, etc.
-  """
+  """The pool type, such as weighted, stable, etc."""
   type: GqlPoolType!
 
   """
@@ -826,21 +582,14 @@ interface GqlPoolBase {
   """
   userBalance: GqlPoolUserBalance
 
-  """
-  The vault version on which the pool is deployed, 2 or 3
-  """
+  """The vault version on which the pool is deployed, 2 or 3"""
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
 
-  """
-  The version of the pool type.
-  """
+  """The version of the pool type."""
   version: Int!
 
-  """
-  Deprecated
-  """
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  """Deprecated"""
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolBatchSwap {
@@ -879,28 +628,24 @@ type GqlPoolBatchSwapSwap {
 
 type GqlPoolComposableStable implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
   bptPriceRate: BigDecimal!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
-    @deprecated(reason: "Removed without replacement")
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -916,8 +661,7 @@ type GqlPoolComposableStable implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolComposableStableNested {
@@ -929,14 +673,12 @@ type GqlPoolComposableStableNested {
   factory: Bytes
   id: ID!
   name: String!
-  nestingType: GqlPoolNestingType!
-    @deprecated(reason: "Removed without replacement")
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   swapFee: BigDecimal!
   symbol: String!
   tags: [String]
-  tokens: [GqlPoolTokenComposableStableNestedUnion!]!
-    @deprecated(reason: "Use poolTokens instead")
+  tokens: [GqlPoolTokenComposableStableNestedUnion!]! @deprecated(reason: "Use poolTokens instead")
   totalLiquidity: BigDecimal!
   totalShares: BigDecimal!
   type: GqlPoolType!
@@ -944,14 +686,10 @@ type GqlPoolComposableStableNested {
 }
 
 type GqlPoolDynamicData {
-  """
-  Protocol and pool creator fees combined
-  """
+  """Protocol and pool creator fees combined"""
   aggregateSwapFee: BigDecimal!
 
-  """
-  Protocol and pool creator fees combined
-  """
+  """Protocol and pool creator fees combined"""
   aggregateYieldFee: BigDecimal!
   apr: GqlPoolApr! @deprecated(reason: "Use aprItems instead")
   aprItems: [GqlPoolAprItem!]!
@@ -963,9 +701,7 @@ type GqlPoolDynamicData {
   fees48h: BigDecimal!
   holdersCount: BigInt!
 
-  """
-  True for bricked pools
-  """
+  """True for bricked pools"""
   isInRecoveryMode: Boolean!
   isPaused: Boolean!
   lifetimeSwapFees: BigDecimal!
@@ -976,19 +712,13 @@ type GqlPoolDynamicData {
   sharePriceAtl: BigDecimal!
   sharePriceAtlTimestamp: Int!
 
-  """
-  CowAmm specific, equivalent of swap fees
-  """
+  """CowAmm specific, equivalent of swap fees"""
   surplus24h: BigDecimal!
 
-  """
-  CowAmm specific, equivalent of swap fees
-  """
+  """CowAmm specific, equivalent of swap fees"""
   surplus48h: BigDecimal!
 
-  """
-  Disabled for bricked pools
-  """
+  """Disabled for bricked pools"""
   swapEnabled: Boolean!
   swapFee: BigDecimal!
   swapsCount: BigInt!
@@ -1013,23 +743,20 @@ type GqlPoolDynamicData {
 
 type GqlPoolElement implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   baseToken: Bytes!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   owner: Bytes!
@@ -1045,72 +772,45 @@ type GqlPoolElement implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
-"""
-Represents an event that occurs in a pool.
-"""
+"""Represents an event that occurs in a pool."""
 interface GqlPoolEvent {
-  """
-  The block number of the event.
-  """
+  """The block number of the event."""
   blockNumber: Int!
 
-  """
-  The block timestamp of the event.
-  """
+  """The block timestamp of the event."""
   blockTimestamp: Int!
 
-  """
-  The chain on which the event occurred.
-  """
+  """The chain on which the event occurred."""
   chain: GqlChain!
 
-  """
-  The unique identifier of the event.
-  """
+  """The unique identifier of the event."""
   id: ID!
 
-  """
-  The log index of the event.
-  """
+  """The log index of the event."""
   logIndex: Int!
 
-  """
-  The pool ID associated with the event.
-  """
+  """The pool ID associated with the event."""
   poolId: String!
 
-  """
-  The sender of the event.
-  """
+  """The sender of the event."""
   sender: String!
 
-  """
-  The timestamp of the event.
-  """
+  """The timestamp of the event."""
   timestamp: Int!
 
-  """
-  The transaction hash of the event.
-  """
+  """The transaction hash of the event."""
   tx: String!
 
-  """
-  The type of the event.
-  """
+  """The type of the event."""
   type: GqlPoolEventType!
 
-  """
-  The user address associated with the event.
-  """
+  """The user address associated with the event."""
   userAddress: String!
 
-  """
-  The USD value of this event.
-  """
+  """The USD value of this event."""
   valueUSD: Float!
 }
 
@@ -1139,14 +839,10 @@ input GqlPoolEventsFilter {
   typeIn: [GqlPoolEventType]
   userAddress: String
 
-  """
-  USD value of the event
-  """
+  """USD value of the event"""
   valueUSD_gt: Float
 
-  """
-  USD value of the event
-  """
+  """USD value of the event"""
   valueUSD_gte: Float
 }
 
@@ -1164,9 +860,7 @@ type GqlPoolFeaturedPoolGroup {
   title: String!
 }
 
-union GqlPoolFeaturedPoolGroupItem =
-  | GqlFeaturePoolGroupItemExternalLink
-  | GqlPoolMinimal
+union GqlPoolFeaturedPoolGroupItem = GqlFeaturePoolGroupItemExternalLink | GqlPoolMinimal
 
 input GqlPoolFilter {
   chainIn: [GqlChain!]
@@ -1213,8 +907,7 @@ enum GqlPoolFilterCategory {
 
 type GqlPoolFx implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   alpha: String!
   beta: String!
   categories: [GqlPoolFilterCategory]
@@ -1222,8 +915,7 @@ type GqlPoolFx implements GqlPoolBase {
   createTime: Int!
   decimals: Int!
   delta: String!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   epsilon: String!
   factory: Bytes
@@ -1231,8 +923,7 @@ type GqlPoolFx implements GqlPoolBase {
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
   liquidityManagement: LiquidityManagement
   name: String!
@@ -1251,14 +942,12 @@ type GqlPoolFx implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolGyro implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   alpha: String!
   beta: String!
   c: String!
@@ -1267,21 +956,18 @@ type GqlPoolGyro implements GqlPoolBase {
   createTime: Int!
   dSq: String!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   lambda: String!
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
-    @deprecated(reason: "Removed without replacement")
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -1308,8 +994,7 @@ type GqlPoolGyro implements GqlPoolBase {
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
   w: String!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
   z: String!
 }
 
@@ -1354,26 +1039,22 @@ enum GqlPoolJoinExitType {
 
 type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
-    @deprecated(reason: "Removed without replacement")
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -1389,29 +1070,25 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolMetaStable implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   owner: Bytes!
@@ -1425,59 +1102,38 @@ type GqlPoolMetaStable implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
-"""
-The pool schema returned for poolGetPools (pool list query)
-"""
+"""The pool schema returned for poolGetPools (pool list query)"""
 type GqlPoolMinimal {
-  """
-  The contract address of the pool.
-  """
+  """The contract address of the pool."""
   address: Bytes!
 
-  """
-  Returns all pool tokens, including any nested tokens and phantom BPTs
-  """
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  """Returns all pool tokens, including any nested tokens and phantom BPTs"""
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
 
-  """
-  List of categories assigned by the team based on external factors
-  """
+  """List of categories assigned by the team based on external factors"""
   categories: [GqlPoolFilterCategory]
 
-  """
-  The chain on which the pool is deployed
-  """
+  """The chain on which the pool is deployed"""
   chain: GqlChain!
 
-  """
-  The timestamp the pool was created.
-  """
+  """The timestamp the pool was created."""
   createTime: Int!
 
-  """
-  The decimals of the BPT, usually 18
-  """
+  """The decimals of the BPT, usually 18"""
   decimals: Int!
 
   """
   Only returns main or underlying tokens, also known as leave tokens. Wont return any nested BPTs. Used for displaying the tokens that the pool consists of.
   """
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
 
-  """
-  Dynamic data such as token balances, swap fees or volume
-  """
+  """Dynamic data such as token balances, swap fees or volume"""
   dynamicData: GqlPoolDynamicData!
 
-  """
-  The factory contract address from which the pool was created.
-  """
+  """The factory contract address from which the pool was created."""
   factory: Bytes
 
   """
@@ -1490,29 +1146,19 @@ type GqlPoolMinimal {
   """
   hasNestedErc4626: Boolean!
 
-  """
-  Hook assigned to a pool
-  """
+  """Hook assigned to a pool"""
   hook: GqlHook
 
-  """
-  The pool id. This is equal to the address for protocolVersion 3 pools
-  """
+  """The pool id. This is equal to the address for protocolVersion 3 pools"""
   id: ID!
 
-  """
-  Pool is receiving rewards when liquidity tokens are staked
-  """
+  """Pool is receiving rewards when liquidity tokens are staked"""
   incentivized: Boolean!
 
-  """
-  Liquidity management settings for v3 pools.
-  """
+  """Liquidity management settings for v3 pools."""
   liquidityManagement: LiquidityManagement
 
-  """
-  The name of the pool as per contract
-  """
+  """The name of the pool as per contract"""
   name: String!
 
   """
@@ -1525,29 +1171,19 @@ type GqlPoolMinimal {
   """
   poolTokens: [GqlPoolTokenDetail!]!
 
-  """
-  The protocol version on which the pool is deployed, 1, 2 or 3
-  """
+  """The protocol version on which the pool is deployed, 1, 2 or 3"""
   protocolVersion: Int!
 
-  """
-  Staking options of this pool which emit additional rewards
-  """
+  """Staking options of this pool which emit additional rewards"""
   staking: GqlPoolStaking
 
-  """
-  The token symbol of the pool as per contract
-  """
+  """The token symbol of the pool as per contract"""
   symbol: String!
 
-  """
-  List of tags assigned by the team based on external factors
-  """
+  """List of tags assigned by the team based on external factors"""
   tags: [String]
 
-  """
-  The pool type, such as weighted, stable, etc.
-  """
+  """The pool type, such as weighted, stable, etc."""
   type: GqlPoolType!
 
   """
@@ -1555,39 +1191,25 @@ type GqlPoolMinimal {
   """
   userBalance: GqlPoolUserBalance
 
-  """
-  The vault version on which the pool is deployed, 2 or 3
-  """
+  """The vault version on which the pool is deployed, 2 or 3"""
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
 
-  """
-  The version of the pool type.
-  """
+  """The version of the pool type."""
   version: Int!
 }
 
-"""
-Result of the poolReloadPools mutation
-"""
+"""Result of the poolReloadPools mutation"""
 type GqlPoolMutationResult {
-  """
-  The chain that was reloaded.
-  """
+  """The chain that was reloaded."""
   chain: GqlChain!
 
-  """
-  The error message
-  """
+  """The error message"""
   error: String
 
-  """
-  Whether it was successful or not.
-  """
+  """Whether it was successful or not."""
   success: Boolean!
 
-  """
-  The type of pools that were reloaded.
-  """
+  """The type of pools that were reloaded."""
   type: String!
 }
 
@@ -1642,24 +1264,21 @@ enum GqlPoolSnapshotDataRange {
 
 type GqlPoolStable implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   amp: BigInt!
   bptPriceRate: BigDecimal!
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
   owner: Bytes!
@@ -1673,8 +1292,7 @@ type GqlPoolStable implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolStaking {
@@ -1789,164 +1407,100 @@ type GqlPoolSwap {
 Represents an event that occurs when a swap is made in a pool using the CowAmm protocol.
 """
 type GqlPoolSwapEventCowAmm implements GqlPoolEvent {
-  """
-  The block number of the event.
-  """
+  """The block number of the event."""
   blockNumber: Int!
 
-  """
-  The block timestamp of the event.
-  """
+  """The block timestamp of the event."""
   blockTimestamp: Int!
 
-  """
-  The chain on which the event occurred.
-  """
+  """The chain on which the event occurred."""
   chain: GqlChain!
 
-  """
-  The fee that this swap generated.
-  """
+  """The fee that this swap generated."""
   fee: GqlPoolEventAmount!
 
-  """
-  The unique identifier of the event.
-  """
+  """The unique identifier of the event."""
   id: ID!
 
-  """
-  The log index of the event.
-  """
+  """The log index of the event."""
   logIndex: Int!
 
-  """
-  The pool ID associated with the event.
-  """
+  """The pool ID associated with the event."""
   poolId: String!
 
-  """
-  The sender of the event.
-  """
+  """The sender of the event."""
   sender: String!
 
-  """
-  The surplus generated by the swap.
-  """
+  """The surplus generated by the swap."""
   surplus: GqlPoolEventAmount!
 
-  """
-  The timestamp of the event.
-  """
+  """The timestamp of the event."""
   timestamp: Int!
 
-  """
-  The token that was swapped in the event.
-  """
+  """The token that was swapped in the event."""
   tokenIn: GqlPoolEventAmount!
 
-  """
-  The token that was swapped out in the event.
-  """
+  """The token that was swapped out in the event."""
   tokenOut: GqlPoolEventAmount!
 
-  """
-  The transaction hash of the event.
-  """
+  """The transaction hash of the event."""
   tx: String!
 
-  """
-  The type of the event.
-  """
+  """The type of the event."""
   type: GqlPoolEventType!
 
-  """
-  The user address associated with the event.
-  """
+  """The user address associated with the event."""
   userAddress: String!
 
-  """
-  The value of the event in USD.
-  """
+  """The value of the event in USD."""
   valueUSD: Float!
 }
 
-"""
-Represents an event that occurs when a swap is made in a pool.
-"""
+"""Represents an event that occurs when a swap is made in a pool."""
 type GqlPoolSwapEventV3 implements GqlPoolEvent {
-  """
-  The block number of the event.
-  """
+  """The block number of the event."""
   blockNumber: Int!
 
-  """
-  The block timestamp of the event.
-  """
+  """The block timestamp of the event."""
   blockTimestamp: Int!
 
-  """
-  The chain on which the event occurred.
-  """
+  """The chain on which the event occurred."""
   chain: GqlChain!
 
-  """
-  The fee that this swap generated.
-  """
+  """The fee that this swap generated."""
   fee: GqlPoolEventAmount!
 
-  """
-  The unique identifier of the event.
-  """
+  """The unique identifier of the event."""
   id: ID!
 
-  """
-  The log index of the event.
-  """
+  """The log index of the event."""
   logIndex: Int!
 
-  """
-  The pool ID associated with the event.
-  """
+  """The pool ID associated with the event."""
   poolId: String!
 
-  """
-  The sender of the event.
-  """
+  """The sender of the event."""
   sender: String!
 
-  """
-  The timestamp of the event.
-  """
+  """The timestamp of the event."""
   timestamp: Int!
 
-  """
-  The token that was swapped in the event.
-  """
+  """The token that was swapped in the event."""
   tokenIn: GqlPoolEventAmount!
 
-  """
-  The token that was swapped out in the event.
-  """
+  """The token that was swapped out in the event."""
   tokenOut: GqlPoolEventAmount!
 
-  """
-  The transaction hash of the event.
-  """
+  """The transaction hash of the event."""
   tx: String!
 
-  """
-  The type of the event.
-  """
+  """The type of the event."""
   type: GqlPoolEventType!
 
-  """
-  The user address associated with the event.
-  """
+  """The user address associated with the event."""
   userAddress: String!
 
-  """
-  The value of the event in USD.
-  """
+  """The value of the event in USD."""
   valueUSD: Float!
 }
 
@@ -2012,59 +1566,37 @@ All info on the pool token. It will also include the nested pool if the token is
 A second (unsupported) level of nesting is shown by having hasNestedPool = true but nestedPool = null.
 """
 type GqlPoolTokenDetail {
-  """
-  Address of the pool token.
-  """
+  """Address of the pool token."""
   address: String!
 
-  """
-  Balance of the pool token inside the pool.
-  """
+  """Balance of the pool token inside the pool."""
   balance: BigDecimal!
 
-  """
-  USD Balance of the pool token.
-  """
+  """USD Balance of the pool token."""
   balanceUSD: BigDecimal!
 
-  """
-  Decimals of the pool token.
-  """
+  """Decimals of the pool token."""
   decimals: Int!
 
-  """
-  The ERC4626 review data for the token
-  """
+  """The ERC4626 review data for the token"""
   erc4626ReviewData: Erc4626ReviewData
 
-  """
-  Indicates whether this token is a BPT and therefor has a nested pool.
-  """
+  """Indicates whether this token is a BPT and therefor has a nested pool."""
   hasNestedPool: Boolean!
 
-  """
-  Id of the token. A combination of pool id and token address.
-  """
+  """Id of the token. A combination of pool id and token address."""
   id: ID!
 
-  """
-  Index of the pool token in the pool as returned by the vault.
-  """
+  """Index of the pool token in the pool as returned by the vault."""
   index: Int!
 
-  """
-  Whether the token is in the allow list.
-  """
+  """Whether the token is in the allow list."""
   isAllowed: Boolean!
 
-  """
-  Whether the token is considered an ERC4626 token.
-  """
+  """Whether the token is considered an ERC4626 token."""
   isErc4626: Boolean!
 
-  """
-  Name of the pool token.
-  """
+  """Name of the pool token."""
   name: String!
 
   """
@@ -2077,9 +1609,7 @@ type GqlPoolTokenDetail {
   """
   priceRate: BigDecimal!
 
-  """
-  The address of the price rate provider.
-  """
+  """The address of the price rate provider."""
   priceRateProvider: String
 
   """
@@ -2092,9 +1622,7 @@ type GqlPoolTokenDetail {
   """
   scalingFactor: BigDecimal
 
-  """
-  Symbol of the pool token.
-  """
+  """Symbol of the pool token."""
   symbol: String!
 
   """
@@ -2132,9 +1660,7 @@ type GqlPoolTokenExpanded {
 
 union GqlPoolTokenUnion = GqlPoolToken | GqlPoolTokenComposableStable
 
-"""
-Supported pool types
-"""
+"""Supported pool types"""
 enum GqlPoolType {
   COMPOSABLE_STABLE
   COW_AMM
@@ -2152,43 +1678,25 @@ enum GqlPoolType {
   WEIGHTED
 }
 
-union GqlPoolUnion =
-  | GqlPoolComposableStable
-  | GqlPoolElement
-  | GqlPoolFx
-  | GqlPoolGyro
-  | GqlPoolLiquidityBootstrapping
-  | GqlPoolMetaStable
-  | GqlPoolStable
-  | GqlPoolWeighted
+union GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolStable | GqlPoolWeighted
 
 """
 If a user address was provided in the query, the user balance is populated here
 """
 type GqlPoolUserBalance {
-  """
-  The staked BPT balances of the user.
-  """
+  """The staked BPT balances of the user."""
   stakedBalances: [GqlUserStakedBalance!]!
 
-  """
-  Total balance (wallet + staked) as float
-  """
+  """Total balance (wallet + staked) as float"""
   totalBalance: AmountHumanReadable!
 
-  """
-  Total balance (wallet + staked) in USD as float
-  """
+  """Total balance (wallet + staked) in USD as float"""
   totalBalanceUsd: Float!
 
-  """
-  The wallet balance (BPT in wallet) as float.
-  """
+  """The wallet balance (BPT in wallet) as float."""
   walletBalance: AmountHumanReadable!
 
-  """
-  The wallet balance (BPT in wallet) in USD as float.
-  """
+  """The wallet balance (BPT in wallet) in USD as float."""
   walletBalanceUsd: Float!
 }
 
@@ -2199,26 +1707,22 @@ type GqlPoolUserSwapVolume {
 
 type GqlPoolWeighted implements GqlPoolBase {
   address: Bytes!
-  allTokens: [GqlPoolTokenExpanded!]!
-    @deprecated(reason: "Use poolTokens instead")
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
   categories: [GqlPoolFilterCategory]
   chain: GqlChain!
   createTime: Int!
   decimals: Int!
-  displayTokens: [GqlPoolTokenDisplay!]!
-    @deprecated(reason: "Use poolTokens instead")
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
   factory: Bytes
   hasErc4626: Boolean!
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
-  investConfig: GqlPoolInvestConfig!
-    @deprecated(reason: "Removed without replacement")
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   liquidityManagement: LiquidityManagement
   name: String!
-  nestingType: GqlPoolNestingType!
-    @deprecated(reason: "Removed without replacement")
+  nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
   owner: Bytes!
   poolTokens: [GqlPoolTokenDetail!]!
   protocolVersion: Int!
@@ -2234,8 +1738,7 @@ type GqlPoolWeighted implements GqlPoolBase {
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
-  withdrawConfig: GqlPoolWithdrawConfig!
-    @deprecated(reason: "Removed without replacement")
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
 }
 
 type GqlPoolWithdrawConfig {
@@ -2259,69 +1762,43 @@ type GqlPriceImpact {
   """
   error: String
 
-  """
-  Price impact in percent 0.01 -> 0.01%; undefined if an error happened.
-  """
+  """Price impact in percent 0.01 -> 0.01%; undefined if an error happened."""
   priceImpact: AmountHumanReadable
 }
 
-"""
-Represents the data of a price rate provider
-"""
+"""Represents the data of a price rate provider"""
 type GqlPriceRateProviderData {
-  """
-  The address of the price rate provider
-  """
+  """The address of the price rate provider"""
   address: String!
 
-  """
-  The factory used to create the price rate provider, if applicable
-  """
+  """The factory used to create the price rate provider, if applicable"""
   factory: String
 
-  """
-  The name of the price rate provider
-  """
+  """The name of the price rate provider"""
   name: String
 
-  """
-  The filename of the review of the price rate provider
-  """
+  """The filename of the review of the price rate provider"""
   reviewFile: String
 
-  """
-  Indicates if the price rate provider has been reviewed
-  """
+  """Indicates if the price rate provider has been reviewed"""
   reviewed: Boolean!
 
-  """
-  A summary of the price rate provider, usually just says safe or unsafe
-  """
+  """A summary of the price rate provider, usually just says safe or unsafe"""
   summary: String
 
-  """
-  Upgradeable components of the price rate provider
-  """
+  """Upgradeable components of the price rate provider"""
   upgradeableComponents: [GqlPriceRateProviderUpgradeableComponent]
 
-  """
-  Warnings associated with the price rate provider
-  """
+  """Warnings associated with the price rate provider"""
   warnings: [String!]
 }
 
-"""
-Represents an upgradeable component of a price rate provider
-"""
+"""Represents an upgradeable component of a price rate provider"""
 type GqlPriceRateProviderUpgradeableComponent {
-  """
-  The entry point / proxy of the upgradeable component
-  """
+  """The entry point / proxy of the upgradeable component"""
   entryPoint: String!
 
-  """
-  Indicates if the implementation of the component has been reviewed
-  """
+  """Indicates if the implementation of the component has been reviewed"""
   implementationReviewed: String!
 }
 
@@ -2387,9 +1864,7 @@ type GqlReliquaryTokenBalanceSnapshot {
 }
 
 type GqlSftmxStakingData {
-  """
-  Current exchange rate for sFTMx -> FTM
-  """
+  """Current exchange rate for sFTMx -> FTM"""
   exchangeRate: String!
 
   """
@@ -2397,24 +1872,16 @@ type GqlSftmxStakingData {
   """
   maintenancePaused: Boolean!
 
-  """
-  The maximum FTM amount to depost.
-  """
+  """The maximum FTM amount to depost."""
   maxDepositLimit: AmountHumanReadable!
 
-  """
-  The minimum FTM amount to deposit.
-  """
+  """The minimum FTM amount to deposit."""
   minDepositLimit: AmountHumanReadable!
 
-  """
-  Number of vaults that delegated to validators.
-  """
+  """Number of vaults that delegated to validators."""
   numberOfVaults: Int!
 
-  """
-  The current rebasing APR for sFTMx.
-  """
+  """The current rebasing APR for sFTMx."""
   stakingApr: String!
 
   """
@@ -2422,14 +1889,10 @@ type GqlSftmxStakingData {
   """
   totalFtmAmount: AmountHumanReadable!
 
-  """
-  Total amount of FTM in the free pool.
-  """
+  """Total amount of FTM in the free pool."""
   totalFtmAmountInPool: AmountHumanReadable!
 
-  """
-  Total amount of FTM staked/delegated to validators.
-  """
+  """Total amount of FTM staked/delegated to validators."""
   totalFtmAmountStaked: AmountHumanReadable!
 
   """
@@ -2437,9 +1900,7 @@ type GqlSftmxStakingData {
   """
   undelegatePaused: Boolean!
 
-  """
-  A list of all the vaults that delegated to validators.
-  """
+  """A list of all the vaults that delegated to validators."""
   vaults: [GqlSftmxStakingVault!]!
 
   """
@@ -2447,22 +1908,16 @@ type GqlSftmxStakingData {
   """
   withdrawPaused: Boolean!
 
-  """
-  Delay to wait between undelegate (1st step) and withdraw (2nd step).
-  """
+  """Delay to wait between undelegate (1st step) and withdraw (2nd step)."""
   withdrawalDelay: Int!
 }
 
 type GqlSftmxStakingSnapshot {
-  """
-  Current exchange rate for sFTMx -> FTM
-  """
+  """Current exchange rate for sFTMx -> FTM"""
   exchangeRate: String!
   id: ID!
 
-  """
-  The timestamp of the snapshot. Timestamp is end of day midnight.
-  """
+  """The timestamp of the snapshot. Timestamp is end of day midnight."""
   timestamp: Int!
 
   """
@@ -2470,14 +1925,10 @@ type GqlSftmxStakingSnapshot {
   """
   totalFtmAmount: AmountHumanReadable!
 
-  """
-  Total amount of FTM in the free pool.
-  """
+  """Total amount of FTM in the free pool."""
   totalFtmAmountInPool: AmountHumanReadable!
 
-  """
-  Total amount of FTM staked/delegated to validators.
-  """
+  """Total amount of FTM staked/delegated to validators."""
   totalFtmAmountStaked: AmountHumanReadable!
 }
 
@@ -2490,56 +1941,36 @@ enum GqlSftmxStakingSnapshotDataRange {
 }
 
 type GqlSftmxStakingVault {
-  """
-  The amount of FTM that has been delegated via this vault.
-  """
+  """The amount of FTM that has been delegated via this vault."""
   ftmAmountStaked: AmountHumanReadable!
 
-  """
-  Whether the vault is matured, meaning whether unlock time has passed.
-  """
+  """Whether the vault is matured, meaning whether unlock time has passed."""
   isMatured: Boolean!
 
-  """
-  Timestamp when the delegated FTM unlocks, matures.
-  """
+  """Timestamp when the delegated FTM unlocks, matures."""
   unlockTimestamp: Int!
 
-  """
-  The address of the validator that the vault has delegated to.
-  """
+  """The address of the validator that the vault has delegated to."""
   validatorAddress: String!
 
-  """
-  The ID of the validator that the vault has delegated to.
-  """
+  """The ID of the validator that the vault has delegated to."""
   validatorId: String!
 
-  """
-  The contract address of the vault.
-  """
+  """The contract address of the vault."""
   vaultAddress: String!
 
-  """
-  The internal index of the vault.
-  """
+  """The internal index of the vault."""
   vaultIndex: Int!
 }
 
 type GqlSftmxWithdrawalRequests {
-  """
-  Amount of sFTMx that is being redeemed.
-  """
+  """Amount of sFTMx that is being redeemed."""
   amountSftmx: AmountHumanReadable!
 
-  """
-  The Withdrawal ID, used for interactions.
-  """
+  """The Withdrawal ID, used for interactions."""
   id: String!
 
-  """
-  Whether the requests is finished and the user has withdrawn.
-  """
+  """Whether the requests is finished and the user has withdrawn."""
   isWithdrawn: Boolean!
 
   """
@@ -2547,71 +1978,45 @@ type GqlSftmxWithdrawalRequests {
   """
   requestTimestamp: Int!
 
-  """
-  The user address that this request belongs to.
-  """
+  """The user address that this request belongs to."""
   user: String!
 }
 
 type GqlSorCallData {
-  """
-  The call data that needs to be sent to the RPC
-  """
+  """The call data that needs to be sent to the RPC"""
   callData: String!
 
-  """
-  Maximum amount to be sent for exact out orders
-  """
+  """Maximum amount to be sent for exact out orders"""
   maxAmountInRaw: String
 
-  """
-  Minimum amount received for exact in orders
-  """
+  """Minimum amount received for exact in orders"""
   minAmountOutRaw: String
 
-  """
-  The target contract to send the call data to
-  """
+  """The target contract to send the call data to"""
   to: String!
 
-  """
-  Value in ETH that needs to be sent for native swaps
-  """
+  """Value in ETH that needs to be sent for native swaps"""
   value: BigDecimal!
 }
 
-"""
-The swap paths for a swap
-"""
+"""The swap paths for a swap"""
 type GqlSorGetSwapPaths {
-  """
-  Transaction data that can be posted to an RPC to execute the swap.
-  """
+  """Transaction data that can be posted to an RPC to execute the swap."""
   callData: GqlSorCallData
 
-  """
-  The price of tokenOut in tokenIn.
-  """
+  """The price of tokenOut in tokenIn."""
   effectivePrice: AmountHumanReadable!
 
-  """
-  The price of tokenIn in tokenOut.
-  """
+  """The price of tokenIn in tokenOut."""
   effectivePriceReversed: AmountHumanReadable!
 
-  """
-  The found paths as needed as input for the b-sdk to execute the swap
-  """
+  """The found paths as needed as input for the b-sdk to execute the swap"""
   paths: [GqlSorPath!]!
 
-  """
-  Price impact of the path
-  """
+  """Price impact of the path"""
   priceImpact: GqlPriceImpact!
 
-  """
-  The version of the protocol these paths are from
-  """
+  """The version of the protocol these paths are from"""
   protocolVersion: Int!
 
   """
@@ -2619,14 +2024,10 @@ type GqlSorGetSwapPaths {
   """
   returnAmount: AmountHumanReadable!
 
-  """
-  The return amount in a raw form
-  """
+  """The return amount in a raw form"""
   returnAmountRaw: BigDecimal!
 
-  """
-  The swap routes including pool information. Used to display by the UI
-  """
+  """The swap routes including pool information. Used to display by the UI"""
   routes: [GqlSorSwapRoute!]!
 
   """
@@ -2634,9 +2035,7 @@ type GqlSorGetSwapPaths {
   """
   swapAmount: AmountHumanReadable!
 
-  """
-  The swap amount in a raw form
-  """
+  """The swap amount in a raw form"""
   swapAmountRaw: BigDecimal!
 
   """
@@ -2644,9 +2043,7 @@ type GqlSorGetSwapPaths {
   """
   swapType: GqlSorSwapType!
 
-  """
-  Swaps as needed for the vault swap input to execute the swap
-  """
+  """Swaps as needed for the vault swap input to execute the swap"""
   swaps: [GqlSorSwap!]!
 
   """
@@ -2654,29 +2051,19 @@ type GqlSorGetSwapPaths {
   """
   tokenAddresses: [String!]!
 
-  """
-  The token address of the tokenIn provided
-  """
+  """The token address of the tokenIn provided"""
   tokenIn: String!
 
-  """
-  The amount of tokenIn in human form
-  """
+  """The amount of tokenIn in human form"""
   tokenInAmount: AmountHumanReadable!
 
-  """
-  The token address of the tokenOut provided
-  """
+  """The token address of the tokenOut provided"""
   tokenOut: String!
 
-  """
-  The amount of tokenOut in human form
-  """
+  """The amount of tokenOut in human form"""
   tokenOutAmount: AmountHumanReadable!
 
-  """
-  The version of the vault these paths are from
-  """
+  """The version of the vault these paths are from"""
   vaultVersion: Int! @deprecated(reason: "Use protocolVersion instead")
 }
 
@@ -2706,9 +2093,7 @@ type GqlSorGetSwapsResponse {
 A path of a swap. A swap can have multiple paths. Used as input to execute the swap via b-sdk
 """
 type GqlSorPath {
-  """
-  Input amount of this path in scaled form
-  """
+  """Input amount of this path in scaled form"""
   inputAmountRaw: String!
 
   """
@@ -2716,59 +2101,37 @@ type GqlSorPath {
   """
   isBuffer: [Boolean!]!
 
-  """
-  Output amount of this path in scaled form
-  """
+  """Output amount of this path in scaled form"""
   outputAmountRaw: String!
 
-  """
-  A sorted list of pool ids that are used in this path
-  """
+  """A sorted list of pool ids that are used in this path"""
   pools: [String!]!
 
-  """
-  The version of the protocol these paths are from
-  """
+  """The version of the protocol these paths are from"""
   protocolVersion: Int!
 
-  """
-  A sorted list of tokens that are ussed in this path
-  """
+  """A sorted list of tokens that are ussed in this path"""
   tokens: [Token!]!
 
-  """
-  Vault version of this path.
-  """
+  """Vault version of this path."""
   vaultVersion: Int! @deprecated(reason: "Use protocolVersion instead")
 }
 
-"""
-A single swap step as used for input to the vault to execute a swap
-"""
+"""A single swap step as used for input to the vault to execute a swap"""
 type GqlSorSwap {
-  """
-  Amount to be swapped in this step. 0 for chained swap.
-  """
+  """Amount to be swapped in this step. 0 for chained swap."""
   amount: String!
 
-  """
-  Index of the asset used in the tokenAddress array.
-  """
+  """Index of the asset used in the tokenAddress array."""
   assetInIndex: Int!
 
-  """
-  Index of the asset used in the tokenAddress array.
-  """
+  """Index of the asset used in the tokenAddress array."""
   assetOutIndex: Int!
 
-  """
-  Pool id used in this swap step
-  """
+  """Pool id used in this swap step"""
   poolId: String!
 
-  """
-  UserData used in this swap, generally uses defaults.
-  """
+  """UserData used in this swap, generally uses defaults."""
   userData: String!
 }
 
@@ -2779,38 +2142,24 @@ input GqlSorSwapOptionsInput {
   timestamp: Int
 }
 
-"""
-The swap routes including pool information. Used to display by the UI
-"""
+"""The swap routes including pool information. Used to display by the UI"""
 type GqlSorSwapRoute {
-  """
-  The hops this route takes
-  """
+  """The hops this route takes"""
   hops: [GqlSorSwapRouteHop!]!
 
-  """
-  Share of this route of the total swap
-  """
+  """Share of this route of the total swap"""
   share: Float!
 
-  """
-  Address of the tokenIn
-  """
+  """Address of the tokenIn"""
   tokenIn: String!
 
-  """
-  Amount of the tokenIn in human form
-  """
+  """Amount of the tokenIn in human form"""
   tokenInAmount: AmountHumanReadable!
 
-  """
-  Address of the tokenOut
-  """
+  """Address of the tokenOut"""
   tokenOut: String!
 
-  """
-  Amount of the tokenOut in human form
-  """
+  """Amount of the tokenOut in human form"""
   tokenOutAmount: AmountHumanReadable!
 }
 
@@ -2818,34 +2167,22 @@ type GqlSorSwapRoute {
 A hop of a route. A route can have many hops meaning it traverses more than one pool.
 """
 type GqlSorSwapRouteHop {
-  """
-  The pool entity of this hop.
-  """
+  """The pool entity of this hop."""
   pool: GqlPoolMinimal!
 
-  """
-  The pool id of this hop.
-  """
+  """The pool id of this hop."""
   poolId: String!
 
-  """
-  Address of the tokenIn
-  """
+  """Address of the tokenIn"""
   tokenIn: String!
 
-  """
-  Amount of the tokenIn in human form
-  """
+  """Amount of the tokenIn in human form"""
   tokenInAmount: AmountHumanReadable!
 
-  """
-  Address of the tokenOut
-  """
+  """Address of the tokenOut"""
   tokenOut: String!
 
-  """
-  Amount of the tokenOut in human form
-  """
+  """Amount of the tokenOut in human form"""
   tokenOutAmount: AmountHumanReadable!
 }
 
@@ -2863,125 +2200,76 @@ input GqlSwapCallDataInput {
   """
   deadline: Int
 
-  """
-  Who receives the output amount.
-  """
+  """Who receives the output amount."""
   receiver: String!
 
-  """
-  Who sends the input amount.
-  """
+  """Who sends the input amount."""
   sender: String!
 
-  """
-  The max slippage in percent 0.01 -> 0.01%
-  """
+  """The max slippage in percent 0.01 -> 0.01%"""
   slippagePercentage: String!
 }
 
-"""
-Represents a token in the system
-"""
+"""Represents a token in the system"""
 type GqlToken {
-  """
-  The address of the token
-  """
+  """The address of the token"""
   address: String!
 
-  """
-  The chain of the token
-  """
+  """The chain of the token"""
   chain: GqlChain!
 
-  """
-  The chain ID of the token
-  """
+  """The chain ID of the token"""
   chainId: Int!
 
-  """
-  The coingecko ID for this token, if present
-  """
+  """The coingecko ID for this token, if present"""
   coingeckoId: String
 
-  """
-  The number of decimal places for the token
-  """
+  """The number of decimal places for the token"""
   decimals: Int!
 
-  """
-  The description of the token
-  """
+  """The description of the token"""
   description: String
 
-  """
-  The Discord URL of the token
-  """
+  """The Discord URL of the token"""
   discordUrl: String
 
-  """
-  The ERC4626 review data for the token
-  """
+  """The ERC4626 review data for the token"""
   erc4626ReviewData: Erc4626ReviewData
 
-  """
-  Whether the token is considered an ERC4626 token.
-  """
+  """Whether the token is considered an ERC4626 token."""
   isErc4626: Boolean!
 
-  """
-  The logo URI of the token
-  """
+  """The logo URI of the token"""
   logoURI: String
 
-  """
-  The name of the token
-  """
+  """The name of the token"""
   name: String!
 
-  """
-  The rate provider data for the token
-  """
+  """The rate provider data for the token"""
   priceRateProviderData: GqlPriceRateProviderData
 
-  """
-  The priority of the token, can be used for sorting.
-  """
+  """The priority of the token, can be used for sorting."""
   priority: Int!
 
-  """
-  The rate provider data for the token
-  """
-  rateProviderData: GqlPriceRateProviderData
-    @deprecated(reason: "Use priceRateProviderData instead")
+  """The rate provider data for the token"""
+  rateProviderData: GqlPriceRateProviderData @deprecated(reason: "Use priceRateProviderData instead")
 
-  """
-  The symbol of the token
-  """
+  """The symbol of the token"""
   symbol: String!
 
-  """
-  The Telegram URL of the token
-  """
+  """The Telegram URL of the token"""
   telegramUrl: String
 
-  """
-  Indicates if the token is tradable
-  """
+  """Indicates if the token is tradable"""
   tradable: Boolean!
 
-  """
-  The Twitter username of the token
-  """
+  """The Twitter username of the token"""
   twitterUsername: String
 
-  """
-  The ERC4626 underlying token address, if applicable.
-  """
+  """The ERC4626 underlying token address, if applicable."""
   underlyingTokenAddress: String
 
-  """
-  The website URL of the token
-  """
+  """The website URL of the token"""
   websiteUrl: String
 }
 
@@ -3017,113 +2305,69 @@ type GqlTokenData {
   websiteUrl: String
 }
 
-"""
-Represents additional data for a token
-"""
+"""Represents additional data for a token"""
 type GqlTokenDynamicData {
-  """
-  The all-time high price of the token
-  """
+  """The all-time high price of the token"""
   ath: Float!
 
-  """
-  The all-time low price of the token
-  """
+  """The all-time low price of the token"""
   atl: Float!
 
-  """
-  The fully diluted valuation of the token
-  """
+  """The fully diluted valuation of the token"""
   fdv: String
 
-  """
-  The highest price in the last 24 hours
-  """
+  """The highest price in the last 24 hours"""
   high24h: Float!
 
-  """
-  The unique identifier of the dynamic data
-  """
+  """The unique identifier of the dynamic data"""
   id: String!
 
-  """
-  The lowest price in the last 24 hours
-  """
+  """The lowest price in the last 24 hours"""
   low24h: Float!
 
-  """
-  The market capitalization of the token
-  """
+  """The market capitalization of the token"""
   marketCap: String
 
-  """
-  The current price of the token
-  """
+  """The current price of the token"""
   price: Float!
 
-  """
-  The price change in the last 24 hours
-  """
+  """The price change in the last 24 hours"""
   priceChange24h: Float!
 
-  """
-  The percentage price change in the last 7 days
-  """
+  """The percentage price change in the last 7 days"""
   priceChangePercent7d: Float
 
-  """
-  The percentage price change in the last 14 days
-  """
+  """The percentage price change in the last 14 days"""
   priceChangePercent14d: Float
 
-  """
-  The percentage price change in the last 24 hours
-  """
+  """The percentage price change in the last 24 hours"""
   priceChangePercent24h: Float!
 
-  """
-  The percentage price change in the last 30 days
-  """
+  """The percentage price change in the last 30 days"""
   priceChangePercent30d: Float
 
-  """
-  The address of the token
-  """
+  """The address of the token"""
   tokenAddress: String!
 
-  """
-  The timestamp when the data was last updated
-  """
+  """The timestamp when the data was last updated"""
   updatedAt: String!
 }
 
-"""
-Provide filters for tokens
-"""
+"""Provide filters for tokens"""
 input GqlTokenFilter {
-  """
-  Only return tokens with these addresses
-  """
+  """Only return tokens with these addresses"""
   tokensIn: [String!]
 }
 
-"""
-Result of the poolReloadPools mutation
-"""
+"""Result of the poolReloadPools mutation"""
 type GqlTokenMutationResult {
-  """
-  The chain that was reloaded.
-  """
+  """The chain that was reloaded."""
   chain: GqlChain!
 
-  """
-  The error message
-  """
+  """The error message"""
   error: String
 
-  """
-  Whether it was successful or not.
-  """
+  """Whether it was successful or not."""
   success: Boolean!
 }
 
@@ -3165,19 +2409,13 @@ type GqlUserPoolBalance {
 }
 
 type GqlUserStakedBalance {
-  """
-  The staked BPT balance as float.
-  """
+  """The staked BPT balance as float."""
   balance: AmountHumanReadable!
 
-  """
-  The steaked BPT balance in USD as float.
-  """
+  """The steaked BPT balance in USD as float."""
   balanceUsd: Float!
 
-  """
-  The id of the staking to match with GqlPoolStaking.id.
-  """
+  """The id of the staking to match with GqlPoolStaking.id."""
   stakingId: String!
 
   """
@@ -3199,20 +2437,14 @@ type GqlVeBalBalance {
   lockedUsd: AmountHumanReadable!
 }
 
-"""
-Represents a snapshot of a VeBal lock at a specific point in time.
-"""
+"""Represents a snapshot of a VeBal lock at a specific point in time."""
 type GqlVeBalLockSnapshot {
-  """
-  The locked balance at that time.
-  """
+  """The locked balance at that time."""
   balance: AmountHumanReadable!
   bias: String!
   slope: String!
 
-  """
-  The timestamp of the snapshot, snapshots are taking at lock events.
-  """
+  """The timestamp of the snapshot, snapshots are taking at lock events."""
   timestamp: Int!
 }
 
@@ -3228,54 +2460,34 @@ type GqlVeBalUserData {
 The Gauge that can be voted on through veBAL and that will ultimately receive the rewards.
 """
 type GqlVotingGauge {
-  """
-  The timestamp the gauge was added.
-  """
+  """The timestamp the gauge was added."""
   addedTimestamp: Int
 
-  """
-  The address of the root gauge on Ethereum mainnet.
-  """
+  """The address of the root gauge on Ethereum mainnet."""
   address: Bytes!
 
-  """
-  The address of the child gauge on the specific chain.
-  """
+  """The address of the child gauge on the specific chain."""
   childGaugeAddress: Bytes
 
-  """
-  Whether the gauge is killed or not.
-  """
+  """Whether the gauge is killed or not."""
   isKilled: Boolean!
 
-  """
-  The relative weight the gauge received this epoch (not more than 1.0).
-  """
+  """The relative weight the gauge received this epoch (not more than 1.0)."""
   relativeWeight: String!
 
-  """
-  The relative weight cap. 1.0 for uncapped.
-  """
+  """The relative weight cap. 1.0 for uncapped."""
   relativeWeightCap: String
 }
 
-"""
-A token inside of a pool with a voting gauge.
-"""
+"""A token inside of a pool with a voting gauge."""
 type GqlVotingGaugeToken {
-  """
-  The address of the token.
-  """
+  """The address of the token."""
   address: String!
 
-  """
-  The URL to the token logo.
-  """
+  """The URL to the token logo."""
   logoURI: String!
 
-  """
-  The symbol of the token.
-  """
+  """The symbol of the token."""
   symbol: String!
 
   """
@@ -3284,18 +2496,12 @@ type GqlVotingGaugeToken {
   weight: String
 }
 
-"""
-The pool that can be voted on through veBAL
-"""
+"""The pool that can be voted on through veBAL"""
 type GqlVotingPool {
-  """
-  The address of the pool.
-  """
+  """The address of the pool."""
   address: Bytes!
 
-  """
-  The chain this pool is on.
-  """
+  """The chain this pool is on."""
   chain: GqlChain!
 
   """
@@ -3303,24 +2509,16 @@ type GqlVotingPool {
   """
   gauge: GqlVotingGauge!
 
-  """
-  Pool ID
-  """
+  """Pool ID"""
   id: ID!
 
-  """
-  The symbol of the pool.
-  """
+  """The symbol of the pool."""
   symbol: String!
 
-  """
-  The tokens inside the pool.
-  """
+  """The tokens inside the pool."""
   tokens: [GqlVotingGaugeToken!]!
 
-  """
-  The type of the pool.
-  """
+  """The type of the pool."""
   type: GqlPoolType!
 }
 
@@ -3329,9 +2527,7 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON
 
-"""
-Liquidity management settings for v3 pools.
-"""
+"""Liquidity management settings for v3 pools."""
 type LiquidityManagement {
   """
   Indicates whether this pool has disabled add and removes of unbalanced/non-proportional liquidity. Meaning it will only support proportional add and remove liquidity.
@@ -3358,9 +2554,7 @@ type Mutation {
   beetsPoolLoadReliquarySnapshotsForAllFarms: String!
   beetsSyncFbeetsRatio: String!
   cacheAverageBlockTime: String!
-  poolLoadOnChainDataForAllPools(
-    chains: [GqlChain!]!
-  ): [GqlPoolMutationResult!]!
+  poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
   poolLoadSnapshotsForPools(poolIds: [String!]!, reload: Boolean): String!
   poolReloadAllPoolAprs(chain: GqlChain!): String!
   poolReloadPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
@@ -3399,10 +2593,7 @@ type PoolForBatchSwap {
 
 type Query {
   beetsGetFbeetsRatio: String!
-  beetsPoolGetReliquaryFarmSnapshots(
-    id: String!
-    range: GqlPoolSnapshotDataRange!
-  ): [GqlReliquaryFarmSnapshot!]!
+  beetsPoolGetReliquaryFarmSnapshots(id: String!, range: GqlPoolSnapshotDataRange!): [GqlReliquaryFarmSnapshot!]!
   blocksGetAverageBlockTime: Float!
   blocksGetBlocksPerDay: Float!
   blocksGetBlocksPerSecond: Float!
@@ -3410,144 +2601,63 @@ type Query {
   contentGetNewsItems(chain: GqlChain): [GqlContentNewsItem!]!
   latestSyncedBlocks: GqlLatestSyncedBlocks!
 
-  """
-  Getting swap, add and remove events with paging
-  """
-  poolEvents(
-    first: Int
-    skip: Int
-    where: GqlPoolEventsFilter
-  ): [GqlPoolEvent!]!
+  """Getting swap, add and remove events with paging"""
+  poolEvents(first: Int, skip: Int, where: GqlPoolEventsFilter): [GqlPoolEvent!]!
 
-  """
-  Returns all pools for a given filter, specific for aggregators
-  """
-  poolGetAggregatorPools(
-    first: Int
-    orderBy: GqlPoolOrderBy
-    orderDirection: GqlPoolOrderDirection
-    skip: Int
-    where: GqlPoolFilter
-  ): [GqlPoolAggregator!]!
+  """Returns all pools for a given filter, specific for aggregators"""
+  poolGetAggregatorPools(first: Int, orderBy: GqlPoolOrderBy, orderDirection: GqlPoolOrderDirection, skip: Int, where: GqlPoolFilter): [GqlPoolAggregator!]!
 
-  """
-  Will de deprecated in favor of poolEvents
-  """
-  poolGetBatchSwaps(
-    first: Int
-    skip: Int
-    where: GqlPoolSwapFilter
-  ): [GqlPoolBatchSwap!]! @deprecated(reason: "Use poolEvents instead")
+  """Will de deprecated in favor of poolEvents"""
+  poolGetBatchSwaps(first: Int, skip: Int, where: GqlPoolSwapFilter): [GqlPoolBatchSwap!]! @deprecated(reason: "Use poolEvents instead")
 
-  """
-  Getting swap, add and remove events with range
-  """
-  poolGetEvents(
-    chain: GqlChain!
-    poolId: String!
-    range: GqlPoolEventsDataRange!
-    typeIn: [GqlPoolEventType!]!
-    userAddress: String
-  ): [GqlPoolEvent!]!
+  """Getting swap, add and remove events with range"""
+  poolGetEvents(chain: GqlChain!, poolId: String!, range: GqlPoolEventsDataRange!, typeIn: [GqlPoolEventType!]!, userAddress: String): [GqlPoolEvent!]!
 
-  """
-  Will de deprecated in favor of poolGetFeaturedPools
-  """
-  poolGetFeaturedPoolGroups(chains: [GqlChain!]): [GqlPoolFeaturedPoolGroup!]!
-    @deprecated(reason: "Use poolGetFeaturedPools instead")
+  """Will de deprecated in favor of poolGetFeaturedPools"""
+  poolGetFeaturedPoolGroups(chains: [GqlChain!]): [GqlPoolFeaturedPoolGroup!]! @deprecated(reason: "Use poolGetFeaturedPools instead")
 
-  """
-  Returns the list of featured pools for chains
-  """
+  """Returns the list of featured pools for chains"""
   poolGetFeaturedPools(chains: [GqlChain!]!): [GqlPoolFeaturedPool!]!
 
-  """
-  Will de deprecated in favor of poolEvents
-  """
-  poolGetJoinExits(
-    first: Int
-    skip: Int
-    where: GqlPoolJoinExitFilter
-  ): [GqlPoolJoinExit!]! @deprecated(reason: "Use poolEvents instead")
+  """Will de deprecated in favor of poolEvents"""
+  poolGetJoinExits(first: Int, skip: Int, where: GqlPoolJoinExitFilter): [GqlPoolJoinExit!]! @deprecated(reason: "Use poolEvents instead")
 
   """
   Returns one pool. If a user address is provided, the user balances for the given pool will also be returned.
   """
   poolGetPool(chain: GqlChain, id: String!, userAddress: String): GqlPoolBase!
 
-  """
-  Returns all pools for a given filter
-  """
-  poolGetPools(
-    first: Int
-    orderBy: GqlPoolOrderBy
-    orderDirection: GqlPoolOrderDirection
-    skip: Int
-    textSearch: String
-    where: GqlPoolFilter
-  ): [GqlPoolMinimal!]!
+  """Returns all pools for a given filter"""
+  poolGetPools(first: Int, orderBy: GqlPoolOrderBy, orderDirection: GqlPoolOrderDirection, skip: Int, textSearch: String, where: GqlPoolFilter): [GqlPoolMinimal!]!
 
-  """
-  Returns the number of pools for a given filter.
-  """
-  poolGetPoolsCount(
-    first: Int
-    orderBy: GqlPoolOrderBy
-    orderDirection: GqlPoolOrderDirection
-    skip: Int
-    textSearch: String
-    where: GqlPoolFilter
-  ): Int!
+  """Returns the number of pools for a given filter."""
+  poolGetPoolsCount(first: Int, orderBy: GqlPoolOrderBy, orderDirection: GqlPoolOrderDirection, skip: Int, textSearch: String, where: GqlPoolFilter): Int!
 
-  """
-  Gets all the snapshots for a given pool on a chain for a certain range
-  """
-  poolGetSnapshots(
-    chain: GqlChain
-    id: String!
-    range: GqlPoolSnapshotDataRange!
-  ): [GqlPoolSnapshot!]!
+  """Gets all the snapshots for a given pool on a chain for a certain range"""
+  poolGetSnapshots(chain: GqlChain, id: String!, range: GqlPoolSnapshotDataRange!): [GqlPoolSnapshot!]!
 
-  """
-  Will de deprecated in favor of poolEvents
-  """
-  poolGetSwaps(
-    first: Int
-    skip: Int
-    where: GqlPoolSwapFilter
-  ): [GqlPoolSwap!]! @deprecated(reason: "Use poolEvents instead")
+  """Will de deprecated in favor of poolEvents"""
+  poolGetSwaps(first: Int, skip: Int, where: GqlPoolSwapFilter): [GqlPoolSwap!]! @deprecated(reason: "Use poolEvents instead")
   protocolMetricsAggregated(chains: [GqlChain!]): GqlProtocolMetricsAggregated!
   protocolMetricsChain(chain: GqlChain): GqlProtocolMetricsChain!
 
-  """
-  Get the staking data and status for sFTMx
-  """
+  """Get the staking data and status for sFTMx"""
   sftmxGetStakingData: GqlSftmxStakingData!
 
-  """
-  Get snapshots for sftmx staking for a specific range
-  """
-  sftmxGetStakingSnapshots(
-    range: GqlSftmxStakingSnapshotDataRange!
-  ): [GqlSftmxStakingSnapshot!]!
+  """Get snapshots for sftmx staking for a specific range"""
+  sftmxGetStakingSnapshots(range: GqlSftmxStakingSnapshotDataRange!): [GqlSftmxStakingSnapshot!]!
 
-  """
-  Retrieve the withdrawalrequests from a user
-  """
+  """Retrieve the withdrawalrequests from a user"""
   sftmxGetWithdrawalRequests(user: String!): [GqlSftmxWithdrawalRequests!]!
 
-  """
-  Get swap quote from the SOR v2 for the V2 vault
-  """
+  """Get swap quote from the SOR v2 for the V2 vault"""
   sorGetSwapPaths(
     """
     Input data to create and return transaction data. If this config is given, call data is added to the response.
     """
     callDataInput: GqlSwapCallDataInput
 
-    """
-    The Chain to query
-    """
+    """The Chain to query"""
     chain: GqlChain!
 
     """
@@ -3555,9 +2665,7 @@ type Query {
     """
     considerPoolsWithHooks: Boolean
 
-    """
-    Use specified poolIds only
-    """
+    """Use specified poolIds only"""
     poolIds: [String!]
 
     """
@@ -3565,24 +2673,16 @@ type Query {
     """
     queryBatchSwap: Boolean
 
-    """
-    The amount to swap, in human form.
-    """
+    """The amount to swap, in human form."""
     swapAmount: AmountHumanReadable!
 
-    """
-    SwapType either exact_in or exact_out (also givenIn or givenOut)
-    """
+    """SwapType either exact_in or exact_out (also givenIn or givenOut)"""
     swapType: GqlSorSwapType!
 
-    """
-    Token address of the tokenIn
-    """
+    """Token address of the tokenIn"""
     tokenIn: String!
 
-    """
-    Token address of the tokenOut
-    """
+    """Token address of the tokenOut"""
     tokenOut: String!
 
     """
@@ -3591,50 +2691,29 @@ type Query {
     useProtocolVersion: Int
   ): GqlSorGetSwapPaths!
 
-  """
-  Get swap quote from the SOR, queries both the old and new SOR
-  """
+  """Get swap quote from the SOR, queries both the old and new SOR"""
   sorGetSwaps(
-    """
-    The Chain to query
-    """
+    """The Chain to query"""
     chain: GqlChain
 
-    """
-    The amount to swap, in human form.
-    """
+    """The amount to swap, in human form."""
     swapAmount: BigDecimal!
 
-    """
-    Options for the swap
-    """
+    """Options for the swap"""
     swapOptions: GqlSorSwapOptionsInput!
 
-    """
-    SwapType either exact_in or exact_out (also givenIn or givenOut)
-    """
+    """SwapType either exact_in or exact_out (also givenIn or givenOut)"""
     swapType: GqlSorSwapType!
 
-    """
-    Token address of the tokenIn
-    """
+    """Token address of the tokenIn"""
     tokenIn: String!
 
-    """
-    Token address of the tokenOut
-    """
+    """Token address of the tokenOut"""
     tokenOut: String!
   ): GqlSorGetSwapsResponse!
 
-  """
-  Returns the candlestick chart data for a token for a given range.
-  """
-  tokenGetCandlestickChartData(
-    address: String!
-    chain: GqlChain
-    range: GqlTokenChartDataRange!
-  ): [GqlTokenCandlestickChartDataItem!]!
-    @deprecated(reason: "Use tokenGetHistoricalPrices instead")
+  """Returns the candlestick chart data for a token for a given range."""
+  tokenGetCandlestickChartData(address: String!, chain: GqlChain, range: GqlTokenChartDataRange!): [GqlTokenCandlestickChartDataItem!]! @deprecated(reason: "Use tokenGetHistoricalPrices instead")
 
   """
   Returns all current prices for allowed tokens for a given chain or chains
@@ -3644,109 +2723,52 @@ type Query {
   """
   Returns the historical prices for a given set of tokens for a given chain and range
   """
-  tokenGetHistoricalPrices(
-    addresses: [String!]!
-    chain: GqlChain!
-    range: GqlTokenChartDataRange!
-  ): [GqlHistoricalTokenPrice!]!
+  tokenGetHistoricalPrices(addresses: [String!]!, chain: GqlChain!, range: GqlTokenChartDataRange!): [GqlHistoricalTokenPrice!]!
 
-  """
-  DEPRECATED: Returns pricing data for a given token for a given range
-  """
-  tokenGetPriceChartData(
-    address: String!
-    chain: GqlChain
-    range: GqlTokenChartDataRange!
-  ): [GqlTokenPriceChartDataItem!]!
-    @deprecated(reason: "Use tokenGetHistoricalPrices instead")
+  """DEPRECATED: Returns pricing data for a given token for a given range"""
+  tokenGetPriceChartData(address: String!, chain: GqlChain, range: GqlTokenChartDataRange!): [GqlTokenPriceChartDataItem!]! @deprecated(reason: "Use tokenGetHistoricalPrices instead")
 
-  """
-  Returns the price of either BAL or BEETS depending on chain
-  """
-  tokenGetProtocolTokenPrice(chain: GqlChain): AmountHumanReadable!
-    @deprecated(reason: "Use tokenGetTokensDynamicData instead")
+  """Returns the price of either BAL or BEETS depending on chain"""
+  tokenGetProtocolTokenPrice(chain: GqlChain): AmountHumanReadable! @deprecated(reason: "Use tokenGetTokensDynamicData instead")
 
   """
   Returns the price of a token priced in another token for a given range.
   """
-  tokenGetRelativePriceChartData(
-    chain: GqlChain
-    range: GqlTokenChartDataRange!
-    tokenIn: String!
-    tokenOut: String!
-  ): [GqlTokenPriceChartDataItem!]!
+  tokenGetRelativePriceChartData(chain: GqlChain, range: GqlTokenChartDataRange!, tokenIn: String!, tokenOut: String!): [GqlTokenPriceChartDataItem!]!
 
-  """
-  Returns meta data for a given token such as description, website, etc.
-  """
-  tokenGetTokenData(address: String!, chain: GqlChain): GqlTokenData
-    @deprecated(reason: "Use tokenGetTokens instead")
+  """Returns meta data for a given token such as description, website, etc."""
+  tokenGetTokenData(address: String!, chain: GqlChain): GqlTokenData @deprecated(reason: "Use tokenGetTokens instead")
 
-  """
-  Returns dynamic data of a token such as price, market cap, etc.
-  """
-  tokenGetTokenDynamicData(
-    address: String!
-    chain: GqlChain
-  ): GqlTokenDynamicData
+  """Returns dynamic data of a token such as price, market cap, etc."""
+  tokenGetTokenDynamicData(address: String!, chain: GqlChain): GqlTokenDynamicData
 
-  """
-  Returns all allowed tokens for a given chain or chains
-  """
+  """Returns all allowed tokens for a given chain or chains"""
   tokenGetTokens(chains: [GqlChain!], where: GqlTokenFilter): [GqlToken!]!
 
   """
   Returns meta data for a given set of tokens such as description, website, etc.
   """
-  tokenGetTokensData(addresses: [String!]!): [GqlTokenData!]!
-    @deprecated(reason: "Use tokenGetTokens instead")
+  tokenGetTokensData(addresses: [String!]!): [GqlTokenData!]! @deprecated(reason: "Use tokenGetTokens instead")
 
   """
   Returns dynamic data of a set of tokens such as price, market cap, etc.
   """
-  tokenGetTokensDynamicData(
-    addresses: [String!]!
-    chain: GqlChain
-  ): [GqlTokenDynamicData!]!
+  tokenGetTokensDynamicData(addresses: [String!]!, chain: GqlChain): [GqlTokenDynamicData!]!
   userGetFbeetsBalance: GqlUserFbeetsBalance!
-  userGetPoolBalances(
-    address: String
-    chains: [GqlChain!]
-  ): [GqlUserPoolBalance!]!
+  userGetPoolBalances(address: String, chains: [GqlChain!]): [GqlUserPoolBalance!]!
 
-  """
-  Will de deprecated in favor of poolGetEvents
-  """
-  userGetPoolJoinExits(
-    address: String
-    chain: GqlChain
-    first: Int = 10
-    poolId: String!
-    skip: Int = 0
-  ): [GqlPoolJoinExit!]!
+  """Will de deprecated in favor of poolGetEvents"""
+  userGetPoolJoinExits(address: String, chain: GqlChain, first: Int = 10, poolId: String!, skip: Int = 0): [GqlPoolJoinExit!]!
   userGetStaking(address: String, chains: [GqlChain!]): [GqlPoolStaking!]!
 
-  """
-  Will de deprecated in favor of poolGetEvents
-  """
-  userGetSwaps(
-    address: String
-    chain: GqlChain
-    first: Int = 10
-    poolId: String!
-    skip: Int = 0
-  ): [GqlPoolSwap!]!
+  """Will de deprecated in favor of poolGetEvents"""
+  userGetSwaps(address: String, chain: GqlChain, first: Int = 10, poolId: String!, skip: Int = 0): [GqlPoolSwap!]!
   veBalGetTotalSupply(chain: GqlChain): AmountHumanReadable!
   veBalGetUser(address: String!, chain: GqlChain): GqlVeBalUserData!
   veBalGetUserBalance(address: String, chain: GqlChain): AmountHumanReadable!
-  veBalGetUserBalances(
-    address: String!
-    chains: [GqlChain!]
-  ): [GqlVeBalBalance!]!
+  veBalGetUserBalances(address: String!, chains: [GqlChain!]): [GqlVeBalBalance!]!
 
-  """
-  Returns all pools with veBAL gauges that can be voted on.
-  """
+  """Returns all pools with veBAL gauges that can be voted on."""
   veBalGetVotingList: [GqlVotingPool!]!
 }
 

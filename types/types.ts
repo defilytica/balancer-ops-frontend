@@ -4,3 +4,6 @@ export type NetworkInfo = {
   explorer: string;
   chainId: string;
 };
+
+export type PoolType = 'weighted' | 'composableStable' | undefined;
+

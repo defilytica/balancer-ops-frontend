@@ -14,6 +14,7 @@ import { FiHome } from "react-icons/fi";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin } from "react-icons/tb";
+import { MdPool } from "react-icons/md";
 import NavItem from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 
@@ -52,6 +53,12 @@ const LinkItems = [
     icon: SiChainlink,
     target: "/chainlink-automation",
     description: "View Chainlink Automation Upkeeps",
+  },
+  {
+    name: "Pool Creator",
+    icon: MdPool,
+    target: "/pool-creator-v2",
+    description: "Create weighted and composable stable pools for Balancer v2",
   },
 ];
 
