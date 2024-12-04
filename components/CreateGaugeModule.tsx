@@ -44,9 +44,14 @@ import {
 import {useAccount, useSwitchChain} from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { GetPoolsDocument, GetPoolsQuery, GetPoolsQueryVariables } from "@/lib/services/apollo/generated/graphql";
+import {
+    GetPoolsDocument,
+    GetPoolsQuery,
+    GetPoolsQueryVariables, VeBalGetVotingGaugesDocument,
+    VeBalGetVotingGaugesQuery
+} from "@/lib/services/apollo/generated/graphql";
 import { AddressBook, Pool } from "@/types/interfaces";
-import {GAUGE_WEIGHT_CAPS, MAINNET_GAUGE_FACTORY, NETWORK_OPTIONS} from "@/constants/constants";
+import {GAUGE_WEIGHT_CAPS, MAINNET_GAUGE_FACTORY, NETWORK_OPTIONS, networks} from "@/constants/constants";
 import {CloseIcon, ExternalLinkIcon, InfoIcon} from "@chakra-ui/icons";
 import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
@@ -91,8 +96,10 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     const { address } = useAccount();
     const { openConnectModal } = useConnectModal();
 
+    //Chain state switch
     const { chains, switchChain } = useSwitchChain()
 
+    //Pool data
     const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
         GetPoolsDocument,
         {
@@ -100,6 +107,28 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
             skip: !selectedNetwork,
         }
     );
+
+    const { data: votingGaugesData } = useQuery<VeBalGetVotingGaugesQuery>(
+        VeBalGetVotingGaugesDocument,
+    );
+
+    const existingRootGauge = useMemo(() => {
+        if (!selectedPool?.staking?.gauge?.id || !votingGaugesData?.veBalGetVotingList) {
+            return null;
+        }
+
+        // Find matching root gauge for the selected child gauge
+        return votingGaugesData.veBalGetVotingList.find(
+            (gauge) => gauge.gauge?.childGaugeAddress?.toLowerCase() === selectedPool.staking?.gauge?.id.toLowerCase()
+        );
+    }, [selectedPool, votingGaugesData]);
+
+    // Function to get explorer URL based on network
+    const getExplorerUrl = (network: string, hash: string) => {
+        const networkKey = network.toLowerCase();
+        const explorerBase = networks[networkKey]?.explorer || networks.mainnet.explorer;
+        return `${explorerBase}tx/${hash}`;
+    };
 
     const filteredPools = useMemo(() => {
         if (!data?.poolGetPools) return [];
@@ -129,6 +158,13 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         setSearchTerm("");
     };
 
+    const shouldSkipChildGauge = hasExistingGauge;
+    useEffect(() => {
+        if (shouldSkipChildGauge) {
+            setActiveStep(1);
+        }
+    }, [shouldSkipChildGauge]);
+
     const getChildChainFactoryForNetwork = useCallback((network: string) => {
         const childChainFactory = addressBook.active[network.toLowerCase()]?.["20230316-child-chain-gauge-factory-v2"]?.["ChildChainGaugeFactory"];
         if (typeof childChainFactory === "string") {
@@ -140,13 +176,34 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     }, [addressBook]);
 
     const getRootGaugeFactoryForNetwork = useCallback((network: string) => {
-        const rootGaugeFactory = addressBook.active["mainnet"]?.[`${network}-root-gauge-factory`]?.["RootGaugeFactory"];
-        if (typeof rootGaugeFactory === "string") {
-            return rootGaugeFactory;
-        } else if (rootGaugeFactory && typeof rootGaugeFactory === "object") {
-            return Object.values(rootGaugeFactory)[0] || "";
+        // Convert network to the expected format (e.g., "POLYGON" -> "polygon")
+        const normalizedNetwork = network.toLowerCase();
+
+        // Find the correct factory key by matching the network
+        const factoryKey = Object.keys(addressBook.active["mainnet"]).find(key =>
+            key.toLowerCase().includes(`${normalizedNetwork}-root-gauge-factory`)
+        );
+
+        if (!factoryKey) {
+            console.error(`No root gauge factory found for network: ${network}`);
+            return "";
         }
-        return "";
+
+        // Get the factory contract data
+        const factoryData = addressBook.active["mainnet"][factoryKey];
+
+        // Find the correct contract by looking for the *RootGaugeFactory name
+        const factoryContract = Object.entries(factoryData).find(([key]) =>
+            key.endsWith('RootGaugeFactory')
+        );
+
+        if (!factoryContract || !factoryContract[1] || typeof factoryContract[1] !== 'string') {
+            console.error(`No valid root gauge factory address found in: ${factoryKey}`);
+            return "";
+        }
+
+        // Ensure we're returning a string
+        return factoryContract[1] as string;
     }, [addressBook]);
 
     const handleNetworkChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -268,17 +325,73 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         }
     };
 
+    const RootGaugeAlert = () => {
+        if (!existingRootGauge) return null;
+
+        return (
+            <Alert status="warning" mt={4}>
+                <AlertIcon />
+                <AlertDescription>
+                    <Text fontWeight="bold" mb={2}>Existing Root Gauge Detected</Text>
+                    <Text>
+                        This gauge already has a root gauge on Ethereum ({existingRootGauge.gauge?.address}).
+                        {existingRootGauge.gauge?.isKilled && (
+                            <Text color="red.500" mt={2}>
+                                Note: This root gauge is marked as killed.
+                            </Text>
+                        )}
+                    </Text>
+                </AlertDescription>
+            </Alert>
+        );
+    };
+
     const createRootGauge = async () => {
         if (!selectedPool || !address) return;
+
+        if (existingRootGauge?.gauge && !existingRootGauge.gauge.isKilled) {
+            toast({
+                title: "Root gauge already exists",
+                description: "This child gauge already has an active root gauge on Ethereum.",
+                status: "error",
+                duration: 5000,
+            });
+            return;
+        }
+
+        // Switch to mainnet for root gauge
+        try {
+            switchChain({chainId: 1});
+        } catch (error) {
+            toast({
+                title: "Error switching network",
+                description: "Please switch network manually in your wallet",
+                status: "error",
+                duration: 5000,
+            });
+            return;
+        }
 
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
 
-            const childGaugeAddress = transactions.find(t => t.type === 'childGauge')?.address;
-            if (!childGaugeAddress) throw new Error("Child gauge address not found");
+            // Try to get childGaugeAddress from either:
+            // 1. Existing gauge in the pool data
+            // 2. Recently created child gauge in transactions
+            const childGaugeAddress = hasExistingGauge
+                ? selectedPool.staking?.gauge?.id
+                : transactions.find(t => t.type === 'childGauge')?.address;
+
+            if (!childGaugeAddress) {
+                throw new Error("Child gauge address not found");
+            }
 
             const rootFactory = getRootGaugeFactoryForNetwork(selectedNetwork);
+            if (!rootFactory) {
+                throw new Error("Root gauge factory not found for network");
+            }
+
             const contract = getContract(rootFactory, RootGaugeFactory, signer);
 
             const tx = await contract.create(childGaugeAddress, weightCap);
@@ -301,10 +414,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                 status: "success",
                 duration: 5000,
             });
-        } catch (error) {
+
+        } catch (error: any) {
+            console.error('Root gauge creation error:', error);
             toast({
                 title: "Error creating root gauge",
-                description: 'There was an error creating gauge, check transaction logs.',
+                description: error.message || 'There was an error creating gauge, check transaction logs.',
                 status: "error",
                 duration: 5000,
             });
@@ -360,17 +475,19 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                 </Alert>
 
                 {hasExistingGauge && (
-                <Alert status="warning" mt={4}>
-                    <AlertIcon />
-                    <AlertDescription>
-                        <Text fontWeight="bold" mb={2}>Existing Gauge Detected</Text>
-                        <Text>
-                            This pool already has a gauge (ID: {selectedPool?.staking?.gauge?.id}).
-                            Creating a new gauge is not necessary and could cause issues.
-                        </Text>
-                    </AlertDescription>
-                </Alert>
+                    <Alert status="warning" mt={4}>
+                        <AlertIcon />
+                        <AlertDescription>
+                            <Text fontWeight="bold" mb={2}>Existing Gauge Detected</Text>
+                            <Text>
+                                This pool already has a gauge ({selectedPool?.staking?.gauge?.id}).
+                                {!existingRootGauge && " You can proceed to create a root gauge for it."}
+                            </Text>
+                        </AlertDescription>
+                    </Alert>
                 )}
+                {/* Add the root gauge alert */}
+                <RootGaugeAlert />
             </Box>
 
             {/* Configuration Section */}
@@ -419,7 +536,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         clearPoolSelection();
-                                                    }}
+                                                   }}
                                                 />
                                             </InputRightElement>
                                         )}
@@ -550,14 +667,21 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                                     <Box flexShrink='0'>
                                         <StepTitle>Create Child Chain Gauge</StepTitle>
                                         <StepDescription>On {selectedNetwork}</StepDescription>
-                                        <Button
-                                            mt={2}
-                                            variant="primary"
-                                            onClick={createChildChainGauge}
-                                            isDisabled={!address || activeStep > 0}
-                                        >
-                                            Create Child Gauge
-                                        </Button>
+                                        {!shouldSkipChildGauge && (
+                                            <Button
+                                                mt={2}
+                                                variant="primary"
+                                                onClick={createChildChainGauge}
+                                                isDisabled={!address || activeStep > 0}
+                                            >
+                                                Create Child Gauge
+                                            </Button>
+                                        )}
+                                        {shouldSkipChildGauge && (
+                                            <Text color="green.500" mt={2}>
+                                                Using existing gauge
+                                            </Text>
+                                        )}
                                     </Box>
                                     <StepSeparator />
                                 </Step>
@@ -576,9 +700,11 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                                             mt={2}
                                             variant="primary"
                                             onClick={createRootGauge}
-                                            isDisabled={!address || activeStep !== 1}
+                                            isDisabled={!address || activeStep !== 1 || (existingRootGauge?.gauge && !existingRootGauge.gauge.isKilled)}
                                         >
-                                            Create Root Gauge
+                                            {existingRootGauge?.gauge && !existingRootGauge.gauge.isKilled
+                                                ? "Root Gauge Exists"
+                                                : "Create Root Gauge"}
                                         </Button>
                                     </Box>
                                 </Step>
@@ -599,12 +725,19 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                             {transactions.map((tx, index) => (
                                 <Flex key={index} align="center" justify="space-between">
                                     <HStack spacing={2}>
-                                        <Text fontWeight="medium">
+                                        <Text fontSize="medium">
                                             {tx.type === 'childGauge' ? 'Child Gauge' : 'Root Gauge'}:
                                         </Text>
+                                        {tx.address && (
+                                            <Text fontWeight="medium" >
+                                                {tx.address}
+                                            </Text>
+                                        )}
+                                    </HStack>
+                                    <HStack spacing={4}>
                                         <Button
                                             as="a"
-                                            href={`https://etherscan.io/tx/${tx.hash}`}
+                                            href={getExplorerUrl(selectedNetwork, tx.hash)}
                                             target="_blank"
                                             variant="link"
                                             rightIcon={<ExternalLinkIcon />}
@@ -612,13 +745,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                                         >
                                             {tx.hash.substring(0, 6)}...{tx.hash.substring(tx.hash.length - 4)}
                                         </Button>
-                                    </HStack>
-                                    <HStack spacing={4}>
-                                        {tx.address && (
-                                            <Text fontSize="sm" color="gray.600">
-                                                Gauge: {tx.address.substring(0, 6)}...{tx.address.substring(tx.address.length - 4)}
-                                            </Text>
-                                        )}
+
                                         <Badge
                                             colorScheme={tx.status === 'success' ? 'green' : 'orange'}
                                         >

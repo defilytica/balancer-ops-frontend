@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Box,
+  Text,
   CloseButton,
   Flex,
   useColorModeValue,
@@ -83,11 +84,43 @@ const DRPCBanner = () => (
       <Image
         src="https://drpc.org/images/external/powered-by-drpc-dark.svg"
         alt="Powered by dRPC"
-        width="218px"
-        height="54px"
+        width="190px"
+        height="47px"
       />
     </Box>
   </Link>
+);
+
+const DefilyticaBanner = () => (
+    <Link href="https://defilytica.com" isExternal>
+      <Box
+          mt={3}
+          shadow="md"
+          borderRadius="md"
+          overflow="hidden"
+          transition="all 0.1s"
+          p={2}  // Added padding for better spacing
+          display="flex"
+          alignItems="center"
+          gap={2}  // Add space between logo and text
+          bg="purple.950"
+          _hover={{
+            shadow: "lg",
+            transform: "translateY(-2px)",
+          }}
+      >
+        <Image
+            src="/imgs/defilytica.png"
+            alt="DeFilytica"
+            width="24px"
+            height="24px"
+            objectFit="contain"
+        />
+        <Text fontSize="sm" fontWeight="medium" variant="special">
+          Developed by DeFilytica
+        </Text>
+      </Box>
+    </Link>
 );
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
@@ -138,9 +171,10 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           borderRadius="full"
           px={2}
         >
-          Alpha release
+          Beta release
         </Badge>
         <DRPCBanner />
+        <DefilyticaBanner />
       </Flex>
     </Box>
   );

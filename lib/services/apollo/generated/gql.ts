@@ -16,6 +16,7 @@ const documents = {
     "query CurrentTokenPrices($chains: [GqlChain!]) {\n  tokenGetCurrentPrices(chains: $chains) {\n    address\n    price\n    chain\n  }\n}": types.CurrentTokenPricesDocument,
     "query GetPools($chainIn: [GqlChain!]) {\n  poolGetPools(\n    where: {chainIn: $chainIn}\n    orderBy: totalLiquidity\n    orderDirection: desc\n  ) {\n    chain\n    protocolVersion\n    address\n    name\n    symbol\n    type\n    version\n    createTime\n    owner\n    staking {\n      gauge {\n        id\n      }\n    }\n    dynamicData {\n      swapFee\n      poolId\n    }\n  }\n}": types.GetPoolsDocument,
     "query GetTokens($chainIn: [GqlChain!]) {\n  tokenGetTokens(chains: $chainIn) {\n    chainId\n    address\n    name\n    symbol\n    decimals\n    logoURI\n  }\n}": types.GetTokensDocument,
+    "query VeBalGetVotingGauges {\n  veBalGetVotingList {\n    id\n    address\n    chain\n    type\n    symbol\n    gauge {\n      address\n      childGaugeAddress\n      isKilled\n      relativeWeightCap\n      addedTimestamp\n    }\n    tokens {\n      address\n      logoURI\n      symbol\n      weight\n    }\n  }\n}": types.VeBalGetVotingGaugesDocument,
 };
 
 /**
@@ -44,6 +45,10 @@ export function gql(source: "query GetPools($chainIn: [GqlChain!]) {\n  poolGetP
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "query GetTokens($chainIn: [GqlChain!]) {\n  tokenGetTokens(chains: $chainIn) {\n    chainId\n    address\n    name\n    symbol\n    decimals\n    logoURI\n  }\n}"): (typeof documents)["query GetTokens($chainIn: [GqlChain!]) {\n  tokenGetTokens(chains: $chainIn) {\n    chainId\n    address\n    name\n    symbol\n    decimals\n    logoURI\n  }\n}"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "query VeBalGetVotingGauges {\n  veBalGetVotingList {\n    id\n    address\n    chain\n    type\n    symbol\n    gauge {\n      address\n      childGaugeAddress\n      isKilled\n      relativeWeightCap\n      addedTimestamp\n    }\n    tokens {\n      address\n      logoURI\n      symbol\n      weight\n    }\n  }\n}"): (typeof documents)["query VeBalGetVotingGauges {\n  veBalGetVotingList {\n    id\n    address\n    chain\n    type\n    symbol\n    gauge {\n      address\n      childGaugeAddress\n      isKilled\n      relativeWeightCap\n      addedTimestamp\n    }\n    tokens {\n      address\n      logoURI\n      symbol\n      weight\n    }\n  }\n}"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};
