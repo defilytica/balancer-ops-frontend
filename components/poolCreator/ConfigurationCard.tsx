@@ -50,7 +50,7 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
 
     const chartTokens = getChartTokens();
 
-    const generatePoolName = (): string => {
+    const generatePoolSymbol = (): string => {
         if (!config.tokens.length) return '';
 
         // Filter and sort tokens, ensuring we only use valid tokens
@@ -69,12 +69,12 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
                     const symbol = token.symbol.toUpperCase();
                     return `${weight}${symbol}`;
                 })
-                .join('-');
+                .join('/');
         } else {
             // For stable pools, just lowercase symbols
             poolName = validTokens
                 .map(token => token.symbol.toUpperCase())
-                .join('-');
+                .join('/');
         }
 
         // Truncate if longer than 32 chars to allow for possible suffix
@@ -83,6 +83,44 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
         }
 
         return poolName;
+    };
+
+    const generatePoolName = (): string => {
+        if (!config.tokens.length) return '';
+    
+        // Filter and sort tokens, ensuring we only use valid tokens
+        const validTokens = config.tokens
+            .filter(token => token.symbol && token.weight !== undefined)
+            .sort((a, b) => (b.weight || 0) - (a.weight || 0));
+    
+        if (!validTokens.length) return '';
+    
+        let poolName = '';
+        if (config.type === 'weighted') {
+            // Format each token: weight + lowercase symbol
+            poolName = validTokens
+                .map(token => {
+                    const weight = Math.round(token.weight || 0);
+                    const symbol = token.symbol.toUpperCase();
+                    return `${weight}${symbol}`;
+                })
+                .join('/');
+        } else {
+            // For stable pools, just lowercase symbols
+            poolName = validTokens
+                .map(token => token.symbol.toUpperCase())
+                .join('/');
+        }
+    
+        // Truncate if longer than 32 chars to allow for possible suffix
+        if (poolName.length > 32) {
+            poolName = poolName.substring(0, 32) + '...';
+        }
+    
+        if (config.type === 'composableStable') {
+            return `Balancer ${poolName} Stable Pool`;
+        }
+        return `${poolName}`;
     };
 
     useEffect(() => {
@@ -94,13 +132,14 @@ export const ConfigurationCard: React.FC<ConfigurationCardProps> = ({ config, on
 
         if (validTokens.length >= 2) { // Only generate name with 2+ tokens
             const generatedName = generatePoolName();
+            const generatedSymbol = generatePoolSymbol();
             if (generatedName && config.settings) {
                 // Only update if name is empty or different from current
                 if (!config.settings.name || config.settings.name !== generatedName) {
                     onSettingsUpdate({
                         ...config.settings,
                         name: generatedName,
-                        symbol: generatedName,
+                        symbol: generatedSymbol,
                     });
                 }
             }
