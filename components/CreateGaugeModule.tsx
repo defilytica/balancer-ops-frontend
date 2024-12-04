@@ -649,10 +649,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                                 variant="primary"
                                 size="lg"
                                 onClick={createMainnetGauge}
-                                isDisabled={!address}
+                                isDisabled={!address || hasExistingGauge}
                                 width="full"
                             >
-                                Create Mainnet Gauge
+                                {hasExistingGauge
+                                    ? "Gauge Already Exists"
+                                    : "Create Mainnet Gauge"}
                             </Button>
                         ) : (
                             <Stepper index={activeStep}>
