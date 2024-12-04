@@ -147,6 +147,8 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                 ? await fetchWeightedPoolData(poolAddress, poolABI)
                 : await fetchComposableStablePoolData(poolAddress, poolABI, tokens);
 
+
+            console.log(poolSettings)
             // Fetch token details
             const poolTokens = await Promise.all(
                 tokens.map((tokenAddress, index) =>
@@ -154,10 +156,12 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                         tokenAddress,
                         index,
                         isWeightedPool ? (poolSettings as any).weights : undefined,
-                        isWeightedPool ? (poolSettings as any).rateProviders : undefined
+                        isWeightedPool ? undefined : (poolSettings as any).rateProviders
                     )
                 )
             );
+
+
 
             return {
                 poolId: poolId as string,
@@ -242,7 +246,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
 
     const fetchComposableStablePoolData = async (poolAddress: string, poolABI: any, tokens: string[]) => {
         if (!publicClient) throw new Error('Public client not initialized');
-        const [amplificationParameter, swapFee, name, symbol, owner, yieldFeeExempt] = await Promise.all([
+        const [amplificationParameter, swapFee, name, symbol, owner, yieldFeeExempt, rateProviders] = await Promise.all([
             publicClient.readContract({
                 address: getAddress(poolAddress),
                 abi: poolABI,
@@ -278,6 +282,12 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
                 abi: poolABI,
                 functionName: 'isExemptFromYieldProtocolFee',
                 args: []
+            }),
+            publicClient.readContract({
+                address: getAddress(poolAddress),
+                abi: poolABI,
+                functionName: 'getRateProviders',
+                args: []
             })
         ]);
 
@@ -295,8 +305,8 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
             // Silently continue with default value
         }
 
-        console.log(yieldFeeExempt)
         return {
+            rateProviders,
             commonSettings: {
                 swapFee: Number(formatUnits(swapFee as bigint, 18)) * 100,
                 name,
