@@ -62,9 +62,7 @@ export async function fetchGaugeInfoV2(
         lastInjectionTimestamp,
         doNotStartBeforeTimestamp,
       },
-    ] = await Promise.all([
-      contract.getGaugeInfo(gaugeAddress),
-    ]);
+    ] = await Promise.all([contract.getGaugeInfo(gaugeAddress)]);
 
     return {
       gaugeAddress: gaugeAddress,

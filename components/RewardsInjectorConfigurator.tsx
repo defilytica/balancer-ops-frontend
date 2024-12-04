@@ -93,11 +93,15 @@ function RewardsInjectorConfigurator({
 
   useEffect(() => {
     if (selectedAddress && injectorData) {
-      setTokenSymbol(injectorData.tokenInfo.symbol);
-      setTokenDecimals(injectorData.tokenInfo.symbol === "USDC" ? 6 : 18);
-      setGauges(injectorData.gauges);
-      setContractBalance(injectorData.contractBalance);
-      setCurrentConfig(injectorData.gauges);
+      // Add null checks and provide default values
+      setTokenSymbol(injectorData.tokenInfo?.symbol || selectedAddress.token || '');
+      setTokenDecimals(
+          injectorData.tokenInfo?.symbol === "USDC" ? 6 :
+              selectedAddress.token === "USDC" ? 6 : 18
+      );
+      setGauges(injectorData.gauges || []);
+      setContractBalance(injectorData.contractBalance || 0);
+      setCurrentConfig(injectorData.gauges || []);
     }
   }, [selectedAddress, injectorData]);
 

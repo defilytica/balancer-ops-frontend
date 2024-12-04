@@ -88,13 +88,12 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     const date = new Date(Number(timestamp) * 1000);
     if (date.getTime() === 0) return "-";
     return date.toLocaleString([], {
-      month: 'numeric',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     });
   };
-
 
   const SortableHeader: React.FC<{
     column: keyof RewardsInjectorData;
@@ -171,7 +170,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
       <Table variant="simple" size="sm">
         <Thead>
           <Tr>
-          <Th width="25%">
+            <Th width="25%">
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
             {!isV2 && (
@@ -198,8 +197,11 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               />
             </Th>
             {isV2 && (
-          <Th width="24%">
-                <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
+              <Th width="24%">
+                <SortableHeader
+                  column="doNotStartBeforeTimestamp"
+                  label="Starts At"
+                />
               </Th>
             )}
           </Tr>
@@ -210,9 +212,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-              {!isV2 && (
-                <Td>{row.poolName}</Td>
-              )}
+              {!isV2 && <Td>{row.poolName}</Td>}
               <Td
                 isNumeric
               >{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
