@@ -255,7 +255,51 @@ function RewardsInjector({
             <Card>
               <CardBody>
                 <Stack spacing={3}>
-                  <Heading size="md">Total Distribution</Heading>
+                  <Heading size="md">Token Balance in Injector</Heading>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {Number(contractBalance).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })} {tokenSymbol}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Available for distribution
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack spacing={3}>
+                  <Heading size="md">Active Gauges</Heading>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {gauges.filter(g => parseInt(g.maxPeriods) > parseInt(g.periodNumber)).length}
+                    <Text as="span" fontSize="md" color="gray.500" ml={2}>
+                      / {gauges.length} total
+                    </Text>
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack spacing={3}>
+                  <Heading size="md">Distribution Rate</Heading>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {formatAmount(
+                        gauges.reduce((acc, g) => acc + (parseFloat(g.amountPerPeriod!) || 0), 0)
+                    )} {tokenSymbol}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Per period
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack spacing={3}>
+                  <Heading size="md">Active Program Distribution</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
                     {formatAmount(calculateDistributionAmounts().total)}{" "}
                     {tokenSymbol}
@@ -266,7 +310,7 @@ function RewardsInjector({
             <Card>
               <CardBody>
                 <Stack spacing={3}>
-                  <Heading size="md">Distributed</Heading>
+                  <Heading size="md">Currently Distributed</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
                     {formatAmount(calculateDistributionAmounts().distributed)}{" "}
                     {tokenSymbol}

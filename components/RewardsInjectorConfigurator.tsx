@@ -389,6 +389,15 @@ function RewardsInjectorConfigurator({
       )}
       <Divider />
 
+      {!selectedSafe && !isLoading && (
+          <Alert status="warning" mb={4}>
+            <AlertIcon />
+            <AlertDescription>
+              This injector does not have an owner configured yet. Make sure to set an owner first before attempting to configure this injector.
+            </AlertDescription>
+          </Alert>
+      )}
+
       {generatedPayload && (
         <JsonViewerEditor
           jsonData={generatedPayload}
