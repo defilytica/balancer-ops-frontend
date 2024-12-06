@@ -394,3 +394,13 @@ export const FactoryAddressComposable = {
   MODE: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
   SEPOLIA: "0x05503B3aDE04aCA81c8D6F88eCB73Ba156982D2B",
 };
+
+// Single static factory, easier to store here than fetch from address book
+export const MAINNET_GAUGE_FACTORY = '0xf1665E19bc105BE4EDD3739F88315cC699cc5b65'
+
+export const GAUGE_WEIGHT_CAPS = {
+  TWO_PERCENT: "20000000000000000",    // 2% cap
+  FIVE_PERCENT: "50000000000000000",   // 5% cap
+  TEN_PERCENT: "100000000000000000",   // 10% cap
+  UNCAPPED: "1000000000000000000",     // No cap
+} as const;

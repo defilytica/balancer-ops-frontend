@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Box,
+  Text,
   CloseButton,
   Flex,
   useColorModeValue,
@@ -13,7 +14,7 @@ import {
 import { FiHome } from "react-icons/fi";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
-import { TbTransactionBitcoin } from "react-icons/tb";
+import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
 import NavItem from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
@@ -55,10 +56,16 @@ const LinkItems = [
     description: "View Chainlink Automation Upkeeps",
   },
   {
-    name: "Pool Creator",
+    name: "Pool Creator (v2)",
     icon: MdPool,
     target: "/pool-creator-v2",
     description: "Create weighted and composable stable pools for Balancer v2",
+  },
+  {
+    name: "Gauge Creator",
+    icon: TbGaugeFilled,
+    target: "/gauge-creator",
+    description: "Create a staking gauge for Balancer pools",
   },
 ];
 
@@ -77,11 +84,43 @@ const DRPCBanner = () => (
       <Image
         src="https://drpc.org/images/external/powered-by-drpc-dark.svg"
         alt="Powered by dRPC"
-        width="218px"
-        height="54px"
+        width="190px"
+        height="47px"
       />
     </Box>
   </Link>
+);
+
+const DefilyticaBanner = () => (
+    <Link href="https://defilytica.com" isExternal>
+      <Box
+          mt={3}
+          shadow="md"
+          borderRadius="md"
+          overflow="hidden"
+          transition="all 0.1s"
+          p={2}  // Added padding for better spacing
+          display="flex"
+          alignItems="center"
+          gap={2}  // Add space between logo and text
+          bg="purple.950"
+          _hover={{
+            shadow: "lg",
+            transform: "translateY(-2px)",
+          }}
+      >
+        <Image
+            src="/imgs/defilytica.png"
+            alt="DeFilytica"
+            width="24px"
+            height="24px"
+            objectFit="contain"
+        />
+        <Text fontSize="sm" fontWeight="medium" variant="special">
+          Developed by DeFilytica
+        </Text>
+      </Box>
+    </Link>
 );
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
@@ -132,9 +171,10 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           borderRadius="full"
           px={2}
         >
-          Alpha release
+          Beta release
         </Badge>
         <DRPCBanner />
+        <DefilyticaBanner />
       </Flex>
     </Box>
   );
