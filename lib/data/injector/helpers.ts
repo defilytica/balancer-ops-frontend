@@ -7,6 +7,7 @@ import { tokenDecimals } from "@/constants/constants";
 interface TokenInfo {
   name: string;
   symbol: string;
+  decimals: number;
 }
 
 interface AccountInfo {
@@ -37,20 +38,22 @@ export async function fetchTokenInfo(
   provider: JsonRpcProvider,
 ): Promise<TokenInfo> {
   const tokenContract = new Contract(tokenAddress, ERC20, provider);
-  const [name, symbol] = await Promise.all([
+  const [name, symbol, decimals] = await Promise.all([
     tokenContract.name(),
     tokenContract.symbol(),
+    tokenContract.decimals(),
   ]);
-  return { name, symbol };
+  return { name, symbol, decimals: Number(decimals.toString()) };
 }
 
 export async function fetchGaugeInfoV2(
-  gaugeAddresses: string[],
-  contract: Contract,
-  provider: JsonRpcProvider,
-  injectTokenAddress: string,
-  injectorAddress: string,
-  network: string,
+    gaugeAddresses: string[],
+    contract: Contract,
+    provider: JsonRpcProvider,
+    injectTokenAddress: string,
+    injectorAddress: string,
+    network: string,
+    tokenDecimals: number,
 ) {
   const gaugePromises = gaugeAddresses.map(async (gaugeAddress) => {
     const [
@@ -66,7 +69,7 @@ export async function fetchGaugeInfoV2(
 
     return {
       gaugeAddress: gaugeAddress,
-      amountPerPeriod: formatTokenAmount(amountPerPeriod, injectTokenAddress),
+      amountPerPeriod: ethers.formatUnits(amountPerPeriod, tokenDecimals),
       rawAmountPerPeriod: amountPerPeriod.toString(),
       maxPeriods: maxPeriods.toString(),
       periodNumber: periodNumber.toString(),
@@ -150,14 +153,14 @@ export async function fetchPoolName(
 }
 
 export async function getInjectTokenBalanceForAddress(
-  injectTokenAddress: string,
-  contractAddress: string,
-  provider: JsonRpcProvider,
+    injectTokenAddress: string,
+    contractAddress: string,
+    provider: JsonRpcProvider,
+    tokenDecimals: number, // Add decimals parameter
 ): Promise<string> {
   const tokenContract = new Contract(injectTokenAddress, ERC20, provider);
   const balanceForAddress = await tokenContract.balanceOf(contractAddress);
-  const decimals = tokenDecimals[injectTokenAddress.toLowerCase()] || 18;
-  return ethers.formatUnits(balanceForAddress, decimals);
+  return ethers.formatUnits(balanceForAddress, tokenDecimals);
 }
 
 export function formatTokenAmount(

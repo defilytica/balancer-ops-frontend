@@ -77,15 +77,19 @@ export async function GET(request: NextRequest) {
           );
           const freshData = await fetchFreshDataV2(injectorAddress, network);
           // Update the database with fresh data
-          injectorData = await updateDatabaseV2(
-            injectorAddress,
-            network,
-            freshData,
-          );
+          if (freshData) {
+            injectorData = await updateDatabaseV2(
+              injectorAddress,
+              network,
+              freshData,
+            );
+          }
         } else {
           injectorData = cachedInjector;
         }
-        allInjectors.push(injectorData);
+        if (injectorData) {
+          allInjectors.push(injectorData);
+        }
       }
     }
 
@@ -103,50 +107,57 @@ async function fetchFreshDataV2(address: string, network: string) {
   const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const contract = new ethers.Contract(address, InjectorABIV2, provider);
+  try {
+    const [
+      activeGaugeList,
+      injectTokenAddress,
+      owner,
+      maxInjectionAmount,
+      minWaitPeriodSeconds,
+      maxGlobalAmountPerPeriod,
+      maxTotalDue,
+    ] = await Promise.all([
+      contract.getActiveGaugeList(),
+      contract.InjectTokenAddress(),
+      contract.owner(),
+      contract.MaxInjectionAmount(),
+      contract.MinWaitPeriodSeconds(),
+      contract.MaxGlobalAmountPerPeriod(),
+      contract.MaxTotalDue(),
+    ]);
 
-  const [
-    activeGaugeList,
-    injectTokenAddress,
-    owner,
-    maxInjectionAmount,
-    minWaitPeriodSeconds,
-    maxGlobalAmountPerPeriod,
-    maxTotalDue,
-  ] = await Promise.all([
-    contract.getActiveGaugeList(),
-    contract.InjectTokenAddress(),
-    contract.owner(),
-    contract.MaxInjectionAmount(),
-    contract.MinWaitPeriodSeconds(),
-    contract.MaxGlobalAmountPerPeriod(),
-    contract.MaxTotalDue(),
-  ]);
 
-  const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
-  const gauges = await fetchGaugeInfoV2(
-    activeGaugeList,
-    contract,
-    provider,
-    injectTokenAddress,
-    address,
-    network,
-  );
-  const contractBalance = await getInjectTokenBalanceForAddress(
-    injectTokenAddress,
-    address,
-    provider,
-  );
+    const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
+    const gauges = await fetchGaugeInfoV2(
+      activeGaugeList,
+      contract,
+      provider,
+      injectTokenAddress,
+      address,
+      network,
+      tokenInfo.decimals
+    );
+    const contractBalance = await getInjectTokenBalanceForAddress(
+      injectTokenAddress,
+      address,
+      provider,
+      tokenInfo.decimals
+    );
 
-  return {
-    tokenInfo,
-    gauges,
-    contractBalance,
-    owner,
-    maxInjectionAmount: maxInjectionAmount.toString(),
-    minWaitPeriodSeconds: minWaitPeriodSeconds.toString(),
-    maxGlobalAmountPerPeriod: maxGlobalAmountPerPeriod.toString(),
-    maxTotalDue: maxTotalDue.toString(),
-  };
+    return {
+      tokenInfo,
+      gauges,
+      contractBalance,
+      owner,
+      maxInjectionAmount: maxInjectionAmount.toString(),
+      minWaitPeriodSeconds: minWaitPeriodSeconds.toString(),
+      maxGlobalAmountPerPeriod: maxGlobalAmountPerPeriod.toString(),
+      maxTotalDue: maxTotalDue.toString(),
+    };
+  } catch (error) {
+    console.error("Error:", error);
+    return null;
+  }
 }
 
 async function updateDatabaseV2(
@@ -165,7 +176,7 @@ async function updateDatabaseV2(
     maxTotalDue,
   } = freshData;
 
-  return await prisma.injector.upsert({
+  return prisma.injector.upsert({
     where: {
       network_address: {
         network,

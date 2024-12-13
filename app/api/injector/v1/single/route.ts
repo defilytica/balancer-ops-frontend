@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       injectorTokenAddress,
       address,
       provider,
+        tokenInfo.decimals
     );
 
     return NextResponse.json({ tokenInfo, gauges, contractBalance, owner });

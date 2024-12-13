@@ -84,6 +84,7 @@ model TokenInfo {
   id         String   @id @default(cuid())
   name       String
   symbol     String
+  decimals   Int?
   injector   Injector @relation(fields: [injectorId], references: [id])
   injectorId String   @unique
 }

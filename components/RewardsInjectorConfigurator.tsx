@@ -94,7 +94,7 @@ function RewardsInjectorConfigurator({
   useEffect(() => {
     if (selectedAddress && injectorData) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
-      setTokenDecimals(injectorData.tokenInfo.symbol === "USDC" ? 6 : 18);
+      setTokenDecimals(injectorData.tokenInfo.decimals);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
       setCurrentConfig(injectorData.gauges);
@@ -118,11 +118,11 @@ function RewardsInjectorConfigurator({
       const gaugeTotal = amount * maxPeriods;
       const gaugeDistributed = amount * currentPeriod;
 
-      total += gaugeTotal / 10 ** tokenDecimals;
-      distributed += gaugeDistributed / 10 ** tokenDecimals;
+      total += gaugeTotal ;
+      distributed += gaugeDistributed ;
       remaining +=
-        gaugeTotal / 10 ** tokenDecimals -
-        gaugeDistributed / 10 ** tokenDecimals;
+        gaugeTotal  -
+        gaugeDistributed ;
     });
 
     return { total, distributed, remaining };
@@ -438,6 +438,7 @@ function RewardsInjectorConfigurator({
                 ? JSON.parse(JSON.stringify(generatedPayload))
                 : null
             }
+            network={selectedAddress ? selectedAddress.network.toLowerCase() : 'mainnet'}
           />
         </Box>
       )}

@@ -116,7 +116,7 @@ function RewardsInjectorConfiguratorV2({
   useEffect(() => {
     if (selectedAddress && injectorData) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
-      setTokenDecimals(injectorData.tokenInfo.symbol === "USDC" ? 6 : 18);
+      setTokenDecimals(injectorData.tokenInfo.decimals);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
     }
@@ -550,6 +550,7 @@ function RewardsInjectorConfiguratorV2({
                 ? JSON.parse(JSON.stringify(generatedPayload))
                 : null
             }
+            network={selectedAddress ? selectedAddress.network.toLowerCase() : 'mainnet'}
           />
         </Box>
       )}

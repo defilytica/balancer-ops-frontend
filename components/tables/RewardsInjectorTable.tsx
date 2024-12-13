@@ -142,7 +142,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <AddressLink address={row.gaugeAddress} />
               <HStack justify="space-between">
                 <Text>Amount Per Period:</Text>
-                <Text>{`${row.amountPerPeriod} ${tokenSymbol}`}</Text>
+                <Text>{`${row.rawAmountPerPeriod} ${tokenSymbol}`}</Text>
               </HStack>
               <HStack justify="space-between">
                 <Text>Period:</Text>
@@ -173,11 +173,9 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
             <Th width="25%">
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
-            {!isV2 && (
               <Th width="20%">
                 <SortableHeader column="poolName" label="Name" />
               </Th>
-            )}
             <Th width="20%">
               <SortableHeader
                 column="amountPerPeriod"
@@ -212,7 +210,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-              {!isV2 && <Td>{row.poolName}</Td>}
+                <Td>{row.poolName}</Td>
               <Td
                 isNumeric
               >{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
