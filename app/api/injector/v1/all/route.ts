@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { InjectorABIV1 } from "@/abi/InjectorV1";
-import { networks } from "@/constants/constants";
+import {networks, tokenDecimals} from "@/constants/constants";
 import { prisma } from "@/prisma/prisma";
 import {
   fetchGaugeInfo,
@@ -129,6 +129,7 @@ async function fetchFreshData(address: string, network: string) {
     injectorTokenAddress,
     address,
     provider,
+    tokenInfo.decimals
   );
 
   return { tokenInfo, gauges, contractBalance };

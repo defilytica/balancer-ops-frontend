@@ -31,14 +31,56 @@ const RewardsInjectorStatusPage = () => {
   const [isV2, setIsV2] = useState(false);
   const toast = useToast();
 
+  const processInjectorData = (injector: any) => {
+    // Get decimals from tokenInfo if available (v2), otherwise use default handling
+    const tokenDecimals = injector.tokenInfo?.decimals || 18;
+
+    // Ensure contract balance is properly formatted based on decimals
+    const rawContractBalance = parseFloat(injector.contractBalance);
+    const adjustedContractBalance = isV2
+        ? rawContractBalance
+        : rawContractBalance / Math.pow(10, tokenDecimals);
+
+    // Process gauges with proper decimal handling
+    const processedGauges = injector.gauges.map((gauge: any) => ({
+      ...gauge,
+      amountPerPeriod: isV2
+          ? gauge.amountPerPeriod // V2 amounts are already formatted in the API
+          : parseFloat(gauge.rawAmountPerPeriod || '0') / Math.pow(10, tokenDecimals),
+    }));
+
+    const { total, distributed, remaining } = calculateDistributionAmounts(processedGauges);
+
+    const additionalTokensRequired =
+        remaining > adjustedContractBalance
+            ? remaining - adjustedContractBalance
+            : 0;
+
+    const incorrectlySetupGauges = injector.gauges.filter(
+        (gauge: any) => !gauge.isRewardTokenSetup
+    );
+
+    return {
+      ...injector,
+      tokenDecimals,
+      contractBalance: adjustedContractBalance,
+      total,
+      distributed,
+      remaining,
+      additionalTokensRequired,
+      incorrectlySetupGauges,
+      isCompleted: distributed === total && total > 0,
+      processedGauges,
+    };
+  };
+
   const fetchInjectorsData = async (forceReload = false) => {
     setIsLoading(true);
     try {
       const version = isV2 ? "v2" : "v1";
-      const url = forceReload
-        ? `/api/injector/${version}/all?forceReload=${forceReload}`
-        : `/api/injector/${version}/all?forceReload=${forceReload}`;
+      const url = `/api/injector/${version}/all?forceReload=${forceReload}`;
       const response = await fetch(url);
+
       if (response.status === 429) {
         throw new Error(`Too many requests. Please try again later.`);
       }
@@ -46,38 +88,23 @@ const RewardsInjectorStatusPage = () => {
       if (!response.ok) {
         throw new Error("Failed to fetch injectors data");
       }
+
       const data = await response.json();
+      console.log("Raw injector data:", data); // Debug log
 
+      // Process each injector's data with proper decimal handling
       const processedData = data.map((injector: any) => {
-        const { total, distributed, remaining } = calculateDistributionAmounts(
-          injector.gauges,
-        );
-
-        const additionalTokensRequired =
-          remaining > injector.contractBalance
-            ? remaining - injector.contractBalance
-            : 0;
-
-        const incorrectlySetupGauges = injector.gauges.filter(
-          (gauge: any) => !gauge.isRewardTokenSetup,
-        );
-
-        return {
-          ...injector,
-          total,
-          distributed,
-          remaining,
-          additionalTokensRequired,
-          incorrectlySetupGauges,
-          isCompleted: distributed === total,
-        };
+        const processed = processInjectorData(injector);
+        console.log(`Processed injector ${injector.address}:`, processed); // Debug log
+        return processed;
       });
 
+      // Sort injectors with issues first
       const sortedData = processedData.sort((a: any, b: any) => {
         const aHasIssues =
-          a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
+            a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
         const bHasIssues =
-          b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
+            b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
 
         if (aHasIssues && !bHasIssues) return -1;
         if (!aHasIssues && bHasIssues) return 1;
@@ -99,7 +126,7 @@ const RewardsInjectorStatusPage = () => {
     }
   };
 
-  console.log(injectorsData);
+  console.log("injector data", injectorsData);
 
   useEffect(() => {
     fetchInjectorsData();

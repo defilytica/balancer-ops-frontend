@@ -1591,6 +1591,10 @@ export type GqlPoolTokenDetail = {
   balance: Scalars['BigDecimal']['output'];
   /** USD Balance of the pool token. */
   balanceUSD: Scalars['BigDecimal']['output'];
+  chain?: Maybe<GqlChain>;
+  chainId?: Maybe<Scalars['Int']['output']>;
+  /** Coingecko ID */
+  coingeckoId?: Maybe<Scalars['String']['output']>;
   /** Decimals of the pool token. */
   decimals: Scalars['Int']['output'];
   /** The ERC4626 review data for the token */
@@ -1605,6 +1609,8 @@ export type GqlPoolTokenDetail = {
   isAllowed: Scalars['Boolean']['output'];
   /** Whether the token is considered an ERC4626 token. */
   isErc4626: Scalars['Boolean']['output'];
+  /** Token logo */
+  logoURI?: Maybe<Scalars['String']['output']>;
   /** Name of the pool token. */
   name: Scalars['String']['output'];
   /** Additional data for the nested pool if the token is a BPT. Null otherwise. */
@@ -1615,10 +1621,14 @@ export type GqlPoolTokenDetail = {
   priceRateProvider?: Maybe<Scalars['String']['output']>;
   /** Additional data for the price rate provider, such as reviews or warnings. */
   priceRateProviderData?: Maybe<GqlPriceRateProviderData>;
+  /** The priority of the token, can be used for sorting. */
+  priority?: Maybe<Scalars['Int']['output']>;
   /** Conversion factor used to adjust for token decimals for uniform precision in calculations. V3 only. */
   scalingFactor?: Maybe<Scalars['BigDecimal']['output']>;
   /** Symbol of the pool token. */
   symbol: Scalars['String']['output'];
+  /** Is the token tradable */
+  tradable?: Maybe<Scalars['Boolean']['output']>;
   /** If it is an ERC4626, this will be the underlying token if present in the API. */
   underlyingToken?: Maybe<GqlToken>;
   /** The weight of the token in the pool if it is a weighted pool, null otherwise */
@@ -2433,7 +2443,6 @@ export type Mutation = {
   sftmxSyncWithdrawalRequests: Scalars['String']['output'];
   tokenDeleteTokenType: Scalars['String']['output'];
   tokenReloadAllTokenTypes: Scalars['String']['output'];
-  tokenReloadErc4626Tokens: Array<GqlTokenMutationResult>;
   tokenReloadTokenPrices?: Maybe<Scalars['Boolean']['output']>;
   tokenSyncLatestFxPrices: Scalars['String']['output'];
   tokenSyncTokenDefinitions: Scalars['String']['output'];
@@ -2483,11 +2492,6 @@ export type MutationPoolSyncAllCowSnapshotsArgs = {
 export type MutationTokenDeleteTokenTypeArgs = {
   tokenAddress: Scalars['String']['input'];
   type: GqlTokenType;
-};
-
-
-export type MutationTokenReloadErc4626TokensArgs = {
-  chains: Array<GqlChain>;
 };
 
 

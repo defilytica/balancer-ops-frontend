@@ -165,7 +165,7 @@ async function updateDatabaseV2(
     maxTotalDue,
   } = freshData;
 
-  return await prisma.injector.upsert({
+  return prisma.injector.upsert({
     where: {
       network_address: {
         network,

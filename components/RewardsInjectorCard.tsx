@@ -22,6 +22,8 @@ import {
 
 interface TokenInfo {
   symbol: string;
+  name: string;
+  decimals: number;
 }
 
 interface Network {
