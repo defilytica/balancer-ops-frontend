@@ -102,7 +102,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
             <IconButton
               aria-label="View on explorer"
               as="a"
-              href={`rewards-injector/${address}?version=${v2 ? "v2" : "v1"}`}
+              href={`${network}/${address}?version=${v2 ? "v2" : "v1"}`}
               target="_blank"
               rel="noopener noreferrer"
               size="sm"
