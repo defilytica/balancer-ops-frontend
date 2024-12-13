@@ -130,11 +130,13 @@ async function fetchFreshDataV2(address: string, network: string) {
     injectTokenAddress,
     address,
     network,
+    tokenInfo.decimals
   );
   const contractBalance = await getInjectTokenBalanceForAddress(
     injectTokenAddress,
     address,
     provider,
+    tokenInfo.decimals
   );
 
   return {
