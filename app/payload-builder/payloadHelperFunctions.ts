@@ -1,8 +1,5 @@
-import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
-import {
-  BatchFile,
-  Transaction,
-} from "@/components/btns/SimulateTransactionButton";
+import {WHITELISTED_PAYMENT_TOKENS} from "@/constants/constants";
+import {BatchFile, Transaction,} from "@/components/btns/SimulateTransactionButton";
 
 export interface EnableGaugeInput {
   gauge: string;
@@ -457,8 +454,8 @@ export function generateInjectorSchedulePayloadV2({
         },
         {
           name: "maxPeriods",
-          type: "uint32",
-          internalType: "uint32",
+          type: "uint8",
+          internalType: "uint8",
         },
         {
           name: "doNotStartBeforeTimestamp",
@@ -466,7 +463,7 @@ export function generateInjectorSchedulePayloadV2({
           internalType: "uint56",
         },
       ],
-      name: "add",
+      name: "addRecipients",
       payable: false,
     },
     remove: {
@@ -477,7 +474,7 @@ export function generateInjectorSchedulePayloadV2({
           internalType: "address[]",
         },
       ],
-      name: "remove",
+      name: "removeRecipients",
       payable: false,
     },
   };
@@ -520,7 +517,7 @@ export function generateInjectorSchedulePayloadV2({
     },
   };
 
-  const batchFile: BatchFile = {
+  return {
     version: "1.0",
     chainId: chainId.toString(),
     createdAt: Math.floor(Date.now() / 1000),
@@ -534,8 +531,6 @@ export function generateInjectorSchedulePayloadV2({
     },
     transactions: [batchTransaction],
   };
-
-  return batchFile;
 }
 
 export interface PayloadGeneratorInput {
