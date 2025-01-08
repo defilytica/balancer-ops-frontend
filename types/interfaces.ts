@@ -41,7 +41,7 @@ export interface Pool {
   type: string;
   version: string;
   createTime: string;
-  owner: string;
+  swapFeeManager: string;
   staking: {
     gauge: {
       id: string;
