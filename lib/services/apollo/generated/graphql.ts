@@ -2167,6 +2167,29 @@ export type GqlStakedSonicDelegatedValidator = {
   validatorId: Scalars['String']['output'];
 };
 
+export type GqlStakedSonicSnapshot = {
+  __typename: 'GqlStakedSonicSnapshot';
+  /** Current exchange rate for stS -> S */
+  exchangeRate: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** The timestamp of the snapshot. Timestamp is end of day midnight. */
+  timestamp: Scalars['Int']['output'];
+  /** Total amount of S in custody of stS. Delegated S plus pool S. */
+  totalAssets: Scalars['AmountHumanReadable']['output'];
+  /** Total amount of S delegated to validators. */
+  totalAssetsDelegated: Scalars['AmountHumanReadable']['output'];
+  /** Total amount of S in the pool. */
+  totalAssetsPool: Scalars['AmountHumanReadable']['output'];
+};
+
+export enum GqlStakedSonicSnapshotDataRange {
+  AllTime = 'ALL_TIME',
+  NinetyDays = 'NINETY_DAYS',
+  OneHundredEightyDays = 'ONE_HUNDRED_EIGHTY_DAYS',
+  OneYear = 'ONE_YEAR',
+  ThirtyDays = 'THIRTY_DAYS'
+}
+
 /** Inputs for the call data to create the swap transaction. If this input is given, call data is added to the response. */
 export type GqlSwapCallDataInput = {
   /** How long the swap should be valid, provide a timestamp. "999999999999999999" for infinite. Default: infinite */
@@ -2476,6 +2499,7 @@ export type Mutation = {
   poolReloadStakingForAllPools: Scalars['String']['output'];
   poolSyncAllCowSnapshots: Array<GqlPoolMutationResult>;
   poolSyncAllPoolsFromSubgraph: Array<Scalars['String']['output']>;
+  poolSyncFxQuoteTokens: Array<GqlPoolMutationResult>;
   poolUpdateLifetimeValuesForAllPools: Scalars['String']['output'];
   poolUpdateLiquidityValuesForAllPools: Scalars['String']['output'];
   protocolCacheMetrics: Scalars['String']['output'];
@@ -2526,6 +2550,11 @@ export type MutationPoolReloadStakingForAllPoolsArgs = {
 
 
 export type MutationPoolSyncAllCowSnapshotsArgs = {
+  chains: Array<GqlChain>;
+};
+
+
+export type MutationPoolSyncFxQuoteTokensArgs = {
   chains: Array<GqlChain>;
 };
 
@@ -2634,6 +2663,8 @@ export type Query = {
   sorGetSwaps: GqlSorGetSwapsResponse;
   /** Get the staking data and status for stS */
   stsGetGqlStakedSonicData: GqlStakedSonicData;
+  /** Get snapshots for sftmx staking for a specific range */
+  stsGetStakedSonicSnapshots: Array<GqlStakedSonicSnapshot>;
   /**
    * Returns the candlestick chart data for a token for a given range.
    * @deprecated Use tokenGetHistoricalPrices instead
@@ -2830,6 +2861,11 @@ export type QuerySorGetSwapsArgs = {
 };
 
 
+export type QueryStsGetStakedSonicSnapshotsArgs = {
+  range: GqlStakedSonicSnapshotDataRange;
+};
+
+
 export type QueryTokenGetCandlestickChartDataArgs = {
   address: Scalars['String']['input'];
   chain?: InputMaybe<GqlChain>;
@@ -2976,7 +3012,7 @@ export type GetPoolsQueryVariables = Exact<{
 }>;
 
 
-export type GetPoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, protocolVersion: number, address: string, name: string, symbol: string, type: GqlPoolType, version: number, createTime: number, owner?: string | null, staking?: { __typename: 'GqlPoolStaking', gauge?: { __typename: 'GqlPoolStakingGauge', id: string } | null } | null, dynamicData: { __typename: 'GqlPoolDynamicData', swapFee: string, poolId: string } }> };
+export type GetPoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, protocolVersion: number, address: string, name: string, symbol: string, type: GqlPoolType, version: number, createTime: number, swapFeeManager?: string | null, staking?: { __typename: 'GqlPoolStaking', gauge?: { __typename: 'GqlPoolStakingGauge', id: string } | null } | null, dynamicData: { __typename: 'GqlPoolDynamicData', swapFee: string, poolId: string } }> };
 
 export type GetTokensQueryVariables = Exact<{
   chainIn?: InputMaybe<Array<GqlChain> | GqlChain>;
@@ -2992,6 +3028,6 @@ export type VeBalGetVotingGaugesQuery = { __typename: 'Query', veBalGetVotingLis
 
 
 export const CurrentTokenPricesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CurrentTokenPrices"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chains"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tokenGetCurrentPrices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"chains"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chains"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"chain"}}]}}]}}]} as unknown as DocumentNode<CurrentTokenPricesQuery, CurrentTokenPricesQueryVariables>;
-export const GetPoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"owner"}},{"kind":"Field","name":{"kind":"Name","value":"staking"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"gauge"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"swapFee"}},{"kind":"Field","name":{"kind":"Name","value":"poolId"}}]}}]}}]}}]} as unknown as DocumentNode<GetPoolsQuery, GetPoolsQueryVariables>;
+export const GetPoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"swapFeeManager"}},{"kind":"Field","name":{"kind":"Name","value":"staking"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"gauge"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"swapFee"}},{"kind":"Field","name":{"kind":"Name","value":"poolId"}}]}}]}}]}}]} as unknown as DocumentNode<GetPoolsQuery, GetPoolsQueryVariables>;
 export const GetTokensDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTokens"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tokenGetTokens"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"chains"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}}]}}]}}]} as unknown as DocumentNode<GetTokensQuery, GetTokensQueryVariables>;
 export const VeBalGetVotingGaugesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"VeBalGetVotingGauges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"veBalGetVotingList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"gauge"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"childGaugeAddress"}},{"kind":"Field","name":{"kind":"Name","value":"isKilled"}},{"kind":"Field","name":{"kind":"Name","value":"relativeWeightCap"}},{"kind":"Field","name":{"kind":"Name","value":"addedTimestamp"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}}]}}]}}]}}]} as unknown as DocumentNode<VeBalGetVotingGaugesQuery, VeBalGetVotingGaugesQueryVariables>;

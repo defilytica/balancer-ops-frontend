@@ -144,7 +144,7 @@ export default function ChangeSwapFeeModule({
     }
   };
 
-  const isAuthorizedPool = selectedPool?.owner === AUTHORIZED_OWNER;
+  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_OWNER;
 
   const handleGenerateClick = () => {
     if (!selectedPool || !newSwapFee || !selectedNetwork) {

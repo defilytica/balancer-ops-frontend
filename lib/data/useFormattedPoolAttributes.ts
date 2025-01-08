@@ -16,7 +16,7 @@ export function useFormattedPoolAttributes(pool: Pool | null) {
         title: "Create Time",
         value: new Date(parseInt(pool.createTime) * 1000).toLocaleString(),
       },
-      { title: "Owner", value: pool.owner },
+      { title: "Owner", value: pool.swapFeeManager },
       {
         title: "Swap Fee",
         value: `${parseFloat(pool.dynamicData.swapFee) * 100}%`,

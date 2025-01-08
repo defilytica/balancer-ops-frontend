@@ -12,7 +12,7 @@ query GetPools($chainIn: [GqlChain!]){
         type
         version
         createTime
-        owner
+        swapFeeManager
         staking {
             gauge {
                 id
