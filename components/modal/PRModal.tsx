@@ -120,7 +120,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         console.error('Error checking fork status:', error);
         toast({
           title: 'Error checking fork status',
-          description: error.message,
+          description: error instanceof Error ? error.message : 'An unknown error occurred',
           status: 'error',
           duration: 5000,
           isClosable: true,
