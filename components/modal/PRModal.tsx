@@ -51,6 +51,7 @@ const isValidBranchName = (name: string) => {
 };
 
 interface ForkStatus {
+  forkRepo: string;
   isOutdated: boolean;
   behindBy?: number;
 }
