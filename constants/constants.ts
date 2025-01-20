@@ -269,7 +269,7 @@ export const networks: Record<string, NetworkInfo> = {
   ethereum: {
     logo: MainnetLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=ethereum&dkey=",
-    explorer: "https://polygonscan.com/",
+    explorer: "https://etherscan.io/",
     chainId: "1",
   },
   sepolia: {
