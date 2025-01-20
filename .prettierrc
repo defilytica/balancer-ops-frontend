@@ -1,0 +1,24 @@
+{
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.graphql",
+      "options": {
+        "parser": "graphql"
+      }
+    },
+    {
+      "files": ["*.tsx", "*.ts"],
+      "options": {
+        "parser": "typescript"
+      }
+    }
+  ]
+}
