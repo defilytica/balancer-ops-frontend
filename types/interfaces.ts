@@ -42,6 +42,8 @@ export interface Pool {
   version: string;
   createTime: string;
   swapFeeManager: string;
+  tags: string[];
+  poolTokens: PoolToken[];
   staking: {
     gauge: {
       id: string;
@@ -50,6 +52,7 @@ export interface Pool {
   dynamicData: {
     swapFee: string;
     poolId: string;
+    totalLiquidity: string;
   };
 }
 
@@ -84,6 +87,17 @@ export interface PoolToken {
   name?: string;
   rateProvider?: string;
   price?: number;
+  chain?: string;
+  isErc4626?: boolean;
+  underlyingToken?: UnderlyingToken;
+}
+
+export interface UnderlyingToken {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  isErc4626: boolean;
 }
 
 //TODO: Refactor token interface!

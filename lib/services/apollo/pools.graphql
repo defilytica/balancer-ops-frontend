@@ -24,3 +24,46 @@ query GetPools($chainIn: [GqlChain!]){
         }
     }
 }
+
+query GetBoostedPools {
+  poolGetPools(
+    where: {
+      protocolVersionIn: [3]
+      tagIn: ["BOOSTED"]
+    }
+    orderBy: totalLiquidity
+    orderDirection: desc
+  ) {
+    chain
+    address
+    name
+    protocolVersion
+    hasErc4626
+    hasAnyAllowedBuffer
+    dynamicData {
+        totalLiquidity
+        volume24h
+    }
+    tags
+    poolTokens {
+        chain
+        chainId
+        address
+        symbol
+        name
+        decimals
+        isErc4626
+        underlyingToken {
+            chainId
+            address
+            name
+            symbol
+            decimals
+            isErc4626
+        }
+        scalingFactor
+        priceRate
+        isBufferAllowed
+    }
+  }
+}

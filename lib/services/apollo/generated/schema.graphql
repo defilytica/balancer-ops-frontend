@@ -2054,8 +2054,8 @@ type GqlProtocolMetricsAggregated {
   swapFee24h: BigDecimal!
   swapVolume24h: BigDecimal!
   totalLiquidity: BigDecimal!
-  totalSwapFee: BigDecimal!
-  totalSwapVolume: BigDecimal!
+  totalSwapFee: BigDecimal! @deprecated(reason: "No replacement")
+  totalSwapVolume: BigDecimal! @deprecated(reason: "No replacement")
   yieldCapture24h: BigDecimal!
 }
 
@@ -2066,8 +2066,8 @@ type GqlProtocolMetricsChain {
   swapFee24h: BigDecimal!
   swapVolume24h: BigDecimal!
   totalLiquidity: BigDecimal!
-  totalSwapFee: BigDecimal!
-  totalSwapVolume: BigDecimal!
+  totalSwapFee: BigDecimal! @deprecated(reason: "No replacement")
+  totalSwapVolume: BigDecimal! @deprecated(reason: "No replacement")
   yieldCapture24h: BigDecimal!
 }
 
@@ -2875,7 +2875,7 @@ type Mutation {
   tokenSyncLatestFxPrices(chain: GqlChain!): String!
   tokenSyncTokenDefinitions: String!
   userInitStakedBalances(stakingTypes: [GqlPoolStakingType!]!): String!
-  userInitWalletBalancesForAllPools: String!
+  userInitWalletBalancesForAllPools(chain: GqlChain): String!
   userInitWalletBalancesForPool(poolId: String!): String!
   userSyncBalance(poolId: String!): String!
   userSyncBalanceAllPools: String!

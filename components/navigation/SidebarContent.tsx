@@ -4,7 +4,6 @@ import {
   Text,
   CloseButton,
   Flex,
-  useColorModeValue,
   Heading,
   BoxProps,
   Link,
@@ -12,6 +11,7 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { FiHome } from "react-icons/fi";
+import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
@@ -66,6 +66,12 @@ const LinkItems = [
     icon: TbGaugeFilled,
     target: "/gauge-creator",
     description: "Create a staking gauge for Balancer pools",
+  },
+  {
+    name: "Liquidity Buffers",
+    icon: FaRegChartBar,
+    target: "/liquidity-buffers",
+    description: "View liquidity buffer allocations",
   },
 ];
 
