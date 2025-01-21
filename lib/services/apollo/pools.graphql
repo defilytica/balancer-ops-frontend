@@ -30,6 +30,7 @@ query GetBoostedPools {
     where: {
       protocolVersionIn: [3]
       tagIn: ["BOOSTED"]
+      chainNotIn: SONIC
     }
     orderBy: totalLiquidity
     orderDirection: desc
