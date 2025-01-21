@@ -80,7 +80,7 @@ export default function AddRewardToGaugePage() {
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
   const [safeAddress, setSafeAddress] = useState(
-    "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
   );
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
