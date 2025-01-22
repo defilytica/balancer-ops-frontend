@@ -29,7 +29,7 @@ import {
   ChevronRightIcon,
   CopyIcon,
   DeleteIcon,
-  DownloadIcon,
+  DownloadIcon, InfoIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -80,7 +80,7 @@ export default function AddRewardToGaugePage() {
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
   const [safeAddress, setSafeAddress] = useState(
-    "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
   );
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
@@ -184,22 +184,35 @@ export default function AddRewardToGaugePage() {
         </Heading>
       </Box>
 
-      <Alert status="info" mt={4} mb={4} py={2}>
+      <Alert
+        status="info"
+        mt={4}
+        mb={4}
+        py={3}
+        variant="left-accent"
+        borderRadius="md"
+      >
         <Box flex="1">
-          <Flex align="center" mb={1}>
-            <AlertIcon />
-            <AlertTitle>Quick Guide</AlertTitle>
+          <Flex align="center">
+            <AlertIcon boxSize="20px"/>
+            <AlertTitle fontSize="lg" ml={2}>Add New Rewards</AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <List spacing={1} fontSize="sm">
+            <Text fontSize="sm" mb={1} color="gray.600">
+              Use this option when you need to enable a new reward token and distributor for a gauge.
+            </Text>
+            <List spacing={2} fontSize="sm">
               <ListItem>
-                <ListIcon as={ChevronRightIcon} />
-                Fill in the gauge details below and click &quot;Add Reward&quot;
-                to start building your payload
+                <ListIcon as={ChevronRightIcon} color="blue.500" />
+                Fill in the gauge details below and click &quot;Add Reward&quot; to start building your payload
               </ListItem>
               <ListItem>
-                <ListIcon as={ChevronRightIcon} />
+                <ListIcon as={ChevronRightIcon} color="blue.500" />
                 Make sure to select the correct network for the gauge
+              </ListItem>
+              <ListItem>
+                <ListIcon as={InfoIcon} color="blue.500" />
+                Use this payload builder for setting up new reward tokens and distributors only!
               </ListItem>
             </List>
           </AlertDescription>
