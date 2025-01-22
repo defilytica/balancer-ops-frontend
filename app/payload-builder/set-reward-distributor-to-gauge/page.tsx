@@ -30,6 +30,7 @@ import {
   CopyIcon,
   DeleteIcon,
   DownloadIcon,
+  InfoIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -184,22 +185,35 @@ export default function SetRewardDistributorPage() {
         </Heading>
       </Box>
 
-      <Alert status="info" mt={4} mb={4} py={2}>
+      <Alert
+        status="info"
+        mt={4}
+        mb={4}
+        py={3}
+        variant="left-accent"
+        borderRadius="md"
+      >
         <Box flex="1">
-          <Flex align="center" mb={1}>
-            <AlertIcon />
-            <AlertTitle>Quick Guide</AlertTitle>
+          <Flex align="center">
+            <AlertIcon boxSize="20px" />
+            <AlertTitle fontSize="lg" ml={2}>Set Rewards</AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <List spacing={1} fontSize="sm">
+            <Text fontSize="sm" mb={2} color="gray.600">
+              Use this option only when you need to change an existing distributor. Do not use this method for other cases.
+            </Text>
+            <List spacing={2} fontSize="sm">
               <ListItem>
-                <ListIcon as={ChevronRightIcon} />
-                Fill in the gauge details below and click &quot;Add Reward&quot;
-                to start building your payload
+                <ListIcon as={ChevronRightIcon} color="blue.500" />
+                Fill in the gauge details for the existing distributor you want to modify
               </ListItem>
               <ListItem>
-                <ListIcon as={ChevronRightIcon} />
+                <ListIcon as={ChevronRightIcon} color="blue.500" />
                 Make sure to select the correct network for the gauge
+              </ListItem>
+              <ListItem>
+                <ListIcon as={InfoIcon} color="blue.500" />
+                Only use this payload builder if you need to modify the distributor for an existing reward token!
               </ListItem>
             </List>
           </AlertDescription>
