@@ -312,7 +312,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
                 mr={3}
                 onClick={handleCreatePR}
                 isLoading={isLoading}
-                isDisabled={!!branchError || forkStatus?.isOutdated}
+                isDisabled={!!branchError}
             >
               Create PR
             </Button>
