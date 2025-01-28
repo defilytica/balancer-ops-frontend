@@ -94,7 +94,7 @@ export const PAYLOAD_OPTIONS = [
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/set-reward-distributor-to-gauge",
     prNamePlaceholder: "Set Reward Distributor to Gauge XYZ",
-    prTypePath: "MaxiOps/add_rewards/[chain]/",
+    prTypePath: "MaxiOps/set_rewards/[chain]/",
   },
   {
     href: "/payload-builder/cctp-bridge",

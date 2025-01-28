@@ -413,7 +413,7 @@ export default function SetRewardDistributorPage() {
 
       <Box mt={8} />
       <PRCreationModal
-        type="set-reward-distributor"
+        type="set-reward-distributor-to-gauge"
         network={network}
         isOpen={isOpen}
         onClose={onClose}

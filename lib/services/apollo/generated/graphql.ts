@@ -1622,6 +1622,8 @@ export type GqlPoolTokenDetail = {
   isBufferAllowed: Scalars['Boolean']['output'];
   /** Whether the token is considered an ERC4626 token. */
   isErc4626: Scalars['Boolean']['output'];
+  /** Whether the token is exempted from taking a protocol yield fee. */
+  isExemptFromProtocolYieldFee: Scalars['Boolean']['output'];
   /** Token logo */
   logoURI?: Maybe<Scalars['String']['output']>;
   /** Name of the pool token. */
