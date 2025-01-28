@@ -85,7 +85,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
     const basePath = payloadOption?.prTypePath || "";
     const year = getYear(selectedWeek);
     const weekNum = getISOWeek(selectedWeek);
-    const weekStr = weekNum < 10 ? `W0${weekNum}` : `W${weekNum}`;
+    const weekStr = `W${weekNum}`;
     let newPath = basePath
         .replace("YYYY", year.toString())
         .replace("WXX", weekStr);

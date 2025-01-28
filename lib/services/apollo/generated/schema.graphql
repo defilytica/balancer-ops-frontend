@@ -1814,6 +1814,9 @@ type GqlPoolTokenDetail {
   """Whether the token is considered an ERC4626 token."""
   isErc4626: Boolean!
 
+  """Whether the token is exempted from taking a protocol yield fee."""
+  isExemptFromProtocolYieldFee: Boolean!
+
   """Token logo"""
   logoURI: String
 
