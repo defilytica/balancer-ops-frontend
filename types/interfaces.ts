@@ -108,6 +108,9 @@ export interface TokenListToken {
   symbol: string;
   decimals: number;
   logoURI: string;
+  isErc4626?: boolean;
+  isBufferAllowed?: boolean;
+  underlyingTokenAddress?: string;
 }
 
 export interface TokenWithBalance extends PoolToken {
@@ -122,6 +125,7 @@ export interface GetTokensQuery {
 
 export interface GetTokensQueryVariables {
   chainIn: string[];
+  tokensIn?: string[];
 }
 
 export interface WeightedPoolSpecific {

@@ -1,5 +1,6 @@
 import {WHITELISTED_PAYMENT_TOKENS} from "@/constants/constants";
 import {BatchFile, Transaction,} from "@/components/btns/SimulateTransactionButton";
+import { addDays } from "date-fns";
 
 export interface EnableGaugeInput {
   gauge: string;
@@ -787,4 +788,180 @@ export function generateHumanReadableSetDistributor(
   const safeAddress = inputs[0].safeAddress || "Unknown"; // Default value if safeAddress is undefined
 
   return `The Maxi Multisig ${safeAddress} will interact with the following gauges:\n${readableInputs}`;
+}
+
+interface Permit2ApprovalInput {
+  token: string;
+  amount: string;
+  permit2Address: string;
+  targetContractAddress: string;
+  expiration: string;
+}
+
+function generatePermit2ApprovalPayload(params: Permit2ApprovalInput) {
+  return [
+    // ERC20 approval to Permit2
+    {
+      to: params.token,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          {
+            name: "spender",
+            type: "address",
+          },
+          {
+            name: "amount",
+            type: "uint256",
+          },
+        ],
+        name: "approve",
+        payable: false,
+      },
+      contractInputsValues: {
+        spender: params.permit2Address,
+        amount: params.amount,
+      },
+    },
+    // Permit2 approval to target contract
+    {
+      to: params.permit2Address,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          {
+            name: "token",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "spender",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "amount",
+            type: "uint160",
+            internalType: "uint160",
+          },
+          {
+            name: "expiration",
+            type: "uint48",
+            internalType: "uint48",
+          },
+        ],
+        name: "approve",
+        payable: false,
+      },
+      contractInputsValues: {
+        token: params.token,
+        spender: params.targetContractAddress,
+        amount: params.amount,
+        expiration: params.expiration,
+      },
+    },
+  ];
+}
+
+export interface InitializeBufferInput {
+  wrappedToken: string;
+  underlyingToken?: string;
+  exactAmountUnderlyingIn: string;
+  exactAmountWrappedIn: string;
+  minIssuedShares: string;
+  seedingSafe?: string;
+  includePermit2: boolean;
+}
+
+export function generateInitializeBufferPayload(
+  input: InitializeBufferInput,
+  chainId: string,
+  bufferRouterAddress: string,
+  permit2Address?: string,
+) {
+  let transactions = [];
+  if (input.includePermit2 && permit2Address) {
+    let expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000).toString();
+
+    if (input.exactAmountUnderlyingIn !== "0" && input.underlyingToken) {
+      transactions.push(
+        ...generatePermit2ApprovalPayload({
+          token: input.underlyingToken,
+          amount: input.exactAmountUnderlyingIn,
+          permit2Address,
+          targetContractAddress: bufferRouterAddress,
+          expiration,
+        }),
+      );
+    }
+
+    // Add permit2 approvals for wrapped token if needed
+    if (input.exactAmountWrappedIn !== "0") {
+      transactions.push(
+        ...generatePermit2ApprovalPayload({
+          token: input.wrappedToken,
+          amount: input.exactAmountWrappedIn,
+          permit2Address,
+          targetContractAddress: bufferRouterAddress,
+          expiration,
+        }),
+      );
+    }
+  }
+
+  // Add the buffer initialization transaction
+  transactions.push({
+    to: bufferRouterAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          internalType: "contract IERC4626",
+          name: "wrappedToken",
+          type: "address",
+        },
+        {
+          internalType: "uint256",
+          name: "exactAmountUnderlyingIn",
+          type: "uint256",
+        },
+        {
+          internalType: "uint256",
+          name: "exactAmountWrappedIn",
+          type: "uint256",
+        },
+        {
+          internalType: "uint256",
+          name: "minIssuedShares",
+          type: "uint256",
+        },
+      ],
+      name: "initializeBuffer",
+      payable: false,
+    },
+    contractInputsValues: {
+      wrappedToken: input.wrappedToken,
+      exactAmountUnderlyingIn: input.exactAmountUnderlyingIn,
+      exactAmountWrappedIn: input.exactAmountWrappedIn,
+      minIssuedShares: input.minIssuedShares,
+    },
+  });
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Initialize buffer for wrapped token ${input.wrappedToken}.`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: input.seedingSafe ?? "",
+      createdFromOwnerAddress: "",
+      checksum: "",
+    },
+    transactions,
+  };
 }

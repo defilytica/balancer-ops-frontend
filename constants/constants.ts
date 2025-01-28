@@ -1,4 +1,5 @@
 import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from "react-icons/fa";
+import { FaRegChartBar } from "react-icons/fa6";
 import { FaBridgeCircleCheck } from "react-icons/fa6";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
@@ -134,6 +135,18 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "feature/set-injector",
     prNamePlaceholder: "Program rewards injector XYZ",
     prTypePath: "MaxiOps/injectorScheduling/[chain]/",
+  },
+  {
+    key: "initialize-buffer",
+    label: "Initialize Liquidity Buffer",
+    description: "Initialize and seed a new liquidity buffer for a wrapped token.",
+    button_label: "Initialize Buffer",
+    href: "/payload-builder/initialize-buffer",
+    icon: FaRegChartBar,
+    repos: [],
+    branchNamePlaceholder: "",
+    prNamePlaceholder: "",
+    prTypePath: "",
   },
 ];
 

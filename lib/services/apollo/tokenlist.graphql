@@ -1,10 +1,16 @@
-query GetTokens($chainIn: [GqlChain!]){
-    tokenGetTokens(chains: $chainIn){
-    chainId
-    address
-    name
-    symbol
-    decimals
-    logoURI
+query GetTokens($chainIn: [GqlChain!], $tokensIn: [String!]) {
+    tokenGetTokens(
+        chains: $chainIn
+        where: { tokensIn: $tokensIn }
+    ) {
+        chainId
+        address
+        name
+        symbol
+        decimals
+        logoURI
+        isErc4626
+        isBufferAllowed
+        underlyingTokenAddress
     }
 }
