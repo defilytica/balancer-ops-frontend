@@ -13,8 +13,12 @@ import {
   Checkbox,
   Heading,
   Text,
+  Alert,
+  AlertIcon,
+  Link,
+  Container,
 } from "@chakra-ui/react";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   AddressBook,
   GetTokensQuery,
@@ -34,7 +38,6 @@ import { getAddress } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
-import React from "react";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -228,12 +231,27 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   ]);
 
   return (
-    <Box maxW="container.lg" mx="auto" p={4}>
+    <Container maxW="container.lg" mx="auto" p={4}>
       <VStack spacing={4} align="stretch">
-        <Heading as="h2" size="lg" variant="special" mb={6}>
+        <Heading as="h2" size="lg" variant="special">
           Initialize Liquidity Buffer
         </Heading>
-
+        <Alert status="info" mt={4} mb={4}>
+          <Flex align="center">
+            <AlertIcon />
+            <Text>
+              For a detailed guide on how to initialize buffers, please see{" "}
+              <Link
+                href="https://github.com/BalancerMaxis/multisig-ops/blob/main/docs/Buffer-Documentation/Initializing-Buffers.md"
+                textDecoration="underline"
+                isExternal
+              >
+                this documentation
+              </Link>
+              .
+            </Text>
+          </Flex>
+        </Alert>
         <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
           <Box flex={{ base: "1", md: "2" }}>
             <FormControl isRequired>
@@ -310,7 +328,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </FormControl>
         </Flex>
 
-        <Flex direction={{ base: "column", md: "row" }} gap={4}>
+        <Flex direction="column">
           <FormControl
             flex={{
               base: "1",
@@ -383,6 +401,6 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </>
         )}
       </VStack>
-    </Box>
+    </Container>
   );
 }

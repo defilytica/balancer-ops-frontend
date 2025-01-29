@@ -137,11 +137,11 @@ export const PAYLOAD_OPTIONS = [
     prTypePath: "MaxiOps/injectorScheduling/[chain]/",
   },
   {
+    href: "/payload-builder/initialize-buffer",
     key: "initialize-buffer",
     label: "Initialize Liquidity Buffer",
-    description: "Initialize and seed a new liquidity buffer for a wrapped token.",
     button_label: "Initialize Buffer",
-    href: "/payload-builder/initialize-buffer",
+    description: "Initialize and seed a new liquidity buffer for a wrapped token.",
     icon: FaRegChartBar,
     repos: [],
     branchNamePlaceholder: "",
