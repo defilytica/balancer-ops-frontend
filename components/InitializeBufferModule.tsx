@@ -328,16 +328,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </FormControl>
         </Flex>
 
-        <Flex direction="column">
-          <FormControl
-            flex={{
-              base: "1",
-              md: "0.4",
-              lg: "0.4",
-              xl: "0.4",
-            }}
-            minW={{ md: "300px" }}
-          >
+        <Flex direction="column" width={{ base: "100%", md: "45%" }} minW={{ md: "300px" }}>
+          <FormControl>
             <FormLabel>Seeding Safe</FormLabel>
             <Input
               name="seedingSafe"
@@ -346,16 +338,16 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               placeholder="Seeding Safe address"
               isDisabled={!selectedToken}
             />
-            <FormControl mt={6}>
-              <Checkbox
-                size="lg"
-                onChange={e => setIncludePermit2(e.target.checked)}
-                isDisabled={!selectedToken}
-              >
-                <FormLabel mb="0">Include Permit2 approvals</FormLabel>
-              </Checkbox>
-            </FormControl>
           </FormControl>
+          <Box mt={6}>
+            <Checkbox
+              size="lg"
+              onChange={e => setIncludePermit2(e.target.checked)}
+              isDisabled={!selectedToken}
+            >
+              <FormLabel mb="0">Include Permit2 approvals</FormLabel>
+            </Checkbox>
+          </Box>
         </Flex>
 
         <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
