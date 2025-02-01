@@ -897,7 +897,6 @@ export function generateInitializeBufferPayload(
       );
     }
 
-    // Add permit2 approvals for wrapped token if needed
     if (input.exactAmountWrappedIn !== "0") {
       transactions.push(
         ...generatePermit2ApprovalPayload({

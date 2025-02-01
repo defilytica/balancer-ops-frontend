@@ -46,6 +46,8 @@ interface InitializeBufferModuleProps {
 export default function InitializeBufferModule({ addressBook }: InitializeBufferModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedToken, setSelectedToken] = useState<TokenListToken | undefined>();
+  const [wrappedTokenAddress, setWrappedTokenAddress] = useState("");
+  const [underlyingTokenAddress, setUnderlyingTokenAddress] = useState("");
   const [exactAmountUnderlyingIn, setExactAmountUnderlyingIn] = useState("");
   const [exactAmountWrappedIn, setExactAmountWrappedIn] = useState("");
   const [minIssuedShares, setMinIssuedShares] = useState("");
@@ -84,13 +86,13 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const isGenerateButtonDisabled = useMemo(() => {
     return (
       !selectedNetwork ||
-      !selectedToken ||
+      !wrappedTokenAddress ||
       !minIssuedShares ||
       (!exactAmountUnderlyingIn && !exactAmountWrappedIn)
     );
   }, [
     selectedNetwork,
-    selectedToken,
+    wrappedTokenAddress,
     minIssuedShares,
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
@@ -100,6 +102,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
     setSelectedToken(undefined);
+    setWrappedTokenAddress("");
+    setUnderlyingTokenAddress("");
     setExactAmountUnderlyingIn("");
     setExactAmountWrappedIn("");
     setMinIssuedShares("");
@@ -110,10 +114,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
   const handleTokenSelect = (token: TokenListToken) => {
     setSelectedToken(token);
+    setWrappedTokenAddress(token.address);
+    setUnderlyingTokenAddress(token.underlyingTokenAddress ?? "");
   };
 
   const handleGenerateClick = useCallback(() => {
-    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
+    if (!selectedNetwork || !wrappedTokenAddress || !minIssuedShares) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -205,10 +211,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
     const payload = generateInitializeBufferPayload(
       {
-        wrappedToken: selectedToken.address,
-        underlyingToken: selectedToken.underlyingTokenAddress,
-        exactAmountUnderlyingIn,
-        exactAmountWrappedIn,
+        wrappedToken: wrappedTokenAddress,
+        underlyingToken: underlyingTokenAddress,
+        exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
+        exactAmountWrappedIn: exactAmountWrappedIn || "0",
         minIssuedShares,
         seedingSafe,
         includePermit2,
@@ -220,7 +226,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   }, [
     selectedNetwork,
-    selectedToken,
+    wrappedTokenAddress,
+    underlyingTokenAddress,
     minIssuedShares,
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
@@ -252,8 +259,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             </Text>
           </Flex>
         </Alert>
-        <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
-          <Box flex={{ base: "1", md: "2" }}>
+        <Flex direction={{ base: "column", md: "row" }} gap={4}>
+          <Box flex="1">
             <FormControl isRequired>
               <FormLabel>Network</FormLabel>
               <Select
@@ -270,27 +277,68 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             </FormControl>
           </Box>
 
-          <Box flex={{ base: "1", md: "3" }}>
-            <FormControl isRequired>
+          <Box flex="1">
+            <FormControl>
               <FormLabel>Wrapped Token</FormLabel>
-              <TokenSelector
-                selectedNetwork={selectedNetwork}
-                onSelect={handleTokenSelect}
-                selectedToken={selectedToken}
-                placeholder="Select wrapped token"
-                isDisabled={!selectedNetwork}
-                onlyErc4626={true}
-              />
-              {underlyingToken && (
-                <Text fontSize="sm" mt={1.5} color="gray.400">
-                  Underlying token: {underlyingToken.address} ({underlyingToken.symbol})
-                </Text>
-              )}
+              <Flex gap={2}>
+                <TokenSelector
+                  selectedNetwork={selectedNetwork}
+                  onSelect={handleTokenSelect}
+                  selectedToken={selectedToken}
+                  placeholder="Select wrapped token"
+                  isDisabled={!selectedNetwork}
+                  onlyErc4626={true}
+                />
+                {selectedToken && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedToken(undefined);
+                      setWrappedTokenAddress("");
+                      setUnderlyingTokenAddress("");
+                    }}
+                    size="md"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </Flex>
             </FormControl>
           </Box>
         </Flex>
-
-        <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
+        <Flex direction={{ base: "column", md: "row" }} gap={4}>
+          <FormControl>
+            <FormLabel>
+              Underlying Token Address
+              {underlyingToken && ` (${underlyingToken.symbol})`}
+            </FormLabel>
+            <Input
+              placeholder="0x..."
+              value={underlyingTokenAddress}
+              onChange={e => {
+                setSelectedToken(undefined);
+                setUnderlyingTokenAddress(e.target.value);
+              }}
+              isDisabled={!!selectedToken}
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel>
+              Wrapped Token Address
+              {selectedToken && ` (${selectedToken.symbol})`}
+            </FormLabel>
+            <Input
+              placeholder="0x..."
+              value={wrappedTokenAddress}
+              onChange={e => {
+                setSelectedToken(undefined);
+                setWrappedTokenAddress(e.target.value);
+              }}
+              isDisabled={!!selectedToken}
+            />
+          </FormControl>
+        </Flex>
+        <Flex direction={{ base: "column", md: "row" }} gap={4} mb={2}>
           <FormControl>
             <FormLabel>Underlying Token Amount</FormLabel>
             <Input
@@ -299,7 +347,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               onChange={e => setExactAmountUnderlyingIn(e.target.value)}
               placeholder="Amount in token native decimals"
               type="number"
-              isDisabled={!selectedToken}
+              isDisabled={!wrappedTokenAddress}
             />
           </FormControl>
 
@@ -311,7 +359,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               onChange={e => setExactAmountWrappedIn(e.target.value)}
               placeholder="Amount in token native decimals"
               type="number"
-              isDisabled={!selectedToken}
+              isDisabled={!wrappedTokenAddress}
             />
           </FormControl>
 
@@ -323,12 +371,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               onChange={e => setMinIssuedShares(e.target.value)}
               placeholder="Minimum issued shares amount"
               type="number"
-              isDisabled={!selectedToken}
+              isDisabled={!wrappedTokenAddress}
             />
           </FormControl>
         </Flex>
 
-        <Flex direction="column" width={{ base: "100%", md: "45%" }} minW={{ md: "300px" }}>
+        <Flex direction="column" width={{ base: "100%", md: "50%" }} minW={{ md: "300px" }}>
           <FormControl>
             <FormLabel>Seeding Safe</FormLabel>
             <Input
@@ -336,14 +384,14 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               value={seedingSafe}
               onChange={e => setSeedingSafe(e.target.value)}
               placeholder="Seeding Safe address"
-              isDisabled={!selectedToken}
+              isDisabled={!wrappedTokenAddress}
             />
           </FormControl>
           <Box mt={6}>
             <Checkbox
               size="lg"
               onChange={e => setIncludePermit2(e.target.checked)}
-              isDisabled={!selectedToken}
+              isDisabled={!wrappedTokenAddress}
             >
               <FormLabel mb="0">Include Permit2 approvals</FormLabel>
             </Checkbox>
