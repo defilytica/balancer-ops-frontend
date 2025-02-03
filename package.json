@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix && yarn run prettier:fix",
-    "prettier": "prettier --check '**/*.*(md|json|yaml|ts|js|tsx)' --loglevel warn",
-    "prettier:fix": "yarn run prettier --write",
+    "prettier": "prettier '**/*.*(md|json|yaml|ts|js|tsx)' --check --cache --log-level warn",
+    "prettier:fix": "yarn run prettier '**/*.*(md|json|yaml|ts|js|tsx)' --write --cache --log-level=warn",
     "gen:graphql:dev": "DOTENV_CONFIG_PATH=./.env.local graphql-codegen -r dotenv/config",
     "gen:graphql:prod": "DOTENV_CONFIG_PATH=./.env graphql-codegen -r dotenv/config",
     "postinstall": "prisma generate"
@@ -72,6 +72,8 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.2.5",
     "prisma": "^5.17.0",
     "typescript": "^5"
   }

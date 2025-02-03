@@ -1,0 +1,23 @@
+# Generated files
+*.generated.ts
+*.graphql.ts
+graphql.schema.json
+
+# Build outputs
+.next
+build
+dist
+out
+
+# Dependencies
+node_modules
+
+# Cache
+.cache
+.eslintcache
+
+# Environment files
+.env*
+
+# Prisma
+prisma/generated/
