@@ -2,12 +2,7 @@ import { SVGProps } from "react";
 
 export function BalancerLogo(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 26 21"
-      {...props}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 26 21" {...props}>
       <path
         fill="currentColor"
         // eslint-disable-next-line max-len

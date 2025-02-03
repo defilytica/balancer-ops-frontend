@@ -30,7 +30,7 @@ export const tokenDecimals: Record<string, number> = {
   "0x0b2c639c533813f4aa9d7837caf62653d097ff85": 6, // OP USDC
 };
 
-export const GOVERNANCE_ADDRESS = '0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b';
+export const GOVERNANCE_ADDRESS = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
 
 export const PAYLOAD_OPTIONS = [
@@ -39,8 +39,7 @@ export const PAYLOAD_OPTIONS = [
     key: "create-payment",
     label: "Create DAO Payment Request",
     button_label: "Create Payment",
-    description:
-      "Build a token payment payload from a set whitelisted tokens and DAO wallets.",
+    description: "Build a token payment payload from a set whitelisted tokens and DAO wallets.",
     icon: FaDollarSign,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/create-payment",
@@ -52,8 +51,7 @@ export const PAYLOAD_OPTIONS = [
     key: "enable-gauge",
     label: "Enable Gauge for BAL Rewards in the veBAL system",
     button_label: "Enable Gauge",
-    description:
-      "Set up a payload to enable a gauge in the Balancer gauge system.",
+    description: "Set up a payload to enable a gauge in the Balancer gauge system.",
     icon: FaTachometerAlt,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/enable-gauge",
@@ -65,8 +63,7 @@ export const PAYLOAD_OPTIONS = [
     key: "kill-gauge",
     label: "Remove Gauge from the veBAL system",
     button_label: "Kill Gauge",
-    description:
-      "Set up a payload to remove a gauge from the Balancer gauge system",
+    description: "Set up a payload to remove a gauge from the Balancer gauge system",
     icon: FaSkull,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/kill-gauge",
@@ -90,7 +87,8 @@ export const PAYLOAD_OPTIONS = [
     key: "set-reward-distributor-to-gauge",
     label: "Configure Token Rewards Distributor to a Gauge",
     button_label: "Set Reward Distributor",
-    description: "Configure a new reward distributor for an existing reward token on a staking gauge.",
+    description:
+      "Configure a new reward distributor for an existing reward token on a staking gauge.",
     icon: FaGift,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/set-reward-distributor-to-gauge",
@@ -102,8 +100,7 @@ export const PAYLOAD_OPTIONS = [
     key: "cctp-bridge",
     label: "Bridge USDC via CCTP",
     button_label: "Create Bridge Tx",
-    description:
-      "Bridge USDC stable coins between DAO Multisigs with the official CCTP bridge",
+    description: "Bridge USDC stable coins between DAO Multisigs with the official CCTP bridge",
     icon: FaBridgeCircleCheck,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/cctp-bridge-setup",
@@ -128,8 +125,7 @@ export const PAYLOAD_OPTIONS = [
     key: "injector-configurator",
     label: "Configure Rewards Injectors",
     button_label: "Configure rewards",
-    description:
-      "Configure a rewards injector with a new token emission schedule.",
+    description: "Configure a rewards injector with a new token emission schedule.",
     icon: TbSettingsDollar,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/set-injector",
@@ -289,20 +285,20 @@ export const networks: Record<string, NetworkInfo> = {
     logo: sepoliaLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=sepolia&dkey=",
     explorer: "https://sepolia.etherscan.io/",
-    chainId: "11155111"
+    chainId: "11155111",
   },
   fraxtal: {
     logo: fraxtalLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=fraxtal&dkey=",
     explorer: "https://fraxscan.com",
-    chainId: "252"
+    chainId: "252",
   },
   mode: {
     logo: modeLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=mode&dkey=",
     explorer: "https://explorer.mode.network/",
-    chainId: "34443"
-  }
+    chainId: "34443",
+  },
 };
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
@@ -409,11 +405,11 @@ export const FactoryAddressComposable = {
 };
 
 // Single static factory, easier to store here than fetch from address book
-export const MAINNET_GAUGE_FACTORY = '0xf1665E19bc105BE4EDD3739F88315cC699cc5b65'
+export const MAINNET_GAUGE_FACTORY = "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65";
 
 export const GAUGE_WEIGHT_CAPS = {
-  TWO_PERCENT: "20000000000000000",    // 2% cap
-  FIVE_PERCENT: "50000000000000000",   // 5% cap
-  TEN_PERCENT: "100000000000000000",   // 10% cap
-  UNCAPPED: "1000000000000000000",     // No cap
+  TWO_PERCENT: "20000000000000000", // 2% cap
+  FIVE_PERCENT: "50000000000000000", // 5% cap
+  TEN_PERCENT: "100000000000000000", // 10% cap
+  UNCAPPED: "1000000000000000000", // No cap
 } as const;

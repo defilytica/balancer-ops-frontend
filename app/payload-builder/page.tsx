@@ -9,11 +9,9 @@ export default function PayloadBuilder() {
       <Heading as="h2" size="lg" variant="special">
         Payload Builder Library
       </Heading>
-      <Text mb={4}>
-        Choose from a variety of options to create Balancer DAO Payloads
-      </Text>
+      <Text mb={4}>Choose from a variety of options to create Balancer DAO Payloads</Text>
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-        {PAYLOAD_OPTIONS.map((link) => (
+        {PAYLOAD_OPTIONS.map(link => (
           <CustomCard
             key={link.key}
             title={link.label}

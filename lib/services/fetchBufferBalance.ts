@@ -1,7 +1,4 @@
-export const fetchBufferBalance = async (
-  wrappedToken: string,
-  network: string,
-) => {
+export const fetchBufferBalance = async (wrappedToken: string, network: string) => {
   try {
     const response = await fetch(
       `/api/buffer-balance?wrappedToken=${wrappedToken}&network=${network}`,

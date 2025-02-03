@@ -1,5 +1,5 @@
-import {WHITELISTED_PAYMENT_TOKENS} from "@/constants/constants";
-import {BatchFile, Transaction,} from "@/components/btns/SimulateTransactionButton";
+import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
 
 export interface EnableGaugeInput {
@@ -29,7 +29,7 @@ export const copyJsonToClipboard = (generatedPayload: any, toast: any) => {
         isClosable: true,
       });
     })
-    .catch((err) => {
+    .catch(err => {
       toast({
         title: "Could not copy text",
         description: err.message,
@@ -52,7 +52,7 @@ export const copyTextToClipboard = (text: string, toast: any) => {
         isClosable: true,
       });
     })
-    .catch((err) => {
+    .catch(err => {
       toast({
         title: "Could not copy text",
         description: err.message,
@@ -66,7 +66,7 @@ export const copyTextToClipboard = (text: string, toast: any) => {
 
 // --- ENABLE GAUGE
 export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
-  const transactions = inputs.map((input) => ({
+  const transactions = inputs.map(input => ({
     to: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
     value: "0",
     data: null,
@@ -100,14 +100,9 @@ export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
   };
 }
 
-export function generateHumanReadableForEnableGauge(
-  inputs: EnableGaugeInput[],
-): string {
+export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
   const gaugesList = inputs
-    .map(
-      (input) =>
-        `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`,
-    )
+    .map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`)
     .join("\n");
 
   return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
@@ -119,7 +114,7 @@ export interface KillGaugeInput {
 }
 
 export function generateKillGaugePayload(targets: KillGaugeInput[]) {
-  const transactions = targets.map((target) => ({
+  const transactions = targets.map(target => ({
     to: "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
     value: "0",
     data: null,
@@ -189,18 +184,13 @@ function convertToTokenValue(amount: number, decimals: number): string {
   return fullValue.replace(/^0+/, "") || "0";
 }
 
-export function generateTokenPaymentPayload(
-  inputs: PaymentInput[],
-  safeInfo: SafeInfo,
-) {
-  const transactions = inputs.map((input) => {
+export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: SafeInfo) {
+  const transactions = inputs.map(input => {
     const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(
-      (t) => t.address === input.token,
+      t => t.address === input.token,
     );
     if (!tokenInfo) {
-      throw new Error(
-        `Token ${input.token} not found for network ${safeInfo.network}`,
-      );
+      throw new Error(`Token ${input.token} not found for network ${safeInfo.network}`);
     }
 
     const value = convertToTokenValue(input.value, tokenInfo.decimals);
@@ -250,17 +240,12 @@ export function generateTokenPaymentPayload(
   };
 }
 
-export function generateHumanReadableTokenTransfer(
-  payment: PaymentInput,
-  safeInfo: SafeInfo,
-) {
+export function generateHumanReadableTokenTransfer(payment: PaymentInput, safeInfo: SafeInfo) {
   const tokenInfo = WHITELISTED_PAYMENT_TOKENS[safeInfo.network].find(
-    (t) => t.address === payment.token,
+    t => t.address === payment.token,
   );
   if (!tokenInfo) {
-    throw new Error(
-      `Token ${payment.token} not found for network ${safeInfo.network}`,
-    );
+    throw new Error(`Token ${payment.token} not found for network ${safeInfo.network}`);
   }
 
   const value = payment.value * 10 ** tokenInfo.decimals;
@@ -280,7 +265,7 @@ export function generateCCTPBridgePayload(inputs: CCTPBridgeInput[]) {
   const USDCMessenger = "0xBd3fa81B58Ba92a82136038B25aDec7066af3155";
 
   const transactions = inputs
-    .map((input) => {
+    .map(input => {
       return [
         {
           to: burnToken,
@@ -342,21 +327,18 @@ export function generateCCTPBridgePayload(inputs: CCTPBridgeInput[]) {
       txBuilderVersion: "1.16.5",
       createdFromSafeAddress: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
       createdFromOwnerAddress: "",
-      checksum:
-        "0x301f5a7132d04fe310a2eaaac8a7303393ed01c2ca5fbbca2c2a09b1de2755f4",
+      checksum: "0x301f5a7132d04fe310a2eaaac8a7303393ed01c2ca5fbbca2c2a09b1de2755f4",
     },
     transactions,
   };
 }
 
-export function generateHumanReadableCCTPBridge(
-  inputs: CCTPBridgeInput[],
-): string {
+export function generateHumanReadableCCTPBridge(inputs: CCTPBridgeInput[]): string {
   const burnToken = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
   const USDCMessenger = "0xBd3fa81B58Ba92a82136038B25aDec7066af3155";
 
   const readableInputs = inputs
-    .map((input) => {
+    .map(input => {
       const value = (input.value * 10 ** 6).toString(); // Assuming the token has 6 decimals
       return `Approve ${USDCMessenger} to spend ${value} USDC\nthen calling depositForBurn passsing ${value} for the amount of USDC with destination domain ${input.destinationDomain} and mint recipient ${input.mintRecipient}. Destination domains can be confirmed here: https://developers.circle.com/stablecoins/docs/supported-domains`;
     })
@@ -376,7 +358,7 @@ export interface AddRewardInput {
 }
 
 export function generateAddRewardPayload(inputs: AddRewardInput[]) {
-  const transactions = inputs.map((input) => ({
+  const transactions = inputs.map(input => ({
     to: input.authorizerAdaptorEntrypoint,
     value: "0",
     data: null,
@@ -404,8 +386,7 @@ export function generateAddRewardPayload(inputs: AddRewardInput[]) {
       txBuilderVersion: "1.16.5",
       createdFromSafeAddress: inputs.length > 0 ? inputs[0].safeAddress : "",
       createdFromOwnerAddress: "",
-      checksum:
-        "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
+      checksum: "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
     },
     transactions: [...transactions], // Using array notation to handle multiple transactions
   };
@@ -485,10 +466,7 @@ export function generateInjectorSchedulePayloadV2({
   let parameters: any[];
   if (operation === "add") {
     const firstConfig = scheduleInputs.find(
-      (input) =>
-        input.rawAmountPerPeriod &&
-        input.maxPeriods &&
-        input.doNotStartBeforeTimestamp,
+      input => input.rawAmountPerPeriod && input.maxPeriods && input.doNotStartBeforeTimestamp,
     );
 
     if (!firstConfig) {
@@ -496,13 +474,13 @@ export function generateInjectorSchedulePayloadV2({
     }
 
     parameters = [
-      scheduleInputs.map((input) => input.gaugeAddress),
+      scheduleInputs.map(input => input.gaugeAddress),
       firstConfig.rawAmountPerPeriod,
       firstConfig.maxPeriods,
       firstConfig.doNotStartBeforeTimestamp || "0",
     ];
   } else {
-    parameters = [scheduleInputs.map((input) => input.gaugeAddress)];
+    parameters = [scheduleInputs.map(input => input.gaugeAddress)];
   }
 
   const batchTransaction = {
@@ -594,9 +572,9 @@ export function generateInjectorSchedulePayload({
     data: null,
     contractMethod,
     contractInputsValues: {
-      gaugeAddresses: `[${scheduleInputs.map((input) => input.gaugeAddress).join(", ")}]`,
-      amountsPerPeriod: `[${scheduleInputs.map((input) => input.rawAmountPerPeriod).join(", ")}]`,
-      maxPeriods: `[${scheduleInputs.map((input) => input.maxPeriods).join(", ")}]`,
+      gaugeAddresses: `[${scheduleInputs.map(input => input.gaugeAddress).join(", ")}]`,
+      amountsPerPeriod: `[${scheduleInputs.map(input => input.rawAmountPerPeriod).join(", ")}]`,
+      maxPeriods: `[${scheduleInputs.map(input => input.maxPeriods).join(", ")}]`,
     },
   };
 
@@ -618,15 +596,13 @@ export function generateInjectorSchedulePayload({
   return payload;
 }
 
-export function generateHumanReadableAddReward(
-  inputs: AddRewardInput[],
-): string {
+export function generateHumanReadableAddReward(inputs: AddRewardInput[]): string {
   if (inputs.length === 0) {
     return ""; // Handle case where inputs array is empty
   }
 
   const readableInputs = inputs
-    .map((input) => {
+    .map(input => {
       return `Add Reward:\nTarget (Gauge Address): ${input.targetGauge}\nTo (Authorizer Adaptor Entrypoint): ${input.authorizerAdaptorEntrypoint}\nReward Token: ${input.rewardToken}\nDistributor Address: ${input.distributorAddress}`;
     })
     .join("\n\n");
@@ -651,7 +627,7 @@ export function transformToHumanReadable(input: string): string {
   const category = parts.shift();
 
   // Process each part
-  const transformedParts = parts.map((part) => {
+  const transformedParts = parts.map(part => {
     // Check if the part is a special case
     if (part.toLowerCase() in specialCases) {
       return specialCases[part.toLowerCase()];
@@ -660,7 +636,7 @@ export function transformToHumanReadable(input: string): string {
     // General transformation for other cases
     return part
       .split(/[-_]+/) // Split by hyphens or underscores
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(" ");
   });
 
@@ -668,9 +644,7 @@ export function transformToHumanReadable(input: string): string {
   const result = transformedParts.join(" ");
 
   // Add the category back if it exists
-  return category
-    ? `${category.charAt(0).toUpperCase() + category.slice(1)}: ${result}`
-    : result;
+  return category ? `${category.charAt(0).toUpperCase() + category.slice(1)}: ${result}` : result;
 }
 
 // Add this to payloadHelperFunctions.ts
@@ -686,9 +660,7 @@ export function generateSwapFeeChangePayload(
   chainId: string,
   multisig: string,
 ) {
-  const swapFeePercentage = (
-    parseFloat(input.newSwapFeePercentage) * 1e16
-  ).toString(); // Convert to wei format
+  const swapFeePercentage = (parseFloat(input.newSwapFeePercentage) * 1e16).toString(); // Convert to wei format
 
   const transaction = {
     to: input.poolAddress,
@@ -737,7 +709,7 @@ export interface SetDistributorInput {
 }
 
 export function generateSetDistributorPayload(inputs: SetDistributorInput[]) {
-  const transactions = inputs.map((input) => ({
+  const transactions = inputs.map(input => ({
     to: input.authorizerAdaptorEntrypoint,
     value: "0",
     data: null,
@@ -765,22 +737,19 @@ export function generateSetDistributorPayload(inputs: SetDistributorInput[]) {
       txBuilderVersion: "1.16.5",
       createdFromSafeAddress: inputs.length > 0 ? inputs[0].safeAddress : "",
       createdFromOwnerAddress: "",
-      checksum:
-        "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
+      checksum: "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
     },
     transactions: [...transactions], // Using array notation to handle multiple transactions
   };
 }
 
-export function generateHumanReadableSetDistributor(
-  inputs: SetDistributorInput[],
-): string {
+export function generateHumanReadableSetDistributor(inputs: SetDistributorInput[]): string {
   if (inputs.length === 0) {
     return ""; // Handle case where inputs array is empty
   }
 
   const readableInputs = inputs
-    .map((input) => {
+    .map(input => {
       return `Set Distributor:\nTarget (Gauge Address): ${input.targetGauge}\nTo (Authorizer Adaptor Entrypoint): ${input.authorizerAdaptorEntrypoint}\nReward Token: ${input.rewardToken}\nDistributor Address: ${input.distributorAddress}`;
     })
     .join("\n\n");

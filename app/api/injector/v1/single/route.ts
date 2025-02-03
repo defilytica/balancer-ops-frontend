@@ -15,10 +15,7 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("token");
 
   if (!address || !network || !token) {
-    return NextResponse.json(
-      { error: "Missing required parameters" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
   const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
@@ -45,15 +42,12 @@ export async function GET(request: NextRequest) {
       injectorTokenAddress,
       address,
       provider,
-        tokenInfo.decimals
+      tokenInfo.decimals,
     );
 
     return NextResponse.json({ tokenInfo, gauges, contractBalance, owner });
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
   }
 }

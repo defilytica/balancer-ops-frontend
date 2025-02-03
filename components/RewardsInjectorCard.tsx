@@ -15,10 +15,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
-import {
-  calculateDistributionAmounts,
-  formatTokenName,
-} from "@/lib/data/injector/helpers";
+import { calculateDistributionAmounts, formatTokenName } from "@/lib/data/injector/helpers";
 
 interface TokenInfo {
   symbol: string;
@@ -49,11 +46,7 @@ interface RewardsInjectorCardProps {
   v2: boolean;
 }
 
-const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
-  data,
-  networks,
-  v2,
-}) => {
+const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, networks, v2 }) => {
   const {
     address,
     network,
@@ -93,11 +86,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
           </Heading>
           <HStack flexShrink={0}>
             {networks[network] && (
-              <Image
-                src={networks[network].logo}
-                alt={`${network} logo`}
-                boxSize="20px"
-              />
+              <Image src={networks[network].logo} alt={`${network} logo`} boxSize="20px" />
             )}
             <IconButton
               aria-label="View on explorer"
@@ -120,16 +109,10 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
           <Text fontWeight="bold" mb={2}>
             Distribution Progress
           </Text>
-          <Progress
-            value={distributedPercentage}
-            size="md"
-            colorScheme="green"
-            mb={2}
-          />
+          <Progress value={distributedPercentage} size="md" colorScheme="green" mb={2} />
           <HStack justify="space-between">
             <Text fontSize="sm">
-              {formatAmount(distributed)} / {formatAmount(total)}{" "}
-              {tokenInfo.symbol}
+              {formatAmount(distributed)} / {formatAmount(total)} {tokenInfo.symbol}
             </Text>
             <Text fontSize="sm" fontWeight="medium">
               {distributedPercentage.toFixed(1)}%
@@ -148,15 +131,10 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
               <AlertTitle>Gauge Setup Warning!</AlertTitle>
               <AlertDescription>
                 {incorrectlySetupGauges.length} gauge
-                {incorrectlySetupGauges.length > 1 ? "s are" : " is"} not
-                correctly set up. This may result in rewards not being
-                distributed properly.
+                {incorrectlySetupGauges.length > 1 ? "s are" : " is"} not correctly set up. This may
+                result in rewards not being distributed properly.
               </AlertDescription>
-              <Link
-                href={`rewards-injector/${address}`}
-                mt={2}
-                fontWeight="bold"
-              >
+              <Link href={`rewards-injector/${address}`} mt={2} fontWeight="bold">
                 More Information
               </Link>
             </Box>
@@ -168,8 +146,8 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({
             <Box flex="1">
               <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
               <AlertDescription>
-                Additional {formatAmount(additionalTokensRequired)}{" "}
-                {tokenInfo.symbol} required to complete all distributions.
+                Additional {formatAmount(additionalTokensRequired)} {tokenInfo.symbol} required to
+                complete all distributions.
               </AlertDescription>
             </Box>
           </Alert>

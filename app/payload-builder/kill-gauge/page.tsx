@@ -22,13 +22,7 @@ import {
   useToast,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  AddIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  DeleteIcon,
-  DownloadIcon,
-} from "@chakra-ui/icons";
+import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import React, { useState } from "react";
 import {
   copyJsonToClipboard,
@@ -45,9 +39,7 @@ import OpenPRButton from "@/components/btns/OpenPRButton";
 export default function KillGaugePage() {
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(
-    null,
-  );
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -66,9 +58,7 @@ export default function KillGaugePage() {
   };
 
   const handleGenerateClick = () => {
-    let payload = generateKillGaugePayload(
-      gauges.map((g) => ({ target: g.id })),
-    );
+    let payload = generateKillGaugePayload(gauges.map(g => ({ target: g.id })));
     let text = ""; // According to the provided snippet
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
@@ -91,18 +81,17 @@ export default function KillGaugePage() {
             <List spacing={2}>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Build a payload to disable a gauge for BAL rewards by providing
-                a set of gauge contract IDs.
+                Build a payload to disable a gauge for BAL rewards by providing a set of gauge
+                contract IDs.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Ensure that the gauge contracts are no longer needed before
-                removing them.
+                Ensure that the gauge contracts are no longer needed before removing them.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                After submitting a PR, validate that the gauges match the ones
-                that are desired to be removed.
+                After submitting a PR, validate that the gauges match the ones that are desired to
+                be removed.
               </ListItem>
             </List>
           </AlertDescription>
@@ -116,7 +105,7 @@ export default function KillGaugePage() {
                 <FormLabel>Gauge ID #{index + 1}</FormLabel>
                 <Input
                   value={gauge.id}
-                  onChange={(e) => {
+                  onChange={e => {
                     const updatedGauges = [...gauges];
                     updatedGauges[index].id = e.target.value;
                     setGauges(updatedGauges);
@@ -138,27 +127,17 @@ export default function KillGaugePage() {
             </Box>
           </Card>
         ))}
-        <Button
-          onClick={() => setGauges([...gauges, { id: "" }])}
-          leftIcon={<AddIcon />}
-        >
+        <Button onClick={() => setGauges([...gauges, { id: "" }])} leftIcon={<AddIcon />}>
           Add Gauge ID
         </Button>
       </>
       <>
-        <Flex
-          justifyContent="space-between"
-          alignItems="center"
-          mt="20px"
-          mb="10px"
-        >
+        <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
           <Button variant="primary" onClick={handleGenerateClick}>
             Generate Payload
           </Button>
           {generatedPayload && (
-            <SimulateTransactionButton
-              batchFile={JSON.parse(generatedPayload)}
-            />
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
         <Divider />
@@ -166,7 +145,7 @@ export default function KillGaugePage() {
         {generatedPayload && (
           <JsonViewerEditor
             jsonData={generatedPayload}
-            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
         )}
 

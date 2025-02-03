@@ -6,23 +6,13 @@ export function SignInButton() {
 
   if (!session.data?.user) {
     return (
-      <Button
-        size={"xs"}
-        rounded={"full"}
-        variant={"primary"}
-        onClick={() => signIn("github")}
-      >
+      <Button size={"xs"} rounded={"full"} variant={"primary"} onClick={() => signIn("github")}>
         Sign In
       </Button>
     );
   }
   return (
-    <Button
-      size={"xs"}
-      rounded={"full"}
-      variant={"primary"}
-      onClick={() => signOut()}
-    >
+    <Button size={"xs"} rounded={"full"} variant={"primary"} onClick={() => signOut()}>
       Sign Out
     </Button>
   );

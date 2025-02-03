@@ -30,17 +30,10 @@ import {
   Divider,
   Spinner,
 } from "@chakra-ui/react";
-import {
-  ChevronDownIcon,
-  CopyIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, CopyIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
 import { AddressOption } from "@/types/interfaces";
-import SimulateTransactionButton, {
-  BatchFile,
-} from "@/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import {
   copyJsonToClipboard,
@@ -105,9 +98,7 @@ function RewardsInjectorConfiguratorV2({
     doNotStartBeforeTimestamp: "0",
     rawAmountPerPeriod: "0",
   });
-  const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(
-    null,
-  );
+  const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -170,20 +161,16 @@ function RewardsInjectorConfiguratorV2({
     if (operation === "add") {
       const amount = parseFloat(addConfig.amountPerPeriod) || 0;
       const periods = parseInt(addConfig.maxPeriods) || 0;
-      const validRecipients = addConfig.recipients.filter((r) =>
-        r.trim(),
-      ).length;
+      const validRecipients = addConfig.recipients.filter(r => r.trim()).length;
 
       const additionalTotal = amount * periods * validRecipients;
       newTotal += additionalTotal;
       newRemaining += additionalTotal;
     } else if (operation === "remove") {
-      const removedAddresses = removeConfig.recipients.filter((r) => r.trim());
+      const removedAddresses = removeConfig.recipients.filter(r => r.trim());
 
-      removedAddresses.forEach((address) => {
-        const gauge = gauges.find(
-          (g) => g.gaugeAddress.toLowerCase() === address.toLowerCase(),
-        );
+      removedAddresses.forEach(address => {
+        const gauge = gauges.find(g => g.gaugeAddress.toLowerCase() === address.toLowerCase());
         if (gauge) {
           const gaugeAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
           const gaugeMaxPeriods = parseInt(gauge.maxPeriods) || 0;
@@ -215,7 +202,7 @@ function RewardsInjectorConfiguratorV2({
 
     const amount = parseFloat(addConfig.amountPerPeriod) || 0;
     const maxPeriods = parseInt(addConfig.maxPeriods) || 0;
-    const totalRecipients = addConfig.recipients.filter((r) => r.trim()).length;
+    const totalRecipients = addConfig.recipients.filter(r => r.trim()).length;
 
     const total = amount * maxPeriods * totalRecipients;
     return { total, distributed: 0, remaining: total };
@@ -229,11 +216,7 @@ function RewardsInjectorConfiguratorV2({
   };
 
   const currentDistribution = calculateCurrentDistribution(gauges);
-  const newDistribution = calculateNewDistribution(
-    operation,
-    addConfig,
-    removeConfig,
-  );
+  const newDistribution = calculateNewDistribution(operation, addConfig, removeConfig);
   const distributionDelta = newDistribution.total - currentDistribution.total;
 
   const generatePayload = () => {
@@ -256,13 +239,13 @@ function RewardsInjectorConfiguratorV2({
         operation: operation || "add",
         scheduleInputs:
           operation === "add"
-            ? addConfig.recipients.map((recipient) => ({
+            ? addConfig.recipients.map(recipient => ({
                 gaugeAddress: recipient,
                 rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
                 maxPeriods: addConfig.maxPeriods,
                 doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
               }))
-            : removeConfig.recipients.map((recipient) => ({
+            : removeConfig.recipients.map(recipient => ({
                 gaugeAddress: recipient,
               })),
       });
@@ -304,16 +287,10 @@ function RewardsInjectorConfiguratorV2({
           Injector Schedule Payload Configurator
         </Heading>
         <Text mb={6}>
-          Build a injector schedule payload to configure reward emissions on a
-          gauge set.
+          Build a injector schedule payload to configure reward emissions on a gauge set.
         </Text>
       </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        verticalAlign="center"
-        mb={4}
-      >
+      <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
         <Menu>
           <MenuButton
             as={Button}
@@ -347,7 +324,7 @@ function RewardsInjectorConfiguratorV2({
             )}
           </MenuButton>
           <MenuList w="135%" maxHeight="60vh" overflowY="auto">
-            {addresses.map((address) => (
+            {addresses.map(address => (
               <MenuItem
                 key={address.network + address.token}
                 onClick={() => onAddressSelect(address)}
@@ -387,12 +364,7 @@ function RewardsInjectorConfiguratorV2({
           />
         )}
 
-        <FormControl
-          display="flex"
-          alignItems="center"
-          w="auto"
-          marginLeft={10}
-        >
+        <FormControl display="flex" alignItems="center" w="auto" marginLeft={10}>
           <FormLabel htmlFor="version-switch" mb="0">
             V1
           </FormLabel>
@@ -456,8 +428,8 @@ function RewardsInjectorConfiguratorV2({
               <AlertIcon />
               <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
               <AlertDescription>
-                Additional {formatAmount(distributionDelta - contractBalance)}{" "}
-                {tokenSymbol} required to complete all distributions.
+                Additional {formatAmount(distributionDelta - contractBalance)} {tokenSymbol}{" "}
+                required to complete all distributions.
               </AlertDescription>
             </Alert>
           )}
@@ -476,9 +448,7 @@ function RewardsInjectorConfiguratorV2({
             <Button onClick={() => setOperation("add")} mr={4}>
               Add Recipients
             </Button>
-            <Button onClick={() => setOperation("remove")}>
-              Remove Recipients
-            </Button>
+            <Button onClick={() => setOperation("remove")}>Remove Recipients</Button>
           </Box>
           <Box mt={6}>
             <EditableInjectorConfigV2
@@ -503,18 +473,13 @@ function RewardsInjectorConfiguratorV2({
           <Button colorScheme="blue" onClick={generatePayload}>
             Generate Payload
           </Button>
-          {generatedPayload && (
-            <SimulateTransactionButton batchFile={generatedPayload} />
-          )}
+          {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
         </Flex>
       )}
       <Divider />
 
       {generatedPayload && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={handleJsonChange}
-        />
+        <JsonViewerEditor jsonData={generatedPayload} onJsonChange={handleJsonChange} />
       )}
 
       {generatedPayload && (
@@ -523,9 +488,7 @@ function RewardsInjectorConfiguratorV2({
             variant="secondary"
             mr="10px"
             leftIcon={<DownloadIcon />}
-            onClick={() =>
-              handleDownloadClick(JSON.stringify(generatedPayload))
-            }
+            onClick={() => handleDownloadClick(JSON.stringify(generatedPayload))}
           >
             Download Payload
           </Button>
@@ -533,9 +496,7 @@ function RewardsInjectorConfiguratorV2({
             variant="secondary"
             mr="10px"
             leftIcon={<CopyIcon />}
-            onClick={() =>
-              copyJsonToClipboard(JSON.stringify(generatedPayload), toast)
-            }
+            onClick={() => copyJsonToClipboard(JSON.stringify(generatedPayload), toast)}
           >
             Copy Payload to Clipboard
           </Button>
@@ -545,12 +506,8 @@ function RewardsInjectorConfiguratorV2({
             type={"injector-configurator"}
             isOpen={isOpen}
             onClose={onClose}
-            payload={
-              generatedPayload
-                ? JSON.parse(JSON.stringify(generatedPayload))
-                : null
-            }
-            network={selectedAddress ? selectedAddress.network.toLowerCase() : 'mainnet'}
+            payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
+            network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
           />
         </Box>
       )}

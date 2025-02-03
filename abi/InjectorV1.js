@@ -241,9 +241,7 @@ export const InjectorABIV1 = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "address", name: "targetAddress", type: "address" },
-    ],
+    inputs: [{ internalType: "address", name: "targetAddress", type: "address" }],
     name: "getAccountInfo",
     outputs: [
       { internalType: "uint256", name: "amountPerPeriod", type: "uint256" },

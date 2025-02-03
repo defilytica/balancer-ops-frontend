@@ -45,13 +45,9 @@ interface BatchFile {
   transactions: Transaction[];
 }
 
-async function getProviderForNetwork(
-  chainId: string,
-): Promise<ethers.Provider> {
+async function getProviderForNetwork(chainId: string): Promise<ethers.Provider> {
   // Find the network info by chainId
-  const networkEntry = Object.entries(networks).find(
-    ([_, info]) => info.chainId === chainId,
-  );
+  const networkEntry = Object.entries(networks).find(([_, info]) => info.chainId === chainId);
 
   if (!networkEntry) {
     throw new Error(`Unsupported chain ID: ${chainId}`);
@@ -61,16 +57,9 @@ async function getProviderForNetwork(
   return new ethers.JsonRpcProvider(rpcUrl);
 }
 
-async function getSafeOwners(
-  safeAddress: string,
-  chainId: string,
-): Promise<string[]> {
+async function getSafeOwners(safeAddress: string, chainId: string): Promise<string[]> {
   const provider = await getProviderForNetwork(chainId);
-  const safeContract = new ethers.Contract(
-    safeAddress,
-    IGnosisSafeABI,
-    provider,
-  );
+  const safeContract = new ethers.Contract(safeAddress, IGnosisSafeABI, provider);
   return await safeContract.getOwners();
 }
 
@@ -88,9 +77,7 @@ function encodeMultiSendData(transactions: Transaction[]): string {
       };
 
       const iface = new ethers.Interface([functionFragment]);
-      const params = tx.contractMethod.inputs.map(
-        (input) => tx.contractInputsValues![input.name],
-      );
+      const params = tx.contractMethod.inputs.map(input => tx.contractInputsValues![input.name]);
       data = iface.encodeFunctionData(tx.contractMethod.name, params);
     }
 
@@ -112,10 +99,7 @@ function encodeMultiSendData(transactions: Transaction[]): string {
 
   return ethers.concat([
     "0x8d80ff0a",
-    ethers.AbiCoder.defaultAbiCoder().encode(
-      ["bytes"],
-      [ethers.concat(encodedTransactions)],
-    ),
+    ethers.AbiCoder.defaultAbiCoder().encode(["bytes"], [ethers.concat(encodedTransactions)]),
   ]);
 }
 
@@ -132,7 +116,7 @@ export async function POST(request: NextRequest) {
     const provider = await getProviderForNetwork(networkId);
 
     const signatures = owners
-      .map((owner) => {
+      .map(owner => {
         return ethers.concat([
           ethers.zeroPadValue(owner, 32),
           ethers.zeroPadValue("0x", 32),
@@ -143,27 +127,20 @@ export async function POST(request: NextRequest) {
 
     const multiSendData = encodeMultiSendData(batchFile.transactions);
 
-    const safeContract = new ethers.Contract(
-      safeAddress,
-      IGnosisSafeABI,
-      provider,
-    );
+    const safeContract = new ethers.Contract(safeAddress, IGnosisSafeABI, provider);
 
-    const execTransactionData = safeContract.interface.encodeFunctionData(
-      "execTransaction",
-      [
-        MULTISEND_ADDRESS,
-        0,
-        multiSendData,
-        1,
-        0,
-        0,
-        0,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        signatures,
-      ],
-    );
+    const execTransactionData = safeContract.interface.encodeFunctionData("execTransaction", [
+      MULTISEND_ADDRESS,
+      0,
+      multiSendData,
+      1,
+      0,
+      0,
+      0,
+      NULL_ADDRESS,
+      NULL_ADDRESS,
+      signatures,
+    ]);
 
     const simulationPayload = {
       network_id: networkId,
@@ -183,16 +160,12 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    const simulationResponse = await axios.post(
-      TENDERLY_API_URL,
-      simulationPayload,
-      {
-        headers: {
-          "X-Access-Key": TENDERLY_ACCESS_KEY as string,
-          "Content-Type": "application/json",
-        },
+    const simulationResponse = await axios.post(TENDERLY_API_URL, simulationPayload, {
+      headers: {
+        "X-Access-Key": TENDERLY_ACCESS_KEY as string,
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     await axios.post(
       `${TENDERLY_API_URL.replace("simulate", "")}simulations/${simulationResponse.data.simulation.id}/share`,
@@ -206,9 +179,7 @@ export async function POST(request: NextRequest) {
     );
 
     const simulationUrl = `https://www.tdly.co/shared/simulation/${simulationResponse.data.simulation.id}`;
-    const success = simulationResponse.data.simulation.status
-      ? "🟩 SUCCESS"
-      : "🟥 FAILURE";
+    const success = simulationResponse.data.simulation.status ? "🟩 SUCCESS" : "🟥 FAILURE";
 
     return NextResponse.json({
       url: simulationUrl,

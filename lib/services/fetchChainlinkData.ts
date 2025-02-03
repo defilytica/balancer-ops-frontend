@@ -35,11 +35,9 @@ export const fetchChainlinkData = async (): Promise<ChainlinkData[]> => {
           );
 
         // Calculate estimated_actions_left
-        processedData.forEach((row) => {
+        processedData.forEach(row => {
           row.estimated_actions_left =
-            row.link_per_perform > 0
-              ? Math.floor(row.upkeep_balance / row.link_per_perform)
-              : 0;
+            row.link_per_perform > 0 ? Math.floor(row.upkeep_balance / row.link_per_perform) : 0;
         });
 
         resolve(processedData);

@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Text,
-  useColorMode,
-  useToast,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, Text, useColorMode, useToast } from "@chakra-ui/react";
 import { CodeiumEditor } from "@codeium/react-code-editor";
 import dynamic from "next/dynamic";
 import { BatchFile } from "@/components/btns/SimulateTransactionButton";
@@ -20,10 +13,7 @@ interface JsonViewerEditorProps {
   onJsonChange: (newJson: string | BatchFile) => void;
 }
 
-export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({
-  jsonData,
-  onJsonChange,
-}) => {
+export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, onJsonChange }) => {
   const { colorMode } = useColorMode();
   const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [isEditing, setIsEditing] = useState(false);
@@ -70,8 +60,7 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({
     }
   };
 
-  const jsonString =
-    typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
+  const jsonString = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
 
   return (
     <Box mt="20px">

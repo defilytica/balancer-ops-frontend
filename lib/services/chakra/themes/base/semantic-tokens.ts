@@ -1,9 +1,9 @@
-export type SemanticTokens = ReturnType<typeof getSemanticTokens>
+export type SemanticTokens = ReturnType<typeof getSemanticTokens>;
 
 export function getSemanticTokens(tokens: any, colors: any) {
   return {
     colors: {
-      primary: { _light: 'primary.500', _dark: 'primary.500' },
+      primary: { _light: "primary.500", _dark: "primary.500" },
       grayText: {
         default: tokens.colors.light.text.secondary,
         _dark: tokens.colors.dark.text.secondary,
@@ -11,14 +11,14 @@ export function getSemanticTokens(tokens: any, colors: any) {
       gradients: {
         text: {
           heading: {
-            from: '#707883',
-            to: '#2D4C7E',
+            from: "#707883",
+            to: "#2D4C7E",
           },
         },
         button: {
           sand: {
-            from: '#E5D3BE',
-            to: '#E6C6A0',
+            from: "#E5D3BE",
+            to: "#E6C6A0",
           },
         },
       },
@@ -217,7 +217,7 @@ export function getSemanticTokens(tokens: any, colors: any) {
           },
         },
         zen: {
-          default: 'brown.50',
+          default: "brown.50",
           _dark: tokens.colors.dark.border.zen,
         },
         subduedZen: {
@@ -301,60 +301,60 @@ export function getSemanticTokens(tokens: any, colors: any) {
             _dark: tokens.colors.dark.button.text.disabled,
           },
           primary: {
-            default: '#F3F1EC',
-            _dark: '#414853',
+            default: "#F3F1EC",
+            _dark: "#414853",
           },
         },
-        dark: colors.gray['700'], // always dark
-        light: '#E5D3BE', // always light
+        dark: colors.gray["700"], // always dark
+        light: "#E5D3BE", // always light
       },
 
       chart: {
-        stakedBalance: '#9F95F0',
+        stakedBalance: "#9F95F0",
         pool: {
           bar: {
             volume: {
-              from: 'rgba(0, 211, 149, 1)',
-              to: 'rgba(0, 211, 149, 0.2)',
+              from: "rgba(0, 211, 149, 1)",
+              to: "rgba(0, 211, 149, 0.2)",
               cow: {
-                from: 'rgba(111, 192, 37, 1)',
-                to: 'rgba(111, 192, 37, 0.5)',
-                hover: '#00a1ff',
+                from: "rgba(111, 192, 37, 1)",
+                to: "rgba(111, 192, 37, 0.5)",
+                hover: "#00a1ff",
               },
             },
           },
           scatter: {
             add: {
-              from: 'rgba(0, 211, 149, 100%)',
-              to: 'rgba(0, 211, 149, 20%)',
-              label: 'linear-gradient(to bottom, rgba(0, 211, 149, 100%), rgba(0, 211, 149, 20%))',
+              from: "rgba(0, 211, 149, 100%)",
+              to: "rgba(0, 211, 149, 20%)",
+              label: "linear-gradient(to bottom, rgba(0, 211, 149, 100%), rgba(0, 211, 149, 20%))",
             },
             remove: {
-              from: 'rgba(239, 68, 68, 100%)',
-              to: 'rgba(239, 68, 68, 20%)',
-              label: 'linear-gradient(to bottom, rgba(239, 68, 68, 100%), rgba(239, 68, 68, 20%))',
+              from: "rgba(239, 68, 68, 100%)",
+              to: "rgba(239, 68, 68, 20%)",
+              label: "linear-gradient(to bottom, rgba(239, 68, 68, 100%), rgba(239, 68, 68, 20%))",
             },
             swap: {
-              from: 'rgba(109, 173, 249, 100%)',
-              to: 'rgba(109, 173, 249, 20%)',
+              from: "rgba(109, 173, 249, 100%)",
+              to: "rgba(109, 173, 249, 20%)",
               label:
-                  'linear-gradient(to bottom, rgba(109, 173, 249, 100%), rgba(109, 173, 249, 20%))',
+                "linear-gradient(to bottom, rgba(109, 173, 249, 100%), rgba(109, 173, 249, 20%))",
             },
           },
         },
       },
     },
     space: {
-      none: '0',
-      xxs: '0.125rem',
-      xs: '0.25rem',
-      sm: '0.5rem',
-      ms: '0.75rem',
-      md: '1rem',
-      lg: '1.5rem',
-      xl: '2rem',
-      '2xl': '4rem',
-      '3xl': '6rem',
+      none: "0",
+      xxs: "0.125rem",
+      xs: "0.25rem",
+      sm: "0.5rem",
+      ms: "0.75rem",
+      md: "1rem",
+      lg: "1.5rem",
+      xl: "2rem",
+      "2xl": "4rem",
+      "3xl": "6rem",
     },
     shadows: {
       sm: {
@@ -373,21 +373,21 @@ export function getSemanticTokens(tokens: any, colors: any) {
         default: tokens.shadows.light.xl,
         _dark: tokens.shadows.dark.xl,
       },
-      '2xl': {
-        default: tokens.shadows.light['2xl'],
-        _dark: tokens.shadows.dark['2xl'],
+      "2xl": {
+        default: tokens.shadows.light["2xl"],
+        _dark: tokens.shadows.dark["2xl"],
       },
-      '3xl': {
-        default: tokens.shadows.light['3xl'],
-        _dark: tokens.shadows.dark['3xl'],
+      "3xl": {
+        default: tokens.shadows.light["3xl"],
+        _dark: tokens.shadows.dark["3xl"],
       },
-      innerSm: 'inset 0 0 4px 0 rgba(0, 0, 0, 0.06)',
+      innerSm: "inset 0 0 4px 0 rgba(0, 0, 0, 0.06)",
       innerBase: {
-        default: tokens.shadows.light['shadowInnerBase'],
-        _dark: tokens.shadows.dark['shadowInnerBase'],
+        default: tokens.shadows.light["shadowInnerBase"],
+        _dark: tokens.shadows.dark["shadowInnerBase"],
       },
-      innerMd: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.1)',
-      innerLg: 'inset 0 0 8px 0 rgba(0, 0, 0, 0.15)',
+      innerMd: "inset 0 0 6px 0 rgba(0, 0, 0, 0.1)",
+      innerLg: "inset 0 0 8px 0 rgba(0, 0, 0, 0.15)",
 
       innerXl: {
         default: tokens.shadows.light.innerXl,
@@ -449,20 +449,20 @@ export function getSemanticTokens(tokens: any, colors: any) {
       },
     },
     sizes: {
-      maxContent: '1320px',
-      screenHeight: '100vh',
-      screenWidth: '100vw',
+      maxContent: "1320px",
+      screenHeight: "100vh",
+      screenWidth: "100vw",
     },
     radii: {
-      default: 'md',
-      xs: '0.125rem',
-      sm: '0.25rem',
-      md: '0.375rem',
-      lg: '0.5rem',
-      xl: '0.75rem',
-      '2xl': '1rem',
-      '3xl': '1.5rem',
-      full: '9999px',
+      default: "md",
+      xs: "0.125rem",
+      sm: "0.25rem",
+      md: "0.375rem",
+      lg: "0.5rem",
+      xl: "0.75rem",
+      "2xl": "1rem",
+      "3xl": "1.5rem",
+      full: "9999px",
     },
-  }
+  };
 }

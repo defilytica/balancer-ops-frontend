@@ -51,11 +51,7 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
     }
   };
 
-  const handleInputChange = (
-    index: number,
-    field: keyof RewardsInjectorData,
-    value: string,
-  ) => {
+  const handleInputChange = (index: number, field: keyof RewardsInjectorData, value: string) => {
     const newConfig = [...config];
     if (field === "amountPerPeriod") {
       newConfig[index] = {
@@ -100,17 +96,13 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
               <Input
                 placeholder="Gauge Address"
                 value={row.gaugeAddress}
-                onChange={(e) =>
-                  handleInputChange(index, "gaugeAddress", e.target.value)
-                }
+                onChange={e => handleInputChange(index, "gaugeAddress", e.target.value)}
               />
               {row.poolName && <Text>Pool Name: {row.poolName}</Text>}
               <Input
                 placeholder={`Amount Per Period (${tokenSymbol})`}
                 value={row.amountPerPeriod}
-                onChange={(e) =>
-                  handleInputChange(index, "amountPerPeriod", e.target.value)
-                }
+                onChange={e => handleInputChange(index, "amountPerPeriod", e.target.value)}
               />
               <Text fontSize="sm" color="gray.500">
                 Raw Amount: {row.rawAmountPerPeriod || "0"}
@@ -118,9 +110,7 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
               <Input
                 placeholder="Max Periods"
                 value={row.maxPeriods}
-                onChange={(e) =>
-                  handleInputChange(index, "maxPeriods", e.target.value)
-                }
+                onChange={e => handleInputChange(index, "maxPeriods", e.target.value)}
               />
               <IconButton
                 aria-label="Delete row"
@@ -156,18 +146,14 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
               <Td>
                 <Input
                   value={row.gaugeAddress}
-                  onChange={(e) =>
-                    handleInputChange(index, "gaugeAddress", e.target.value)
-                  }
+                  onChange={e => handleInputChange(index, "gaugeAddress", e.target.value)}
                 />
               </Td>
               <Td>{row.poolName || "-"}</Td>
               <Td>
                 <Input
                   value={row.amountPerPeriod}
-                  onChange={(e) =>
-                    handleInputChange(index, "amountPerPeriod", e.target.value)
-                  }
+                  onChange={e => handleInputChange(index, "amountPerPeriod", e.target.value)}
                 />
               </Td>
               <Td>
@@ -181,9 +167,7 @@ export const EditableInjectorConfig: React.FC<EditableInjectorConfigProps> = ({
               <Td>
                 <Input
                   value={row.maxPeriods}
-                  onChange={(e) =>
-                    handleInputChange(index, "maxPeriods", e.target.value)
-                  }
+                  onChange={e => handleInputChange(index, "maxPeriods", e.target.value)}
                 />
               </Td>
               <Td>

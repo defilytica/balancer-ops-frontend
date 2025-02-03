@@ -13,7 +13,7 @@ const ChainlinkAutomationPage: React.FC = () => {
     const loadData = async () => {
       try {
         const rawData = (await fetchChainlinkData()) as any[];
-        const processedData: ChainlinkData[] = rawData.map((row) => ({
+        const processedData: ChainlinkData[] = rawData.map(row => ({
           ...row,
           upkeep_balance: parseFloat(row.upkeep_balance),
           total_link_payments: parseFloat(row.total_link_payments),
@@ -45,8 +45,7 @@ const ChainlinkAutomationPage: React.FC = () => {
             Chainlink: Automation Catalog
           </Heading>
           <Text>
-            Status overview of operational Chainlink Upkeepers maintaned by
-            Balancer Maxis.
+            Status overview of operational Chainlink Upkeepers maintaned by Balancer Maxis.
           </Text>
           <ChainlinkTable data={chainlinkData} />
         </VStack>

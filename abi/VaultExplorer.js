@@ -1,9 +1,7 @@
 export const vaultExplorerABI = [
   {
     type: "constructor",
-    inputs: [
-      { name: "vault", internalType: "contract IVault", type: "address" },
-    ],
+    inputs: [{ name: "vault", internalType: "contract IVault", type: "address" }],
     stateMutability: "nonpayable",
   },
   {
@@ -14,9 +12,7 @@ export const vaultExplorerABI = [
       { name: "spender", internalType: "address", type: "address" },
     ],
     name: "allowance",
-    outputs: [
-      { name: "tokenAllowance", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "tokenAllowance", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -33,9 +29,7 @@ export const vaultExplorerABI = [
       { name: "account", internalType: "address", type: "address" },
     ],
     name: "balanceOf",
-    outputs: [
-      { name: "tokenBalance", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "tokenBalance", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -114,9 +108,7 @@ export const vaultExplorerABI = [
       { name: "token", internalType: "contract IERC20", type: "address" },
     ],
     name: "getAggregateSwapFeeAmount",
-    outputs: [
-      { name: "swapFeeAmount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "swapFeeAmount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -126,9 +118,7 @@ export const vaultExplorerABI = [
       { name: "token", internalType: "contract IERC20", type: "address" },
     ],
     name: "getAggregateYieldFeeAmount",
-    outputs: [
-      { name: "yieldFeeAmount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "yieldFeeAmount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -155,9 +145,7 @@ export const vaultExplorerABI = [
       },
     ],
     name: "getBufferAsset",
-    outputs: [
-      { name: "underlyingToken", internalType: "address", type: "address" },
-    ],
+    outputs: [{ name: "underlyingToken", internalType: "address", type: "address" }],
     stateMutability: "view",
   },
   {
@@ -204,27 +192,21 @@ export const vaultExplorerABI = [
       { name: "liquidityOwner", internalType: "address", type: "address" },
     ],
     name: "getBufferOwnerShares",
-    outputs: [
-      { name: "ownerShares", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "ownerShares", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [],
     name: "getBufferPeriodDuration",
-    outputs: [
-      { name: "bufferPeriodDuration", internalType: "uint32", type: "uint32" },
-    ],
+    outputs: [{ name: "bufferPeriodDuration", internalType: "uint32", type: "uint32" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [],
     name: "getBufferPeriodEndTime",
-    outputs: [
-      { name: "bufferPeriodEndTime", internalType: "uint32", type: "uint32" },
-    ],
+    outputs: [{ name: "bufferPeriodEndTime", internalType: "uint32", type: "uint32" }],
     stateMutability: "view",
   },
   {
@@ -237,9 +219,7 @@ export const vaultExplorerABI = [
       },
     ],
     name: "getBufferTotalShares",
-    outputs: [
-      { name: "bufferShares", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "bufferShares", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -331,36 +311,28 @@ export const vaultExplorerABI = [
     type: "function",
     inputs: [],
     name: "getMinimumTradeAmount",
-    outputs: [
-      { name: "minimumTradeAmount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "minimumTradeAmount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [],
     name: "getMinimumWrapAmount",
-    outputs: [
-      { name: "minimumWrapAmount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "minimumWrapAmount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [],
     name: "getNonzeroDeltaCount",
-    outputs: [
-      { name: "nonzeroDeltaCount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "nonzeroDeltaCount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [],
     name: "getPauseWindowEndTime",
-    outputs: [
-      { name: "pauseWindowEndTime", internalType: "uint32", type: "uint32" },
-    ],
+    outputs: [{ name: "pauseWindowEndTime", internalType: "uint32", type: "uint32" }],
     stateMutability: "view",
   },
   {
@@ -592,9 +564,7 @@ export const vaultExplorerABI = [
     type: "function",
     inputs: [{ name: "pool", internalType: "address", type: "address" }],
     name: "getPoolTokens",
-    outputs: [
-      { name: "tokens", internalType: "contract IERC20[]", type: "address[]" },
-    ],
+    outputs: [{ name: "tokens", internalType: "contract IERC20[]", type: "address[]" }],
     stateMutability: "view",
   },
   {
@@ -612,29 +582,21 @@ export const vaultExplorerABI = [
   },
   {
     type: "function",
-    inputs: [
-      { name: "token", internalType: "contract IERC20", type: "address" },
-    ],
+    inputs: [{ name: "token", internalType: "contract IERC20", type: "address" }],
     name: "getReservesOf",
-    outputs: [
-      { name: "reserveAmount", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "reserveAmount", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     inputs: [{ name: "pool", internalType: "address", type: "address" }],
     name: "getStaticSwapFeePercentage",
-    outputs: [
-      { name: "swapFeePercentage", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "swapFeePercentage", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
-    inputs: [
-      { name: "token", internalType: "contract IERC20", type: "address" },
-    ],
+    inputs: [{ name: "token", internalType: "contract IERC20", type: "address" }],
     name: "getTokenDelta",
     outputs: [{ name: "tokenDelta", internalType: "int256", type: "int256" }],
     stateMutability: "view",
@@ -657,9 +619,7 @@ export const vaultExplorerABI = [
     type: "function",
     inputs: [],
     name: "getVaultExtension",
-    outputs: [
-      { name: "vaultExtension", internalType: "address", type: "address" },
-    ],
+    outputs: [{ name: "vaultExtension", internalType: "address", type: "address" }],
     stateMutability: "view",
   },
   {
@@ -720,9 +680,7 @@ export const vaultExplorerABI = [
     type: "function",
     inputs: [],
     name: "isQueryDisabledPermanently",
-    outputs: [
-      { name: "queryDisabledPermanently", internalType: "bool", type: "bool" },
-    ],
+    outputs: [{ name: "queryDisabledPermanently", internalType: "bool", type: "bool" }],
     stateMutability: "view",
   },
   {
@@ -743,9 +701,7 @@ export const vaultExplorerABI = [
     type: "function",
     inputs: [{ name: "token", internalType: "address", type: "address" }],
     name: "totalSupply",
-    outputs: [
-      { name: "tokenTotalSupply", internalType: "uint256", type: "uint256" },
-    ],
+    outputs: [{ name: "tokenTotalSupply", internalType: "uint256", type: "uint256" }],
     stateMutability: "view",
   },
 ];

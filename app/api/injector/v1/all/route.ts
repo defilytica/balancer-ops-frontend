@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { InjectorABIV1 } from "@/abi/InjectorV1";
-import {networks, tokenDecimals} from "@/constants/constants";
+import { networks, tokenDecimals } from "@/constants/constants";
 import { prisma } from "@/prisma/prisma";
 import {
   fetchGaugeInfo,
   fetchTokenInfo,
   getInjectTokenBalanceForAddress,
 } from "@/lib/data/injector/helpers";
-import {
-  fetchAddressBook,
-  getCategoryData,
-  getNetworks,
-} from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import { RateLimiter } from "@/lib/services/rateLimiter";
 
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
@@ -24,16 +20,12 @@ const rateLimiter = new RateLimiter({
 
 export async function GET(request: NextRequest) {
   const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
-  const forceReload =
-    request.nextUrl.searchParams.get("forceReload") === "true";
+  const forceReload = request.nextUrl.searchParams.get("forceReload") === "true";
 
   if (forceReload) {
     const isRateLimited = rateLimiter.limit(ip);
     if (isRateLimited) {
-      return NextResponse.json(
-        { error: "Rate limited for force reload" },
-        { status: 429 },
-      );
+      return NextResponse.json({ error: "Rate limited for force reload" }, { status: 429 });
     }
   }
 
@@ -72,12 +64,7 @@ export async function GET(request: NextRequest) {
               console.log("Fetching fresh data...");
               const freshData = await fetchFreshData(address, network);
               // Update the database with fresh data
-              injectorData = await updateDatabase(
-                address,
-                network,
-                freshData,
-                token,
-              );
+              injectorData = await updateDatabase(address, network, freshData, token);
             } else {
               injectorData = cachedInjector;
             }
@@ -89,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     const uniqueInjectors = new Map();
 
-    allInjectors.forEach((injector) => {
+    allInjectors.forEach(injector => {
       const key = `${injector.network}-${injector.address}`;
       uniqueInjectors.set(key, injector);
     });
@@ -99,10 +86,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
   }
 }
 
@@ -129,18 +113,13 @@ async function fetchFreshData(address: string, network: string) {
     injectorTokenAddress,
     address,
     provider,
-    tokenInfo.decimals
+    tokenInfo.decimals,
   );
 
   return { tokenInfo, gauges, contractBalance };
 }
 
-async function updateDatabase(
-  address: string,
-  network: string,
-  freshData: any,
-  token: string,
-) {
+async function updateDatabase(address: string, network: string, freshData: any, token: string) {
   const { tokenInfo, gauges, contractBalance } = freshData;
 
   return await prisma.injector.upsert({

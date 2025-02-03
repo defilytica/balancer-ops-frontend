@@ -22,8 +22,6 @@ export function useFormattedPoolAttributes(pool: Pool | null) {
         value: `${parseFloat(pool.dynamicData.swapFee) * 100}%`,
       },
       { title: "Pool ID", value: pool.dynamicData.poolId },
-    ].filter(
-      (attribute) => attribute.value !== undefined && attribute.value !== null,
-    );
+    ].filter(attribute => attribute.value !== undefined && attribute.value !== null);
   }, [pool]);
 }

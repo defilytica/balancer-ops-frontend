@@ -74,12 +74,7 @@ function RewardsInjector({
   const [isMobile] = useMediaQuery("(max-width: 48em)");
 
   useEffect(() => {
-    if (
-      selectedAddress &&
-      injectorData &&
-      injectorData.tokenInfo &&
-      injectorData.gauges
-    ) {
+    if (selectedAddress && injectorData && injectorData.tokenInfo && injectorData.gauges) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
@@ -94,11 +89,11 @@ function RewardsInjector({
     let distributed = 0;
     let remaining = 0;
 
-    gauges.forEach((gauge) => {
+    gauges.forEach(gauge => {
       // Use rawAmountPerPeriod for calculations
       const amount = isV2
-          ? parseFloat(gauge.rawAmountPerPeriod || '0') / Math.pow(10, tokenDecimals)
-          : parseFloat(gauge.amountPerPeriod!) || 0;
+        ? parseFloat(gauge.rawAmountPerPeriod || "0") / Math.pow(10, tokenDecimals)
+        : parseFloat(gauge.amountPerPeriod!) || 0;
 
       const maxPeriods = parseInt(gauge.maxPeriods) || 0;
       const currentPeriod = parseInt(gauge.periodNumber) || 0;
@@ -127,64 +122,59 @@ function RewardsInjector({
     remaining: totalAmountRemaining,
   } = calculateDistributionAmounts();
   const additionalTokensRequired =
-    totalAmountRemaining > contractBalance
-      ? totalAmountRemaining - contractBalance
-      : 0;
+    totalAmountRemaining > contractBalance ? totalAmountRemaining - contractBalance : 0;
 
-  const incorrectlySetupGauges = gauges.filter(
-    (gauge) => !gauge.isRewardTokenSetup,
-  );
-
+  const incorrectlySetupGauges = gauges.filter(gauge => !gauge.isRewardTokenSetup);
 
   const renderAddressItem = (address: AddressOption) => (
-      <MenuItem
-          key={`${address.network}-${address.address}`}
-          onClick={() => onAddressSelect(address)}
-          w="100%"
-      >
-        <Flex alignItems="center" w="100%">
-          <Image
-              src={networks[address.network]?.logo}
-              alt={`${address.network} logo`}
-              boxSize="20px"
-              mr={2}
-          />
-          <Text as="span" fontFamily="mono"  isTruncated>
-            {address.address}
-            {address.token && (
-                <Text as="span" color="gray.500">
-                  {" - "}{address.token}
-                </Text>
-            )}
-            {!address.token && (
-                <Text as="span" color="gray.400" fontSize="sm">
-                  {" - "}init required
-                </Text>
-            )}
-          </Text>
-        </Flex>
-      </MenuItem>
-  );
-
-  const renderSelectedAddress = () => (
-      <Flex alignItems="center">
+    <MenuItem
+      key={`${address.network}-${address.address}`}
+      onClick={() => onAddressSelect(address)}
+      w="100%"
+    >
+      <Flex alignItems="center" w="100%">
         <Image
-            src={networks[selectedAddress!.network]?.logo}
-            alt={`${selectedAddress!.network} logo`}
-            boxSize="20px"
-            mr={2}
+          src={networks[address.network]?.logo}
+          alt={`${address.network} logo`}
+          boxSize="20px"
+          mr={2}
         />
         <Text as="span" fontFamily="mono" isTruncated>
-          {isMobile
-              ? `${selectedAddress!.address.slice(0, 6)}...`
-              : selectedAddress!.address}
-          {(selectedAddress!.token || tokenSymbol) && (
-              <Text as="span" color="gray.500">
-                {" - "}{selectedAddress!.token || tokenSymbol}
-              </Text>
+          {address.address}
+          {address.token && (
+            <Text as="span" color="gray.500">
+              {" - "}
+              {address.token}
+            </Text>
+          )}
+          {!address.token && (
+            <Text as="span" color="gray.400" fontSize="sm">
+              {" - "}init required
+            </Text>
           )}
         </Text>
       </Flex>
+    </MenuItem>
+  );
+
+  const renderSelectedAddress = () => (
+    <Flex alignItems="center">
+      <Image
+        src={networks[selectedAddress!.network]?.logo}
+        alt={`${selectedAddress!.network} logo`}
+        boxSize="20px"
+        mr={2}
+      />
+      <Text as="span" fontFamily="mono" isTruncated>
+        {isMobile ? `${selectedAddress!.address.slice(0, 6)}...` : selectedAddress!.address}
+        {(selectedAddress!.token || tokenSymbol) && (
+          <Text as="span" color="gray.500">
+            {" - "}
+            {selectedAddress!.token || tokenSymbol}
+          </Text>
+        )}
+      </Text>
+    </Flex>
   );
 
   return (
@@ -194,25 +184,18 @@ function RewardsInjector({
           <Heading as="h2" size="lg" variant="special">
             Rewards Injector Viewer
           </Heading>
-          <Text mb={4}>
-            Choose an rewards injector contract to fetch its current state.
-          </Text>
+          <Text mb={4}>Choose an rewards injector contract to fetch its current state.</Text>
         </Box>
-        <Flex
-          justifyContent="space-between"
-          alignItems="center"
-          verticalAlign="center"
-          mb={4}
-        >
+        <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
           <Menu>
             <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                isDisabled={isLoading}
-                whiteSpace="normal"
-                height="auto"
-                blockSize="auto"
-                w="100%"
+              as={Button}
+              rightIcon={<ChevronDownIcon />}
+              isDisabled={isLoading}
+              whiteSpace="normal"
+              height="auto"
+              blockSize="auto"
+              w="100%"
             >
               {selectedAddress ? renderSelectedAddress() : <Text>Select an injector</Text>}
             </MenuButton>
@@ -235,12 +218,7 @@ function RewardsInjector({
             ></IconButton>
           )}
 
-          <FormControl
-            display="flex"
-            alignItems="center"
-            w="auto"
-            marginLeft={10}
-          >
+          <FormControl display="flex" alignItems="center" w="auto" marginLeft={10}>
             <FormLabel htmlFor="version-switch" mb="0">
               V1
             </FormLabel>
@@ -293,8 +271,9 @@ function RewardsInjector({
                   <Heading size="md">Distribution Rate</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
                     {formatAmount(
-                        gauges.reduce((acc, g) => acc + (parseFloat(g.amountPerPeriod!) || 0), 0)
-                    )} {tokenSymbol}
+                      gauges.reduce((acc, g) => acc + (parseFloat(g.amountPerPeriod!) || 0), 0),
+                    )}{" "}
+                    {tokenSymbol}
                   </Text>
                   <Text fontSize="sm" color="gray.500">
                     Per period
@@ -307,8 +286,7 @@ function RewardsInjector({
                 <Stack spacing={3}>
                   <Heading size="md">Active Program Distribution</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
-                    {formatAmount(calculateDistributionAmounts().total)}{" "}
-                    {tokenSymbol}
+                    {formatAmount(calculateDistributionAmounts().total)} {tokenSymbol}
                   </Text>
                 </Stack>
               </CardBody>
@@ -318,8 +296,7 @@ function RewardsInjector({
                 <Stack spacing={3}>
                   <Heading size="md">Currently Distributed</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
-                    {formatAmount(calculateDistributionAmounts().distributed)}{" "}
-                    {tokenSymbol}
+                    {formatAmount(calculateDistributionAmounts().distributed)} {tokenSymbol}
                   </Text>
                 </Stack>
               </CardBody>
@@ -329,8 +306,7 @@ function RewardsInjector({
                 <Stack spacing={3}>
                   <Heading size="md">Remaining</Heading>
                   <Text fontSize="2xl" fontWeight="bold">
-                    {formatAmount(calculateDistributionAmounts().remaining)}{" "}
-                    {tokenSymbol}
+                    {formatAmount(calculateDistributionAmounts().remaining)} {tokenSymbol}
                   </Text>
                 </Stack>
               </CardBody>
@@ -346,9 +322,8 @@ function RewardsInjector({
               <AlertDescription display="block">
                 {incorrectlySetupGauges.length} gauge
                 {incorrectlySetupGauges.length > 1 ? "s" : ""}{" "}
-                {incorrectlySetupGauges.length > 1 ? "are" : "is"} not correctly
-                set up. This may result in rewards not being distributed
-                properly.
+                {incorrectlySetupGauges.length > 1 ? "are" : "is"} not correctly set up. This may
+                result in rewards not being distributed properly.
               </AlertDescription>
               <Box mt={2}>
                 <Text fontWeight="bold">Misconfigured gauges:</Text>
@@ -364,8 +339,7 @@ function RewardsInjector({
                         isExternal
                         color="blue.500"
                       >
-                        {gauge.poolName || gauge.gaugeAddress}{" "}
-                        <ExternalLinkIcon mx="2px" />
+                        {gauge.poolName || gauge.gaugeAddress} <ExternalLinkIcon mx="2px" />
                       </Link>
                     </ListItem>
                   ))}
@@ -380,8 +354,8 @@ function RewardsInjector({
             <AlertIcon />
             <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
             <AlertDescription>
-              Additional {formatAmount(additionalTokensRequired)} {tokenSymbol}{" "}
-              required to complete all distributions.
+              Additional {formatAmount(additionalTokensRequired)} {tokenSymbol} required to complete
+              all distributions.
             </AlertDescription>
           </Alert>
         )}
@@ -396,23 +370,21 @@ function RewardsInjector({
               data={gauges}
               tokenSymbol={tokenSymbol}
               isV2={isV2}
-              network={
-                selectedAddress ? selectedAddress.network.toLowerCase() : ""
-              }
+              network={selectedAddress ? selectedAddress.network.toLowerCase() : ""}
             />
             {selectedAddress && (
-                <Box mt={2}>
-                  <Link
-                      href={
-                          "/payload-builder/injector-configurator/" +
-                          `${selectedAddress.network.toLowerCase()}/${selectedAddress.address}`  +
-                          "?version=" +
-                          (isV2 ? "v2" : "v1")
-                      }
-                  >
-                    <Button variant="secondary">{"Modify configuration"}</Button>
-                  </Link>
-                </Box>
+              <Box mt={2}>
+                <Link
+                  href={
+                    "/payload-builder/injector-configurator/" +
+                    `${selectedAddress.network.toLowerCase()}/${selectedAddress.address}` +
+                    "?version=" +
+                    (isV2 ? "v2" : "v1")
+                  }
+                >
+                  <Button variant="secondary">{"Modify configuration"}</Button>
+                </Link>
+              </Box>
             )}
           </>
         )}

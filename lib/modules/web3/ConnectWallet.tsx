@@ -8,14 +8,7 @@ export function ConnectWallet({ ...rest }: ButtonProps) {
 
   return (
     <ConnectButton.Custom>
-      {({
-        mounted,
-        openConnectModal,
-        account,
-        chain,
-        openChainModal,
-        openAccountModal,
-      }) => {
+      {({ mounted, openConnectModal, account, chain, openChainModal, openAccountModal }) => {
         const isReady = mounted;
         const isLoading = status === "connecting" || status === "reconnecting";
         const hasActiveConnection = isReady && isConnected && account && chain;
@@ -37,12 +30,7 @@ export function ConnectWallet({ ...rest }: ButtonProps) {
 
         if (chain.unsupported) {
           return (
-            <Button
-              onClick={openChainModal}
-              type="button"
-              variant="tertiary"
-              {...rest}
-            >
+            <Button onClick={openChainModal} type="button" variant="tertiary" {...rest}>
               Unsupported network
             </Button>
           );

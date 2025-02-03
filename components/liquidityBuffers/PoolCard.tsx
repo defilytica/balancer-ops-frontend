@@ -54,8 +54,7 @@ export const PoolCard = ({ pool }: PoolCardProps) => {
               </Link>
             </Heading>
             <Text fontSize="sm">
-              TVL:{" "}
-              {shortCurrencyFormat(Number(pool.dynamicData.totalLiquidity))}
+              TVL: {shortCurrencyFormat(Number(pool.dynamicData.totalLiquidity))}
             </Text>
           </Box>
           <HStack spacing={3}>

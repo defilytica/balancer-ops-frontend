@@ -27,15 +27,7 @@ import {
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import { createPR } from "@/lib/services/createPR";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  addWeeks,
-  subWeeks,
-  getISOWeek,
-  getYear,
-} from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, getISOWeek, getYear } from "date-fns";
 
 interface PRCreationModalProps {
   isOpen: boolean;
@@ -56,15 +48,14 @@ interface ForkStatus {
   behindBy?: number;
 }
 
-
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
-                                                                  isOpen,
-                                                                  onClose,
-                                                                  payload,
-                                                                  type,
-                                                                  network,
-                                                                }) => {
-  const payloadOption = PAYLOAD_OPTIONS.find((option) => option.key === type);
+  isOpen,
+  onClose,
+  payload,
+  type,
+  network,
+}) => {
+  const payloadOption = PAYLOAD_OPTIONS.find(option => option.key === type);
   const repoOptions = payloadOption ? payloadOption.repos : [];
 
   const [forkStatus, setForkStatus] = useState<ForkStatus | null>(null);
@@ -86,9 +77,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
     const year = getYear(selectedWeek);
     const weekNum = getISOWeek(selectedWeek);
     const weekStr = `W${weekNum}`;
-    let newPath = basePath
-        .replace("YYYY", year.toString())
-        .replace("WXX", weekStr);
+    let newPath = basePath.replace("YYYY", year.toString()).replace("WXX", weekStr);
 
     if (network && newPath.includes("[chain]")) {
       newPath = newPath.replace("[chain]", network.toLowerCase());
@@ -104,9 +93,9 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
 
       try {
         const response = await fetch(`/api/github/check-status?repo=${prRepo}`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
 
@@ -118,11 +107,11 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         console.log(status);
         setForkStatus(status);
       } catch (error) {
-        console.error('Error checking fork status:', error);
+        console.error("Error checking fork status:", error);
         toast({
-          title: 'Error checking fork status',
-          description: error instanceof Error ? error.message : 'An unknown error occurred',
-          status: 'error',
+          title: "Error checking fork status",
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+          status: "error",
           duration: 5000,
           isClosable: true,
         });
@@ -135,9 +124,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   }, [isOpen, prRepo]);
 
   const handleWeekChange = (direction: "prev" | "next") => {
-    setSelectedWeek((prev) =>
-        direction === "prev" ? subWeeks(prev, 1) : addWeeks(prev, 1),
-    );
+    setSelectedWeek(prev => (direction === "prev" ? subWeeks(prev, 1) : addWeeks(prev, 1)));
   };
 
   const formatWeekRange = (date: Date) => {
@@ -187,7 +174,6 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
     }
   };
 
-
   const handleUpdateFork = async () => {
     const url = `https://github.com/${forkStatus?.forkRepo}`;
     window.open(url, "_blank");
@@ -198,129 +184,117 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   };
 
   return (
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create Pull Request</ModalHeader>
-          <ModalCloseButton />
-          {forkStatus?.isOutdated && (
-              <Alert status="warning" mb={4}>
-                <AlertIcon />
-                <Box flex="1">
-                  <AlertTitle>Fork is outdated</AlertTitle>
-                  <AlertDescription display="block">
-                    Your fork is {forkStatus.behindBy} commits behind the main repository.
-                    Please update your fork before creating a PR.
-                  </AlertDescription>
-                  <Button
-                      size="sm"
-                      colorScheme="orange"
-                      mt={2}
-                      onClick={handleUpdateFork}
-                  >
-                    Update Fork
-                  </Button>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Create Pull Request</ModalHeader>
+        <ModalCloseButton />
+        {forkStatus?.isOutdated && (
+          <Alert status="warning" mb={4}>
+            <AlertIcon />
+            <Box flex="1">
+              <AlertTitle>Fork is outdated</AlertTitle>
+              <AlertDescription display="block">
+                Your fork is {forkStatus.behindBy} commits behind the main repository. Please update
+                your fork before creating a PR.
+              </AlertDescription>
+              <Button size="sm" colorScheme="orange" mt={2} onClick={handleUpdateFork}>
+                Update Fork
+              </Button>
+            </Box>
+          </Alert>
+        )}
+        <ModalBody>
+          <FormControl mb={4}>
+            <FormLabel>Repository</FormLabel>
+            <Select value={prRepo} onChange={e => setPrRepo(e.target.value)}>
+              {repoOptions.map(repo => (
+                <option key={repo} value={repo}>
+                  {repo}
+                </option>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl mb={4} isInvalid={!!branchError}>
+            <FormLabel>Branch Name</FormLabel>
+            <Input
+              value={prBranch}
+              onChange={handleBranchNameChange}
+              placeholder={branchNamePlaceholder}
+            />
+            <FormErrorMessage>{branchError}</FormErrorMessage>
+          </FormControl>
+          <FormControl mb={4}>
+            <FormLabel>PR Name</FormLabel>
+            <Input
+              value={prName}
+              onChange={e => setPrName(e.target.value)}
+              placeholder={prNamePlaceholder}
+            />
+          </FormControl>
+
+          <FormControl mb={4}>
+            <FormLabel>PR Description</FormLabel>
+            <Textarea
+              value={prDescription}
+              onChange={e => setPrDescription(e.target.value)}
+              placeholder="Describe the changes in this PR..."
+            />
+          </FormControl>
+
+          {needsWeekSelector && (
+            <FormControl mb={4}>
+              <FormLabel>Select Week</FormLabel>
+              <Flex align="center" justify="space-between" bg="transparent" p={2} borderRadius="md">
+                <IconButton
+                  icon={<ChevronLeftIcon />}
+                  onClick={() => handleWeekChange("prev")}
+                  aria-label="Previous week"
+                  size="md"
+                  variant="ghost"
+                />
+                <Box textAlign="center" flex={1}>
+                  <Text fontWeight="bold">{formatWeekRange(selectedWeek)}</Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Week {format(selectedWeek, "w")} of {format(selectedWeek, "yyyy")}
+                  </Text>
                 </Box>
-              </Alert>
+                <IconButton
+                  icon={<ChevronRightIcon />}
+                  onClick={() => handleWeekChange("next")}
+                  aria-label="Next week"
+                  size="md"
+                  variant="ghost"
+                />
+              </Flex>
+            </FormControl>
           )}
-          <ModalBody>
-            <FormControl mb={4}>
-              <FormLabel>Repository</FormLabel>
-              <Select value={prRepo} onChange={(e) => setPrRepo(e.target.value)}>
-                {repoOptions.map((repo) => (
-                    <option key={repo} value={repo}>
-                      {repo}
-                    </option>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl mb={4} isInvalid={!!branchError}>
-              <FormLabel>Branch Name</FormLabel>
-              <Input
-                  value={prBranch}
-                  onChange={handleBranchNameChange}
-                  placeholder={branchNamePlaceholder}
-              />
-              <FormErrorMessage>{branchError}</FormErrorMessage>
-            </FormControl>
-            <FormControl mb={4}>
-              <FormLabel>PR Name</FormLabel>
-              <Input
-                  value={prName}
-                  onChange={(e) => setPrName(e.target.value)}
-                  placeholder={prNamePlaceholder}
-              />
-            </FormControl>
 
-            <FormControl mb={4}>
-              <FormLabel>PR Description</FormLabel>
-              <Textarea
-                  value={prDescription}
-                  onChange={(e) => setPrDescription(e.target.value)}
-                  placeholder="Describe the changes in this PR..."
-              />
-            </FormControl>
+          <FormControl mb={4}>
+            <FormLabel>File Path</FormLabel>
+            <Input
+              value={filePath}
+              onChange={handleFilePathChange}
+              placeholder={`Enter or select a path for ${type}.json`}
+            />
+          </FormControl>
+        </ModalBody>
 
-            {needsWeekSelector && (
-                <FormControl mb={4}>
-                  <FormLabel>Select Week</FormLabel>
-                  <Flex
-                      align="center"
-                      justify="space-between"
-                      bg="transparent"
-                      p={2}
-                      borderRadius="md"
-                  >
-                    <IconButton
-                        icon={<ChevronLeftIcon />}
-                        onClick={() => handleWeekChange("prev")}
-                        aria-label="Previous week"
-                        size="md"
-                        variant="ghost"
-                    />
-                    <Box textAlign="center" flex={1}>
-                      <Text fontWeight="bold">{formatWeekRange(selectedWeek)}</Text>
-                      <Text fontSize="sm" color="gray.600">
-                        Week {format(selectedWeek, "w")} of{" "}
-                        {format(selectedWeek, "yyyy")}
-                      </Text>
-                    </Box>
-                    <IconButton
-                        icon={<ChevronRightIcon />}
-                        onClick={() => handleWeekChange("next")}
-                        aria-label="Next week"
-                        size="md"
-                        variant="ghost"
-                    />
-                  </Flex>
-                </FormControl>
-            )}
-
-            <FormControl mb={4}>
-              <FormLabel>File Path</FormLabel>
-              <Input
-                  value={filePath}
-                  onChange={handleFilePathChange}
-                  placeholder={`Enter or select a path for ${type}.json`}
-              />
-            </FormControl>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button
-                variant="primary"
-                mr={3}
-                onClick={handleCreatePR}
-                isLoading={isLoading}
-                isDisabled={!!branchError}
-            >
-              Create PR
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        <ModalFooter>
+          <Button
+            variant="primary"
+            mr={3}
+            onClick={handleCreatePR}
+            isLoading={isLoading}
+            isDisabled={!!branchError}
+          >
+            Create PR
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };

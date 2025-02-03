@@ -21,9 +21,7 @@ import { PoolCard } from "@/components/liquidityBuffers/PoolCard";
 import { type Pool } from "@/types/interfaces";
 
 export default function LiquidityBuffersPage() {
-  const { loading, error, data } = useQuery<GetBoostedPoolsQuery>(
-    GetBoostedPoolsDocument,
-  );
+  const { loading, error, data } = useQuery<GetBoostedPoolsQuery>(GetBoostedPoolsDocument);
 
   const renderContent = () => {
     if (loading) {
@@ -59,7 +57,7 @@ export default function LiquidityBuffersPage() {
 
     return (
       <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-        {data.poolGetPools.map((pool) => (
+        {data.poolGetPools.map(pool => (
           <GridItem key={pool.address} rowSpan={pool.poolTokens.length + 1}>
             <PoolCard pool={pool as unknown as Pool} />
           </GridItem>
@@ -74,9 +72,7 @@ export default function LiquidityBuffersPage() {
         <Heading as="h2" size="lg" variant="special" mb={2}>
           Liquidity Buffers
         </Heading>
-        <Text mb={8}>
-          See the allocation of the liquidity buffers in the boosted pools.
-        </Text>
+        <Text mb={8}>See the allocation of the liquidity buffers in the boosted pools.</Text>
         {renderContent()}
       </Box>
     </Box>

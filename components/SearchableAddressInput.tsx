@@ -40,10 +40,7 @@ const SearchableAddressInput: React.FC<SearchableAddressInputProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };

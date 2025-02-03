@@ -6,17 +6,8 @@ interface CustomAvatarProps extends ImageProps {
   size: number;
 }
 
-export function CustomAvatar({
-  address,
-  ensImage,
-  size,
-  alt,
-  ...props
-}: CustomAvatarProps) {
-  const avatarUrl =
-    ensImage ?? `https://api.dicebear.com/7.x/thumbs/svg?seed=${address}`;
+export function CustomAvatar({ address, ensImage, size, alt, ...props }: CustomAvatarProps) {
+  const avatarUrl = ensImage ?? `https://api.dicebear.com/7.x/thumbs/svg?seed=${address}`;
 
-  return (
-    <Image alt={alt} height={size} src={avatarUrl} width={size} {...props} />
-  );
+  return <Image alt={alt} height={size} src={avatarUrl} width={size} {...props} />;
 }

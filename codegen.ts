@@ -27,8 +27,8 @@ const config: CodegenConfig = {
       },
       // Add presetConfig to further customize the output
       presetConfig: {
-        gqlTagName: 'gql',
-        fragmentMasking: false
+        gqlTagName: "gql",
+        fragmentMasking: false,
       },
     },
   },

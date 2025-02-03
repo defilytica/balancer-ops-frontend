@@ -4,7 +4,11 @@ export const composablePool = [
       {
         components: [
           { internalType: "contract IVault", name: "vault", type: "address" },
-          { internalType: "contract IProtocolFeePercentagesProvider", name: "protocolFeeProvider", type: "address" },
+          {
+            internalType: "contract IProtocolFeePercentagesProvider",
+            name: "protocolFeeProvider",
+            type: "address",
+          },
           { internalType: "string", name: "name", type: "string" },
           { internalType: "string", name: "symbol", type: "string" },
           { internalType: "contract IERC20[]", name: "tokens", type: "address[]" },
@@ -37,7 +41,12 @@ export const composablePool = [
     name: "AmpUpdateStarted",
     type: "event",
   },
-  { anonymous: false, inputs: [{ indexed: false, internalType: "uint256", name: "currentValue", type: "uint256" }], name: "AmpUpdateStopped", type: "event" },
+  {
+    anonymous: false,
+    inputs: [{ indexed: false, internalType: "uint256", name: "currentValue", type: "uint256" }],
+    name: "AmpUpdateStopped",
+    type: "event",
+  },
   {
     anonymous: false,
     inputs: [
@@ -48,7 +57,12 @@ export const composablePool = [
     name: "Approval",
     type: "event",
   },
-  { anonymous: false, inputs: [{ indexed: false, internalType: "bool", name: "paused", type: "bool" }], name: "PausedStateChanged", type: "event" },
+  {
+    anonymous: false,
+    inputs: [{ indexed: false, internalType: "bool", name: "paused", type: "bool" }],
+    name: "PausedStateChanged",
+    type: "event",
+  },
   {
     anonymous: false,
     inputs: [
@@ -58,8 +72,20 @@ export const composablePool = [
     name: "ProtocolFeePercentageCacheUpdated",
     type: "event",
   },
-  { anonymous: false, inputs: [{ indexed: false, internalType: "bool", name: "enabled", type: "bool" }], name: "RecoveryModeStateChanged", type: "event" },
-  { anonymous: false, inputs: [{ indexed: false, internalType: "uint256", name: "swapFeePercentage", type: "uint256" }], name: "SwapFeePercentageChanged", type: "event" },
+  {
+    anonymous: false,
+    inputs: [{ indexed: false, internalType: "bool", name: "enabled", type: "bool" }],
+    name: "RecoveryModeStateChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: false, internalType: "uint256", name: "swapFeePercentage", type: "uint256" },
+    ],
+    name: "SwapFeePercentageChanged",
+    type: "event",
+  },
   {
     anonymous: false,
     inputs: [
@@ -89,8 +115,20 @@ export const composablePool = [
     name: "Transfer",
     type: "event",
   },
-  { inputs: [], name: "DELEGATE_PROTOCOL_SWAP_FEES_SENTINEL", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "DOMAIN_SEPARATOR", outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "DELEGATE_PROTOCOL_SWAP_FEES_SENTINEL",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "DOMAIN_SEPARATOR",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "address", name: "owner", type: "address" },
@@ -118,7 +156,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "decimals", outputs: [{ internalType: "uint8", name: "", type: "uint8" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "address", name: "spender", type: "address" },
@@ -129,8 +173,20 @@ export const composablePool = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  { inputs: [], name: "disableRecoveryMode", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [], name: "enableRecoveryMode", outputs: [], stateMutability: "nonpayable", type: "function" },
+  {
+    inputs: [],
+    name: "disableRecoveryMode",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "enableRecoveryMode",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "bytes4", name: "selector", type: "bytes4" }],
     name: "getActionId",
@@ -138,7 +194,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getActualSupply", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getActualSupply",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [],
     name: "getAmplificationParameter",
@@ -150,9 +212,27 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getAuthorizer", outputs: [{ internalType: "contract IAuthorizer", name: "", type: "address" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getBptIndex", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getDomainSeparator", outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getAuthorizer",
+    outputs: [{ internalType: "contract IAuthorizer", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getBptIndex",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getDomainSeparator",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [],
     name: "getLastJoinExitData",
@@ -163,7 +243,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getMinimumBpt", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "pure", type: "function" },
+  {
+    inputs: [],
+    name: "getMinimumBpt",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "pure",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "address", name: "account", type: "address" }],
     name: "getNextNonce",
@@ -171,7 +257,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getOwner", outputs: [{ internalType: "address", name: "", type: "address" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getOwner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [],
     name: "getPausedState",
@@ -183,7 +275,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getPoolId", outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getPoolId",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "uint256", name: "feeType", type: "uint256" }],
     name: "getProtocolFeePercentageCache",
@@ -198,11 +296,41 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getProtocolSwapFeeDelegation", outputs: [{ internalType: "bool", name: "", type: "bool" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getRate", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getRateProviders", outputs: [{ internalType: "contract IRateProvider[]", name: "", type: "address[]" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getScalingFactors", outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "getSwapFeePercentage", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getProtocolSwapFeeDelegation",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getRate",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getRateProviders",
+    outputs: [{ internalType: "contract IRateProvider[]", name: "", type: "address[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getScalingFactors",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getSwapFeePercentage",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "getTokenRate",
@@ -222,8 +350,20 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "getVault", outputs: [{ internalType: "contract IVault", name: "", type: "address" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "inRecoveryMode", outputs: [{ internalType: "bool", name: "", type: "bool" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "getVault",
+    outputs: [{ internalType: "contract IVault", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "inRecoveryMode",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "address", name: "spender", type: "address" },
@@ -236,7 +376,7 @@ export const composablePool = [
   },
   {
     inputs: [],
-    name: 'isExemptFromYieldProtocolFee',
+    name: "isExemptFromYieldProtocolFee",
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "view",
     type: "function",
@@ -248,7 +388,13 @@ export const composablePool = [
     stateMutability: "view",
     type: "function",
   },
-  { inputs: [], name: "name", outputs: [{ internalType: "string", name: "", type: "string" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "address", name: "owner", type: "address" }],
     name: "nonces",
@@ -381,7 +527,13 @@ export const composablePool = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  { inputs: [{ internalType: "uint256", name: "swapFeePercentage", type: "uint256" }], name: "setSwapFeePercentage", outputs: [], stateMutability: "nonpayable", type: "function" },
+  {
+    inputs: [{ internalType: "uint256", name: "swapFeePercentage", type: "uint256" }],
+    name: "setSwapFeePercentage",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "contract IERC20", name: "token", type: "address" },
@@ -402,9 +554,27 @@ export const composablePool = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  { inputs: [], name: "stopAmplificationParameterUpdate", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [], name: "symbol", outputs: [{ internalType: "string", name: "", type: "string" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "totalSupply", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "stopAmplificationParameterUpdate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "symbol",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "address", name: "recipient", type: "address" },
@@ -427,7 +597,25 @@ export const composablePool = [
     type: "function",
   },
   { inputs: [], name: "unpause", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [], name: "updateProtocolFeePercentageCache", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }], name: "updateTokenRateCache", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [], name: "version", outputs: [{ internalType: "string", name: "", type: "string" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "updateProtocolFeePercentageCache",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
+    name: "updateTokenRateCache",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "version",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ];

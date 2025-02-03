@@ -47,15 +47,15 @@ export async function fetchTokenInfo(
 }
 
 export async function fetchGaugeInfoV2(
-    gaugeAddresses: string[],
-    contract: Contract,
-    provider: JsonRpcProvider,
-    injectTokenAddress: string,
-    injectorAddress: string,
-    network: string,
-    tokenDecimals: number,
+  gaugeAddresses: string[],
+  contract: Contract,
+  provider: JsonRpcProvider,
+  injectTokenAddress: string,
+  injectorAddress: string,
+  network: string,
+  tokenDecimals: number,
 ) {
-  const gaugePromises = gaugeAddresses.map(async (gaugeAddress) => {
+  const gaugePromises = gaugeAddresses.map(async gaugeAddress => {
     const [
       {
         amountPerPeriod,
@@ -93,44 +93,35 @@ export async function fetchGaugeInfo(
     (address: string) => new Contract(address, gaugeABI, provider),
   );
 
-  const gaugeInfoPromises = gaugeAddresses.map(
-    async (address: string, index: number) => {
-      const [accountInfo, lpToken, rewardData] = await Promise.all([
-        contract.getAccountInfo(address) as Promise<AccountInfo>,
-        gaugeContracts[index].lp_token(),
-        gaugeContracts[index]
-          .reward_data(injectorTokenAddress)
-          .catch(() => null),
-      ]);
+  const gaugeInfoPromises = gaugeAddresses.map(async (address: string, index: number) => {
+    const [accountInfo, lpToken, rewardData] = await Promise.all([
+      contract.getAccountInfo(address) as Promise<AccountInfo>,
+      gaugeContracts[index].lp_token(),
+      gaugeContracts[index].reward_data(injectorTokenAddress).catch(() => null),
+    ]);
 
-      const isRewardTokenSetup =
-        network === "mainnet" ||
-        (rewardData !== null && rewardData[0] === injectorAddress);
+    const isRewardTokenSetup =
+      network === "mainnet" || (rewardData !== null && rewardData[0] === injectorAddress);
 
-      return {
-        gaugeAddress: address,
-        accountInfo,
-        lpToken,
-        isRewardTokenSetup,
-      };
-    },
-  );
+    return {
+      gaugeAddress: address,
+      accountInfo,
+      lpToken,
+      isRewardTokenSetup,
+    };
+  });
 
   const gaugeInfos = await Promise.all(gaugeInfoPromises);
 
   return Promise.all(
-    gaugeInfos.map(async (info) => ({
+    gaugeInfos.map(async info => ({
       gaugeAddress: info.gaugeAddress,
       poolName: await fetchPoolName(info.lpToken, provider),
-      amountPerPeriod: formatTokenAmount(
-        info.accountInfo.amountPerPeriod,
-        injectorTokenAddress,
-      ),
+      amountPerPeriod: formatTokenAmount(info.accountInfo.amountPerPeriod, injectorTokenAddress),
       rawAmountPerPeriod: info.accountInfo.amountPerPeriod.toString(),
       maxPeriods: info.accountInfo.maxPeriods.toString(),
       periodNumber: info.accountInfo.periodNumber.toString(),
-      lastInjectionTimeStamp:
-        info.accountInfo.lastInjectionTimeStamp.toString(),
+      lastInjectionTimeStamp: info.accountInfo.lastInjectionTimeStamp.toString(),
       isRewardTokenSetup: info.isRewardTokenSetup,
     })),
   );
@@ -144,29 +135,23 @@ export async function fetchPoolName(
     const poolContract = new Contract(lpTokenAddress, poolsABI, provider);
     return await poolContract.name();
   } catch (error) {
-    console.error(
-      `Error fetching pool name for address ${lpTokenAddress}:`,
-      error,
-    );
+    console.error(`Error fetching pool name for address ${lpTokenAddress}:`, error);
     return "Unknown Pool";
   }
 }
 
 export async function getInjectTokenBalanceForAddress(
-    injectTokenAddress: string,
-    contractAddress: string,
-    provider: JsonRpcProvider,
-    tokenDecimals: number, // Add decimals parameter
+  injectTokenAddress: string,
+  contractAddress: string,
+  provider: JsonRpcProvider,
+  tokenDecimals: number, // Add decimals parameter
 ): Promise<string> {
   const tokenContract = new Contract(injectTokenAddress, ERC20, provider);
   const balanceForAddress = await tokenContract.balanceOf(contractAddress);
   return ethers.formatUnits(balanceForAddress, tokenDecimals);
 }
 
-export function formatTokenAmount(
-  amount: BigNumberish,
-  tokenAddress: string,
-): string {
+export function formatTokenAmount(amount: BigNumberish, tokenAddress: string): string {
   if (amount === null || amount === undefined) return "Loading...";
 
   const formattedAmount = BigInt(amount.toString());
@@ -186,14 +171,12 @@ export const formatTokenName = (token: string): string => {
     .join(" ");
 };
 
-export const calculateDistributionAmounts = (
-  gauges: GaugeInfo[],
-): DistributionAmounts => {
+export const calculateDistributionAmounts = (gauges: GaugeInfo[]): DistributionAmounts => {
   let total = 0;
   let distributed = 0;
   let remaining = 0;
 
-  gauges.forEach((gauge) => {
+  gauges.forEach(gauge => {
     const amount = parseFloat(gauge.amountPerPeriod) || 0;
     const maxPeriods = parseInt(gauge.maxPeriods) || 0;
     const currentPeriod = parseInt(gauge.periodNumber) || 0;

@@ -20,23 +20,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   events: {
-    async linkAccount({
-      user,
-      account,
-      profile,
-    }: {
-      user: any;
-      account: any;
-      profile?: any;
-    }) {
+    async linkAccount({ user, account, profile }: { user: any; account: any; profile?: any }) {
       const updatedAccount = {
         ...account,
-        access_token: account.access_token
-          ? encrypt(account.access_token)
-          : undefined,
-        refresh_token: account.refresh_token
-          ? encrypt(account.refresh_token)
-          : undefined,
+        access_token: account.access_token ? encrypt(account.access_token) : undefined,
+        refresh_token: account.refresh_token ? encrypt(account.refresh_token) : undefined,
       };
       await prisma.account.update({
         where: {

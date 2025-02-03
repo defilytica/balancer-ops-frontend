@@ -3,7 +3,7 @@ import { ChakraStylesConfig } from "chakra-react-select";
 type Variant = "default" | "gradient";
 
 const defaultStyles = <T>(): ChakraStylesConfig<T> => ({
-  container: (provided) => ({
+  container: provided => ({
     ...provided,
     width: "full",
     cursor: "pointer",
@@ -11,7 +11,7 @@ const defaultStyles = <T>(): ChakraStylesConfig<T> => ({
     background: "background.level3",
     zIndex: 9,
   }),
-  control: (provided) => ({
+  control: provided => ({
     ...provided,
     background: "transparent",
     shadow: "md",
@@ -29,14 +29,14 @@ const defaultStyles = <T>(): ChakraStylesConfig<T> => ({
       boxShadow: "0px 0px 0px 1px var(--chakra-colors-purple-500)",
     },
   }),
-  menuList: (provided) => ({
+  menuList: provided => ({
     ...provided,
     background: "background.level4",
     borderColor: "border.base",
     rounded: "md",
     shadow: "lg",
   }),
-  option: (provided) => ({
+  option: provided => ({
     ...provided,
     background: "background.level4",
     _hover: {
@@ -49,11 +49,11 @@ const defaultStyles = <T>(): ChakraStylesConfig<T> => ({
       background: "purple.500",
     },
   }),
-  indicatorSeparator: (provided) => ({
+  indicatorSeparator: provided => ({
     ...provided,
     display: "none",
   }),
-  dropdownIndicator: (provided) => ({
+  dropdownIndicator: provided => ({
     ...provided,
     background: "background.level3",
     paddingLeft: "0",
@@ -61,7 +61,7 @@ const defaultStyles = <T>(): ChakraStylesConfig<T> => ({
 });
 
 const gradientStyles = <T>(): ChakraStylesConfig<T> => ({
-  container: (provided) => ({
+  container: provided => ({
     ...provided,
     background: "gradient.dawnDark",
     rounded: "md",
@@ -70,7 +70,7 @@ const gradientStyles = <T>(): ChakraStylesConfig<T> => ({
       background: "gradient.dawnDark",
     },
   }),
-  control: (provided) => ({
+  control: provided => ({
     ...provided,
     background: "transparent",
     shadow: "sm",
@@ -91,14 +91,14 @@ const gradientStyles = <T>(): ChakraStylesConfig<T> => ({
       boxShadow: "0px 0px 0px 1px var(--chakra-colors-purple-500)",
     },
   }),
-  menuList: (provided) => ({
+  menuList: provided => ({
     ...provided,
     background: "background.level4",
     borderColor: "border.base",
     rounded: "md",
     shadow: "lg",
   }),
-  option: (provided) => ({
+  option: provided => ({
     ...provided,
     background: "background.level4",
     _hover: {
@@ -111,11 +111,11 @@ const gradientStyles = <T>(): ChakraStylesConfig<T> => ({
       background: "purple.500",
     },
   }),
-  indicatorSeparator: (provided) => ({
+  indicatorSeparator: provided => ({
     ...provided,
     display: "none",
   }),
-  dropdownIndicator: (provided) => ({
+  dropdownIndicator: provided => ({
     ...provided,
     background: "transparent",
     paddingLeft: "xs",

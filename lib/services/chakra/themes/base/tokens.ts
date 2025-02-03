@@ -133,8 +133,7 @@ export function getTokens(colors: any, primaryTextColor: string) {
           secondaryAlpha50: tinycolor(colors.gray["400"]).setAlpha(0.15),
           primaryGradient: "linear-gradient(45deg, #E6C6A0 0%, #E5D3BE 100%)",
           secondaryGradient: "linear-gradient(45deg, #909BAD 0%, #728097 100%)",
-          special:
-            "linear-gradient(90deg, #B3AEF5 0%, #D7CBE7 25%, #E5C8C8 50%, #EAA879 100%)",
+          special: "linear-gradient(90deg, #B3AEF5 0%, #D7CBE7 25%, #E5C8C8 50%, #EAA879 100%)",
           specialSecondary: "linear-gradient(180deg, #EA9A43 0%, #F06147 100%)",
           link: colors.purple["300"],
           linkHover: colors.purple["100"],
@@ -193,20 +192,17 @@ export function getTokens(colors: any, primaryTextColor: string) {
           "0px 0px 8px 0px rgba(0, 0, 0, 0.1) inset, 0px 0px 2px 0px rgba(0, 0, 0, 0.1) inset",
         btnTertiary:
           "0.1rem 0.1rem 0.1rem 0px rgba(255, 255, 255, 0.5) inset, -0.1rem -0.1rem 0.1rem 0px rgba(0, 0, 0, 0.15) inset, 0.1rem 0.1rem 0.1rem 0px rgba(0, 0, 0, 0.07)",
-        fontDefault:
-          "0px -1px 0px rgba(255, 255, 255, 0.05), 0px 1px 2px rgba(0, 0, 0, 0.2)",
-        fontLight:
-          "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
-        fontDark:
-          "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.05)",
+        fontDefault: "0px -1px 0px rgba(255, 255, 255, 0.05), 0px 1px 2px rgba(0, 0, 0, 0.2)",
+        fontLight: "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
+        fontDark: "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.05)",
         input: {
           innerBase:
             "0px 2px 4px 0px rgba(0, 0, 0, 0.05) inset, 0px 4px 8px 0px rgba(0, 0, 0, 0.05) inset, 0px 10px 20px 0px rgba(0, 0, 0, 0.05) inset, 0px -1px 0px 0px rgba(255, 255, 255, 0.8) inset",
-          innerFocus: `0px 2px 4px 0px ${tinycolor(
-            colors.purple["500"],
-          ).setAlpha(0.1)} inset, 0px 4px 8px 0px ${tinycolor(
-            colors.purple["500"],
-          ).setAlpha(0.2)} inset, 0 0 0 1px ${colors.purple["500"]}`,
+          innerFocus: `0px 2px 4px 0px ${tinycolor(colors.purple["500"]).setAlpha(
+            0.1,
+          )} inset, 0px 4px 8px 0px ${tinycolor(colors.purple["500"]).setAlpha(
+            0.2,
+          )} inset, 0 0 0 1px ${colors.purple["500"]}`,
           innerError: `0px 2px 4px 0px ${tinycolor(colors.red["500"]).setAlpha(
             0.1,
           )} inset, 0px 4px 8px 0px ${tinycolor(colors.red["500"]).setAlpha(
@@ -240,20 +236,17 @@ export function getTokens(colors: any, primaryTextColor: string) {
           "0px 0px 8px 0px rgba(0, 0, 0, 0.50) inset, 0px 0px 4px 0px rgba(0, 0, 0, 0.70) inset",
         btnTertiary:
           "0.1rem 0.1rem 0.1rem 0px rgba(255, 255, 255, 0.05) inset, -0.1rem -0.1rem 0.1rem 0px rgba(0, 0, 0, 0.15) inset, 0.125rem 0.125rem 0.125rem 0px rgba(0, 0, 0, 0.09)",
-        fontDefault:
-          "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
-        fontLight:
-          "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
-        fontDark:
-          "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
+        fontDefault: "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
+        fontLight: "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
+        fontDark: "0px -1px 0px rgba(255, 255, 255, 0.30), 0px 1px 2px rgba(0, 0, 0, 0.20)",
         input: {
           innerBase:
             "0px 2px 4px 0px rgba(0, 0, 0, 0.10) inset, 0px 4px 8px 0px rgba(0, 0, 0, 0.10) inset, 0px 10px 20px 0px rgba(0, 0, 0, 0.10) inset, 0px -1px 0px 0px rgba(255, 255, 255, 0.15) inset",
-          innerFocus: `0px 2px 4px 0px ${tinycolor(
-            colors.purple["400"],
-          ).setAlpha(0.1)} inset, 0px 4px 8px 0px ${tinycolor(
-            colors.purple["400"],
-          ).setAlpha(0.2)} inset, 0 0 0 1px ${colors.purple["400"]}`,
+          innerFocus: `0px 2px 4px 0px ${tinycolor(colors.purple["400"]).setAlpha(
+            0.1,
+          )} inset, 0px 4px 8px 0px ${tinycolor(colors.purple["400"]).setAlpha(
+            0.2,
+          )} inset, 0 0 0 1px ${colors.purple["400"]}`,
           innerError: `0px 2px 4px 0px ${tinycolor(colors.red["500"]).setAlpha(
             0.2,
           )} inset, 0px 4px 8px 0px ${tinycolor(colors.red["500"]).setAlpha(

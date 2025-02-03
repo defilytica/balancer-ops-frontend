@@ -4,9 +4,5 @@ import { ApolloNextAppProvider } from "@apollo/experimental-nextjs-app-support/s
 import { createApolloClient } from "./apollo-client";
 
 export function ApolloClientProvider({ children }: React.PropsWithChildren) {
-  return (
-    <ApolloNextAppProvider makeClient={createApolloClient}>
-      {children}
-    </ApolloNextAppProvider>
-  );
+  return <ApolloNextAppProvider makeClient={createApolloClient}>{children}</ApolloNextAppProvider>;
 }

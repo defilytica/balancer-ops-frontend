@@ -20,10 +20,7 @@ export function getNetworks(addressBook: AddressBook): string[] {
   return Object.keys(addressBook.active);
 }
 
-export function getCategories(
-  addressBook: AddressBook,
-  network: string,
-): string[] {
+export function getCategories(addressBook: AddressBook, network: string): string[] {
   return Object.keys(addressBook.active[network] || {});
 }
 
@@ -76,11 +73,7 @@ export function getAllAddresses(addressBook: AddressBook): {
 
   for (const network of getNetworks(addressBook)) {
     for (const category of getCategories(addressBook, network)) {
-      for (const subcategory of getSubcategories(
-        addressBook,
-        network,
-        category,
-      )) {
+      for (const subcategory of getSubcategories(addressBook, network, category)) {
         const value = addressBook.active[network][category][subcategory];
         if (typeof value === "string") {
           result[`${network}.${category}.${subcategory}`] = value;
