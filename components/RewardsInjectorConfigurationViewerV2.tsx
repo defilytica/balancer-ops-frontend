@@ -83,18 +83,12 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                     borderColor={borderColor}
                   >
                     <VStack align="start" spacing={1}>
-                      <Text fontFamily="mono">
-                        {formatAddress(gauge.gaugeAddress)}
-                      </Text>
+                      <Text fontFamily="mono">{formatAddress(gauge.gaugeAddress)}</Text>
                       <Text fontSize="sm" color={mutedTextColor}>
                         {gauge.poolName}
                       </Text>
                     </VStack>
-                    <Badge
-                      colorScheme={
-                        gauge.isRewardTokenSetup ? "green" : "yellow"
-                      }
-                    >
+                    <Badge colorScheme={gauge.isRewardTokenSetup ? "green" : "yellow"}>
                       {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
                     </Badge>
                   </HStack>
@@ -119,9 +113,7 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                           <Text fontSize="sm" fontFamily="mono">
                             {gauge.rawAmountPerPeriod}
                           </Text>
-                          <Tooltip
-                            label={`Raw amount with ${tokenDecimals} decimals`}
-                          >
+                          <Tooltip label={`Raw amount with ${tokenDecimals} decimals`}>
                             <Icon as={InfoIcon} />
                           </Tooltip>
                         </HStack>
@@ -160,9 +152,7 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                       borderWidth="1px"
                       borderColor={borderColor}
                     >
-                      <Text fontFamily="mono">
-                        {formatTimestamp(gauge.lastInjectionTimeStamp)}
-                      </Text>
+                      <Text fontFamily="mono">{formatTimestamp(gauge.lastInjectionTimeStamp)}</Text>
                     </Box>
                   </Box>
                 </VStack>

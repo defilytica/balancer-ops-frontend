@@ -24,13 +24,7 @@ interface CardProps {
   link: string;
 }
 
-export default function CustomCard({
-  title,
-  description,
-  button_label,
-  icon,
-  link,
-}: CardProps) {
+export default function CustomCard({ title, description, button_label, icon, link }: CardProps) {
   return (
     <ChakraCard align="center" boxShadow="md" borderRadius="md">
       <CardHeader>

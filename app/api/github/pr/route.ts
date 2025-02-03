@@ -26,14 +26,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { payload, filePath, branchName, title, description, base, repo } =
-    body;
+  const { payload, filePath, branchName, title, description, base, repo } = body;
 
   if (!payload || !filePath || !branchName || !title || !base || !repo) {
     return NextResponse.json(
       {
-        message:
-          "Payload, file path, branch name, title, base, and repo are required",
+        message: "Payload, file path, branch name, title, base, and repo are required",
       },
       { status: 400 },
     );
@@ -95,7 +93,7 @@ export async function POST(req: NextRequest) {
       console.log("Created new fork");
 
       // Wait for the fork to be created
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     // Step 2: Get the default branch of the forked repo

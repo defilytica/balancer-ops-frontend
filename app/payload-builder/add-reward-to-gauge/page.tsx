@@ -29,7 +29,8 @@ import {
   ChevronRightIcon,
   CopyIcon,
   DeleteIcon,
-  DownloadIcon, InfoIcon,
+  DownloadIcon,
+  InfoIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -64,9 +65,7 @@ const validateFormInputs = (
   rewardToken: string,
   distributorAddress: string,
 ): boolean => {
-  return Boolean(
-    targetGauge.trim() && rewardToken.trim() && distributorAddress.trim(),
-  );
+  return Boolean(targetGauge.trim() && rewardToken.trim() && distributorAddress.trim());
 };
 
 export default function AddRewardToGaugePage() {
@@ -79,14 +78,10 @@ export default function AddRewardToGaugePage() {
   const [authorizerAdaptorEntrypoint, setEntrypoint] = useState(
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
-  const [safeAddress, setSafeAddress] = useState(
-    "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
-  );
+  const [safeAddress, setSafeAddress] = useState("0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e");
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(
-    null,
-  );
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [uiState, setUiState] = useState<RewardActionState>({
     hasAddedReward: false,
     isFormValid: false,
@@ -94,13 +89,9 @@ export default function AddRewardToGaugePage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
-    setUiState((prev) => ({
+    setUiState(prev => ({
       ...prev,
-      isFormValid: validateFormInputs(
-        targetGauge,
-        rewardToken,
-        distributorAddress,
-      ),
+      isFormValid: validateFormInputs(targetGauge, rewardToken, distributorAddress),
     }));
   }, [targetGauge, rewardToken, distributorAddress]);
 
@@ -119,9 +110,7 @@ export default function AddRewardToGaugePage() {
   };
 
   const handleNetworkChange = (selectedNetwork: string) => {
-    const selectedOption = NETWORK_OPTIONS.find(
-      (option) => option.label === selectedNetwork,
-    );
+    const selectedOption = NETWORK_OPTIONS.find(option => option.label === selectedNetwork);
     if (selectedOption) {
       setNetwork(selectedNetwork);
       setEntrypoint(selectedOption.entrypoint);
@@ -135,7 +124,7 @@ export default function AddRewardToGaugePage() {
     updatedRewards.splice(index, 1);
     setRewardAdds(updatedRewards);
     if (updatedRewards.length === 0) {
-      setUiState((prev) => ({ ...prev, hasAddedReward: false }));
+      setUiState(prev => ({ ...prev, hasAddedReward: false }));
     }
   };
 
@@ -173,7 +162,7 @@ export default function AddRewardToGaugePage() {
     setTargetGauge("");
     setRewardToken("");
     setDistributorAddress("");
-    setUiState((prev) => ({ ...prev, hasAddedReward: true }));
+    setUiState(prev => ({ ...prev, hasAddedReward: true }));
   };
 
   return (
@@ -184,27 +173,24 @@ export default function AddRewardToGaugePage() {
         </Heading>
       </Box>
 
-      <Alert
-        status="info"
-        mt={4}
-        mb={4}
-        py={3}
-        variant="left-accent"
-        borderRadius="md"
-      >
+      <Alert status="info" mt={4} mb={4} py={3} variant="left-accent" borderRadius="md">
         <Box flex="1">
           <Flex align="center">
-            <AlertIcon boxSize="20px"/>
-            <AlertTitle fontSize="lg" ml={2}>Add New Rewards</AlertTitle>
+            <AlertIcon boxSize="20px" />
+            <AlertTitle fontSize="lg" ml={2}>
+              Add New Rewards
+            </AlertTitle>
           </Flex>
           <AlertDescription display="block">
             <Text fontSize="sm" mb={1} color="gray.600">
-              Use this option when you need to enable a new reward token and distributor for a gauge.
+              Use this option when you need to enable a new reward token and distributor for a
+              gauge.
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="blue.500" />
-                Fill in the gauge details below and click &quot;Add Reward&quot; to start building your payload
+                Fill in the gauge details below and click &quot;Add Reward&quot; to start building
+                your payload
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="blue.500" />
@@ -222,11 +208,8 @@ export default function AddRewardToGaugePage() {
       <Card p={4} mb="10px">
         <FormControl mb={4} maxWidth="md">
           <FormLabel>Network</FormLabel>
-          <Select
-            value={network}
-            onChange={(e) => handleNetworkChange(e.target.value)}
-          >
-            {NETWORK_OPTIONS.map((option) => (
+          <Select value={network} onChange={e => handleNetworkChange(e.target.value)}>
+            {NETWORK_OPTIONS.map(option => (
               <option key={option.label} value={option.label}>
                 {option.label}
               </option>
@@ -239,7 +222,7 @@ export default function AddRewardToGaugePage() {
             <FormLabel>Target Gauge</FormLabel>
             <Input
               value={targetGauge}
-              onChange={(e) => setTargetGauge(e.target.value)}
+              onChange={e => setTargetGauge(e.target.value)}
               placeholder="Enter target gauge"
             />
           </FormControl>
@@ -247,7 +230,7 @@ export default function AddRewardToGaugePage() {
             <FormLabel>Reward Token</FormLabel>
             <Input
               value={rewardToken}
-              onChange={(e) => setRewardToken(e.target.value)}
+              onChange={e => setRewardToken(e.target.value)}
               placeholder="Enter reward token"
             />
           </FormControl>
@@ -255,7 +238,7 @@ export default function AddRewardToGaugePage() {
             <FormLabel>Distributor Address</FormLabel>
             <Input
               value={distributorAddress}
-              onChange={(e) => setDistributorAddress(e.target.value)}
+              onChange={e => setDistributorAddress(e.target.value)}
               placeholder="Enter distributor address"
             />
           </FormControl>
@@ -276,9 +259,7 @@ export default function AddRewardToGaugePage() {
       {rewardAdds.length === 0 ? (
         <Alert status="info" variant="subtle" mt={2} mb={4}>
           <AlertIcon />
-          <AlertDescription>
-            Add at least one reward to generate a payload
-          </AlertDescription>
+          <AlertDescription>Add at least one reward to generate a payload</AlertDescription>
         </Alert>
       ) : (
         <>
@@ -309,15 +290,9 @@ export default function AddRewardToGaugePage() {
                       <Text fontSize="sm" fontWeight="medium">
                         Core Parameters
                       </Text>
-                      <Text fontSize="sm">
-                        Target Gauge: {reward.targetGauge}
-                      </Text>
-                      <Text fontSize="sm">
-                        Reward Token: {reward.rewardToken}
-                      </Text>
-                      <Text fontSize="sm">
-                        Distributor: {reward.distributorAddress}
-                      </Text>
+                      <Text fontSize="sm">Target Gauge: {reward.targetGauge}</Text>
+                      <Text fontSize="sm">Reward Token: {reward.rewardToken}</Text>
+                      <Text fontSize="sm">Distributor: {reward.distributorAddress}</Text>
                     </Box>
                     <Box>
                       <Text fontSize="sm" fontWeight="medium">
@@ -359,9 +334,7 @@ export default function AddRewardToGaugePage() {
         >
           Generate Payload
         </Button>
-        {generatedPayload && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
 
       {generatedPayload && (
@@ -369,7 +342,7 @@ export default function AddRewardToGaugePage() {
           <Divider my={4} />
           <JsonViewerEditor
             jsonData={generatedPayload}
-            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
 
           <Flex mt={4} mb={4} gap={2}>

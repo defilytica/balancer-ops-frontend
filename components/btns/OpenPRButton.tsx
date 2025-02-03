@@ -8,11 +8,7 @@ const OpenPRButton = ({ onClick }: { onClick: () => void }) => {
   const isAuthenticated = status === "authenticated";
 
   return (
-    <Tooltip
-      label="You need to log in to open a PR"
-      isDisabled={isAuthenticated}
-      hasArrow
-    >
+    <Tooltip label="You need to log in to open a PR" isDisabled={isAuthenticated} hasArrow>
       <Button
         leftIcon={<VscGithubInverted />}
         onClick={onClick}

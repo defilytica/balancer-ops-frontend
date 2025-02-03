@@ -17,11 +17,7 @@ import {
   HStack,
   useMediaQuery,
 } from "@chakra-ui/react";
-import {
-  ExternalLinkIcon,
-  TriangleDownIcon,
-  TriangleUpIcon,
-} from "@chakra-ui/icons";
+import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from "@chakra-ui/icons";
 import { networks } from "@/constants/constants";
 
 export interface RewardsInjectorData {
@@ -49,9 +45,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   network,
   isV2,
 }) => {
-  const [sortColumn, setSortColumn] = useState<
-    keyof RewardsInjectorData | null
-  >(null);
+  const [sortColumn, setSortColumn] = useState<keyof RewardsInjectorData | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const explorerUrl = networks[network]?.explorer || "";
@@ -99,18 +93,10 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     column: keyof RewardsInjectorData;
     label: string;
   }> = ({ column, label }) => (
-    <Flex
-      alignItems="center"
-      cursor="pointer"
-      onClick={() => handleSort(column)}
-    >
+    <Flex alignItems="center" cursor="pointer" onClick={() => handleSort(column)}>
       <Text fontWeight="bold">{label}</Text>
       {sortColumn === column &&
-        (sortDirection === "asc" ? (
-          <TriangleUpIcon ml={1} />
-        ) : (
-          <TriangleDownIcon ml={1} />
-        ))}
+        (sortDirection === "asc" ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />)}
     </Flex>
   );
 
@@ -173,14 +159,11 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
             <Th width="25%">
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
-              <Th width="20%">
-                <SortableHeader column="poolName" label="Name" />
-              </Th>
             <Th width="20%">
-              <SortableHeader
-                column="amountPerPeriod"
-                label="Amount Per Period"
-              />
+              <SortableHeader column="poolName" label="Name" />
+            </Th>
+            <Th width="20%">
+              <SortableHeader column="amountPerPeriod" label="Amount Per Period" />
             </Th>
             <Th width="8%">
               <SortableHeader column="periodNumber" label="Period Number" />
@@ -189,17 +172,11 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <SortableHeader column="maxPeriods" label="Max Periods" />
             </Th>
             <Th width="15%">
-              <SortableHeader
-                column="lastInjectionTimeStamp"
-                label="Last Injection"
-              />
+              <SortableHeader column="lastInjectionTimeStamp" label="Last Injection" />
             </Th>
             {isV2 && (
               <Th width="24%">
-                <SortableHeader
-                  column="doNotStartBeforeTimestamp"
-                  label="Starts At"
-                />
+                <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
               </Th>
             )}
           </Tr>
@@ -210,10 +187,8 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-                <Td>{row.poolName}</Td>
-              <Td
-                isNumeric
-              >{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
+              <Td>{row.poolName}</Td>
+              <Td isNumeric>{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
               <Td isNumeric>{row.periodNumber}</Td>
               <Td isNumeric>{row.maxPeriods}</Td>
               <Td>{formatDate(row.lastInjectionTimeStamp)}</Td>

@@ -14,9 +14,9 @@ type RewardsInjectorContainerProps = {
 };
 
 export default function RewardsInjectorContainer({
-                                                   addressBook,
-                                                   isViewer,
-                                                 }: RewardsInjectorContainerProps) {
+  addressBook,
+  isViewer,
+}: RewardsInjectorContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,68 +31,68 @@ export default function RewardsInjectorContainer({
   const isV2 = searchParams.get("version") === "v2";
 
   const loadAddresses = useCallback(
-      async (isV2: boolean) => {
-        setIsInitialLoading(true);
-        let allAddressesWithOptions = [];
+    async (isV2: boolean) => {
+      setIsInitialLoading(true);
+      let allAddressesWithOptions = [];
 
-        try {
-          const networks = getNetworks(addressBook);
-          if (isV2) {
-            const response = await fetch(`/api/injector/v2/factory`);
-            const data = await response.json();
-            if (Array.isArray(data)) {
-              for (const item of data) {
-                const network = item.network;
-                // Fetch token info for each injector
-                for (const address of item.deployedInjectors) {
-                  try {
-                    const tokenResponse = await fetch(
-                        `/api/injector/v2/single?address=${address}&network=${network}`
-                    );
-                    const tokenData = await tokenResponse.json();
-                    allAddressesWithOptions.push({
-                      network: network,
-                      address: address,
-                      token: tokenData.tokenInfo.symbol || "",
-                      tokenAddress: tokenData.tokenInfo.address || "",
-                    });
-                  } catch (error) {
-                    console.error(`Error fetching token info for ${address}:`, error);
-                    allAddressesWithOptions.push({
-                      network: network,
-                      address: address,
-                      token: "",
-                      tokenAddress: "",
-                    });
-                  }
-                }
-              }
-            }
-          } else {
-            for (const network of networks) {
-              const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-              if (maxiKeepers) {
-                const injectors = maxiKeepers.gaugeRewardsInjectors;
-                if (injectors) {
-                  for (const [token, address] of Object.entries(injectors)) {
-                    allAddressesWithOptions.push({
-                      network,
-                      address,
-                      token,
-                    });
-                  }
+      try {
+        const networks = getNetworks(addressBook);
+        if (isV2) {
+          const response = await fetch(`/api/injector/v2/factory`);
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            for (const item of data) {
+              const network = item.network;
+              // Fetch token info for each injector
+              for (const address of item.deployedInjectors) {
+                try {
+                  const tokenResponse = await fetch(
+                    `/api/injector/v2/single?address=${address}&network=${network}`,
+                  );
+                  const tokenData = await tokenResponse.json();
+                  allAddressesWithOptions.push({
+                    network: network,
+                    address: address,
+                    token: tokenData.tokenInfo.symbol || "",
+                    tokenAddress: tokenData.tokenInfo.address || "",
+                  });
+                } catch (error) {
+                  console.error(`Error fetching token info for ${address}:`, error);
+                  allAddressesWithOptions.push({
+                    network: network,
+                    address: address,
+                    token: "",
+                    tokenAddress: "",
+                  });
                 }
               }
             }
           }
-          setAddresses(allAddressesWithOptions);
-        } catch (error) {
-          console.error("Error loading addresses:", error);
-        } finally {
-          setIsInitialLoading(false);
+        } else {
+          for (const network of networks) {
+            const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
+            if (maxiKeepers) {
+              const injectors = maxiKeepers.gaugeRewardsInjectors;
+              if (injectors) {
+                for (const [token, address] of Object.entries(injectors)) {
+                  allAddressesWithOptions.push({
+                    network,
+                    address,
+                    token,
+                  });
+                }
+              }
+            }
+          }
         }
-      },
-      [addressBook]
+        setAddresses(allAddressesWithOptions);
+      } catch (error) {
+        console.error("Error loading addresses:", error);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    },
+    [addressBook],
   );
 
   useEffect(() => {
@@ -100,40 +100,37 @@ export default function RewardsInjectorContainer({
   }, [loadAddresses, isV2]);
 
   const findAddressOption = useCallback(
-      (address: string | undefined, network: string | undefined): AddressOption | null => {
-        if (!address || !network) return null;
-        return (
-            addresses.find(
-                (opt) =>
-                    opt.address.toLowerCase() === address.toLowerCase() &&
-                    opt.network.toLowerCase() === network.toLowerCase()
-            ) || null
-        );
-      },
-      [addresses]
+    (address: string | undefined, network: string | undefined): AddressOption | null => {
+      if (!address || !network) return null;
+      return (
+        addresses.find(
+          opt =>
+            opt.address.toLowerCase() === address.toLowerCase() &&
+            opt.network.toLowerCase() === network.toLowerCase(),
+        ) || null
+      );
+    },
+    [addresses],
   );
 
-  const fetchInjectorData = useCallback(
-      async (address: AddressOption, isV2: boolean) => {
-        setIsLoading(true);
-        setInjectorData(null); // Clear existing data while loading
-        try {
-          const endpoint = isV2
-              ? `/api/injector/v2/single?address=${address.address}&network=${address.network}`
-              : `/api/injector/v1/single?address=${address.address}&network=${address.network}&token=${address.token}`;
+  const fetchInjectorData = useCallback(async (address: AddressOption, isV2: boolean) => {
+    setIsLoading(true);
+    setInjectorData(null); // Clear existing data while loading
+    try {
+      const endpoint = isV2
+        ? `/api/injector/v2/single?address=${address.address}&network=${address.network}`
+        : `/api/injector/v1/single?address=${address.address}&network=${address.network}&token=${address.token}`;
 
-          const response = await fetch(endpoint);
-          const data = await response.json();
-          setInjectorData(data);
-          setOwner(data.owner);
-        } catch (error) {
-          console.error("Error fetching injector data:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      []
-  );
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      setInjectorData(data);
+      setOwner(data.owner);
+    } catch (error) {
+      console.error("Error fetching injector data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (pathname && addresses.length > 0) {
@@ -144,10 +141,10 @@ export default function RewardsInjectorContainer({
       if (addressFromPath && networkFromPath) {
         const matchingAddress = findAddressOption(addressFromPath, networkFromPath);
         if (
-            matchingAddress &&
-            (!selectedAddress ||
-                matchingAddress.address !== selectedAddress.address ||
-                matchingAddress.network !== selectedAddress.network)
+          matchingAddress &&
+          (!selectedAddress ||
+            matchingAddress.address !== selectedAddress.address ||
+            matchingAddress.network !== selectedAddress.network)
         ) {
           setSelectedAddress(matchingAddress);
           fetchInjectorData(matchingAddress, isV2);
@@ -157,17 +154,17 @@ export default function RewardsInjectorContainer({
   }, [pathname, addresses, findAddressOption, fetchInjectorData, isV2, selectedAddress]);
 
   const handleAddressSelect = useCallback(
-      (address: AddressOption) => {
-        setSelectedAddress(address);
-        fetchInjectorData(address, isV2);
+    (address: AddressOption) => {
+      setSelectedAddress(address);
+      fetchInjectorData(address, isV2);
 
-        const newUrl = isViewer
-            ? `/rewards-injector/${address.network}/${address.address}?version=${isV2 ? "v2" : "v1"}`
-            : `/payload-builder/injector-configurator/${address.network}/${address.address}?version=${isV2 ? "v2" : "v1"}`;
+      const newUrl = isViewer
+        ? `/rewards-injector/${address.network}/${address.address}?version=${isV2 ? "v2" : "v1"}`
+        : `/payload-builder/injector-configurator/${address.network}/${address.address}?version=${isV2 ? "v2" : "v1"}`;
 
-        window.history.replaceState({ ...window.history.state }, "", newUrl);
-      },
-      [isViewer, isV2, fetchInjectorData]
+      window.history.replaceState({ ...window.history.state }, "", newUrl);
+    },
+    [isViewer, isV2, fetchInjectorData],
   );
 
   const handleVersionToggle = useCallback(() => {
@@ -191,10 +188,10 @@ export default function RewardsInjectorContainer({
   };
 
   return isViewer ? (
-      <RewardsInjector {...commonProps} />
+    <RewardsInjector {...commonProps} />
   ) : isV2 ? (
-      <RewardsInjectorConfiguratorV2 {...commonProps} />
+    <RewardsInjectorConfiguratorV2 {...commonProps} />
   ) : (
-      <RewardsInjectorConfigurator {...commonProps} />
+    <RewardsInjectorConfigurator {...commonProps} />
   );
 }

@@ -30,17 +30,10 @@ import {
   Divider,
   Spinner,
 } from "@chakra-ui/react";
-import {
-  ChevronDownIcon,
-  CopyIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, CopyIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
 import { AddressOption } from "@/types/interfaces";
-import SimulateTransactionButton, {
-  BatchFile,
-} from "@/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import {
   copyJsonToClipboard,
@@ -82,9 +75,7 @@ function RewardsInjectorConfigurator({
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
   const [currentConfig, setCurrentConfig] = useState<RewardsInjectorData[]>([]);
-  const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(
-    null,
-  );
+  const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -110,7 +101,7 @@ function RewardsInjectorConfigurator({
     let distributed = 0;
     let remaining = 0;
 
-    config.forEach((gauge) => {
+    config.forEach(gauge => {
       const amount = parseFloat(gauge.amountPerPeriod!) || 0;
       const maxPeriods = parseInt(gauge.maxPeriods) || 0;
       const currentPeriod = parseInt(gauge.periodNumber) || 0;
@@ -118,11 +109,9 @@ function RewardsInjectorConfigurator({
       const gaugeTotal = amount * maxPeriods;
       const gaugeDistributed = amount * currentPeriod;
 
-      total += gaugeTotal ;
-      distributed += gaugeDistributed ;
-      remaining +=
-        gaugeTotal  -
-        gaugeDistributed ;
+      total += gaugeTotal;
+      distributed += gaugeDistributed;
+      remaining += gaugeTotal - gaugeDistributed;
     });
 
     return { total, distributed, remaining };
@@ -143,8 +132,7 @@ function RewardsInjectorConfigurator({
     if (!selectedAddress || currentConfig.length === 0) {
       toast({
         title: "Invalid Input",
-        description:
-          "Please select an injector and configure at least one gauge.",
+        description: "Please select an injector and configure at least one gauge.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -152,14 +140,12 @@ function RewardsInjectorConfigurator({
       return;
     }
 
-    const scheduleInputs: InjectorScheduleInput[] = currentConfig.map(
-      (gauge) => ({
-        gaugeAddress: gauge.gaugeAddress,
-        amountPerPeriod: gauge.amountPerPeriod,
-        rawAmountPerPeriod: gauge.rawAmountPerPeriod,
-        maxPeriods: gauge.maxPeriods,
-      }),
-    );
+    const scheduleInputs: InjectorScheduleInput[] = currentConfig.map(gauge => ({
+      gaugeAddress: gauge.gaugeAddress,
+      amountPerPeriod: gauge.amountPerPeriod,
+      rawAmountPerPeriod: gauge.rawAmountPerPeriod,
+      maxPeriods: gauge.maxPeriods,
+    }));
 
     const payload = generateInjectorSchedulePayload({
       injectorType: isV2 ? "v2" : "v1",
@@ -197,16 +183,10 @@ function RewardsInjectorConfigurator({
           Injector Schedule Payload Configurator
         </Heading>
         <Text mb={6}>
-          Build a injector schedule payload to configure reward emissions on a
-          gauge set.
+          Build a injector schedule payload to configure reward emissions on a gauge set.
         </Text>
       </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        verticalAlign="center"
-        mb={4}
-      >
+      <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
         <Menu>
           <MenuButton
             as={Button}
@@ -240,7 +220,7 @@ function RewardsInjectorConfigurator({
             )}
           </MenuButton>
           <MenuList w="135%" maxHeight="60vh" overflowY="auto">
-            {addresses.map((address) => (
+            {addresses.map(address => (
               <MenuItem
                 key={address.network + address.token}
                 onClick={() => onAddressSelect(address)}
@@ -280,12 +260,7 @@ function RewardsInjectorConfigurator({
           />
         )}
 
-        <FormControl
-          display="flex"
-          alignItems="center"
-          w="auto"
-          marginLeft={10}
-        >
+        <FormControl display="flex" alignItems="center" w="auto" marginLeft={10}>
           <FormLabel htmlFor="version-switch" mb="0">
             V1
           </FormLabel>
@@ -350,8 +325,8 @@ function RewardsInjectorConfigurator({
               <AlertIcon />
               <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
               <AlertDescription>
-                Additional {formatAmount(distributionDelta - contractBalance)}{" "}
-                {tokenSymbol} required to complete all distributions.
+                Additional {formatAmount(distributionDelta - contractBalance)} {tokenSymbol}{" "}
+                required to complete all distributions.
               </AlertDescription>
             </Alert>
           )}
@@ -382,27 +357,23 @@ function RewardsInjectorConfigurator({
           <Button colorScheme="blue" onClick={generatePayload}>
             Generate Payload
           </Button>
-          {generatedPayload && (
-            <SimulateTransactionButton batchFile={generatedPayload} />
-          )}
+          {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
         </Flex>
       )}
       <Divider />
 
       {!selectedSafe && !isLoading && (
-          <Alert status="warning" mb={4}>
-            <AlertIcon />
-            <AlertDescription>
-              This injector does not have an owner configured yet. Make sure to set an owner first before attempting to configure this injector.
-            </AlertDescription>
-          </Alert>
+        <Alert status="warning" mb={4}>
+          <AlertIcon />
+          <AlertDescription>
+            This injector does not have an owner configured yet. Make sure to set an owner first
+            before attempting to configure this injector.
+          </AlertDescription>
+        </Alert>
       )}
 
       {generatedPayload && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={handleJsonChange}
-        />
+        <JsonViewerEditor jsonData={generatedPayload} onJsonChange={handleJsonChange} />
       )}
 
       {generatedPayload && (
@@ -411,9 +382,7 @@ function RewardsInjectorConfigurator({
             variant="secondary"
             mr="10px"
             leftIcon={<DownloadIcon />}
-            onClick={() =>
-              handleDownloadClick(JSON.stringify(generatedPayload))
-            }
+            onClick={() => handleDownloadClick(JSON.stringify(generatedPayload))}
           >
             Download Payload
           </Button>
@@ -421,9 +390,7 @@ function RewardsInjectorConfigurator({
             variant="secondary"
             mr="10px"
             leftIcon={<CopyIcon />}
-            onClick={() =>
-              copyJsonToClipboard(JSON.stringify(generatedPayload), toast)
-            }
+            onClick={() => copyJsonToClipboard(JSON.stringify(generatedPayload), toast)}
           >
             Copy Payload to Clipboard
           </Button>
@@ -433,12 +400,8 @@ function RewardsInjectorConfigurator({
             type={"injector-configurator"}
             isOpen={isOpen}
             onClose={onClose}
-            payload={
-              generatedPayload
-                ? JSON.parse(JSON.stringify(generatedPayload))
-                : null
-            }
-            network={selectedAddress ? selectedAddress.network.toLowerCase() : 'mainnet'}
+            payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
+            network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
           />
         </Box>
       )}

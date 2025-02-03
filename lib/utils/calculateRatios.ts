@@ -1,10 +1,6 @@
 import { formatUnits } from "viem";
 
-export const calculateRatios = (
-  underlying: bigint,
-  wrapped: bigint,
-  decimals: number
-) => {
+export const calculateRatios = (underlying: bigint, wrapped: bigint, decimals: number) => {
   const underlyingValue = Number(formatUnits(underlying, decimals));
   const wrappedValue = Number(formatUnits(wrapped, decimals));
   const total = underlyingValue + wrappedValue;

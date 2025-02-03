@@ -80,9 +80,7 @@ export const weightedPool = [
   },
   {
     anonymous: false,
-    inputs: [
-      { indexed: false, internalType: "bool", name: "paused", type: "bool" },
-    ],
+    inputs: [{ indexed: false, internalType: "bool", name: "paused", type: "bool" }],
     name: "PausedStateChanged",
     type: "event",
   },
@@ -107,9 +105,7 @@ export const weightedPool = [
   },
   {
     anonymous: false,
-    inputs: [
-      { indexed: false, internalType: "bool", name: "enabled", type: "bool" },
-    ],
+    inputs: [{ indexed: false, internalType: "bool", name: "enabled", type: "bool" }],
     name: "RecoveryModeStateChanged",
     type: "event",
   },
@@ -237,9 +233,7 @@ export const weightedPool = [
   {
     inputs: [],
     name: "getAuthorizer",
-    outputs: [
-      { internalType: "contract IAuthorizer", name: "", type: "address" },
-    ],
+    outputs: [{ internalType: "contract IAuthorizer", name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -333,9 +327,7 @@ export const weightedPool = [
   {
     inputs: [],
     name: "getRateProviders",
-    outputs: [
-      { internalType: "contract IRateProvider[]", name: "", type: "address[]" },
-    ],
+    outputs: [{ internalType: "contract IRateProvider[]", name: "", type: "address[]" }],
     stateMutability: "view",
     type: "function",
   },
@@ -542,9 +534,7 @@ export const weightedPool = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "uint256", name: "swapFeePercentage", type: "uint256" },
-    ],
+    inputs: [{ internalType: "uint256", name: "swapFeePercentage", type: "uint256" }],
     name: "setSwapFeePercentage",
     outputs: [],
     stateMutability: "nonpayable",

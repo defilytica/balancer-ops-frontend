@@ -68,9 +68,7 @@ interface ChangeSwapFeeProps {
   addressBook: AddressBook;
 }
 
-export default function ChangeSwapFeeModule({
-  addressBook,
-}: ChangeSwapFeeProps) {
+export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [newSwapFee, setNewSwapFee] = useState<string>("");
@@ -82,11 +80,7 @@ export default function ChangeSwapFeeModule({
 
   const getMultisigForNetwork = useCallback(
     (network: string) => {
-      const multisigs = getCategoryData(
-        addressBook,
-        network.toLowerCase(),
-        "multisigs",
-      );
+      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
       if (multisigs && multisigs["lm"]) {
         const lm = multisigs["lm"];
         if (typeof lm === "string") {
@@ -100,18 +94,18 @@ export default function ChangeSwapFeeModule({
     [addressBook],
   );
 
-  const { loading, error, data } = useQuery<
-    GetPoolsQuery,
-    GetPoolsQueryVariables
-  >(GetPoolsDocument, {
-    variables: { chainIn: [selectedNetwork as any] },
-    skip: !selectedNetwork,
-  });
+  const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
+    GetPoolsDocument,
+    {
+      variables: { chainIn: [selectedNetwork as any] },
+      skip: !selectedNetwork,
+    },
+  );
 
   const filteredPools = useMemo(() => {
     if (!data?.poolGetPools) return [];
     return data.poolGetPools.filter(
-      (pool) =>
+      pool =>
         pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
     );
@@ -161,8 +155,7 @@ export default function ChangeSwapFeeModule({
     if (!isAuthorizedPool) {
       toast({
         title: "Unauthorized pool",
-        description:
-          "This pool cannot be modified as it is not owned by the authorized address.",
+        description: "This pool cannot be modified as it is not owned by the authorized address.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -170,7 +163,7 @@ export default function ChangeSwapFeeModule({
       return;
     }
 
-    const network = NETWORK_OPTIONS.find((n) => n.apiID === selectedNetwork);
+    const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     if (!network) {
       toast({
         title: "Invalid network",
@@ -188,17 +181,11 @@ export default function ChangeSwapFeeModule({
       poolName: selectedPool.name,
     };
 
-    const payload = generateSwapFeeChangePayload(
-      input,
-      network.chainId,
-      selectedMultisig,
-    );
+    const payload = generateSwapFeeChangePayload(input, network.chainId, selectedMultisig);
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
-  const currentFee = selectedPool
-    ? parseFloat(selectedPool.dynamicData.swapFee) * 100
-    : 0;
+  const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
   const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
   const feeChange = newFee - currentFee;
 
@@ -217,7 +204,7 @@ export default function ChangeSwapFeeModule({
               onChange={handleNetworkChange}
               placeholder="Select Network"
             >
-              {NETWORK_OPTIONS.map((network) => (
+              {NETWORK_OPTIONS.map(network => (
                 <option key={network.chainId} value={network.apiID}>
                   {network.label}
                 </option>
@@ -232,11 +219,7 @@ export default function ChangeSwapFeeModule({
             <Popover>
               <PopoverTrigger>
                 <Input
-                  value={
-                    selectedPool
-                      ? `${selectedPool.name} - ${selectedPool.address}`
-                      : ""
-                  }
+                  value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
                   placeholder="Search and select a pool"
                   readOnly
                 />
@@ -247,10 +230,10 @@ export default function ChangeSwapFeeModule({
                     placeholder="Search pools..."
                     mb={2}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                   />
                   <List maxH="200px" overflowY="auto">
-                    {filteredPools.map((pool) => (
+                    {filteredPools.map(pool => (
                       <ListItem
                         key={pool.address}
                         onClick={() => {
@@ -292,9 +275,8 @@ export default function ChangeSwapFeeModule({
                 <Alert status="warning" mt={4}>
                   <AlertIcon />
                   <AlertDescription>
-                    This pool is not owned by the authorized delegate address
-                    and cannot be modified. Only the pool owner can modify this
-                    pool.
+                    This pool is not owned by the authorized delegate address and cannot be
+                    modified. Only the pool owner can modify this pool.
                   </AlertDescription>
                 </Alert>
               )}
@@ -309,7 +291,7 @@ export default function ChangeSwapFeeModule({
                   type="number"
                   step="0.01"
                   value={newSwapFee}
-                  onChange={(e) => setNewSwapFee(e.target.value)}
+                  onChange={e => setNewSwapFee(e.target.value)}
                   placeholder="Enter new swap fee (e.g., 0.1)"
                 />
               </FormControl>
@@ -337,13 +319,9 @@ export default function ChangeSwapFeeModule({
                       </Stat>
                       <Stat>
                         <StatLabel>Change</StatLabel>
-                        <StatNumber>
-                          {Math.abs(feeChange).toFixed(2)}%
-                        </StatNumber>
+                        <StatNumber>{Math.abs(feeChange).toFixed(2)}%</StatNumber>
                         <StatHelpText>
-                          <StatArrow
-                            type={feeChange > 0 ? "increase" : "decrease"}
-                          />
+                          <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
                           {feeChange > 0 ? "Increase" : "Decrease"}
                         </StatHelpText>
                       </Stat>
@@ -355,12 +333,7 @@ export default function ChangeSwapFeeModule({
           </Grid>
         </>
       )}
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mt="20px"
-        mb="10px"
-      >
+      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Button
           variant="primary"
           onClick={handleGenerateClick}
@@ -368,16 +341,14 @@ export default function ChangeSwapFeeModule({
         >
           Generate Payload
         </Button>
-        {generatedPayload && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
       {generatedPayload && (
         <JsonViewerEditor
           jsonData={generatedPayload}
-          onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+          onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 

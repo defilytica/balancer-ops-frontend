@@ -1,4 +1,4 @@
-import {PoolType} from "@/types/types";
+import { PoolType } from "@/types/types";
 
 export interface AddressBook {
   active: {
@@ -47,8 +47,8 @@ export interface Pool {
   staking: {
     gauge: {
       id: string;
-    }
-  }
+    };
+  };
   dynamicData: {
     swapFee: string;
     poolId: string;
@@ -130,7 +130,7 @@ export interface GetTokensQueryVariables {
 
 export interface WeightedPoolSpecific {
   feeManagement: {
-    type: 'fixed' | 'governance' | 'custom';
+    type: "fixed" | "governance" | "custom";
     customOwner?: string;
     owner?: string;
   };
@@ -141,7 +141,7 @@ export interface StablePoolSpecific {
   rateCacheDuration: string;
   yieldFeeExempt: boolean;
   feeManagement: {
-    type: 'fixed' | 'governance' | 'custom';
+    type: "fixed" | "governance" | "custom";
     customOwner?: string;
     owner?: string;
   };

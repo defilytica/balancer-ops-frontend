@@ -1,4 +1,4 @@
-import {GAUGE_WEIGHT_CAPS} from "@/constants/constants";
+import { GAUGE_WEIGHT_CAPS } from "@/constants/constants";
 
 export type NetworkInfo = {
   logo: string;
@@ -7,7 +7,6 @@ export type NetworkInfo = {
   chainId: string;
 };
 
-export type PoolType = 'weighted' | 'composableStable' | undefined;
+export type PoolType = "weighted" | "composableStable" | undefined;
 
-export type WeightCapType = typeof GAUGE_WEIGHT_CAPS[keyof typeof GAUGE_WEIGHT_CAPS];
-
+export type WeightCapType = (typeof GAUGE_WEIGHT_CAPS)[keyof typeof GAUGE_WEIGHT_CAPS];

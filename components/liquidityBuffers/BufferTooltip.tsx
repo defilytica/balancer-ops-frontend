@@ -1,11 +1,4 @@
-import {
-  Box,
-  Text,
-  HStack,
-  Badge,
-  VStack,
-  useColorModeValue,
-} from "@chakra-ui/react";
+import { Box, Text, HStack, Badge, VStack, useColorModeValue } from "@chakra-ui/react";
 import { PoolToken } from "@/types/interfaces";
 
 interface BufferTooltipProps {

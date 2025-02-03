@@ -59,9 +59,7 @@ export default function CCTPBridge() {
     { value: 0, destinationDomain: "0", mintRecipient: "" },
   ]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(
-    null,
-  );
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isEditing, setIsEditing] = useState(false);
@@ -80,25 +78,17 @@ export default function CCTPBridge() {
     }
   };
 
-  const handleInputChange = (
-    index: number,
-    field: string,
-    value: string | number,
-  ) => {
+  const handleInputChange = (index: number, field: string, value: string | number) => {
     const updatedInputs = [...inputs];
     (updatedInputs[index] as any)[field] = value;
     if (field === "destinationDomain") {
-      (updatedInputs[index] as any).mintRecipient =
-        addressMapping[value as string] || "";
+      (updatedInputs[index] as any).mintRecipient = addressMapping[value as string] || "";
     }
     setInputs(updatedInputs);
   };
 
   const addInput = () => {
-    setInputs([
-      ...inputs,
-      { value: 0, destinationDomain: "0", mintRecipient: "" },
-    ]);
+    setInputs([...inputs, { value: 0, destinationDomain: "0", mintRecipient: "" }]);
   };
 
   const handleRemoveInput = (index: number) => {
@@ -158,7 +148,7 @@ export default function CCTPBridge() {
           isClosable: true,
         });
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Could not copy text: ", err);
       });
   };
@@ -174,7 +164,7 @@ export default function CCTPBridge() {
           isClosable: true,
         });
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Could not copy text: ", err);
       });
   };
@@ -204,9 +194,7 @@ export default function CCTPBridge() {
                   <Input
                     type="number"
                     value={input.value}
-                    onChange={(e) =>
-                      handleInputChange(index, "value", Number(e.target.value))
-                    }
+                    onChange={e => handleInputChange(index, "value", Number(e.target.value))}
                   />
                 </FormControl>
 
@@ -214,15 +202,9 @@ export default function CCTPBridge() {
                   <FormLabel>Destination Domain</FormLabel>
                   <Select
                     value={input.destinationDomain}
-                    onChange={(e) =>
-                      handleInputChange(
-                        index,
-                        "destinationDomain",
-                        e.target.value,
-                      )
-                    }
+                    onChange={e => handleInputChange(index, "destinationDomain", e.target.value)}
                   >
-                    {DOMAIN_OPTIONS.map((option) => (
+                    {DOMAIN_OPTIONS.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -234,9 +216,7 @@ export default function CCTPBridge() {
                   <FormLabel>Mint Recipient #{index + 1}</FormLabel>
                   <Input
                     value={input.mintRecipient}
-                    onChange={(e) =>
-                      handleInputChange(index, "mintRecipient", e.target.value)
-                    }
+                    onChange={e => handleInputChange(index, "mintRecipient", e.target.value)}
                   />
                 </FormControl>
               </SimpleGrid>
@@ -254,18 +234,11 @@ export default function CCTPBridge() {
           Add Input
         </Button>
       </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mt="20px"
-        mb="10px"
-      >
+      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Button variant="primary" onClick={handleGenerateClick}>
           Generate Payload
         </Button>
-        {generatedPayload && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
@@ -283,13 +256,10 @@ export default function CCTPBridge() {
               language="json"
               theme="vs-dark"
               value={generatedPayload}
-              onChange={(value) => setGeneratedPayload(value)}
+              onChange={value => setGeneratedPayload(value)}
             />
           ) : (
-            <ReactJson
-              theme={reactJsonTheme}
-              src={JSON.parse(generatedPayload)}
-            />
+            <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)} />
           )}
           {isEditing && (
             <Button mt="10px" onClick={() => handleSaveEdit(generatedPayload)}>

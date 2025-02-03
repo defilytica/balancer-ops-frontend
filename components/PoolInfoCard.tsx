@@ -1,16 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  Box,
-  Show,
-  Card,
-  Stack,
-  HStack,
-  Heading,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Show, Card, Stack, HStack, Heading, Text, VStack } from "@chakra-ui/react";
 import { useFormattedPoolAttributes } from "@/lib/data/useFormattedPoolAttributes";
 import { Pool } from "@/types/interfaces";
 
@@ -23,12 +14,7 @@ export const PoolInfoCard: React.FC<PoolInfoCardProps> = ({ pool }) => {
 
   return (
     <Card>
-      <VStack
-        alignItems="flex-start"
-        spacing={{ base: "sm", md: "md" }}
-        width="full"
-        p={4}
-      >
+      <VStack alignItems="flex-start" spacing={{ base: "sm", md: "md" }} width="full" p={4}>
         <Heading variant="h4" fontSize="1.25rem">
           {pool.name}
         </Heading>
@@ -45,7 +31,7 @@ export const PoolInfoCard: React.FC<PoolInfoCardProps> = ({ pool }) => {
               </Heading>
             </HStack>
           </Show>
-          {formattedAttributes.map((attribute) => (
+          {formattedAttributes.map(attribute => (
             <Stack
               width="full"
               spacing={{ base: "xxs", md: "xl" }}
@@ -53,17 +39,11 @@ export const PoolInfoCard: React.FC<PoolInfoCardProps> = ({ pool }) => {
               direction={{ base: "column", md: "row" }}
             >
               <Box minWidth="140px">
-                <Text
-                  fontSize="sm"
-                  variant={{ base: "primary", md: "secondary" }}
-                >
+                <Text fontSize="sm" variant={{ base: "primary", md: "secondary" }}>
                   {attribute.title}
                 </Text>
               </Box>
-              <Text
-                variant={{ base: "secondary", md: "secondary" }}
-                mb={{ base: "sm", md: "0" }}
-              >
+              <Text variant={{ base: "secondary", md: "secondary" }} mb={{ base: "sm", md: "0" }}>
                 {attribute.value}
               </Text>
             </Stack>

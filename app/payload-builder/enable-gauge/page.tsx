@@ -23,13 +23,7 @@ import {
   useToast,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  AddIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  DeleteIcon,
-  DownloadIcon,
-} from "@chakra-ui/icons";
+import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import React, { useState } from "react";
 import {
   copyJsonToClipboard,
@@ -50,18 +44,16 @@ export default function EnableGaugePage() {
     { id: "", network: "Ethereum" },
   ]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(
-    null,
-  );
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleGenerateClick = () => {
     let payload = generateEnableGaugePayload(
-      gauges.map((g) => ({ gauge: g.id, gaugeType: g.network })),
+      gauges.map(g => ({ gauge: g.id, gaugeType: g.network })),
     );
     let text = generateHumanReadableForEnableGauge(
-      gauges.map((g) => ({ gauge: g.id, gaugeType: g.network })),
+      gauges.map(g => ({ gauge: g.id, gaugeType: g.network })),
     );
 
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
@@ -99,18 +91,18 @@ export default function EnableGaugePage() {
             <List spacing={2}>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Build a payload to enable a gauge for BAL rewards by providing a
-                set of gauge contracts and target chains.
+                Build a payload to enable a gauge for BAL rewards by providing a set of gauge
+                contracts and target chains.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Please make sure to always provide the RootGauge contract from
-                Ethereum Mainnet. Select the target chain accordingly.
+                Please make sure to always provide the RootGauge contract from Ethereum Mainnet.
+                Select the target chain accordingly.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                After submitting a PR, make sure the gauge setup is correct and
-                validate the report outputs.
+                After submitting a PR, make sure the gauge setup is correct and validate the report
+                outputs.
               </ListItem>
             </List>
           </AlertDescription>
@@ -124,7 +116,7 @@ export default function EnableGaugePage() {
                 <FormLabel>Gauge ID #{index + 1}</FormLabel>
                 <Input
                   value={gauge.id}
-                  onChange={(e) => {
+                  onChange={e => {
                     const updatedGauges = [...gauges];
                     updatedGauges[index].id = e.target.value;
                     setGauges(updatedGauges);
@@ -136,13 +128,13 @@ export default function EnableGaugePage() {
                 <FormLabel>Network</FormLabel>
                 <Select
                   value={gauge.network}
-                  onChange={(e) => {
+                  onChange={e => {
                     const updatedGauges = [...gauges];
                     updatedGauges[index].network = e.target.value;
                     setGauges(updatedGauges);
                   }}
                 >
-                  {NETWORK_OPTIONS.map((net) => (
+                  {NETWORK_OPTIONS.map(net => (
                     <option key={net.label} value={net.label}>
                       {net.label}
                     </option>
@@ -166,28 +158,19 @@ export default function EnableGaugePage() {
         ))}
         <Button
           variant="secondary"
-          onClick={() =>
-            setGauges([...gauges, { id: "", network: "Ethereum" }])
-          }
+          onClick={() => setGauges([...gauges, { id: "", network: "Ethereum" }])}
           leftIcon={<AddIcon />}
         >
           Add Gauge ID
         </Button>
       </>
       <>
-        <Flex
-          justifyContent="space-between"
-          alignItems="center"
-          mt="20px"
-          mb="10px"
-        >
+        <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
           <Button variant="primary" onClick={handleGenerateClick}>
             Generate Payload
           </Button>
           {generatedPayload && (
-            <SimulateTransactionButton
-              batchFile={JSON.parse(generatedPayload)}
-            />
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
         <Divider />
@@ -195,7 +178,7 @@ export default function EnableGaugePage() {
         {generatedPayload && (
           <JsonViewerEditor
             jsonData={generatedPayload}
-            onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
         )}
 

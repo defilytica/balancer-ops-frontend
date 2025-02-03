@@ -54,17 +54,10 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
   };
 
   const isEmptyBuffer =
-    balance &&
-    balance.underlyingBalance === BigInt(0) &&
-    balance.wrappedBalance === BigInt(0);
+    balance && balance.underlyingBalance === BigInt(0) && balance.wrappedBalance === BigInt(0);
 
   const ratios =
-    balance &&
-    calculateRatios(
-      balance.underlyingBalance,
-      balance.wrappedBalance,
-      token.decimals!,
-    );
+    balance && calculateRatios(balance.underlyingBalance, balance.wrappedBalance, token.decimals!);
 
   const renderContent = () => {
     if (!token.isErc4626) {
@@ -95,12 +88,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     // Case 3: Error state or no data
     if (isError || !bufferBalance || !balance) {
       return (
-        <Center
-          h="full"
-          bg="whiteAlpha.50"
-          rounded="md"
-          border="1px solid red.200"
-        >
+        <Center h="full" bg="whiteAlpha.50" rounded="md" border="1px solid red.200">
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
@@ -128,9 +116,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     const chartData = [
       {
         token,
-        underlying: Number(
-          formatUnits(balance.underlyingBalance, token.decimals!),
-        ),
+        underlying: Number(formatUnits(balance.underlyingBalance, token.decimals!)),
         wrapped: Number(formatUnits(balance.wrappedBalance, token.decimals!)),
       },
     ];
@@ -139,30 +125,15 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
       <Box h="full" display="flex" flexDir="column">
         <Box flex="1" minH="0">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              stackOffset="expand"
-              barSize={24}
-            >
+            <BarChart data={chartData} layout="vertical" stackOffset="expand" barSize={24}>
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" hide />
               <RechartsTooltip
                 content={<BufferTooltip />}
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
               />
-              <Bar
-                dataKey="underlying"
-                stackId="a"
-                fill="#627EEA"
-                radius={[4, 0, 0, 4]}
-              />
-              <Bar
-                dataKey="wrapped"
-                stackId="a"
-                fill="#E5E5E5"
-                radius={[0, 4, 4, 0]}
-              />
+              <Bar dataKey="underlying" stackId="a" fill="#627EEA" radius={[4, 0, 0, 4]} />
+              <Bar dataKey="wrapped" stackId="a" fill="#E5E5E5" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Box>
@@ -170,16 +141,14 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#627EEA" />
             <Text color={textColor}>
-              Underlying:{" "}
-              {formatValue(balance.underlyingBalance, token.decimals!)}{" "}
+              Underlying: {formatValue(balance.underlyingBalance, token.decimals!)}{" "}
               {token.underlyingToken?.symbol}
             </Text>
           </HStack>
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#E5E5E5" />
             <Text color={textColor}>
-              Wrapped: {formatValue(balance.wrappedBalance, token.decimals!)}{" "}
-              {token.symbol}
+              Wrapped: {formatValue(balance.wrappedBalance, token.decimals!)} {token.symbol}
             </Text>
           </HStack>
         </HStack>
@@ -195,11 +164,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
             <Text fontWeight="medium" noOfLines={1}>
               {token.name}
             </Text>
-            <Badge
-              bg="whiteAlpha.200"
-              _hover={{ bg: "whiteAlpha.300" }}
-              textTransform="none"
-            >
+            <Badge bg="whiteAlpha.200" _hover={{ bg: "whiteAlpha.300" }} textTransform="none">
               {token.symbol}
             </Badge>
           </HStack>

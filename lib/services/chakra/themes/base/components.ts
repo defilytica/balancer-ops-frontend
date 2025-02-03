@@ -192,8 +192,7 @@ export function getComponents(tokens: any, primaryTextColor: string) {
           bgClip: "text",
         }),
         gradient: {
-          bgGradient:
-            "linear(to-l, gradients.text.heading.from, gradients.text.heading.to)",
+          bgGradient: "linear(to-l, gradients.text.heading.from, gradients.text.heading.to)",
           bgClip: "text",
         },
         accordionHeading: {

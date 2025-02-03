@@ -8,11 +8,7 @@ import SidebarContent from "@/components/navigation/SidebarContent";
 import MobileNav from "@/components/navigation/MobileNav";
 import DesktopNav from "@/components/navigation/DesktopNav";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
@@ -20,10 +16,7 @@ export default function RootLayout({
       <body className={satoshiFont.className} suppressHydrationWarning>
         <Providers>
           <Box minH="100vh">
-            <SidebarContent
-              onClose={() => onClose}
-              display={{ base: "none", md: "block" }}
-            />
+            <SidebarContent onClose={() => onClose} display={{ base: "none", md: "block" }} />
             <Drawer
               isOpen={isOpen}
               placement="left"

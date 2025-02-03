@@ -10,10 +10,7 @@ export async function GET(request: NextRequest) {
   const network = searchParams.get("network");
 
   if (!wrappedToken || !network) {
-    return NextResponse.json(
-      { error: "Missing required parameters" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
   const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
@@ -33,11 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const contract = new ethers.Contract(
-      vaultExplorerAddress,
-      vaultExplorerABI,
-      provider,
-    );
+    const contract = new ethers.Contract(vaultExplorerAddress, vaultExplorerABI, provider);
 
     const bufferBalance = await contract.getBufferBalance(wrappedToken);
 
@@ -47,9 +40,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching buffer balance:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch buffer balance" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to fetch buffer balance" }, { status: 500 });
   }
 }

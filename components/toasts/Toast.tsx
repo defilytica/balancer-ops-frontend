@@ -21,14 +21,7 @@ type Props = ToastProps & {
   linkUrl?: string;
 };
 
-export function Toast({
-  id,
-  status,
-  isClosable,
-  title,
-  description,
-  linkUrl,
-}: Props) {
+export function Toast({ id, status, isClosable, title, description, linkUrl }: Props) {
   const toast = useToast();
 
   const containerStyles: BoxProps = {
@@ -82,10 +75,7 @@ export function Toast({
         {linkUrl && (
           <>
             <div ref={ref} />
-            <Tooltip
-              label="View on explorer"
-              portalProps={{ containerRef: ref }}
-            >
+            <Tooltip label="View on explorer" portalProps={{ containerRef: ref }}>
               <IconButton
                 as={Link}
                 href={linkUrl}
@@ -134,23 +124,13 @@ export function Toast({
               color="font.highlight"
               mt="1"
             >
-              <CircularProgressLabel
-                fontSize="md"
-                color="font.highlight"
-                pl={1}
-              >
+              <CircularProgressLabel fontSize="md" color="font.highlight" pl={1}>
                 <Check size={12} strokeWidth={4} />
               </CircularProgressLabel>
             </CircularProgress>
           )}
           {status === "error" && (
-            <CircularProgress
-              value={100}
-              trackColor="border.base"
-              size={5}
-              color="red.500"
-              mt="1"
-            >
+            <CircularProgress value={100} trackColor="border.base" size={5} color="red.500" mt="1">
               <CircularProgressLabel>
                 <Text fontWeight="bold" color="red.500" fontSize="xs">
                   !

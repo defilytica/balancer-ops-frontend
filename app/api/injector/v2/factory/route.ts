@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { networks } from "@/constants/constants";
-import {
-  fetchAddressBook,
-  getCategoryData,
-  getNetworks,
-} from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 
 const FACTORY_ABI = [
   {
@@ -33,13 +29,8 @@ export async function GET(request: NextRequest) {
 
         for (const [token, factoryAddress] of Object.entries(factories)) {
           if (token === "factory") {
-            console.log(
-              `Fetching data for factory ${factoryAddress} on ${network}...`,
-            );
-            const deployedInjectors = await fetchDeployedInjectors(
-              factoryAddress,
-              network,
-            );
+            console.log(`Fetching data for factory ${factoryAddress} on ${network}...`);
+            const deployedInjectors = await fetchDeployedInjectors(factoryAddress, network);
 
             allInjectors.push({
               factory: factoryAddress,
@@ -55,10 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(allInjectors);
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
   }
 }
 

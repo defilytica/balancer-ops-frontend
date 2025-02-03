@@ -1,9 +1,9 @@
 import React from "react";
-import {Flex, useColorModeValue, Avatar, Box} from "@chakra-ui/react";
+import { Flex, useColorModeValue, Avatar, Box } from "@chakra-ui/react";
 import DarkModeToggle from "@/components/btns/DarkModeToggle";
 import { SignInButton } from "@/components/SignInButton";
 import { useSession } from "next-auth/react";
-import {ConnectWallet} from "@/lib/modules/web3/ConnectWallet";
+import { ConnectWallet } from "@/lib/modules/web3/ConnectWallet";
 
 const DesktopNav = () => {
   const session = useSession();
@@ -19,9 +19,7 @@ const DesktopNav = () => {
       display={{ base: "none", md: "flex" }}
     >
       <Flex alignItems="center" mr={4}>
-        {session.data?.user?.image && (
-          <Avatar size="sm" src={session.data.user.image} mr={2} />
-        )}
+        {session.data?.user?.image && <Avatar size="sm" src={session.data.user.image} mr={2} />}
         <SignInButton />
       </Flex>
 

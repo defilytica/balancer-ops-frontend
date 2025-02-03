@@ -28,11 +28,7 @@ import {
 import { AddressBook } from "@/types/interfaces";
 import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
-import {
-  getCategoryData,
-  getNetworks,
-  getSubCategoryData,
-} from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getNetworks, getSubCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 
@@ -40,14 +36,10 @@ interface CreatePaymentProps {
   addressBook: AddressBook;
 }
 
-export default function CreatePaymentContent({
-  addressBook,
-}: CreatePaymentProps) {
+export default function CreatePaymentContent({ addressBook }: CreatePaymentProps) {
   const [payments, setPayments] = useState<PaymentInput[]>([]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(
-    null,
-  );
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("mainnet");
@@ -66,11 +58,7 @@ export default function CreatePaymentContent({
   }, [addressBook]);
 
   useEffect(() => {
-    const multisigs = getCategoryData(
-      addressBook,
-      selectedNetwork,
-      "multisigs",
-    );
+    const multisigs = getCategoryData(addressBook, selectedNetwork, "multisigs");
     const contributors = getSubCategoryData(
       addressBook,
       selectedNetwork,
@@ -129,7 +117,7 @@ export default function CreatePaymentContent({
     };
     const payload = generateTokenPaymentPayload(payments, safeInfo);
     const text = payments
-      .map((payment) => generateHumanReadableTokenTransfer(payment, safeInfo))
+      .map(payment => generateHumanReadableTokenTransfer(payment, safeInfo))
       .join("\n");
     setGeneratedPayload(JSON.stringify(payload, null, 4));
     setHumanReadableText(text);
@@ -159,7 +147,7 @@ export default function CreatePaymentContent({
           isClosable: true,
         });
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Could not copy text: ", err);
       });
   };
@@ -175,7 +163,7 @@ export default function CreatePaymentContent({
           isClosable: true,
         });
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Could not copy text: ", err);
       });
   };
@@ -187,8 +175,8 @@ export default function CreatePaymentContent({
           Create DAO Payment
         </Heading>
         <Text mb={4}>
-          Build a payment payload to send tokens from the DAO multi-sig to a
-          destination address of your choosing.
+          Build a payment payload to send tokens from the DAO multi-sig to a destination address of
+          your choosing.
         </Text>
       </Box>
       <Box>
@@ -196,11 +184,8 @@ export default function CreatePaymentContent({
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
             <FormControl maxWidth="sm">
               <FormLabel>Select Network</FormLabel>
-              <Select
-                value={selectedNetwork}
-                onChange={(e) => setSelectedNetwork(e.target.value)}
-              >
-                {availableNetworks.map((network) => (
+              <Select value={selectedNetwork} onChange={e => setSelectedNetwork(e.target.value)}>
+                {availableNetworks.map(network => (
                   <option key={network} value={network}>
                     {network.toUpperCase()}
                   </option>
@@ -212,28 +197,18 @@ export default function CreatePaymentContent({
         {payments.map((payment, index) => (
           <Box key={index} mb="10px">
             <Card key={index + selectedNetwork}>
-              <SimpleGrid
-                columns={{ base: 1, md: 1 }}
-                spacing={4}
-                mt={4}
-                mb={2}
-              >
+              <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4} mb={2}>
                 <FormControl>
                   <FormLabel>Source Wallet</FormLabel>
                   <Select
                     value={selectedMultisig}
-                    onChange={(e) => setSelectedMultisig(e.target.value)}
+                    onChange={e => setSelectedMultisig(e.target.value)}
                   >
-                    {Object.entries(availableMultisigs).map(
-                      ([name, address]) => (
-                        <option
-                          key={`${address}-${selectedNetwork}`}
-                          value={address}
-                        >
-                          {`${transformToHumanReadable(name)}`}
-                        </option>
-                      ),
-                    )}
+                    {Object.entries(availableMultisigs).map(([name, address]) => (
+                      <option key={`${address}-${selectedNetwork}`} value={address}>
+                        {`${transformToHumanReadable(name)}`}
+                      </option>
+                    ))}
                   </Select>
                 </FormControl>
               </SimpleGrid>
@@ -242,31 +217,24 @@ export default function CreatePaymentContent({
                   <FormLabel>Token</FormLabel>
                   <Select
                     value={payment.token}
-                    onChange={(e) => {
+                    onChange={e => {
                       const updatedPayments = [...payments];
                       updatedPayments[index].token = e.target.value;
                       setPayments(updatedPayments);
                     }}
                   >
-                    {WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.map(
-                      (token) => (
-                        <option
-                          key={token.address + selectedNetwork}
-                          value={token.address}
-                        >
-                          {token.symbol}
-                        </option>
-                      ),
-                    )}
+                    {WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.map(token => (
+                      <option key={token.address + selectedNetwork} value={token.address}>
+                        {token.symbol}
+                      </option>
+                    ))}
                   </Select>
                 </FormControl>
                 <FormControl>
                   <FormLabel>Amount #{index + 1}</FormLabel>
                   <NumberInput
                     value={payment.displayValue}
-                    onChange={(valueString) =>
-                      handleValueChange(index, valueString)
-                    }
+                    onChange={valueString => handleValueChange(index, valueString)}
                   >
                     <NumberInputField />
                   </NumberInput>
@@ -279,7 +247,7 @@ export default function CreatePaymentContent({
                     <Box flex="1">
                       <SearchableAddressInput
                         value={payment.to}
-                        onChange={(value) => {
+                        onChange={value => {
                           const updatedPayments = [...payments];
                           updatedPayments[index].to = value;
                           setPayments(updatedPayments);
@@ -308,9 +276,7 @@ export default function CreatePaymentContent({
                 to: "",
                 value: 0,
                 displayValue: "0",
-                token:
-                  WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.[0]?.address ||
-                  "",
+                token: WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.[0]?.address || "",
               },
             ])
           }
@@ -319,25 +285,18 @@ export default function CreatePaymentContent({
           Add Payment
         </Button>
       </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mt="20px"
-        mb="10px"
-      >
+      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Button variant="primary" onClick={handleGenerateClick}>
           Generate Payload
         </Button>
-        {generatedPayload && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
       {generatedPayload && (
         <JsonViewerEditor
           jsonData={generatedPayload}
-          onJsonChange={(newJson) => setGeneratedPayload(newJson)}
+          onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 

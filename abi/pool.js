@@ -133,9 +133,7 @@ export const poolsABI = [
   },
   {
     anonymous: false,
-    inputs: [
-      { indexed: false, internalType: "bool", name: "paused", type: "bool" },
-    ],
+    inputs: [{ indexed: false, internalType: "bool", name: "paused", type: "bool" }],
     name: "PausedStateChanged",
     type: "event",
   },
@@ -160,9 +158,7 @@ export const poolsABI = [
   },
   {
     anonymous: false,
-    inputs: [
-      { indexed: false, internalType: "bool", name: "enabled", type: "bool" },
-    ],
+    inputs: [{ indexed: false, internalType: "bool", name: "enabled", type: "bool" }],
     name: "RecoveryModeStateChanged",
     type: "event",
   },
@@ -338,9 +334,7 @@ export const poolsABI = [
   {
     inputs: [],
     name: "getAuthorizer",
-    outputs: [
-      { internalType: "contract IAuthorizer", name: "", type: "address" },
-    ],
+    outputs: [{ internalType: "contract IAuthorizer", name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -452,9 +446,7 @@ export const poolsABI = [
   {
     inputs: [],
     name: "getRateProviders",
-    outputs: [
-      { internalType: "contract IRateProvider[]", name: "", type: "address[]" },
-    ],
+    outputs: [{ internalType: "contract IRateProvider[]", name: "", type: "address[]" }],
     stateMutability: "view",
     type: "function",
   },
@@ -473,18 +465,14 @@ export const poolsABI = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "contract IERC20", name: "token", type: "address" },
-    ],
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "getTokenRate",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "contract IERC20", name: "token", type: "address" },
-    ],
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "getTokenRateCache",
     outputs: [
       { internalType: "uint256", name: "rate", type: "uint256" },
@@ -527,9 +515,7 @@ export const poolsABI = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "contract IERC20", name: "token", type: "address" },
-    ],
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "isTokenExemptFromYieldProtocolFee",
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "view",
@@ -701,9 +687,7 @@ export const poolsABI = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "uint256", name: "swapFeePercentage", type: "uint256" },
-    ],
+    inputs: [{ internalType: "uint256", name: "swapFeePercentage", type: "uint256" }],
     name: "setSwapFeePercentage",
     outputs: [],
     stateMutability: "nonpayable",
@@ -786,9 +770,7 @@ export const poolsABI = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "contract IERC20", name: "token", type: "address" },
-    ],
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
     name: "updateTokenRateCache",
     outputs: [],
     stateMutability: "nonpayable",

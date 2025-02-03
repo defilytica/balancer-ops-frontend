@@ -34,8 +34,7 @@ const LinkItems = [
     name: "Payload Builder",
     icon: TbTransactionBitcoin,
     target: "/payload-builder",
-    description:
-      "Choose from a variety of options to create Balancer DAO Payloads",
+    description: "Choose from a variety of options to create Balancer DAO Payloads",
   },
   {
     name: "Rewards Injector",
@@ -98,35 +97,35 @@ const DRPCBanner = () => (
 );
 
 const DefilyticaBanner = () => (
-    <Link href="https://defilytica.com" isExternal>
-      <Box
-          mt={3}
-          shadow="md"
-          borderRadius="md"
-          overflow="hidden"
-          transition="all 0.1s"
-          p={2}  // Added padding for better spacing
-          display="flex"
-          alignItems="center"
-          gap={2}  // Add space between logo and text
-          bg="purple.950"
-          _hover={{
-            shadow: "lg",
-            transform: "translateY(-2px)",
-          }}
-      >
-        <Image
-            src="/imgs/defilytica.png"
-            alt="DeFilytica"
-            width="24px"
-            height="24px"
-            objectFit="contain"
-        />
-        <Text fontSize="sm" fontWeight="medium" variant="special">
-          Developed by DeFilytica
-        </Text>
-      </Box>
-    </Link>
+  <Link href="https://defilytica.com" isExternal>
+    <Box
+      mt={3}
+      shadow="md"
+      borderRadius="md"
+      overflow="hidden"
+      transition="all 0.1s"
+      p={2} // Added padding for better spacing
+      display="flex"
+      alignItems="center"
+      gap={2} // Add space between logo and text
+      bg="purple.950"
+      _hover={{
+        shadow: "lg",
+        transform: "translateY(-2px)",
+      }}
+    >
+      <Image
+        src="/imgs/defilytica.png"
+        alt="DeFilytica"
+        width="24px"
+        height="24px"
+        objectFit="contain"
+      />
+      <Text fontSize="sm" fontWeight="medium" variant="special">
+        Developed by DeFilytica
+      </Text>
+    </Box>
+  </Link>
 );
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
@@ -152,13 +151,8 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         </Flex>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
-      {LinkItems.map((link) => (
-        <NavItem
-          key={link.name}
-          icon={link.icon}
-          target={link.target}
-          onClose={onClose}
-        >
+      {LinkItems.map(link => (
+        <NavItem key={link.name} icon={link.icon} target={link.target} onClose={onClose}>
           {link.name}
         </NavItem>
       ))}
@@ -170,13 +164,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         flexDirection="column"
         alignItems="center"
       >
-        <Badge
-          colorScheme="purple"
-          mb={4}
-          fontSize="0.8em"
-          borderRadius="full"
-          px={2}
-        >
+        <Badge colorScheme="purple" mb={4} fontSize="0.8em" borderRadius="full" px={2}>
           Beta release
         </Badge>
         <DRPCBanner />

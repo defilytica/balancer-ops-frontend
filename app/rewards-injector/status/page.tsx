@@ -38,26 +38,24 @@ const RewardsInjectorStatusPage = () => {
     // Ensure contract balance is properly formatted based on decimals
     const rawContractBalance = parseFloat(injector.contractBalance);
     const adjustedContractBalance = isV2
-        ? rawContractBalance
-        : rawContractBalance / Math.pow(10, tokenDecimals);
+      ? rawContractBalance
+      : rawContractBalance / Math.pow(10, tokenDecimals);
 
     // Process gauges with proper decimal handling
     const processedGauges = injector.gauges.map((gauge: any) => ({
       ...gauge,
       amountPerPeriod: isV2
-          ? gauge.amountPerPeriod // V2 amounts are already formatted in the API
-          : parseFloat(gauge.rawAmountPerPeriod || '0') / Math.pow(10, tokenDecimals),
+        ? gauge.amountPerPeriod // V2 amounts are already formatted in the API
+        : parseFloat(gauge.rawAmountPerPeriod || "0") / Math.pow(10, tokenDecimals),
     }));
 
     const { total, distributed, remaining } = calculateDistributionAmounts(processedGauges);
 
     const additionalTokensRequired =
-        remaining > adjustedContractBalance
-            ? remaining - adjustedContractBalance
-            : 0;
+      remaining > adjustedContractBalance ? remaining - adjustedContractBalance : 0;
 
     const incorrectlySetupGauges = injector.gauges.filter(
-        (gauge: any) => !gauge.isRewardTokenSetup
+      (gauge: any) => !gauge.isRewardTokenSetup,
     );
 
     return {
@@ -101,10 +99,8 @@ const RewardsInjectorStatusPage = () => {
 
       // Sort injectors with issues first
       const sortedData = processedData.sort((a: any, b: any) => {
-        const aHasIssues =
-            a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
-        const bHasIssues =
-            b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
+        const aHasIssues = a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
+        const bHasIssues = b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
 
         if (aHasIssues && !bHasIssues) return -1;
         if (!aHasIssues && bHasIssues) return 1;
@@ -173,15 +169,14 @@ const RewardsInjectorStatusPage = () => {
           <Box>
             <AlertDescription>
               This data is cached and was last updated on{" "}
-              {new Date(injectorsData[0].updatedAt).toLocaleString()}. You can
-              refresh the data manually.
+              {new Date(injectorsData[0].updatedAt).toLocaleString()}. You can refresh the data
+              manually.
             </AlertDescription>
           </Box>
         </Alert>
         <HStack justifyContent="space-between" alignItems="center">
           <Text>
-            Showing {filteredInjectors.length} of {injectorsData.length}{" "}
-            injectors
+            Showing {filteredInjectors.length} of {injectorsData.length} injectors
           </Text>
           <HStack>
             <Button onClick={toggleHideCompleted}>

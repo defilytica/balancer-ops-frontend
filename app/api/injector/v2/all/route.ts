@@ -19,16 +19,12 @@ const rateLimiter = new RateLimiter({
 
 export async function GET(request: NextRequest) {
   const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
-  const forceReload =
-    request.nextUrl.searchParams.get("forceReload") === "true";
+  const forceReload = request.nextUrl.searchParams.get("forceReload") === "true";
 
   if (forceReload) {
     const isRateLimited = rateLimiter.limit(ip);
     if (isRateLimited) {
-      return NextResponse.json(
-        { error: "Rate limited for force reload" },
-        { status: 429 },
-      );
+      return NextResponse.json({ error: "Rate limited for force reload" }, { status: 429 });
     }
   }
 
@@ -72,17 +68,11 @@ export async function GET(request: NextRequest) {
         let injectorData;
 
         if (shouldFetchFreshData) {
-          console.log(
-            `Fetching fresh data for injector ${injectorAddress} on ${network}...`,
-          );
+          console.log(`Fetching fresh data for injector ${injectorAddress} on ${network}...`);
           const freshData = await fetchFreshDataV2(injectorAddress, network);
           // Update the database with fresh data
           if (freshData) {
-            injectorData = await updateDatabaseV2(
-              injectorAddress,
-              network,
-              freshData,
-            );
+            injectorData = await updateDatabaseV2(injectorAddress, network, freshData);
           }
         } else {
           injectorData = cachedInjector;
@@ -96,10 +86,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(allInjectors);
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
   }
 }
 
@@ -126,7 +113,6 @@ async function fetchFreshDataV2(address: string, network: string) {
       contract.MaxTotalDue(),
     ]);
 
-
     const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
     const gauges = await fetchGaugeInfoV2(
       activeGaugeList,
@@ -135,13 +121,13 @@ async function fetchFreshDataV2(address: string, network: string) {
       injectTokenAddress,
       address,
       network,
-      tokenInfo.decimals
+      tokenInfo.decimals,
     );
     const contractBalance = await getInjectTokenBalanceForAddress(
       injectTokenAddress,
       address,
       provider,
-      tokenInfo.decimals
+      tokenInfo.decimals,
     );
 
     return {
@@ -160,11 +146,7 @@ async function fetchFreshDataV2(address: string, network: string) {
   }
 }
 
-async function updateDatabaseV2(
-  address: string,
-  network: string,
-  freshData: any,
-) {
+async function updateDatabaseV2(address: string, network: string, freshData: any) {
   const {
     tokenInfo,
     gauges,

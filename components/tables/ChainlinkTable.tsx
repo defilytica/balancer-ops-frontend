@@ -13,11 +13,7 @@ import {
   Badge,
   useMediaQuery,
 } from "@chakra-ui/react";
-import {
-  ExternalLinkIcon,
-  TriangleDownIcon,
-  TriangleUpIcon,
-} from "@chakra-ui/icons";
+import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from "@chakra-ui/icons";
 import { ChainlinkData } from "@/types/interfaces";
 import { networks } from "@/constants/constants";
 
@@ -26,9 +22,7 @@ interface ChainlinkTableProps {
 }
 
 export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
-  const [sortColumn, setSortColumn] = useState<keyof ChainlinkData | null>(
-    null,
-  );
+  const [sortColumn, setSortColumn] = useState<keyof ChainlinkData | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [isMobile] = useMediaQuery("(max-width: 48em)");
 
@@ -70,18 +64,10 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
     column: keyof ChainlinkData;
     label: string;
   }> = ({ column, label }) => (
-    <Flex
-      alignItems="center"
-      cursor="pointer"
-      onClick={() => handleSort(column)}
-    >
+    <Flex alignItems="center" cursor="pointer" onClick={() => handleSort(column)}>
       <Text fontWeight="bold">{label}</Text>
       {sortColumn === column &&
-        (sortDirection === "asc" ? (
-          <TriangleUpIcon ml={1} />
-        ) : (
-          <TriangleDownIcon ml={1} />
-        ))}
+        (sortDirection === "asc" ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />)}
     </Flex>
   );
 
@@ -103,16 +89,12 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
               </HStack>
               <Text fontWeight="bold">{row.upkeep_name}</Text>
               <Text>Balance: {row.upkeep_balance.toFixed(2)} LINK</Text>
-              <Text>
-                Total Payments: {row.total_link_payments.toFixed(2)} LINK
-              </Text>
+              <Text>Total Payments: {row.total_link_payments.toFixed(2)} LINK</Text>
               <Text>Total Performs: {row.total_performs}</Text>
               <Text>LINK/Perform: {row.link_per_perform.toFixed(4)}</Text>
               <Text>
                 Est. Actions Left:{" "}
-                {isFinite(row.estimated_actions_left)
-                  ? row.estimated_actions_left
-                  : "-"}
+                {isFinite(row.estimated_actions_left) ? row.estimated_actions_left : "-"}
               </Text>
               <Link href={row.upkeep_url} isExternal>
                 View Details <Icon as={ExternalLinkIcon} mx="2px" />
@@ -142,10 +124,7 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
               <SortableHeader column="upkeep_balance" label="Balance" />
             </Box>
             <Box as="th" p={2}>
-              <SortableHeader
-                column="total_link_payments"
-                label="Total Payments"
-              />
+              <SortableHeader column="total_link_payments" label="Total Payments" />
             </Box>
             <Box as="th" p={2}>
               <SortableHeader column="total_performs" label="Total Performs" />
@@ -154,10 +133,7 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
               <SortableHeader column="link_per_perform" label="LINK/Perform" />
             </Box>
             <Box as="th" p={2}>
-              <SortableHeader
-                column="estimated_actions_left"
-                label="Est. Actions Left"
-              />
+              <SortableHeader column="estimated_actions_left" label="Est. Actions Left" />
             </Box>
             <Box as="th" p={2}>
               URL
@@ -195,9 +171,7 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
                 {row.link_per_perform.toFixed(4)}
               </Box>
               <Box as="td" p={2} textAlign="right">
-                {isFinite(row.estimated_actions_left)
-                  ? row.estimated_actions_left
-                  : "-"}
+                {isFinite(row.estimated_actions_left) ? row.estimated_actions_left : "-"}
               </Box>
               <Box as="td" p={2}>
                 <Link href={row.upkeep_url} isExternal>

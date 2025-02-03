@@ -72,10 +72,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     onConfigChange(newConfig);
   };
 
-  const handleInputChange = (
-    field: keyof RecipientConfigData,
-    value: string,
-  ) => {
+  const handleInputChange = (field: keyof RecipientConfigData, value: string) => {
     const newConfig = { ...config };
     if (field === "amountPerPeriod") {
       newConfig.amountPerPeriod = value;
@@ -119,7 +116,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
               <Input
                 placeholder="Recipient address"
                 value={recipient}
-                onChange={(e) => handleRecipientChange(index, e.target.value)}
+                onChange={e => handleRecipientChange(index, e.target.value)}
               />
               {config.recipients.length > 1 && (
                 <IconButton
@@ -133,31 +130,22 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
               )}
             </HStack>
           ))}
-          <Button
-            leftIcon={<AddIcon />}
-            onClick={addRecipient}
-            size="sm"
-            variant="outline"
-          >
+          <Button leftIcon={<AddIcon />} onClick={addRecipient} size="sm" variant="outline">
             Add Recipient
           </Button>
         </VStack>
       </Box>
 
       <Box>
-        <Text className="font-medium mb-2">
-          Amount Per Period ({tokenSymbol})
-        </Text>
+        <Text className="font-medium mb-2">Amount Per Period ({tokenSymbol})</Text>
         <Input
           value={config.amountPerPeriod}
-          onChange={(e) => handleInputChange("amountPerPeriod", e.target.value)}
+          onChange={e => handleInputChange("amountPerPeriod", e.target.value)}
           placeholder={`Enter amount in ${tokenSymbol}`}
         />
         <HStack className="mt-1">
           <Text className="text-sm text-gray-500">Raw amount:</Text>
-          <Text className="text-sm text-gray-500">
-            {config.rawAmountPerPeriod}
-          </Text>
+          <Text className="text-sm text-gray-500">{config.rawAmountPerPeriod}</Text>
           <Tooltip title={`Raw amount with ${tokenDecimals} decimals`}>
             <InfoIcon color="gray.500" />
           </Tooltip>
@@ -169,7 +157,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
         <Input
           type="number"
           value={config.maxPeriods}
-          onChange={(e) => handleInputChange("maxPeriods", e.target.value)}
+          onChange={e => handleInputChange("maxPeriods", e.target.value)}
           placeholder="Number of weekly periods"
           min={1}
           max={255}
@@ -182,9 +170,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
           <Input
             type="number"
             value={config.doNotStartBeforeTimestamp}
-            onChange={(e) =>
-              handleInputChange("doNotStartBeforeTimestamp", e.target.value)
-            }
+            onChange={e => handleInputChange("doNotStartBeforeTimestamp", e.target.value)}
             placeholder="Enter timestamp"
             min={0}
           />
@@ -203,7 +189,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
               <Input
                 placeholder="Recipient address to remove"
                 value={recipient}
-                onChange={(e) => handleRecipientChange(index, e.target.value)}
+                onChange={e => handleRecipientChange(index, e.target.value)}
               />
               {config.recipients.length > 1 && (
                 <IconButton
@@ -232,8 +218,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
       <Alert variant="destructive">
         <AlertIcon />
         <AlertDescription>
-          This operation will remove the specified recipients from the injector
-          configuration
+          This operation will remove the specified recipients from the injector configuration
         </AlertDescription>
       </Alert>
     </VStack>
@@ -243,9 +228,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <Heading className="text-xl font-semibold">
-            Recipient Configuration
-          </Heading>
+          <Heading className="text-xl font-semibold">Recipient Configuration</Heading>
           <Badge variant={operation === "add" ? "default" : "destructive"}>
             {operation === "add" ? "Add Recipients" : "Remove Recipients"}
           </Badge>
@@ -255,12 +238,10 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
         {operation === "add" && renderAddOperation()}
         {operation === "remove" && renderRemoveOperation()}
 
-        {config.recipients.some((recipient) => !recipient) && (
+        {config.recipients.some(recipient => !recipient) && (
           <Alert variant="destructive" className="mt-4">
             <AlertIcon />
-            <AlertDescription>
-              All recipient addresses must be filled
-            </AlertDescription>
+            <AlertDescription>All recipient addresses must be filled</AlertDescription>
           </Alert>
         )}
       </CardBody>

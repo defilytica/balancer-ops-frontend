@@ -32,25 +32,25 @@ const SubmitPayload = () => {
     <Stack spacing={4}>
       <Textarea
         value={payload}
-        onChange={(e) => setPayload(e.target.value)}
+        onChange={e => setPayload(e.target.value)}
         placeholder="Enter your JSON payload"
         size="sm"
       />
       <Input
         value={filePath}
-        onChange={(e) => setFilePath(e.target.value)}
+        onChange={e => setFilePath(e.target.value)}
         placeholder="Enter the file path"
         size="sm"
       />
       <Input
         value={branchName}
-        onChange={(e) => setBranchName(e.target.value)}
+        onChange={e => setBranchName(e.target.value)}
         placeholder="Enter the branch name"
         size="sm"
       />
       <Input
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={e => setTitle(e.target.value)}
         placeholder="Enter the PR title"
         size="sm"
       />

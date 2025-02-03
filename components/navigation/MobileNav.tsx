@@ -33,12 +33,7 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       display={{ base: "flex", md: "none" }} // Hide on desktop
       {...rest}
     >
-      <IconButton
-        onClick={onOpen}
-        variant="outline"
-        aria-label="open menu"
-        icon={<FiMenu />}
-      />
+      <IconButton onClick={onOpen} variant="outline" aria-label="open menu" icon={<FiMenu />} />
 
       <Flex alignItems="center">
         <Box boxSize={30} marginRight={2}>
