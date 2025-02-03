@@ -31,6 +31,7 @@ interface TokenSelectorProps {
     selectedToken?: TokenListToken;
     placeholder?: string;
     isDisabled?: boolean;
+    onlyErc4626?: boolean;
 }
 
 export const TokenSelector = ({
@@ -39,6 +40,7 @@ export const TokenSelector = ({
                                   selectedToken,
                                   placeholder = 'Select a token',
                                   isDisabled = false,
+                                  onlyErc4626 = false,
                               }: TokenSelectorProps) => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [searchQuery, setSearchQuery] = useState('');
@@ -58,7 +60,8 @@ export const TokenSelector = ({
         (token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
         token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         token.address.toLowerCase().includes(searchQuery.toLowerCase())) &&
-        token.symbol.toLowerCase() !== 'eth'
+        token.symbol.toLowerCase() !== 'eth' &&
+        (!onlyErc4626 || token.underlyingTokenAddress)
     ) || [];
 
     const handleSelect = (token: TokenListToken) => {
