@@ -1,6 +1,7 @@
-import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
+import { ethers, JsonRpcSigner } from "ethers";
 import { encodeFunctionData } from "viem";
 import { vaultAdminAbi } from "@/abi/VaultAdmin";
 
@@ -698,6 +699,88 @@ export function generateSwapFeeChangePayload(
     },
     transactions: [transaction],
   };
+}
+
+// -- SET SWAP FEES ON V3 POOLS HELPERS --
+// Helper function to check if an address is the zero address
+export function isZeroAddress(address: string): boolean {
+  return address === '0x0000000000000000000000000000000000000000';
+}
+
+// Convert percentage to wei format (e.g., 0.1% -> 1000000000000000)
+export function percentageToWei(percentage: string): string {
+  return (parseFloat(percentage) * 1e16).toString();
+}
+
+// Generate payload for DAO-governed pools (swapFeeManager is zero address)
+export function generateDAOSwapFeeChangePayload(
+  input: SwapFeeChangeInput,
+  chainId: string,
+  multisig: string,
+) {
+  const swapFeePercentage = percentageToWei(input.newSwapFeePercentage);
+
+  const transaction = {
+    to: V3_VAULT_ADDRESS,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          name: "pool",
+          type: "address",
+          internalType: "address",
+        },
+        {
+          name: "swapFeePercentage",
+          type: "uint256",
+          internalType: "uint256",
+        },
+      ],
+      name: "setStaticSwapFeePercentage",
+      payable: false,
+    },
+    contractInputsValues: {
+      pool: input.poolAddress,
+      swapFeePercentage: swapFeePercentage,
+    },
+  };
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Set swap fee to ${input.newSwapFeePercentage}% for ${input.poolName}`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: multisig,
+      createdFromOwnerAddress: "",
+      checksum: "0x",
+    },
+    transactions: [transaction],
+  };
+}
+
+export async function isSwapFeeManager(
+  provider: ethers.BrowserProvider,
+  poolAddress: string,
+  signer: JsonRpcSigner,
+): Promise<boolean> {
+  const poolInterface = new ethers.Interface([
+    'function swapFeeManager() view returns (address)',
+  ]);
+
+  const poolContract = new ethers.Contract(poolAddress, poolInterface, provider);
+
+  try {
+    const manager = await poolContract.swapFeeManager();
+    const signerAddress = await signer.getAddress();
+    return manager.toLowerCase() === signerAddress.toLowerCase();
+  } catch (error) {
+    console.error('Error checking swap fee manager:', error);
+    return false;
+  }
 }
 
 // --- SET NEW DISTRIBUTOR ---
