@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -13,56 +13,54 @@ import {
   CardBody,
   CardHeader,
   Container,
+  Divider,
   Flex,
   FormControl,
   FormLabel,
+  Grid,
+  GridItem,
   Heading,
   Input,
   List,
   ListItem,
+  Popover,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   Spinner,
-  useToast,
-  useDisclosure,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
-  Grid,
-  GridItem,
   Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
   StatArrow,
   StatGroup,
-  Divider,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import {
-  copyJsonToClipboard, generateDAOSwapFeeChangePayload,
-  handleDownloadClick, isSwapFeeManager,
+  copyJsonToClipboard,
+  generateDAOSwapFeeChangePayload,
+  handleDownloadClick,
   SwapFeeChangeInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { MAINNET_GAUGE_FACTORY, NETWORK_OPTIONS, V3_VAULT_ADDRESS } from "@/constants/constants";
+import { NETWORK_OPTIONS, V3_VAULT_ADDRESS } from "@/constants/constants";
 import {
-  GetPoolsDocument,
-  GetPoolsQuery,
-  GetPoolsQueryVariables, GetV3PoolsDocument, GetV3PoolsQuery, GetV3PoolsQueryVariables,
+  GetV3PoolsDocument,
+  GetV3PoolsQuery,
+  GetV3PoolsQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
-import { Pool } from "@/types/interfaces";
+import { AddressBook, Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
-import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
-import { ethers, JsonRpcSigner } from "ethers";
+import { ethers } from "ethers";
 import { isZeroAddress } from "@ethereumjs/util";
-import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 
 const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
@@ -118,8 +116,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
   // Check manager status when pool is selected
   const handlePoolSelection = useCallback(async (pool: Pool) => {
+    setSelectedPool(pool); // Set pool immediately for UI update
+
     if (!pool || !window.ethereum) {
-      setSelectedPool(pool);
       setIsCurrentWalletManager(false);
       return;
     }
@@ -129,14 +128,11 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       const signer = await provider.getSigner();
       const signerAddress = await signer.getAddress();
 
-      const poolContract = new ethers.Contract(pool.address, V3vaultAdmin, provider);
-      const manager = await poolContract.swapFeeManager();
+      const isManager = pool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
 
-      setSelectedPool(pool);
-      setIsCurrentWalletManager(manager.toLowerCase() === signerAddress.toLowerCase());
+      setIsCurrentWalletManager(isManager);
     } catch (error) {
-      console.error('Error checking manager status:', error);
-      setSelectedPool(pool);
+      console.error("Error checking manager status:", error);
       setIsCurrentWalletManager(false);
     }
   }, []);
@@ -167,48 +163,50 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       return;
     }
 
-    const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
-    if (!network) {
-      toast({
-        title: "Invalid network",
-        description: "The selected network is not valid",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
+    const swapFeePercentage = (parseFloat(newSwapFee) * 1e18).toString();
 
-    const input: SwapFeeChangeInput = {
-      poolAddress: selectedPool.address,
-      newSwapFeePercentage: newSwapFee,
-      poolName: selectedPool.name,
-    };
-
+    // Case 1: Zero address manager (DAO governed)
     if (isZeroAddress(selectedPool.swapFeeManager)) {
-      // Generate DAO payload for pools with zero address manager
+      const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+      if (!network) {
+        toast({
+          title: "Invalid network",
+          description: "The selected network is not valid",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const input: SwapFeeChangeInput = {
+        poolAddress: selectedPool.address,
+        newSwapFeePercentage: newSwapFee,
+        poolName: selectedPool.name,
+      };
+
       const payload = generateDAOSwapFeeChangePayload(
         input,
         network.chainId,
-        selectedMultisig
+        selectedMultisig,
       );
       setGeneratedPayload(JSON.stringify(payload, null, 2));
-    } else if (isCurrentWalletManager) {
+    }
+    // Case 2: Current wallet is the fee manager
+    else if (isCurrentWalletManager) {
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
+        console.log("Signer status:", signer);
         const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
-        const swapFeePercentage = (parseFloat(newSwapFee) * 1e16).toString();
 
-        const tx = await contract.setStaticSwapFeePercentage(
-          selectedPool.address,
-          swapFeePercentage
-        );
-        const receipt = await tx.wait();
+        const tx = await contract.setStaticSwapFeePercentage(selectedPool.address.toLowerCase(), swapFeePercentage);
+        console.log("tx:", tx);
+        await tx.wait();
 
         toast({
-          title: "Transaction Submitted",
-          description: `The swap fee change transaction has been submitted: ${receipt.hash}`,
+          title: "Success",
+          description: "Swap fee updated successfully",
           status: "success",
           duration: 5000,
           isClosable: true,
@@ -244,27 +242,6 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       <Heading as="h2" size="lg" variant="special" mb={6}>
         Balancer v3: Create Swap Fee Change Payload
       </Heading>
-
-      {/* Add your existing UI components here */}
-      {selectedPool && (
-        <Alert status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"} mt={4}>
-          <AlertIcon />
-          <AlertDescription>
-            {isZeroAddress(selectedPool.swapFeeManager)
-              ? "This pool is DAO-governed. Changes must be executed through the multisig."
-              : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isCurrentWalletManager && (
-        <Alert status="success" mt={4}>
-          <AlertIcon />
-          <AlertDescription>
-            You are the swap fee manager for this pool and can directly modify the swap fee.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -308,7 +285,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                       <ListItem
                         key={pool.address}
                         onClick={() => {
-                          setSelectedPool(pool as unknown as Pool);
+                          handlePoolSelection(pool as unknown as Pool);
                           onClose();
                         }}
                         cursor="pointer"
@@ -339,7 +316,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </Alert>
       ) : (
         <>
-          {selectedPool && (
+          {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
               <PoolInfoCard pool={selectedPool} />
               {!isAuthorizedPool && (
@@ -354,9 +331,20 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             </Box>
           )}
 
+          {selectedPool && !isCurrentWalletManager && (
+            <Alert status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"} mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {isZeroAddress(selectedPool.swapFeeManager)
+                  ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                  : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
             <GridItem colSpan={{ base: 12, md: 4 }}>
-              <FormControl isDisabled={!selectedPool || !isAuthorizedPool}>
+              <FormControl isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}>
                 <FormLabel>New Swap Fee Percentage</FormLabel>
                 <Input
                   type="number"
@@ -405,25 +393,44 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </>
       )}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={!selectedPool || !isAuthorizedPool || !newSwapFee}
-        >
-          Generate Payload
-        </Button>
-        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
+        {!selectedPool ? (
+          <Button variant="primary" isDisabled={true}>
+            Select a Pool
+          </Button>
+        ) : isCurrentWalletManager ? (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newSwapFee}
+          >
+            Execute Fee Change
+          </Button>
+        ) : isZeroAddress(selectedPool.swapFeeManager) ? (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newSwapFee}
+          >
+            Generate Payload
+          </Button>
+        ) : (
+          <Button variant="primary" isDisabled={true}>
+            Not Authorized
+          </Button>
+        )}
+
+        {generatedPayload && !isCurrentWalletManager && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <Box display="flex" alignItems="center" mt="20px">
           <Button
             variant="secondary"
