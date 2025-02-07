@@ -1,6 +1,8 @@
 import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
+import { encodeFunctionData } from "viem";
+import { vaultAdminAbi } from "@/abi/VaultAdmin";
 
 export interface EnableGaugeInput {
   gauge: string;
@@ -851,6 +853,8 @@ export function generateInitializeBufferPayload(
   permit2Address?: string,
 ) {
   let transactions = [];
+
+  // Add permit2 approvals if needed
   if (input.includePermit2 && permit2Address) {
     let expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000).toString();
 
@@ -879,7 +883,6 @@ export function generateInitializeBufferPayload(
     }
   }
 
-  // Add the buffer initialization transaction
   transactions.push({
     to: bufferRouterAddress,
     value: "0",
@@ -927,6 +930,162 @@ export function generateInitializeBufferPayload(
       description: `Initialize buffer for wrapped token ${input.wrappedToken}.`,
       txBuilderVersion: "1.17.0",
       createdFromSafeAddress: input.seedingSafe ?? "",
+      createdFromOwnerAddress: "",
+      checksum: "",
+    },
+    transactions,
+  };
+}
+
+export interface AddLiquidityToBufferInput {
+  wrappedToken: string;
+  underlyingToken?: string;
+  maxAmountUnderlyingIn: string;
+  maxAmountWrappedIn: string;
+  exactSharesToIssue: string;
+  ownerSafe?: string;
+  includePermit2: boolean;
+}
+
+export function generateAddLiquidityToBufferPayload(
+  input: AddLiquidityToBufferInput,
+  chainId: string,
+  bufferRouterAddress: string,
+  permit2Address?: string,
+) {
+  let transactions = [];
+
+  // Add permit2 approvals if needed
+  if (input.includePermit2 && permit2Address) {
+    let expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000).toString();
+
+    if (input.maxAmountUnderlyingIn !== "0" && input.underlyingToken) {
+      transactions.push(
+        ...generatePermit2ApprovalPayload({
+          token: input.underlyingToken,
+          amount: input.maxAmountUnderlyingIn,
+          permit2Address,
+          targetContractAddress: bufferRouterAddress,
+          expiration,
+        }),
+      );
+    }
+
+    if (input.maxAmountWrappedIn !== "0") {
+      transactions.push(
+        ...generatePermit2ApprovalPayload({
+          token: input.wrappedToken,
+          amount: input.maxAmountWrappedIn,
+          permit2Address,
+          targetContractAddress: bufferRouterAddress,
+          expiration,
+        }),
+      );
+    }
+  }
+
+  transactions.push({
+    to: bufferRouterAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          internalType: "contract IERC4626",
+          name: "wrappedToken",
+          type: "address",
+        },
+        {
+          internalType: "uint256",
+          name: "maxAmountUnderlyingIn",
+          type: "uint256",
+        },
+        {
+          internalType: "uint256",
+          name: "maxAmountWrappedIn",
+          type: "uint256",
+        },
+        {
+          internalType: "uint256",
+          name: "exactSharesToIssue",
+          type: "uint256",
+        },
+      ],
+      name: "addLiquidityToBuffer",
+      payable: false,
+    },
+    contractInputsValues: {
+      wrappedToken: input.wrappedToken,
+      maxAmountUnderlyingIn: input.maxAmountUnderlyingIn,
+      maxAmountWrappedIn: input.maxAmountWrappedIn,
+      exactSharesToIssue: input.exactSharesToIssue,
+    },
+  });
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Add liquidity to buffer for wrapped token ${input.wrappedToken}.`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: input.ownerSafe ?? "",
+      createdFromOwnerAddress: "",
+      checksum: "",
+    },
+    transactions,
+  };
+}
+
+export interface RemoveLiquidityInput {
+  wrappedToken: string;
+  sharesToRemove: string;
+  minAmountUnderlyingOutRaw: string;
+  minAmountWrappedOutRaw: string;
+  ownerSafe?: string;
+}
+
+export function generateRemoveLiquidityPayload(
+  input: RemoveLiquidityInput,
+  chainId: string,
+  vaultAddress: string,
+) {
+  // Encode function data, because removeLiquidityFromBuffer is available as a proxy call
+  const data = encodeFunctionData({
+    abi: vaultAdminAbi,
+    functionName: "removeLiquidityFromBuffer",
+    args: [
+      input.wrappedToken,
+      input.sharesToRemove,
+      input.minAmountUnderlyingOutRaw,
+      input.minAmountWrappedOutRaw,
+    ],
+  });
+
+  const transactions = [
+    {
+      to: vaultAddress,
+      value: "0",
+      data: data,
+      contractMethod: {
+        inputs: [],
+        name: "removeLiquidityFromBuffer",
+        payable: true,
+      },
+      contractInputsValues: null,
+    },
+  ];
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Remove liquidity from buffer for wrapped token ${input.wrappedToken}.`,
+      txBuilderVersion: "1.17.0",
+      createdFromSafeAddress: input.ownerSafe ?? "",
       createdFromOwnerAddress: "",
       checksum: "",
     },

@@ -17,6 +17,7 @@ import {
   AlertIcon,
   Link,
   Container,
+  IconButton,
 } from "@chakra-ui/react";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -25,7 +26,7 @@ import {
   GetTokensQueryVariables,
   TokenListToken,
 } from "@/types/interfaces";
-import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
+import { CopyIcon, DownloadIcon, CloseIcon } from "@chakra-ui/icons";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import {
   copyJsonToClipboard,
@@ -34,7 +35,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
-import { getAddress } from "@/lib/data/maxis/addressBook";
+import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
@@ -82,6 +83,13 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       ),
     [tokensData?.tokenGetTokens, selectedToken?.underlyingTokenAddress],
   );
+
+  const networksWithV3Deployed = useMemo(() => {
+    const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
+    return NETWORK_OPTIONS.filter(network =>
+      networksWithVaultExplorer.includes(network.apiID.toLowerCase()),
+    );
+  }, [addressBook]);
 
   const isGenerateButtonDisabled = useMemo(() => {
     return (
@@ -268,7 +276,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
                 onChange={handleNetworkChange}
                 placeholder="Select Network"
               >
-                {NETWORK_OPTIONS.map(network => (
+                {networksWithV3Deployed.map(network => (
                   <option key={network.chainId} value={network.apiID}>
                     {network.label}
                   </option>
@@ -290,17 +298,17 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
                   onlyErc4626={true}
                 />
                 {selectedToken && (
-                  <Button
+                  <IconButton
+                    aria-label="Clear selection"
+                    icon={<CloseIcon color="gray.300" />}
+                    size="md"
                     variant="outline"
                     onClick={() => {
                       setSelectedToken(undefined);
                       setWrappedTokenAddress("");
                       setUnderlyingTokenAddress("");
                     }}
-                    size="md"
-                  >
-                    Clear
-                  </Button>
+                  />
                 )}
               </Flex>
             </FormControl>
@@ -398,7 +406,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Box>
         </Flex>
 
-        <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
+        <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2">
           <Button
             variant="primary"
             onClick={handleGenerateClick}

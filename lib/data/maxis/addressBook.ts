@@ -65,6 +65,12 @@ export function getSubCategoryData(
   return addressBook.active[network]?.[category]?.[subcategory];
 }
 
+export function getNetworksWithCategory(addressBook: AddressBook, categoryName: string): string[] {
+  return getNetworks(addressBook).filter(
+    network => addressBook.active[network]?.[categoryName] !== undefined,
+  );
+}
+
 // Helper function to get all addresses in a flat structure
 export function getAllAddresses(addressBook: AddressBook): {
   [key: string]: string;
