@@ -6,10 +6,12 @@ import {
   FlexProps,
   useColorModeValue,
   Text,
+  Box,
 } from "@chakra-ui/react";
 import { IconType } from "react-icons";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronRight } from "react-feather";
 
 interface NavItemProps extends FlexProps {
   icon: IconType;
@@ -18,15 +20,23 @@ interface NavItemProps extends FlexProps {
   target: string;
   isCollapsed?: boolean;
   onClose?: () => void;
+  hasSubItems?: boolean;
+  isSubItem?: boolean;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 const NavItem = ({
   icon,
   title,
   children,
-  target,
+  target = "/", // Provide default value
   isCollapsed,
   onClose,
+  hasSubItems,
+  isSubItem = false,
+  isOpen = false,
+  onToggle,
   ...rest
 }: NavItemProps) => {
   const router = useRouter();
@@ -36,14 +46,18 @@ const NavItem = ({
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onClose) onClose();
-    router.push(target);
+    if (hasSubItems && onToggle) {
+      onToggle();
+    } else {
+      if (onClose) onClose();
+      router.push(target);
+    }
   };
 
   return (
     <ChakraLink
       as={NextLink}
-      href={target}
+      href={target} // This is now guaranteed to have a value
       style={{ textDecoration: "none" }}
       _focus={{ boxShadow: "none" }}
       onClick={handleClick}
@@ -55,6 +69,7 @@ const NavItem = ({
         borderRadius="lg"
         role="group"
         cursor="pointer"
+        pl={isSubItem ? 8 : 4}
         _hover={{
           bg: hoverBg,
           color: hoverColor,
@@ -74,7 +89,20 @@ const NavItem = ({
             as={icon}
           />
         )}
-        {!isCollapsed && (children || (title && <Text>{title}</Text>))}
+        {!isCollapsed && (
+          <>
+            <Text>{title || children}</Text>
+            {hasSubItems && (
+              <Box
+                ml="auto"
+                transform={isOpen ? "rotate(90deg)" : "none"}
+                transition="transform 0.2s"
+              >
+                <ChevronRight size={16} />
+              </Box>
+            )}
+          </>
+        )}
       </Flex>
     </ChakraLink>
   );
