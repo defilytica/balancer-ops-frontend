@@ -153,6 +153,43 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     );
   }, [selectedNetwork, selectedToken, sharesAmount, underlyingTokenAmount, wrappedTokenAmount]);
 
+  const calculateTokenAmounts = (newSharesAmount: string) => {
+    if (bufferShares?.shares && bufferBalance && newSharesAmount) {
+      try {
+        // For ADD: add 0.5% (multiply by 1.005)
+        // For REMOVE: subtract 0.5% (multiply by 0.995)
+        const slippageMultiplier =
+          operationType === BufferOperation.ADD ? BigInt(1005) : BigInt(995);
+        const slippageDenominator = BigInt(1000);
+
+        const calculatedUnderlyingAmount =
+          (BigInt(newSharesAmount) * bufferBalance.underlyingBalance * slippageMultiplier) /
+          (bufferShares.shares * slippageDenominator);
+
+        const calculatedWrappedAmount =
+          (BigInt(newSharesAmount) * bufferBalance.wrappedBalance * slippageMultiplier) /
+          (bufferShares.shares * slippageDenominator);
+
+        return {
+          underlyingAmount: calculatedUnderlyingAmount.toString(),
+          wrappedAmount: calculatedWrappedAmount.toString(),
+        };
+      } catch (error) {
+        console.error("Error calculating amounts:", error);
+      }
+    }
+    return null;
+  };
+
+  const handleSharesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSharesAmount(e.target.value);
+    const amounts = calculateTokenAmounts(e.target.value);
+    if (amounts) {
+      setUnderlyingTokenAmount(amounts.underlyingAmount);
+      setWrappedTokenAmount(amounts.wrappedAmount);
+    }
+  };
+
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
@@ -167,81 +204,133 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
   const handleTokenSelect = (token: TokenListToken) => {
     setSelectedToken(token);
+    setUnderlyingTokenAmount("");
+    setWrappedTokenAmount("");
+    setSharesAmount("");
   };
 
-  const handleRemoveLiquidity = useCallback(() => {
-    const vaultAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241204-v3-vault",
-      "Vault",
-    );
+  const handleRemoveLiquidity = useCallback(
+    (chainId: string) => {
+      const vaultAddress = getAddress(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "20241204-v3-vault",
+        "Vault",
+      );
 
-    if (!vaultAddress) {
-      toast({
-        title: "Vault not found",
-        description: "Vault is not deployed on the selected network",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return null;
-    }
-
-    return generateRemoveLiquidityPayload(
-      {
-        wrappedToken: selectedToken!.address,
-        sharesToRemove: sharesAmount,
-        minAmountUnderlyingOutRaw: underlyingTokenAmount || "0",
-        minAmountWrappedOutRaw: wrappedTokenAmount || "0",
-        ownerSafe,
-      },
-      selectedNetwork,
-      vaultAddress,
-    );
-  }, [
-    addressBook,
-    selectedNetwork,
-    selectedToken,
-    sharesAmount,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    ownerSafe,
-    toast,
-  ]);
-
-  const handleAddLiquidity = useCallback(() => {
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
-
-    if (!bufferRouterAddress) {
-      toast({
-        title: "BufferRouter not found",
-        description: "BufferRouter is not deployed on the selected network",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return null;
-    }
-
-    let permit2Address;
-    if (includePermit2) {
-      permit2Address = getAddress(addressBook, selectedNetwork.toLowerCase(), "uniswap", "permit2");
-      if (!permit2Address) {
+      if (!vaultAddress) {
         toast({
-          title: "Permit2 not found",
-          description: "Permit2 contract is not deployed on the selected network",
+          title: "Vault not found",
+          description: "Vault is not deployed on the selected network",
           status: "error",
           duration: 5000,
           isClosable: true,
         });
         return null;
       }
+
+      return generateRemoveLiquidityPayload(
+        {
+          wrappedToken: selectedToken!.address,
+          sharesToRemove: sharesAmount,
+          minAmountUnderlyingOutRaw: underlyingTokenAmount || "0",
+          minAmountWrappedOutRaw: wrappedTokenAmount || "0",
+          ownerSafe,
+        },
+        chainId,
+        vaultAddress,
+      );
+    },
+    [
+      addressBook,
+      selectedNetwork,
+      selectedToken,
+      sharesAmount,
+      underlyingTokenAmount,
+      wrappedTokenAmount,
+      ownerSafe,
+      toast,
+    ],
+  );
+
+  const handleAddLiquidity = useCallback(
+    (chainId: string) => {
+      const bufferRouterAddress = getAddress(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "20241205-v3-buffer-router",
+        "BufferRouter",
+      );
+
+      if (!bufferRouterAddress) {
+        toast({
+          title: "BufferRouter not found",
+          description: "BufferRouter is not deployed on the selected network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return null;
+      }
+
+      let permit2Address;
+      if (includePermit2) {
+        permit2Address = getAddress(
+          addressBook,
+          selectedNetwork.toLowerCase(),
+          "uniswap",
+          "permit2",
+        );
+        if (!permit2Address) {
+          toast({
+            title: "Permit2 not found",
+            description: "Permit2 contract is not deployed on the selected network",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+          return null;
+        }
+      }
+
+      return generateAddLiquidityToBufferPayload(
+        {
+          wrappedToken: selectedToken!.address,
+          underlyingToken: selectedToken!.underlyingTokenAddress,
+          maxAmountUnderlyingIn: underlyingTokenAmount || "0",
+          maxAmountWrappedIn: wrappedTokenAmount || "0",
+          exactSharesToIssue: sharesAmount,
+          ownerSafe,
+          includePermit2,
+        },
+        chainId,
+        bufferRouterAddress,
+        permit2Address,
+      );
+    },
+    [
+      addressBook,
+      selectedNetwork,
+      selectedToken,
+      underlyingTokenAmount,
+      wrappedTokenAmount,
+      sharesAmount,
+      ownerSafe,
+      includePermit2,
+      toast,
+    ],
+  );
+
+  const handleGenerateClick = useCallback(() => {
+    if (!selectedNetwork || !selectedToken || !sharesAmount) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
     }
 
     const networkInfo = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
@@ -250,44 +339,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         title: "Invalid network",
         description: "Selected network is not valid",
         status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return null;
-    }
-
-    return generateAddLiquidityToBufferPayload(
-      {
-        wrappedToken: selectedToken!.address,
-        underlyingToken: selectedToken!.underlyingTokenAddress,
-        maxAmountUnderlyingIn: underlyingTokenAmount || "0",
-        maxAmountWrappedIn: wrappedTokenAmount || "0",
-        exactSharesToIssue: sharesAmount,
-        ownerSafe,
-        includePermit2,
-      },
-      networkInfo.chainId,
-      bufferRouterAddress,
-      permit2Address,
-    );
-  }, [
-    addressBook,
-    selectedNetwork,
-    selectedToken,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    sharesAmount,
-    ownerSafe,
-    includePermit2,
-    toast,
-  ]);
-
-  const handleGenerateClick = useCallback(() => {
-    if (!selectedNetwork || !selectedToken || !sharesAmount) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        status: "warning",
         duration: 5000,
         isClosable: true,
       });
@@ -306,7 +357,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       return;
     }
 
-    if (underlyingTokenAmount && parseFloat(underlyingTokenAmount) <= 0) {
+    if (underlyingTokenAmount && parseFloat(underlyingTokenAmount) < 0) {
       toast({
         title: "Invalid amount",
         description: "Underlying Token Amount must be greater than zero",
@@ -317,7 +368,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       return;
     }
 
-    if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) <= 0) {
+    if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) < 0) {
       toast({
         title: "Invalid amount",
         description: "Wrapped Token Amount must be greater than zero",
@@ -329,7 +380,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     }
 
     const payload =
-      operationType === BufferOperation.REMOVE ? handleRemoveLiquidity() : handleAddLiquidity();
+      operationType === BufferOperation.REMOVE
+        ? handleRemoveLiquidity(networkInfo.chainId)
+        : handleAddLiquidity(networkInfo.chainId);
 
     if (payload) {
       setGeneratedPayload(JSON.stringify(payload, null, 2));
@@ -384,6 +437,11 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                     here
                   </Link>
                   .
+                </ListItem>
+                <ListItem>
+                  <ListIcon as={ChevronRightIcon} />
+                  When you enter the amount of shares, the token amounts are automatically
+                  calculated with a 0.5% slippage applied.
                 </ListItem>
               </List>
             </AlertDescription>
@@ -529,16 +587,16 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           <FormControl isRequired>
             <FormLabel>
               {operationType === BufferOperation.ADD
-                ? "Issued Shares Amount"
+                ? "Shares To Issue Amount"
                 : "Shares To Remove Amount"}
             </FormLabel>
             <Input
               name="sharesAmount"
               value={sharesAmount}
-              onChange={e => setSharesAmount(e.target.value)}
+              onChange={handleSharesChange}
               placeholder={
                 operationType === BufferOperation.ADD
-                  ? "Exact shares to issue"
+                  ? "Amount of shares to issue"
                   : "Amount of shares to remove"
               }
               type="number"
@@ -558,7 +616,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                   bufferShares && (
                     <Flex direction="column" gap={1} mt={1}>
                       <Text fontSize="sm" color="gray.400">
-                        {bufferShares.shares.toString()}
+                        Balance: {bufferShares.shares.toString()}
                       </Text>
                       <Text fontSize="xs" color="gray.500">
                         ≈ {formatValue(bufferShares.shares, underlyingToken?.decimals ?? 0)}
@@ -605,7 +663,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                     <>
                       <Flex direction="column" gap={1} mt={1}>
                         <Text fontSize="sm" color="gray.400">
-                          Balance: {ownerShares.ownerShares.toString()}
+                          Address balance: {ownerShares.ownerShares.toString()}
                         </Text>
                         <Text fontSize="xs" color="gray.500">
                           ≈ {formatValue(ownerShares.ownerShares, underlyingToken?.decimals ?? 0)}
