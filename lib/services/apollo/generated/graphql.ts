@@ -34,6 +34,35 @@ export type Erc4626ReviewData = {
   warnings: Array<Scalars['String']['output']>;
 };
 
+/** ExitFee hook specific params. Percentage format is 0.01 -> 0.01%. */
+export type ExitFeeHookParams = {
+  __typename: 'ExitFeeHookParams';
+  exitFeePercentage?: Maybe<Scalars['String']['output']>;
+};
+
+/** FeeTaking hook specific params. Percentage format is 0.01 -> 0.01% */
+export type FeeTakingHookParams = {
+  __typename: 'FeeTakingHookParams';
+  addLiquidityFeePercentage?: Maybe<Scalars['String']['output']>;
+  removeLiquidityFeePercentage?: Maybe<Scalars['String']['output']>;
+  swapFeePercentage?: Maybe<Scalars['String']['output']>;
+};
+
+export type GqlAggregatorPoolFilter = {
+  chainIn?: InputMaybe<Array<GqlChain>>;
+  chainNotIn?: InputMaybe<Array<GqlChain>>;
+  createTime?: InputMaybe<GqlPoolTimePeriod>;
+  idIn?: InputMaybe<Array<Scalars['String']['input']>>;
+  idNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeHooks?: InputMaybe<Array<GqlHookType>>;
+  minTvl?: InputMaybe<Scalars['Float']['input']>;
+  poolTypeIn?: InputMaybe<Array<GqlPoolType>>;
+  poolTypeNotIn?: InputMaybe<Array<GqlPoolType>>;
+  protocolVersionIn?: InputMaybe<Array<Scalars['Int']['input']>>;
+  tokensIn?: InputMaybe<Array<Scalars['String']['input']>>;
+  tokensNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type GqlBalancePoolAprItem = {
   __typename: 'GqlBalancePoolAprItem';
   apr: GqlPoolAprValue;
@@ -90,35 +119,6 @@ export type GqlFeaturePoolGroupItemExternalLink = {
   image: Scalars['String']['output'];
 };
 
-/** Configuration options for SOR V2 */
-export type GqlGraphTraversalConfigInput = {
-  /**
-   * Max number of paths to return (can be less)
-   *
-   * Default: 5
-   */
-  approxPathsToReturn?: InputMaybe<Scalars['Int']['input']>;
-  /**
-   * The max hops in a path.
-   *
-   * Default: 6
-   */
-  maxDepth?: InputMaybe<Scalars['Int']['input']>;
-  /**
-   * Limit non boosted hop tokens in a boosted path.
-   *
-   * Default: 2
-   */
-  maxNonBoostedHopTokensInBoostedPath?: InputMaybe<Scalars['Int']['input']>;
-  /**
-   * Limit of "non-boosted" pools for efficiency.
-   *
-   * Default: 6
-   */
-  maxNonBoostedPathDepth?: InputMaybe<Scalars['Int']['input']>;
-  poolIdsToInclude?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-};
-
 export type GqlHistoricalTokenPrice = {
   __typename: 'GqlHistoricalTokenPrice';
   address: Scalars['String']['output'];
@@ -138,24 +138,38 @@ export type GqlHistoricalTokenPriceEntry = {
 export type GqlHook = {
   __typename: 'GqlHook';
   address: Scalars['String']['output'];
-  /** Data points changing over time */
+  config?: Maybe<HookConfig>;
+  /** @deprecated No longer supported */
   dynamicData?: Maybe<GqlHookData>;
-  /** True when hook can change the amounts send to the vault. Necessary to deduct the fees. */
+  /** @deprecated No longer supported */
   enableHookAdjustedAmounts: Scalars['Boolean']['output'];
+  /** @deprecated unused */
+  name: Scalars['String']['output'];
+  /** Hook type specific params */
+  params?: Maybe<HookParams>;
   /** The review for this hook if applicable. */
   reviewData?: Maybe<GqlHookReviewData>;
+  /** @deprecated No longer supported */
   shouldCallAfterAddLiquidity: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallAfterInitialize: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallAfterRemoveLiquidity: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallAfterSwap: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallBeforeAddLiquidity: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallBeforeInitialize: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallBeforeRemoveLiquidity: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallBeforeSwap: Scalars['Boolean']['output'];
+  /** @deprecated No longer supported */
   shouldCallComputeDynamicSwapFee: Scalars['Boolean']['output'];
+  type: GqlHookType;
 };
 
-/** Collection of hook specific data. Percentage format is 0.01 -> 0.01%. */
 export type GqlHookData = {
   __typename: 'GqlHookData';
   addLiquidityFeePercentage?: Maybe<Scalars['String']['output']>;
@@ -175,6 +189,18 @@ export type GqlHookReviewData = {
   /** Warnings associated with the hook */
   warnings: Array<Scalars['String']['output']>;
 };
+
+export enum GqlHookType {
+  DirectionalFee = 'DIRECTIONAL_FEE',
+  ExitFee = 'EXIT_FEE',
+  FeeTaking = 'FEE_TAKING',
+  Lottery = 'LOTTERY',
+  MevCapture = 'MEV_CAPTURE',
+  NftliquidityPosition = 'NFTLIQUIDITY_POSITION',
+  StableSurge = 'STABLE_SURGE',
+  Unknown = 'UNKNOWN',
+  VebalDiscount = 'VEBAL_DISCOUNT'
+}
 
 export type GqlLatestSyncedBlocks = {
   __typename: 'GqlLatestSyncedBlocks';
@@ -837,8 +863,6 @@ export type GqlPoolFilter = {
   chainIn?: InputMaybe<Array<GqlChain>>;
   chainNotIn?: InputMaybe<Array<GqlChain>>;
   createTime?: InputMaybe<GqlPoolTimePeriod>;
-  filterIn?: InputMaybe<Array<Scalars['String']['input']>>;
-  filterNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
   hasHook?: InputMaybe<Scalars['Boolean']['input']>;
   idIn?: InputMaybe<Array<Scalars['String']['input']>>;
   idNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -2043,29 +2067,6 @@ export type GqlSorGetSwapPaths = {
   vaultVersion: Scalars['Int']['output'];
 };
 
-export type GqlSorGetSwapsResponse = {
-  __typename: 'GqlSorGetSwapsResponse';
-  effectivePrice: Scalars['AmountHumanReadable']['output'];
-  effectivePriceReversed: Scalars['AmountHumanReadable']['output'];
-  marketSp: Scalars['String']['output'];
-  priceImpact: Scalars['AmountHumanReadable']['output'];
-  returnAmount: Scalars['AmountHumanReadable']['output'];
-  returnAmountConsideringFees: Scalars['BigDecimal']['output'];
-  returnAmountFromSwaps?: Maybe<Scalars['BigDecimal']['output']>;
-  returnAmountScaled: Scalars['BigDecimal']['output'];
-  routes: Array<GqlSorSwapRoute>;
-  swapAmount: Scalars['AmountHumanReadable']['output'];
-  swapAmountForSwaps?: Maybe<Scalars['BigDecimal']['output']>;
-  swapAmountScaled: Scalars['BigDecimal']['output'];
-  swapType: GqlSorSwapType;
-  swaps: Array<GqlSorSwap>;
-  tokenAddresses: Array<Scalars['String']['output']>;
-  tokenIn: Scalars['String']['output'];
-  tokenInAmount: Scalars['AmountHumanReadable']['output'];
-  tokenOut: Scalars['String']['output'];
-  tokenOutAmount: Scalars['AmountHumanReadable']['output'];
-};
-
 /** A path of a swap. A swap can have multiple paths. Used as input to execute the swap via b-sdk */
 export type GqlSorPath = {
   __typename: 'GqlSorPath';
@@ -2101,13 +2102,6 @@ export type GqlSorSwap = {
   poolId: Scalars['String']['output'];
   /** UserData used in this swap, generally uses defaults. */
   userData: Scalars['String']['output'];
-};
-
-export type GqlSorSwapOptionsInput = {
-  forceRefresh?: InputMaybe<Scalars['Boolean']['input']>;
-  maxPools?: InputMaybe<Scalars['Int']['input']>;
-  queryBatchSwap?: InputMaybe<Scalars['Boolean']['input']>;
-  timestamp?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** The swap routes including pool information. Used to display by the UI */
@@ -2481,6 +2475,23 @@ export type GqlVotingPool = {
   type: GqlPoolType;
 };
 
+export type HookConfig = {
+  __typename: 'HookConfig';
+  /** True when hook can change the amounts send to the vault. Necessary to deduct the fees. */
+  enableHookAdjustedAmounts: Scalars['Boolean']['output'];
+  shouldCallAfterAddLiquidity: Scalars['Boolean']['output'];
+  shouldCallAfterInitialize: Scalars['Boolean']['output'];
+  shouldCallAfterRemoveLiquidity: Scalars['Boolean']['output'];
+  shouldCallAfterSwap: Scalars['Boolean']['output'];
+  shouldCallBeforeAddLiquidity: Scalars['Boolean']['output'];
+  shouldCallBeforeInitialize: Scalars['Boolean']['output'];
+  shouldCallBeforeRemoveLiquidity: Scalars['Boolean']['output'];
+  shouldCallBeforeSwap: Scalars['Boolean']['output'];
+  shouldCallComputeDynamicSwapFee: Scalars['Boolean']['output'];
+};
+
+export type HookParams = ExitFeeHookParams | FeeTakingHookParams | StableSurgeHookParams;
+
 /** Liquidity management settings for v3 pools. */
 export type LiquidityManagement = {
   __typename: 'LiquidityManagement';
@@ -2616,6 +2627,8 @@ export type PoolForBatchSwap = {
 
 export type Query = {
   __typename: 'Query';
+  /** Returns all pools for a given filter, specific for aggregators */
+  aggregatorPools: Array<GqlPoolAggregator>;
   beetsGetFbeetsRatio: Scalars['String']['output'];
   beetsPoolGetReliquaryFarmSnapshots: Array<GqlReliquaryFarmSnapshot>;
   /** @deprecated No longer supported */
@@ -2630,7 +2643,10 @@ export type Query = {
   latestSyncedBlocks: GqlLatestSyncedBlocks;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
-  /** Returns all pools for a given filter, specific for aggregators */
+  /**
+   * Returns all pools for a given filter, specific for aggregators
+   * @deprecated Use aggregatorPools instead
+   */
   poolGetAggregatorPools: Array<GqlPoolAggregator>;
   /**
    * Will de deprecated in favor of poolEvents
@@ -2674,8 +2690,6 @@ export type Query = {
   sftmxGetWithdrawalRequests: Array<GqlSftmxWithdrawalRequests>;
   /** Get swap quote from the SOR v2 for the V2 vault */
   sorGetSwapPaths: GqlSorGetSwapPaths;
-  /** Get swap quote from the SOR, queries both the old and new SOR */
-  sorGetSwaps: GqlSorGetSwapsResponse;
   /** Get the staking data and status for stS */
   stsGetGqlStakedSonicData: GqlStakedSonicData;
   /** Get snapshots for sftmx staking for a specific range */
@@ -2730,6 +2744,15 @@ export type Query = {
   veBalGetUserBalances: Array<GqlVeBalBalance>;
   /** Returns all pools with veBAL gauges that can be voted on. */
   veBalGetVotingList: Array<GqlVotingPool>;
+};
+
+
+export type QueryAggregatorPoolsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<GqlPoolOrderBy>;
+  orderDirection?: InputMaybe<GqlPoolOrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<GqlAggregatorPoolFilter>;
 };
 
 
@@ -2866,16 +2889,6 @@ export type QuerySorGetSwapPathsArgs = {
 };
 
 
-export type QuerySorGetSwapsArgs = {
-  chain?: InputMaybe<GqlChain>;
-  swapAmount: Scalars['BigDecimal']['input'];
-  swapOptions: GqlSorSwapOptionsInput;
-  swapType: GqlSorSwapType;
-  tokenIn: Scalars['String']['input'];
-  tokenOut: Scalars['String']['input'];
-};
-
-
 export type QueryStsGetStakedSonicSnapshotsArgs = {
   range: GqlStakedSonicSnapshotDataRange;
 };
@@ -2999,6 +3012,13 @@ export type QueryVeBalGetUserBalanceArgs = {
 export type QueryVeBalGetUserBalancesArgs = {
   address: Scalars['String']['input'];
   chains?: InputMaybe<Array<GqlChain>>;
+};
+
+/** StableSurge hook specific params. Percentage format is 0.01 -> 0.01%. */
+export type StableSurgeHookParams = {
+  __typename: 'StableSurgeHookParams';
+  maxSurgeFeePercentage?: Maybe<Scalars['String']['output']>;
+  surgeThresholdPercentage?: Maybe<Scalars['String']['output']>;
 };
 
 export type Token = {

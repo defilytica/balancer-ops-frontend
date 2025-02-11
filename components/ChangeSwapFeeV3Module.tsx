@@ -332,6 +332,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           )}
 
           {selectedPool && !isCurrentWalletManager && (
+            <Box mb={6}>
             <Alert status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"} mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -340,6 +341,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                   : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
               </AlertDescription>
             </Alert>
+            </Box>
           )}
 
           <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -352,6 +354,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                   value={newSwapFee}
                   onChange={e => setNewSwapFee(e.target.value)}
                   placeholder="Enter new swap fee (e.g., 0.1)"
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
             </GridItem>
@@ -370,15 +373,15 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                     <StatGroup>
                       <Stat>
                         <StatLabel>Current Fee</StatLabel>
-                        <StatNumber>{currentFee.toFixed(2)}%</StatNumber>
+                        <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
                       </Stat>
                       <Stat>
                         <StatLabel>New Fee</StatLabel>
-                        <StatNumber>{newFee.toFixed(2)}%</StatNumber>
+                        <StatNumber>{newFee.toFixed(4)}%</StatNumber>
                       </Stat>
                       <Stat>
                         <StatLabel>Change</StatLabel>
-                        <StatNumber>{Math.abs(feeChange).toFixed(2)}%</StatNumber>
+                        <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
                         <StatHelpText>
                           <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
                           {feeChange > 0 ? "Increase" : "Decrease"}

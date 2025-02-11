@@ -293,6 +293,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
                   value={newSwapFee}
                   onChange={e => setNewSwapFee(e.target.value)}
                   placeholder="Enter new swap fee (e.g., 0.1)"
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
             </GridItem>
@@ -311,15 +312,15 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
                     <StatGroup>
                       <Stat>
                         <StatLabel>Current Fee</StatLabel>
-                        <StatNumber>{currentFee.toFixed(2)}%</StatNumber>
+                        <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
                       </Stat>
                       <Stat>
                         <StatLabel>New Fee</StatLabel>
-                        <StatNumber>{newFee.toFixed(2)}%</StatNumber>
+                        <StatNumber>{newFee.toFixed(4)}%</StatNumber>
                       </Stat>
                       <Stat>
                         <StatLabel>Change</StatLabel>
-                        <StatNumber>{Math.abs(feeChange).toFixed(2)}%</StatNumber>
+                        <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
                         <StatHelpText>
                           <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
                           {feeChange > 0 ? "Increase" : "Decrease"}
