@@ -16,7 +16,7 @@ import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
-import NavItem from "./NavItem";
+import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import NextLink from "next/link";
 interface SidebarProps extends BoxProps {

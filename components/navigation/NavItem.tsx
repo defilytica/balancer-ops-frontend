@@ -26,6 +26,14 @@ interface NavItemProps extends FlexProps {
   onToggle?: () => void;
 }
 
+export interface NavItemType {
+  name: string;
+  icon: IconType;
+  target?: string;
+  description?: string;
+  children?: NavItemType[];
+}
+
 const NavItem = ({
   icon,
   title,

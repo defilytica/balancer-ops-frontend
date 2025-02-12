@@ -17,7 +17,8 @@ import {
   TbActivity,
 } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
-import { RiContractLine } from "react-icons/ri";
+import { RiAlertLine, RiContractLine } from "react-icons/ri";
+import { FaRegChartBar } from "react-icons/fa6";
 
 export default function Page() {
   const sections = [
@@ -40,7 +41,7 @@ export default function Page() {
         {
           title: "Create a Pool",
           icon: MdPool,
-          description: "Set up a new Balancer Pool",
+          description: "Set up a new Balancer (v2) Pool",
           primaryAction: {
             label: "Create Pool",
             href: "/pool-creator-v2",
@@ -67,7 +68,11 @@ export default function Page() {
       ],
     },
     {
-      title: "Governance",
+      title: "Governance and Tooling",
+      description: (
+        <>
+          Create DAO payloads, create or enable gauges or perform other operations for the DAO by submitting pull-requests to the multi-sig operations repository for execution.
+        </>),
       features: [
         {
           title: "Create DAO Payloads",
@@ -79,27 +84,60 @@ export default function Page() {
             href: "/payload-builder",
           },
         },
+        {
+          title: "Create a Staking Gauge",
+          icon: TbGaugeFilled,
+          description:
+            "Create a staking gauge for Balancer pools",
+          primaryAction: {
+            label: "Create Gauges",
+            href: "/gauge-creator",
+          },
+        },
+        {
+          title: "Initialize Buffers",
+          icon: FaRegChartBar,
+          description:
+            "Initialize Buffers for v3 pools",
+          primaryAction: {
+            label: "Initialize buffers",
+            href: "/payload-builder/initialize-buffer",
+          },
+        },
       ],
     },
     {
-      title: "Monitor",
+      title: "Monitoring",
+      description: (
+        <>
+          Check the status of critical infrastructure such as Chainlink upkeeps, injector programs or liquidity buffers.
+        </>),
       features: [
         {
           title: "Chainlink Automation",
           icon: TbActivity,
-          description: "Monitor automated operations and upkeeps",
+          description: "Monitor funding status of upkeeps managed by the Balancer Maxis",
           primaryAction: {
-            label: "View Automation",
+            label: "View Upkeeps",
             href: "/chainlink-automation",
           },
         },
         {
           title: "Injector Program Status",
-          icon: TbGaugeFilled,
+          icon: RiAlertLine,
           description: "Monitor Injectors funds, rewards and more.",
           primaryAction: {
             label: "View Status",
-            href: "/injector-status",
+            href: "/rewards-injector/status",
+          },
+        },
+        {
+          title: "Liquidity Buffer Status",
+          icon: FaRegChartBar,
+          description: "Monitor Balancer v3 Liquidity Buffers.",
+          primaryAction: {
+            label: "View Buffers",
+            href: "/liquidity-buffers",
           },
         },
       ],
@@ -109,7 +147,7 @@ export default function Page() {
   return (
     <Box minHeight="100vh">
       <Container maxW="container.xl" pt={8}>
-        <VStack spacing={4} textAlign="center">
+        <VStack spacing={2} textAlign="center">
           <Heading as="h1" p={2} size="3xl" variant="special" fontWeight="bold">
             Welcome to Balancer Ops Tooling
           </Heading>
@@ -141,7 +179,7 @@ export default function Page() {
                       key={index}
                       borderWidth="1px"
                       borderRadius="lg"
-                      p={6}
+                      p={4}
                       _hover={{ shadow: "lg" }}
                       display="flex"
                     >
