@@ -31,6 +31,7 @@ export const tokenDecimals: Record<string, number> = {
 };
 
 export const GOVERNANCE_ADDRESS = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
+export const V3_VAULT_ADDRESS = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
 
 export const PAYLOAD_OPTIONS = [
@@ -110,13 +111,26 @@ export const PAYLOAD_OPTIONS = [
   {
     href: "/payload-builder/fee-setter",
     key: "fee-setter",
-    label: "Configure Swap Fees on a Pool",
+    label: "Configure Swap Fees on a V2 Pool",
     button_label: "Configure Swap Fees",
     description:
       "Configure the swap fee setting on a pool that have swap fee settings delegated to the DAO.",
     icon: TbSettingsDollar,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/set-swapfee",
+    prNamePlaceholder: "Set Swap Fee on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolSwapFeeChanges/",
+  },
+  {
+    href: "/payload-builder/fee-setter-v3",
+    key: "fee-setter-v3",
+    label: "Configure Swap Fees on a V3 Pool",
+    button_label: "Configure Swap Fees on v3",
+    description:
+      "Configure the swap fee setting on a pool deployed on Balancer v3, both for EOAs and under DAO management",
+    icon: TbSettingsDollar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/set-swapfee-v3",
     prNamePlaceholder: "Set Swap Fee on Pool XYZ",
     prTypePath: "MaxiOps/PoolParameterChanges/PoolSwapFeeChanges/",
   },

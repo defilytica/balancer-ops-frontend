@@ -68,3 +68,48 @@ query GetBoostedPools {
     }
   }
 }
+
+query GetV3Pools($chainIn: [GqlChain!]) {
+    poolGetPools(
+        where: {
+            chainIn:$chainIn
+            protocolVersionIn: [3]
+            chainNotIn: SONIC
+        }
+        orderBy: totalLiquidity
+        orderDirection: desc
+    ) {
+        chain
+        protocolVersion
+        address
+        name
+        swapFeeManager
+        createTime
+        tags
+        dynamicData{
+            swapFee
+        }
+        poolTokens {
+            chain
+            chainId
+            address
+            weight
+            symbol
+            name
+            decimals
+            isErc4626
+            underlyingToken {
+                chainId
+                address
+                name
+                symbol
+                decimals
+                isErc4626
+            }
+            scalingFactor
+            priceRate
+            isBufferAllowed
+
+        }
+    }
+}

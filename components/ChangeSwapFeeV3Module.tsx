@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -13,76 +13,113 @@ import {
   CardBody,
   CardHeader,
   Container,
+  Divider,
   Flex,
   FormControl,
   FormLabel,
+  Grid,
+  GridItem,
   Heading,
   Input,
   List,
   ListItem,
+  Popover,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   Spinner,
-  useToast,
-  useDisclosure,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
-  Grid,
-  GridItem,
   Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
   StatArrow,
   StatGroup,
-  Divider,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
-  generateSwapFeeChangePayload,
+  generateDAOSwapFeeChangePayload,
   handleDownloadClick,
   SwapFeeChangeInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
+import { NETWORK_OPTIONS, V3_VAULT_ADDRESS } from "@/constants/constants";
 import {
-  GetPoolsDocument,
-  GetPoolsQuery,
-  GetPoolsQueryVariables,
+  GetV3PoolsDocument,
+  GetV3PoolsQuery,
+  GetV3PoolsQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
-import { Pool } from "@/types/interfaces";
+import { AddressBook, Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
-import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
+import { ethers } from "ethers";
+import { isZeroAddress } from "@ethereumjs/util";
+import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
+import { useAccount, useSwitchChain } from "wagmi";
 
-const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
+const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
 
-interface ChangeSwapFeeProps {
-  addressBook: AddressBook;
-}
-
-export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps) {
+export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [newSwapFee, setNewSwapFee] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
+  const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  //Chain state switch
+  const { chains, switchChain } = useSwitchChain();
+
+  // Add wallet connection hook
+  const { address: walletAddress } = useAccount();
+
+  // Add effect to check manager status when wallet changes
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!selectedPool || !window.ethereum) {
+        setIsCurrentWalletManager(false);
+        return;
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const signerAddress = await signer.getAddress();
+
+        const isManager = selectedPool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
+        setIsCurrentWalletManager(isManager);
+      } catch (error) {
+        console.error("Error checking manager status:", error);
+        setIsCurrentWalletManager(false);
+      }
+    };
+
+    checkManagerStatus();
+  }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
+
+  const { loading, error, data } = useQuery<GetV3PoolsQuery, GetV3PoolsQueryVariables>(
+    GetV3PoolsDocument,
+    {
+      variables: { chainIn: [selectedNetwork as any] },
+      skip: !selectedNetwork,
+    },
+  );
 
   const getMultisigForNetwork = useCallback(
     (network: string) => {
       const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["lm"]) {
-        const lm = multisigs["lm"];
+      if (multisigs && multisigs["maxi_omni"]) {
+        const lm = multisigs["maxi_omni"];
         if (typeof lm === "string") {
           return lm;
         } else if (typeof lm === "object") {
@@ -94,23 +131,6 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     [addressBook],
   );
 
-  const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
-    GetPoolsDocument,
-    {
-      variables: { chainIn: [selectedNetwork as any] },
-      skip: !selectedNetwork,
-    },
-  );
-
-  const filteredPools = useMemo(() => {
-    if (!data?.poolGetPools) return [];
-    return data.poolGetPools.filter(
-      pool =>
-        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [data?.poolGetPools, searchTerm]);
-
   const handleNetworkChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
@@ -120,9 +140,30 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       setGeneratedPayload(null);
       setSearchTerm("");
       setNewSwapFee("");
+      setIsCurrentWalletManager(false);
+
+      // Find the corresponding chain ID for the selected network
+      const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
+      if (networkOption) {
+        try {
+          switchChain({ chainId: Number(networkOption.chainId) });
+        } catch (error) {
+          toast({
+            title: "Error switching network",
+            description: "Please switch network manually in your wallet",
+            status: "error",
+            duration: 5000,
+          });
+        }
+      }
     },
-    [getMultisigForNetwork],
+    [getMultisigForNetwork, switchChain, toast],
   );
+
+  // Check manager status when pool is selected
+  const handlePoolSelection = useCallback(async (pool: Pool) => {
+    setSelectedPool(pool); // Set pool immediately for UI update
+  }, []);
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -138,9 +179,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     }
   };
 
-  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_OWNER;
-
-  const handleGenerateClick = () => {
+  const handleGenerateClick = async () => {
     if (!selectedPool || !newSwapFee || !selectedNetwork) {
       toast({
         title: "Missing information",
@@ -152,47 +191,84 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       return;
     }
 
-    if (!isAuthorizedPool) {
-      toast({
-        title: "Unauthorized pool",
-        description: "This pool cannot be modified as it is not owned by the authorized address.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
+    const swapFeePercentage = (parseFloat(newSwapFee) / 100 * 1e18).toString();
+
+    // Case 1: Zero address manager (DAO governed)
+    if (isZeroAddress(selectedPool.swapFeeManager)) {
+      const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+      if (!network) {
+        toast({
+          title: "Invalid network",
+          description: "The selected network is not valid",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const input: SwapFeeChangeInput = {
+        poolAddress: selectedPool.address,
+        newSwapFeePercentage: newSwapFee,
+        poolName: selectedPool.name,
+      };
+
+      const payload = generateDAOSwapFeeChangePayload(
+        input,
+        network.chainId,
+        selectedMultisig,
+      );
+      setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
+    // Case 2: Current wallet is the fee manager
+    else if (isCurrentWalletManager) {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        console.log("Signer status:", signer);
+        const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
 
-    const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
-    if (!network) {
-      toast({
-        title: "Invalid network",
-        description: "The selected network is not valid",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
+        const tx = await contract.setStaticSwapFeePercentage(selectedPool.address.toLowerCase(), swapFeePercentage);
+        console.log("tx:", tx);
+        await tx.wait();
+
+        toast({
+          title: "Success",
+          description: "Swap fee updated successfully",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Transaction Failed",
+          description: error.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
     }
-
-    const input: SwapFeeChangeInput = {
-      poolAddress: selectedPool.address,
-      newSwapFeePercentage: newSwapFee,
-      poolName: selectedPool.name,
-    };
-
-    const payload = generateSwapFeeChangePayload(input, network.chainId, selectedMultisig);
-    setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
+
+  const filteredPools = useMemo(() => {
+    if (!data?.poolGetPools) return [];
+    return data.poolGetPools.filter(
+      pool =>
+        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [data?.poolGetPools, searchTerm]);
 
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
   const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
   const feeChange = newFee - currentFee;
+  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_DAO_OWNER;
 
   return (
     <Container maxW="container.lg">
       <Heading as="h2" size="lg" variant="special" mb={6}>
-        Create Swap Fee Change Payload
+        Balancer v3: Create Swap Fee Change Payload
       </Heading>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -237,7 +313,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
                       <ListItem
                         key={pool.address}
                         onClick={() => {
-                          setSelectedPool(pool as unknown as Pool);
+                          handlePoolSelection(pool as unknown as Pool);
                           onClose();
                         }}
                         cursor="pointer"
@@ -268,7 +344,22 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         </Alert>
       ) : (
         <>
-          {selectedPool && (
+          {selectedPool && isCurrentWalletManager && (
+            <Box mb={6}>
+              <PoolInfoCard pool={selectedPool} />
+              {isCurrentWalletManager && (
+                <Alert status="info" mt={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    This pool is owned by the authorized delegate address that is currently connected. It can now be
+                    modified. Change swap fee settings and execute through your connected EOA.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </Box>
+          )}
+
+          {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
               <PoolInfoCard pool={selectedPool} />
               {!isAuthorizedPool && (
@@ -283,9 +374,22 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
             </Box>
           )}
 
+          {selectedPool && !isCurrentWalletManager && (
+            <Box mb={6}>
+            <Alert status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"} mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {isZeroAddress(selectedPool.swapFeeManager)
+                  ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                  : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+            </Box>
+          )}
+
           <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
             <GridItem colSpan={{ base: 12, md: 4 }}>
-              <FormControl isDisabled={!selectedPool || !isAuthorizedPool}>
+              <FormControl isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}>
                 <FormLabel>New Swap Fee Percentage</FormLabel>
                 <Input
                   type="number"
@@ -335,25 +439,44 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         </>
       )}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={!selectedPool || !isAuthorizedPool || !newSwapFee}
-        >
-          Generate Payload
-        </Button>
-        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
+        {!selectedPool ? (
+          <Button variant="primary" isDisabled={true}>
+            Select a Pool
+          </Button>
+        ) : isCurrentWalletManager ? (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newSwapFee}
+          >
+            Execute Fee Change
+          </Button>
+        ) : isZeroAddress(selectedPool.swapFeeManager) ? (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newSwapFee}
+          >
+            Generate Payload
+          </Button>
+        ) : (
+          <Button variant="primary" isDisabled={true}>
+            Not Authorized
+          </Button>
+        )}
+
+        {generatedPayload && !isCurrentWalletManager && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <Box display="flex" alignItems="center" mt="20px">
           <Button
             variant="secondary"
