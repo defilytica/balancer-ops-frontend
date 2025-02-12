@@ -191,7 +191,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       return;
     }
 
-    const swapFeePercentage = (parseFloat(newSwapFee) * 1e18).toString();
+    const swapFeePercentage = (parseFloat(newSwapFee) / 100 * 1e18).toString();
 
     // Case 1: Zero address manager (DAO governed)
     if (isZeroAddress(selectedPool.swapFeeManager)) {

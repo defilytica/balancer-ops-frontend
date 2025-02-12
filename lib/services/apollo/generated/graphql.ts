@@ -863,7 +863,6 @@ export type GqlPoolFilter = {
   chainIn?: InputMaybe<Array<GqlChain>>;
   chainNotIn?: InputMaybe<Array<GqlChain>>;
   createTime?: InputMaybe<GqlPoolTimePeriod>;
-  hasHook?: InputMaybe<Scalars['Boolean']['input']>;
   idIn?: InputMaybe<Array<Scalars['String']['input']>>;
   idNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
   minTvl?: InputMaybe<Scalars['Float']['input']>;
@@ -1626,6 +1625,8 @@ export type GqlPoolTokenDetail = {
   balance: Scalars['BigDecimal']['output'];
   /** USD Balance of the pool token. */
   balanceUSD: Scalars['BigDecimal']['output'];
+  /** If it is an ERC4626 token, this defines whether we can use wrap/unwrap through the buffer in swap paths for this token. */
+  canUseBufferForSwaps?: Maybe<Scalars['Boolean']['output']>;
   chain?: Maybe<GqlChain>;
   chainId?: Maybe<Scalars['Int']['output']>;
   /** Coingecko ID */
@@ -1642,7 +1643,10 @@ export type GqlPoolTokenDetail = {
   index: Scalars['Int']['output'];
   /** Whether the token is in the allow list. */
   isAllowed: Scalars['Boolean']['output'];
-  /** If it is an ERC4626 token, this defines whether we allow it to use the buffer for pool operations. */
+  /**
+   * If it is an ERC4626 token, this defines whether we allow it to use the buffer for pool operations.
+   * @deprecated Use useUnderlyingForAddRemove and useWrappedForAddRemove instead
+   */
   isBufferAllowed: Scalars['Boolean']['output'];
   /** Whether the token is considered an ERC4626 token. */
   isErc4626: Scalars['Boolean']['output'];
@@ -1660,16 +1664,26 @@ export type GqlPoolTokenDetail = {
   priceRateProvider?: Maybe<Scalars['String']['output']>;
   /** Additional data for the price rate provider, such as reviews or warnings. */
   priceRateProviderData?: Maybe<GqlPriceRateProviderData>;
-  /** The priority of the token, can be used for sorting. */
+  /**
+   * The priority of the token, can be used for sorting.
+   * @deprecated Unused
+   */
   priority?: Maybe<Scalars['Int']['output']>;
   /** Conversion factor used to adjust for token decimals for uniform precision in calculations. V3 only. */
   scalingFactor?: Maybe<Scalars['BigDecimal']['output']>;
   /** Symbol of the pool token. */
   symbol: Scalars['String']['output'];
-  /** Is the token tradable */
+  /**
+   * Is the token tradable
+   * @deprecated Unused
+   */
   tradable?: Maybe<Scalars['Boolean']['output']>;
   /** If it is an ERC4626, this will be the underlying token if present in the API. */
   underlyingToken?: Maybe<GqlToken>;
+  /** If it is an ERC4626 token, this defines whether we allow underlying tokens to be used for add/remove operations. */
+  useUnderlyingForAddRemove?: Maybe<Scalars['Boolean']['output']>;
+  /** If it is an ERC4626 token, this defines whether we allow the wrapped tokens to be used for add/remove operations. */
+  useWrappedForAddRemove?: Maybe<Scalars['Boolean']['output']>;
   /** The weight of the token in the pool if it is a weighted pool, null otherwise */
   weight?: Maybe<Scalars['BigDecimal']['output']>;
 };
@@ -2149,6 +2163,8 @@ export type GqlStakedSonicData = {
   delegatedValidators: Array<GqlStakedSonicDelegatedValidator>;
   /** Current exchange rate for stS -> S */
   exchangeRate: Scalars['String']['output'];
+  /** The total protocol fee collected in the last 24 hours. */
+  protocolFee24h: Scalars['String']['output'];
   /** The current rebasing APR for stS. */
   stakingApr: Scalars['String']['output'];
   /** Total amount of S in custody of stS. Delegated S plus pool S. */
@@ -2172,6 +2188,8 @@ export type GqlStakedSonicSnapshot = {
   /** Current exchange rate for stS -> S */
   exchangeRate: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  /** The total protocol fee collected during that day. */
+  protocolFee24h: Scalars['String']['output'];
   /** The timestamp of the snapshot. Timestamp is end of day midnight. */
   timestamp: Scalars['Int']['output'];
   /** Total amount of S in custody of stS. Delegated S plus pool S. */
