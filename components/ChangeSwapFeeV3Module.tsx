@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -62,6 +62,7 @@ import { DollarSign } from "react-feather";
 import { ethers } from "ethers";
 import { isZeroAddress } from "@ethereumjs/util";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
+import { useAccount, useSwitchChain } from "wagmi";
 
 const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
 
@@ -75,6 +76,36 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  //Chain state switch
+  const { chains, switchChain } = useSwitchChain();
+
+  // Add wallet connection hook
+  const { address: walletAddress } = useAccount();
+
+  // Add effect to check manager status when wallet changes
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!selectedPool || !window.ethereum) {
+        setIsCurrentWalletManager(false);
+        return;
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const signerAddress = await signer.getAddress();
+
+        const isManager = selectedPool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
+        setIsCurrentWalletManager(isManager);
+      } catch (error) {
+        console.error("Error checking manager status:", error);
+        setIsCurrentWalletManager(false);
+      }
+    };
+
+    checkManagerStatus();
+  }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
 
   const { loading, error, data } = useQuery<GetV3PoolsQuery, GetV3PoolsQueryVariables>(
     GetV3PoolsDocument,
@@ -110,31 +141,28 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       setSearchTerm("");
       setNewSwapFee("");
       setIsCurrentWalletManager(false);
+
+      // Find the corresponding chain ID for the selected network
+      const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
+      if (networkOption) {
+        try {
+          switchChain({ chainId: Number(networkOption.chainId) });
+        } catch (error) {
+          toast({
+            title: "Error switching network",
+            description: "Please switch network manually in your wallet",
+            status: "error",
+            duration: 5000,
+          });
+        }
+      }
     },
-    [getMultisigForNetwork],
+    [getMultisigForNetwork, switchChain, toast],
   );
 
   // Check manager status when pool is selected
   const handlePoolSelection = useCallback(async (pool: Pool) => {
     setSelectedPool(pool); // Set pool immediately for UI update
-
-    if (!pool || !window.ethereum) {
-      setIsCurrentWalletManager(false);
-      return;
-    }
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const signerAddress = await signer.getAddress();
-
-      const isManager = pool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
-
-      setIsCurrentWalletManager(isManager);
-    } catch (error) {
-      console.error("Error checking manager status:", error);
-      setIsCurrentWalletManager(false);
-    }
   }, []);
 
   const handleOpenPRModal = () => {
@@ -316,6 +344,21 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </Alert>
       ) : (
         <>
+          {selectedPool && isCurrentWalletManager && (
+            <Box mb={6}>
+              <PoolInfoCard pool={selectedPool} />
+              {isCurrentWalletManager && (
+                <Alert status="info" mt={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    This pool is owned by the authorized delegate address that is currently connected. It can now be
+                    modified. Change swap fee settings and execute through your connected EOA.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </Box>
+          )}
+
           {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
               <PoolInfoCard pool={selectedPool} />
