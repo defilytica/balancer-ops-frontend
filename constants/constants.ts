@@ -144,6 +144,18 @@ export const PAYLOAD_OPTIONS = [
     prNamePlaceholder: "",
     prTypePath: "",
   },
+  {
+    href: "/payload-builder/manage-buffer",
+    key: "manage-buffer",
+    label: "Manage Liquidity Buffer",
+    button_label: "Manage Buffer",
+    description: "Add and remove liquidity from a liquidity buffer.",
+    icon: FaRegChartBar,
+    repos: [],
+    branchNamePlaceholder: "",
+    prNamePlaceholder: "",
+    prTypePath: "",
+  },
 ];
 
 //TODO: refactor to reference address book
