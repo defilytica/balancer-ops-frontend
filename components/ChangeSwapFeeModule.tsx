@@ -374,7 +374,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"set-swapfee"}
+            type={"fee-setter"}
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
