@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Text,
@@ -9,27 +9,21 @@ import {
   Link,
   Image,
   Badge,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
-import { FiHome } from "react-icons/fi";
 import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
-import NavItem from "./NavItem";
+import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
-
+import NextLink from "next/link";
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
 
 const LinkItems = [
-  {
-    name: "Home",
-    icon: FiHome,
-    target: "/",
-    description: "Navigate back to Home",
-  },
   {
     name: "Payload Builder",
     icon: TbTransactionBitcoin,
@@ -39,20 +33,20 @@ const LinkItems = [
   {
     name: "Rewards Injector",
     icon: RiContractLine,
-    target: "/rewards-injector",
-    description: "View and Configure Gauge Rewards injectors",
-  },
-  {
-    name: "Injector Status",
-    icon: RiAlertLine,
-    target: "/rewards-injector/status",
-    description: "Check Injector status",
-  },
-  {
-    name: "Automation Catalog",
-    icon: SiChainlink,
-    target: "/chainlink-automation",
-    description: "View Chainlink Automation Upkeeps",
+    children: [
+      {
+        name: "Rewards Injector",
+        icon: RiContractLine,
+        target: "/rewards-injector",
+        description: "View and Configure Gauge Rewards injectors",
+      },
+      {
+        name: "Injector Status",
+        icon: RiAlertLine,
+        target: "/rewards-injector/status",
+        description: "Check Injector status",
+      },
+    ],
   },
   {
     name: "Pool Creator (v2)",
@@ -65,6 +59,12 @@ const LinkItems = [
     icon: TbGaugeFilled,
     target: "/gauge-creator",
     description: "Create a staking gauge for Balancer pools",
+  },
+  {
+    name: "Automation Catalog",
+    icon: SiChainlink,
+    target: "/chainlink-automation",
+    description: "View Chainlink Automation Upkeeps",
   },
   {
     name: "Liquidity Buffers",
@@ -129,6 +129,39 @@ const DefilyticaBanner = () => (
 );
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
+  const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
+
+  const toggleItem = (itemName: string) => {
+    setOpenItems(prev => ({
+      ...prev,
+      [itemName]: !prev[itemName],
+    }));
+  };
+
+  const renderNavItem = (item: NavItemType, isSubItem = false) => {
+    const hasSubItems = item.children && item.children.length > 0;
+    const isOpen = openItems[item.name];
+
+    return (
+      <div key={item.name}>
+        <NavItem
+          icon={item.icon}
+          title={item.name}
+          target={item.target || "/"} // Ensure target always has a value
+          onClose={onClose}
+          hasSubItems={hasSubItems}
+          isSubItem={isSubItem}
+          isOpen={isOpen}
+          onToggle={() => toggleItem(item.name)}
+        />
+
+        {hasSubItems && isOpen && (
+          <div>{item.children?.map(child => renderNavItem(child, true))}</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Box
       borderRight="2px"
@@ -141,21 +174,33 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
         <Flex alignItems="center">
           <Box boxSize={30} marginRight={2}>
-            <BalancerLogo />
+            <ChakraLink
+              as={NextLink}
+              href="/" // Explicit href for the logo
+              style={{ textDecoration: "none" }}
+              _focus={{ boxShadow: "none" }}
+            >
+              <BalancerLogo />
+            </ChakraLink>
           </Box>
           <Box>
-            <Heading as="h5" size="md" variant="special">
-              Ops Tooling
-            </Heading>
+            <ChakraLink
+              as={NextLink}
+              href="/" // Explicit href for the heading
+              style={{ textDecoration: "none" }}
+              _focus={{ boxShadow: "none" }}
+            >
+              <Heading as="h5" size="md" variant="special">
+                Ops Tooling
+              </Heading>
+            </ChakraLink>
           </Box>
         </Flex>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
-      {LinkItems.map(link => (
-        <NavItem key={link.name} icon={link.icon} target={link.target} onClose={onClose}>
-          {link.name}
-        </NavItem>
-      ))}
+
+      {LinkItems.map(item => renderNavItem(item))}
+
       <Flex
         position="absolute"
         bottom="5"
@@ -173,5 +218,4 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     </Box>
   );
 };
-
 export default SidebarContent;
