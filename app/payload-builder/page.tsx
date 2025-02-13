@@ -13,6 +13,11 @@ const CATEGORIZED_PAYLOADS = {
     "set-reward-distributor-to-gauge",
     "injector-configurator"
   ],
+  "Pool Management (v3)": [
+    "initialize-buffer",
+    "manage-buffer",
+    "fee-setter-v3",
+  ],
   "Financial Operations": [
     "create-payment",
     "cctp-bridge"
@@ -20,9 +25,7 @@ const CATEGORIZED_PAYLOADS = {
   "Pool Management (v2)": [
     "fee-setter",
   ],
-  "Pool Management (v3)": [
-    "initialize-buffer"
-  ]
+
 };
 
 const PayloadBuilder = () => {
