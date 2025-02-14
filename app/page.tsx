@@ -8,6 +8,7 @@ import {
   Grid,
   GridItem,
   Link,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import {
   TbTransactionBitcoin,
@@ -146,42 +147,57 @@ export default function Page() {
 
   return (
     <Box minHeight="100vh">
-      <Container maxW="container.xl" pt={8}>
+      <Container maxW="container.xl" pt={{ base: 4, md: 8 }}>
         <VStack spacing={2} textAlign="center">
-          <Heading as="h1" p={2} size="3xl" variant="special" fontWeight="bold">
+          <Heading 
+            as="h1" 
+            p={2} 
+            size={{ base: "xl", md: "2xl", lg: "3xl" }} 
+            variant="special" 
+            fontWeight="bold"
+          >
             Welcome to Balancer Ops Tooling
           </Heading>
-          <Text fontSize="xl" variant="secondary">
+          <Text fontSize={{ base: "lg", md: "xl" }} variant="secondary">
             Streamlining Balancer DAO operations with our powerful suite of tools
           </Text>
         </VStack>
       </Container>
 
       {/* Sections */}
-      <Container maxW="container.xl" mt={12}>
-        <VStack spacing={16}>
+      <Container maxW="container.xl" mt={{ base: 8, md: 12 }}>
+        <VStack spacing={{ base: 12, md: 16 }}>
           {sections.map((section, sectionIndex) => (
             <Box key={sectionIndex} width="100%">
-              <VStack spacing={6} textAlign="center" mb={8}>
-                <Heading as="h2" size="lg">
+              <VStack spacing={6} textAlign="center" mb={{ base: 6, md: 8 }}>
+                <Heading as="h2" size={{ base: "md", md: "lg" }}>
                   {section.title}
                 </Heading>
-                <Text fontSize="md" maxW="container.md" mx="auto">
+                <Text 
+                  fontSize={{ base: "sm", md: "md" }} 
+                  maxW="container.md" 
+                  mx="auto"
+                  px={4}
+                >
                   {section.description}
                 </Text>
               </VStack>
 
-              <Grid templateColumns={`repeat(${section.features.length}, 1fr)`} gap={8}>
+              <SimpleGrid 
+                columns={{ base: 1, md: 2, lg: 3 }} 
+                spacing={{ base: 4, md: 6, lg: 8 }}
+                px={{ base: 4, md: 0 }}
+              >
                 {section.features.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
-                    <GridItem
+                    <Box
                       key={index}
                       borderWidth="1px"
                       borderRadius="lg"
-                      p={4}
+                      p={{ base: 4, md: 6 }}
                       _hover={{ shadow: "lg" }}
-                      display="flex"
+                      transition="box-shadow 0.2s"
                     >
                       <VStack
                         spacing={4}
@@ -192,26 +208,30 @@ export default function Page() {
                       >
                         <VStack spacing={4} align="center">
                           <Icon size={32} />
-                          <Heading size="md">{feature.title}</Heading>
-                          <Text textAlign="center">{feature.description}</Text>
+                          <Heading size={{ base: "sm", md: "md" }}>{feature.title}</Heading>
+                          <Text 
+                            textAlign="center"
+                            fontSize={{ base: "sm", md: "md" }}
+                          >
+                            {feature.description}
+                          </Text>
                         </VStack>
 
-                        <VStack spacing={2} width="100%">
-                          <Button
-                            variant="primary"
-                            width="100%"
-                            as={Link}
-                            style={{ textDecoration: "none" }}
-                            href={feature.primaryAction.href}
-                          >
-                            {feature.primaryAction.label}
-                          </Button>
-                        </VStack>
+                        <Button
+                          variant="primary"
+                          width="100%"
+                          as={Link}
+                          style={{ textDecoration: "none" }}
+                          href={feature.primaryAction.href}
+                          size={{ base: "md", md: "lg" }}
+                        >
+                          {feature.primaryAction.label}
+                        </Button>
                       </VStack>
-                    </GridItem>
+                    </Box>
                   );
                 })}
-              </Grid>
+              </SimpleGrid>
             </Box>
           ))}
         </VStack>

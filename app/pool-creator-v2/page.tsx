@@ -25,6 +25,7 @@ import { initialConfig, usePoolCreator } from "@/lib/shared/hooks/usePoolCreator
 import PoolLookup from "@/components/poolCreator/PoolLookup";
 import { PoolConfig } from "@/types/interfaces";
 import { AlertCircle } from "react-feather";
+import MobileWarning from "@/components/MobileWarning";
 
 const PoolCreatorPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -198,56 +199,58 @@ const PoolCreatorPage: React.FC = () => {
   }
 
   return (
-    <Box p={8}>
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        Balancer v2 Pool Creator
-      </Heading>
-      <PoolCreatorStepper activeStep={activeStep} />
-      <Grid templateColumns="5fr 1fr" gap={8} mt={8}>
-        <GridItem>
-          <Card>
-            <CardHeader>
-              <Heading size="md" variant="special">
-                Configure Pool:{" "}
-                {poolConfig.type
-                  ? poolConfig.type.charAt(0).toUpperCase() + poolConfig.type.slice(1)
-                  : ""}
-              </Heading>
-            </CardHeader>
-            <CardBody>
-              {getStepContent()}
+    <MobileWarning>
+      <Box p={8}>
+        <Heading as="h2" size="lg" variant="special" mb={6}>
+          Balancer v2 Pool Creator
+        </Heading>
+        <PoolCreatorStepper activeStep={activeStep} />
+        <Grid templateColumns="5fr 1fr" gap={8} mt={8}>
+          <GridItem>
+            <Card>
+              <CardHeader>
+                <Heading size="md" variant="special">
+                  Configure Pool:{" "}
+                  {poolConfig.type
+                    ? poolConfig.type.charAt(0).toUpperCase() + poolConfig.type.slice(1)
+                    : ""}
+                </Heading>
+              </CardHeader>
+              <CardBody>
+                {getStepContent()}
 
-              <StepNavigation
-                activeStep={activeStep}
-                isNextDisabled={isNextDisabled()}
-                onNext={handleNext}
-                onBack={handleBack}
-                onFinish={handleFinish}
-                isLastStep={activeStep === 2}
-              />
+                <StepNavigation
+                  activeStep={activeStep}
+                  isNextDisabled={isNextDisabled()}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                  onFinish={handleFinish}
+                  isLastStep={activeStep === 2}
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+
+          <GridItem>
+            <ConfigurationCard config={poolConfig} onSettingsUpdate={updateSettings} />
+          </GridItem>
+
+          <Card variant="outline">
+            <CardBody>
+              <Flex align="center">
+                <AlertCircle color="red" />
+                <Text fontSize="sm" color="white" ml={2}>
+                  Creating and adding liquidity to pools involves significant risks. Carefully review
+                  all pool parameters and ensure you understand the implications before deployment. We
+                  are not responsible for any losses incurred through pool creation or management
+                  using this tool.
+                </Text>
+              </Flex>
             </CardBody>
           </Card>
-        </GridItem>
-
-        <GridItem>
-          <ConfigurationCard config={poolConfig} onSettingsUpdate={updateSettings} />
-        </GridItem>
-
-        <Card variant="outline">
-          <CardBody>
-            <Flex align="center">
-              <AlertCircle color="red" />
-              <Text fontSize="sm" color="white" ml={2}>
-                Creating and adding liquidity to pools involves significant risks. Carefully review
-                all pool parameters and ensure you understand the implications before deployment. We
-                are not responsible for any losses incurred through pool creation or management
-                using this tool.
-              </Text>
-            </Flex>
-          </CardBody>
-        </Card>
-      </Grid>
-    </Box>
+        </Grid>
+      </Box>
+    </MobileWarning>
   );
 };
 
