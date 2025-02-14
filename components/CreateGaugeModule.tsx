@@ -141,7 +141,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   }, [selectedPool, votingGaugesData]);
 
   // Function to get explorer URL based on network
-  const getExplorerUrl = (network: string, hash: string) => {
+  const getExplorerUrl = (network: string, hash: string, type?: "childGauge" | "rootGauge") => {
+    // Always use mainnet explorer for root gauges
+    if (type === "rootGauge") {
+      return `${networks.mainnet.explorer}tx/${hash}`;
+    }
+
     const networkKey = network.toLowerCase();
     const explorerBase = networks[networkKey]?.explorer || networks.mainnet.explorer;
     return `${explorerBase}tx/${hash}`;
@@ -162,14 +167,16 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   }, [selectedPool]);
   console.log("selectedPool", selectedPool);
 
-  // Add pool selection handler
   const handlePoolSelect = (pool: Pool) => {
+    // Reset transaction and step state when selecting new pool
+    setTransactions([]);
+    setActiveStep(0);
+
     setSelectedPool(pool);
-    setIsOpen(false); // Close popover after selection
-    setSearchTerm(""); // Reset search term
+    setIsOpen(false);
+    setSearchTerm("");
   };
 
-  // Add a function to reset selection
   const clearPoolSelection = () => {
     setSelectedPool(null);
     setSearchTerm("");
@@ -409,9 +416,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // Try to get childGaugeAddress from either:
-      // 1. Existing gauge in the pool data
-      // 2. Recently created child gauge in transactions
       const childGaugeAddress = hasExistingGauge
         ? selectedPool.staking?.gauge?.id
         : transactions.find(t => t.type === "childGauge")?.address;
@@ -426,9 +430,9 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       }
 
       const contract = getContract(rootFactory, RootGaugeFactory, signer);
-
       const tx = await contract.create(childGaugeAddress, weightCap);
 
+      // Add transaction to state immediately
       setTransactions(prev => [
         ...prev,
         {
@@ -440,16 +444,60 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
 
       const receipt = await tx.wait();
 
+      // More specific event parsing for root gauge creation
+      const gaugeCreatedEvent = receipt.logs
+        .map((log: { topics: any; data: any }) => {
+          try {
+            const parsedLog = contract.interface.parseLog({
+              topics: [...log.topics],
+              data: log.data,
+            });
+            // Debug log to see what events we're getting
+            console.log("Parsed event:", parsedLog);
+            return parsedLog;
+          } catch {
+            return null;
+          }
+        })
+        // Filter for non-null events and find the gauge creation event
+        .filter(Boolean)
+        .find((event: { name: string }) =>
+          // Check for both possible event names
+          event?.name === "RootGaugeCreated" || event?.name === "GaugeCreated"
+        );
+
+      // Safely access the gauge address from event args
+      const rootGaugeAddress = gaugeCreatedEvent?.args?.[0] || // First argument might be the gauge address
+        gaugeCreatedEvent?.args?.gauge || // Named argument
+        null; // Fallback if not found
+
+      if (!rootGaugeAddress) {
+        console.warn("Root gauge address not found in events:", receipt.logs);
+      }
+
+      // Update transaction with root gauge address if found
       setTransactions(prev =>
-        prev.map(t => (t.hash === tx.hash ? { ...t, status: "success" } : t)),
+        prev.map(t =>
+          t.hash === tx.hash
+            ? {
+              ...t,
+              status: "success",
+              address: rootGaugeAddress || undefined // Only set if we found it
+            }
+            : t
+        ),
       );
 
+      // Success toast
       toast({
         title: "Root gauge created successfully",
-        description: "You can now create a governance proposal",
+        description: rootGaugeAddress
+          ? `Root gauge deployed at ${rootGaugeAddress}`
+          : "Root gauge created successfully",
         status: "success",
         duration: 5000,
       });
+
     } catch (error: any) {
       console.error("Root gauge creation error:", error);
       toast({
@@ -782,7 +830,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                   <HStack spacing={4}>
                     <Button
                       as="a"
-                      href={getExplorerUrl(selectedNetwork, tx.hash)}
+                      href={getExplorerUrl(selectedNetwork, tx.hash, tx.type)}
                       target="_blank"
                       variant="link"
                       rightIcon={<ExternalLinkIcon />}
