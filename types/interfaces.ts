@@ -109,7 +109,6 @@ export interface TokenListToken {
   decimals: number;
   logoURI: string;
   isErc4626?: boolean;
-  isBufferAllowed?: boolean;
   underlyingTokenAddress?: string;
 }
 

@@ -195,7 +195,7 @@ export enum GqlHookType {
   ExitFee = 'EXIT_FEE',
   FeeTaking = 'FEE_TAKING',
   Lottery = 'LOTTERY',
-  MevCapture = 'MEV_CAPTURE',
+  MevTax = 'MEV_TAX',
   NftliquidityPosition = 'NFTLIQUIDITY_POSITION',
   StableSurge = 'STABLE_SURGE',
   Unknown = 'UNKNOWN',
@@ -2165,6 +2165,8 @@ export type GqlStakedSonicData = {
   exchangeRate: Scalars['String']['output'];
   /** The total protocol fee collected in the last 24 hours. */
   protocolFee24h: Scalars['String']['output'];
+  /** The total rewards claimed in the last 24 hours. */
+  rewardsClaimed24h: Scalars['String']['output'];
   /** The current rebasing APR for stS. */
   stakingApr: Scalars['String']['output'];
   /** Total amount of S in custody of stS. Delegated S plus pool S. */
@@ -2190,6 +2192,8 @@ export type GqlStakedSonicSnapshot = {
   id: Scalars['ID']['output'];
   /** The total protocol fee collected during that day. */
   protocolFee24h: Scalars['String']['output'];
+  /** The total rewards claimed during that day. */
+  rewardsClaimed24h: Scalars['String']['output'];
   /** The timestamp of the snapshot. Timestamp is end of day midnight. */
   timestamp: Scalars['Int']['output'];
   /** Total amount of S in custody of stS. Delegated S plus pool S. */
@@ -2508,7 +2512,7 @@ export type HookConfig = {
   shouldCallComputeDynamicSwapFee: Scalars['Boolean']['output'];
 };
 
-export type HookParams = ExitFeeHookParams | FeeTakingHookParams | StableSurgeHookParams;
+export type HookParams = ExitFeeHookParams | FeeTakingHookParams | MevTaxHookParams | StableSurgeHookParams;
 
 /** Liquidity management settings for v3 pools. */
 export type LiquidityManagement = {
@@ -2521,6 +2525,14 @@ export type LiquidityManagement = {
   enableDonation?: Maybe<Scalars['Boolean']['output']>;
   /** Whether this pool support additional, custom remove liquditiy operations apart from proportional, unbalanced and single asset. */
   enableRemoveLiquidityCustom?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** MevTax hook specific params. Percentage format is 0.01 -> 0.01%. */
+export type MevTaxHookParams = {
+  __typename: 'MevTaxHookParams';
+  maxMevSwapFeePercentage?: Maybe<Scalars['String']['output']>;
+  mevTaxMultiplier?: Maybe<Scalars['String']['output']>;
+  mevTaxThreshold?: Maybe<Scalars['String']['output']>;
 };
 
 export type Mutation = {
@@ -3030,6 +3042,11 @@ export type QueryVeBalGetUserBalanceArgs = {
 export type QueryVeBalGetUserBalancesArgs = {
   address: Scalars['String']['input'];
   chains?: InputMaybe<Array<GqlChain>>;
+};
+
+
+export type QueryVeBalGetVotingListArgs = {
+  includeKilled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** StableSurge hook specific params. Percentage format is 0.01 -> 0.01%. */

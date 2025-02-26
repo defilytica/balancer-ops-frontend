@@ -96,13 +96,23 @@ export default function EnableGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Please make sure to always provide the RootGauge contract from Ethereum Mainnet.
-                Select the target chain accordingly.
+                Input field "Root Gauge" refers to the root gauge contract from Ethereum Mainnet.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                After submitting a PR, make sure the gauge setup is correct and validate the report
-                outputs.
+                Input field "Network" refers to the chain, where the target pool is deployed.
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                After creating the payload, validate it by simulating the transaction batch
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                Open a PR with the Maxi Ops repository and attach it to your proposal
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                For more technical details, consult https://forum.balancer.fi/t/instructions-overview/2674
               </ListItem>
             </List>
           </AlertDescription>
@@ -113,7 +123,7 @@ export default function EnableGaugePage() {
           <Card key={"enableGauge-card" + index} mb="10px">
             <Box key={index} display="flex" alignItems="flex-end">
               <FormControl mr="10px" flex="1">
-                <FormLabel>Gauge ID #{index + 1}</FormLabel>
+                <FormLabel>Root Gauge ID #{index + 1}</FormLabel>
                 <Input
                   value={gauge.id}
                   onChange={e => {

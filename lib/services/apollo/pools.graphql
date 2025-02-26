@@ -64,7 +64,6 @@ query GetBoostedPools {
         }
         scalingFactor
         priceRate
-        isBufferAllowed
     }
   }
 }

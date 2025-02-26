@@ -17,17 +17,45 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
   const { colorMode } = useColorMode();
   const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [isEditing, setIsEditing] = useState(false);
+  const [localJsonString, setLocalJsonString] = useState("");
   const toast = useToast();
 
   if (!jsonData) return null;
 
+  // Convert jsonData to string format for the editor
+  const jsonString = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
+
   const handleToggleEdit = () => {
+    if (isEditing) {
+      // When exiting edit mode, try to apply changes
+      try {
+        const parsedJson = JSON.parse(localJsonString);
+        if (typeof jsonData === "string") {
+          onJsonChange(JSON.stringify(parsedJson, null, 2));
+        } else {
+          onJsonChange(parsedJson as BatchFile);
+        }
+      } catch (error) {
+        toast({
+          title: "Invalid JSON",
+          description: "Please ensure the edited JSON is valid",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        // Stay in edit mode if JSON is invalid
+        return;
+      }
+    } else {
+      // When entering edit mode, initialize local state
+      setLocalJsonString(jsonString);
+    }
     setIsEditing(!isEditing);
   };
 
-  const handleSaveEdit = (editedValue: string) => {
+  const handleSaveEdit = () => {
     try {
-      const parsedJson = JSON.parse(editedValue);
+      const parsedJson = JSON.parse(localJsonString);
       if (typeof jsonData === "string") {
         onJsonChange(JSON.stringify(parsedJson, null, 2));
       } else {
@@ -47,20 +75,10 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
 
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
-      if (typeof jsonData === "string") {
-        onJsonChange(value);
-      } else {
-        try {
-          const parsedJson = JSON.parse(value);
-          onJsonChange(parsedJson as BatchFile);
-        } catch (error) {
-          // If parsing fails, we're dealing with incomplete JSON, so we don't update
-        }
-      }
+      // Just update local state during editing, don't parse yet
+      setLocalJsonString(value);
     }
   };
-
-  const jsonString = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
 
   return (
     <Box mt="20px">
@@ -75,7 +93,7 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
           height="400px"
           language="json"
           theme="vs-dark"
-          value={jsonString}
+          value={localJsonString}
           onChange={handleEditorChange}
         />
       ) : (
@@ -85,7 +103,7 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
         />
       )}
       {isEditing && (
-        <Button mt="10px" onClick={() => handleSaveEdit(jsonString)}>
+        <Button mt="10px" onClick={handleSaveEdit}>
           Save Changes
         </Button>
       )}

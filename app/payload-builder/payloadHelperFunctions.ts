@@ -93,11 +93,7 @@ export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "Add new gauges",
-      txBuilderVersion: "1.16.3",
       createdFromSafeAddress: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
-      createdFromOwnerAddress: "",
-      checksum: "", // This would be a computed checksum, for now left as an empty string.
     },
     transactions,
   };
@@ -141,11 +137,7 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "Kill obsolete gauges",
-      txBuilderVersion: "1.16.3",
       createdFromSafeAddress: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
-      createdFromOwnerAddress: "",
-      checksum: "",
     },
     transactions,
   };
@@ -233,11 +225,7 @@ export function generateTokenPaymentPayload(inputs: PaymentInput[], safeInfo: Sa
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "Payment",
-      txBuilderVersion: "1.13.3",
       createdFromSafeAddress: safeInfo.address,
-      createdFromOwnerAddress: "",
-      checksum: "",
     },
     transactions,
   };
@@ -326,11 +314,7 @@ export function generateCCTPBridgePayload(inputs: CCTPBridgeInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "",
-      txBuilderVersion: "1.16.5",
       createdFromSafeAddress: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
-      createdFromOwnerAddress: "",
-      checksum: "0x301f5a7132d04fe310a2eaaac8a7303393ed01c2ca5fbbca2c2a09b1de2755f4",
     },
     transactions,
   };
@@ -385,11 +369,7 @@ export function generateAddRewardPayload(inputs: AddRewardInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "",
-      txBuilderVersion: "1.16.5",
       createdFromSafeAddress: inputs.length > 0 ? inputs[0].safeAddress : "",
-      createdFromOwnerAddress: "",
-      checksum: "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
     },
     transactions: [...transactions], // Using array notation to handle multiple transactions
   };
@@ -506,10 +486,7 @@ export function generateInjectorSchedulePayloadV2({
     meta: {
       name: `Rewards Injector Schedule - ${operation.toUpperCase()}`,
       description: `Configure rewards injector schedule to ${operation} recipients`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: safeAddress,
-      createdFromOwnerAddress: "",
-      checksum: "0x" + Math.random().toString(16).substring(2, 64),
     },
     transactions: [batchTransaction],
   };
@@ -587,11 +564,7 @@ export function generateInjectorSchedulePayload({
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      description: "",
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: safeAddress,
-      createdFromOwnerAddress: "",
-      checksum: "0x" + Math.random().toString(16).substring(2, 64),
     },
     transactions: [transaction],
   };
@@ -692,10 +665,7 @@ export function generateSwapFeeChangePayload(
     meta: {
       name: "Transactions Batch",
       description: `Set swap fee to ${input.newSwapFeePercentage}% for ${input.poolName}`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: multisig,
-      createdFromOwnerAddress: "",
-      checksum: "0x",
     },
     transactions: [transaction],
   };
@@ -753,10 +723,7 @@ export function generateDAOSwapFeeChangePayload(
     meta: {
       name: "Transactions Batch",
       description: `Set swap fee to ${input.newSwapFeePercentage}% for ${input.poolName}`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: multisig,
-      createdFromOwnerAddress: "",
-      checksum: "0x",
     },
     transactions: [transaction],
   };
@@ -819,10 +786,7 @@ export function generateSetDistributorPayload(inputs: SetDistributorInput[]) {
     meta: {
       name: "Transactions Batch",
       description: "",
-      txBuilderVersion: "1.16.5",
       createdFromSafeAddress: inputs.length > 0 ? inputs[0].safeAddress : "",
-      createdFromOwnerAddress: "",
-      checksum: "0x90f4c82078ec24e1c5389807a2084a2e7a3c9904d86f418ef33e7b6a67722ee5",
     },
     transactions: [...transactions], // Using array notation to handle multiple transactions
   };
@@ -1011,10 +975,7 @@ export function generateInitializeBufferPayload(
     meta: {
       name: "Transactions Batch",
       description: `Initialize buffer for wrapped token ${input.wrappedToken}.`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: input.seedingSafe ?? "",
-      createdFromOwnerAddress: "",
-      checksum: "",
     },
     transactions,
   };
@@ -1112,10 +1073,7 @@ export function generateAddLiquidityToBufferPayload(
     meta: {
       name: "Transactions Batch",
       description: `Add liquidity to buffer for wrapped token ${input.wrappedToken}.`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: input.ownerSafe ?? "",
-      createdFromOwnerAddress: "",
-      checksum: "",
     },
     transactions,
   };
@@ -1167,10 +1125,7 @@ export function generateRemoveLiquidityPayload(
     meta: {
       name: "Transactions Batch",
       description: `Remove liquidity from buffer for wrapped token ${input.wrappedToken}.`,
-      txBuilderVersion: "1.17.0",
       createdFromSafeAddress: input.ownerSafe ?? "",
-      createdFromOwnerAddress: "",
-      checksum: "",
     },
     transactions,
   };

@@ -86,13 +86,13 @@ export default function Page() {
           },
         },
         {
-          title: "Create a Staking Gauge",
+          title: "Enable Staking Gauge",
           icon: TbGaugeFilled,
           description:
-            "Create a staking gauge for Balancer pools",
+            "Create a Payload to add a Gauge to the veBAL gauge controller",
           primaryAction: {
-            label: "Create Gauges",
-            href: "/gauge-creator",
+            label: "Enable Gauge",
+            href: "/payload-builder/enable-gauge",
           },
         },
         {
@@ -149,11 +149,11 @@ export default function Page() {
     <Box minHeight="100vh">
       <Container maxW="container.xl" pt={{ base: 4, md: 8 }}>
         <VStack spacing={2} textAlign="center">
-          <Heading 
-            as="h1" 
-            p={2} 
-            size={{ base: "xl", md: "2xl", lg: "3xl" }} 
-            variant="special" 
+          <Heading
+            as="h1"
+            p={2}
+            size={{ base: "xl", md: "2xl", lg: "3xl" }}
+            variant="special"
             fontWeight="bold"
           >
             Welcome to Balancer Ops Tooling
@@ -173,9 +173,9 @@ export default function Page() {
                 <Heading as="h2" size={{ base: "md", md: "lg" }}>
                   {section.title}
                 </Heading>
-                <Text 
-                  fontSize={{ base: "sm", md: "md" }} 
-                  maxW="container.md" 
+                <Text
+                  fontSize={{ base: "sm", md: "md" }}
+                  maxW="container.md"
                   mx="auto"
                   px={4}
                 >
@@ -183,8 +183,8 @@ export default function Page() {
                 </Text>
               </VStack>
 
-              <SimpleGrid 
-                columns={{ base: 1, md: 2, lg: 3 }} 
+              <SimpleGrid
+                columns={{ base: 1, md: 2, lg: 3 }}
                 spacing={{ base: 4, md: 6, lg: 8 }}
                 px={{ base: 4, md: 0 }}
               >
@@ -209,7 +209,7 @@ export default function Page() {
                         <VStack spacing={4} align="center">
                           <Icon size={32} />
                           <Heading size={{ base: "sm", md: "md" }}>{feature.title}</Heading>
-                          <Text 
+                          <Text
                             textAlign="center"
                             fontSize={{ base: "sm", md: "md" }}
                           >

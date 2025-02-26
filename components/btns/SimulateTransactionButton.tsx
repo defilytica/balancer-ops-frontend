@@ -21,11 +21,9 @@ export interface BatchFile {
   createdAt: number;
   meta: {
     name: string;
-    description: string;
-    txBuilderVersion: string;
+    description?: string;
     createdFromSafeAddress: string;
-    createdFromOwnerAddress: string;
-    checksum: string;
+
   };
 
   transactions: Transaction[];
