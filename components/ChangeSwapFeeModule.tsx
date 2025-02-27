@@ -44,7 +44,7 @@ import {
   handleDownloadClick,
   SwapFeeChangeInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetPoolsDocument,
   GetPoolsQuery,
@@ -61,6 +61,7 @@ import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -197,20 +198,12 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
-          <FormControl>
-            <FormLabel>Select Network</FormLabel>
-            <Select
-              value={selectedNetwork}
-              onChange={handleNetworkChange}
-              placeholder="Select Network"
-            >
-              {NETWORK_OPTIONS.map(network => (
-                <option key={network.chainId} value={network.apiID}>
-                  {network.label}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
+          <NetworkSelector
+            networks={networks}
+            networkOptions={NETWORK_OPTIONS}
+            selectedNetwork={selectedNetwork}
+            handleNetworkChange={handleNetworkChange}
+          />
         </GridItem>
 
         <GridItem colSpan={{ base: 12, md: 8 }}>
@@ -293,7 +286,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
                   value={newSwapFee}
                   onChange={e => setNewSwapFee(e.target.value)}
                   placeholder="Enter new swap fee (e.g., 0.1)"
-                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
             </GridItem>

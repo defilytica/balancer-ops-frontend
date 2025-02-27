@@ -45,7 +45,9 @@ const ChainlinkAutomationPage: React.FC = () => {
             Chainlink: Automation Catalog
           </Heading>
           <Text>
-            Status overview of operational Chainlink Upkeepers maintaned by Balancer Maxis. These Upkeepers make sure that on-chain operations run such as veBAL fee injections and reward injector executions.
+            Status overview of operational Chainlink Upkeepers maintaned by Balancer Maxis. These
+            Upkeepers make sure that on-chain operations run such as veBAL fee injections and reward
+            injector executions.
           </Text>
           <ChainlinkTable data={chainlinkData} />
         </VStack>

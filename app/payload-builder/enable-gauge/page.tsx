@@ -22,6 +22,7 @@ import {
   Card,
   useToast,
   useDisclosure,
+  Link,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import React, { useState } from "react";
@@ -112,7 +113,22 @@ export default function EnableGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                For more technical details, consult https://forum.balancer.fi/t/instructions-overview/2674
+                For more technical details, consult{" "}
+                <Link
+                  href="https://forum.balancer.fi/t/instructions-overview/2674"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  this documentation
+                </Link>{" "}
+                or our{" "}
+                <Link
+                  href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/gauge-onboarding.html"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  partner onboarding docs.
+                </Link>
               </ListItem>
             </List>
           </AlertDescription>

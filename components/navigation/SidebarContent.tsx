@@ -61,7 +61,7 @@ const LinkItems = [
     description: "Create a staking gauge for Balancer pools",
   },
   {
-    name: "Automation Catalog",
+    name: "Chainlink Automation",
     icon: SiChainlink,
     target: "/chainlink-automation",
     description: "View Chainlink Automation Upkeeps",
@@ -163,14 +163,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
   };
 
   return (
-    <Box
-      borderRight="2px"
-      borderRightColor="gray.700"
-      w={{ base: "full", md: 60 }}
-      pos="fixed"
-      h="full"
-      {...rest}
-    >
+    <Box w={{ base: "full", md: 72 }} pos="fixed" h="full" {...rest}>
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
         <Flex alignItems="center">
           <Box boxSize={30} marginRight={2}>

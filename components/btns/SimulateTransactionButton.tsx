@@ -23,7 +23,6 @@ export interface BatchFile {
     name: string;
     description?: string;
     createdFromSafeAddress: string;
-
   };
 
   transactions: Transaction[];

@@ -28,6 +28,7 @@ const RewardsInjectorStatusPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideStale, setHideStale] = useState(false);
   const [isV2, setIsV2] = useState(false);
   const toast = useToast();
 
@@ -52,22 +53,34 @@ const RewardsInjectorStatusPage = () => {
     const { total, distributed, remaining } = calculateDistributionAmounts(processedGauges);
 
     const additionalTokensRequired =
-      remaining > adjustedContractBalance ? remaining - adjustedContractBalance : 0;
+      remaining > injector.contractBalance ? remaining - adjustedContractBalance : 0;
 
     const incorrectlySetupGauges = injector.gauges.filter(
       (gauge: any) => !gauge.isRewardTokenSetup,
     );
 
+    // Calculate if the injector is stale (all gauges haven't fired for more than 3 weeks)
+    const twoWeeksAgo = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60; // 2 weeks in seconds
+    const isStale =
+      injector.gauges.length > 0 &&
+      injector.gauges.every((gauge: any) => {
+        // Convert timestamp to number if it's a string
+        const timestamp = parseInt(gauge.lastInjectionTimeStamp, 10);
+        // If timestamp is 0, it means it has never been injected
+        return timestamp === 0 || timestamp < twoWeeksAgo || timestamp === null;
+      });
+
     return {
       ...injector,
       tokenDecimals,
-      contractBalance: adjustedContractBalance,
+      contractBalance: injector.contractBalance,
       total,
       distributed,
       remaining,
       additionalTokensRequired,
       incorrectlySetupGauges,
-      isCompleted: distributed === total && total > 0,
+      isCompleted: (distributed === total && total > 0) || injector.gauges.length == 0,
+      isStale,
       processedGauges,
     };
   };
@@ -132,6 +145,10 @@ const RewardsInjectorStatusPage = () => {
     setHideCompleted(!hideCompleted);
   };
 
+  const toggleHideStale = () => {
+    setHideStale(!hideStale);
+  };
+
   const handleRefresh = () => {
     fetchInjectorsData(true);
   };
@@ -140,9 +157,15 @@ const RewardsInjectorStatusPage = () => {
     setIsV2(!isV2);
   };
 
-  const filteredInjectors = hideCompleted
-    ? injectorsData.filter((injector: any) => !injector.isCompleted)
-    : injectorsData;
+  let filteredInjectors = injectorsData;
+
+  if (hideCompleted) {
+    filteredInjectors = filteredInjectors.filter((injector: any) => !injector.isCompleted);
+  }
+
+  if (hideStale) {
+    filteredInjectors = filteredInjectors.filter((injector: any) => !injector.isStale);
+  }
 
   if (isLoading) {
     return <Skeleton height="400px" />;
@@ -169,19 +192,20 @@ const RewardsInjectorStatusPage = () => {
           <Box>
             <AlertDescription>
               This data is cached and was last updated on{" "}
-              {new Date(injectorsData[0].updatedAt).toLocaleString()}. You can refresh the data
-              manually.
+              {injectorsData.length > 0 && new Date(injectorsData[0].updatedAt).toLocaleString()}.
+              You can refresh the data manually.
             </AlertDescription>
           </Box>
         </Alert>
-        <HStack justifyContent="space-between" alignItems="center">
+        <HStack justifyContent="space-between" alignItems="center" spacing={1}>
           <Text>
             Showing {filteredInjectors.length} of {injectorsData.length} injectors
           </Text>
-          <HStack>
+          <HStack spacing={2}>
             <Button onClick={toggleHideCompleted}>
               {hideCompleted ? "Show All" : "Hide Completed"}
             </Button>
+            <Button onClick={toggleHideStale}>{hideStale ? "Show All" : "Hide Inactive"}</Button>
             <HStack>
               <Text>V1</Text>
               <Switch isChecked={isV2} onChange={handleVersionToggle} />

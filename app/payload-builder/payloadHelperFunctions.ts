@@ -674,7 +674,7 @@ export function generateSwapFeeChangePayload(
 // -- SET SWAP FEES ON V3 POOLS HELPERS --
 // Helper function to check if an address is the zero address
 export function isZeroAddress(address: string): boolean {
-  return address === '0x0000000000000000000000000000000000000000';
+  return address === "0x0000000000000000000000000000000000000000";
 }
 
 // Convert percentage to wei format (e.g., 0.1% -> 1000000000000000)
@@ -734,9 +734,7 @@ export async function isSwapFeeManager(
   poolAddress: string,
   signer: JsonRpcSigner,
 ): Promise<boolean> {
-  const poolInterface = new ethers.Interface([
-    'function swapFeeManager() view returns (address)',
-  ]);
+  const poolInterface = new ethers.Interface(["function swapFeeManager() view returns (address)"]);
 
   const poolContract = new ethers.Contract(poolAddress, poolInterface, provider);
 
@@ -745,7 +743,7 @@ export async function isSwapFeeManager(
     const signerAddress = await signer.getAddress();
     return manager.toLowerCase() === signerAddress.toLowerCase();
   } catch (error) {
-    console.error('Error checking swap fee manager:', error);
+    console.error("Error checking swap fee manager:", error);
     return false;
   }
 }

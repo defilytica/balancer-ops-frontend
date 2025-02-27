@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Drawer>
             <MobileNav onOpen={onOpen} />
             <DesktopNav />
-            <Box ml={{ base: 0, md: 60 }} p="4">
+            <Box ml={{ base: 0, md: 72 }} p="4">
               <Flex flexDir="column" width="100%">
                 <main>{children}</main>
               </Flex>
