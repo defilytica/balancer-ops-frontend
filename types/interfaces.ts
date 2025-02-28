@@ -153,3 +153,36 @@ export interface PoolSettings {
   weightedSpecific?: WeightedPoolSpecific;
   stableSpecific?: StablePoolSpecific;
 }
+
+export interface DuneResponse {
+  execution_id: string;
+  query_id: number;
+  state: string;
+  submitted_at: string;
+  expires_at: string;
+  execution_started_at: string;
+  execution_ended_at: string;
+  result: DuneResult;
+}
+
+export interface DuneResult {
+  rows: GaugeData[];
+  metadata: {
+    column_names: string[];
+    result_set_bytes: number;
+    total_row_count: number;
+    datapoint_count: number;
+    pending_execution_row_count: number;
+  };
+}
+
+export interface GaugeData {
+  gauge: string;
+  symbol: string;
+  status: string;
+  last_round_id: number;
+  last_vote_date: string;
+  days_since_last_vote: number;
+  last_vote_amount: number;
+  last_vote_percentage: number;
+}
