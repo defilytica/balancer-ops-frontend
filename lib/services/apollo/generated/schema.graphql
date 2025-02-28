@@ -460,6 +460,9 @@ enum GqlPoolAprItemType {
   """APR that pools earns when BPT is staked on AURA."""
   AURA
 
+  """Dynamic swap fee APR based on data from the last 24h"""
+  DYNAMIC_SWAP_FEE_24H
+
   """
   Represents the yield from an IB (Interest-Bearing) asset APR in a pool.
   """
@@ -2799,6 +2802,9 @@ type GqlVotingGaugeToken {
   """The symbol of the token."""
   symbol: String!
 
+  """Underlying token address"""
+  underlyingTokenAddress: String
+
   """
   If it is a weighted pool, the weigh of the token is shown here in %. 0.5 = 50%.
   """
@@ -2820,6 +2826,7 @@ type GqlVotingPool {
 
   """Pool ID"""
   id: ID!
+  protocolVersion: Int!
 
   """The symbol of the pool."""
   symbol: String!

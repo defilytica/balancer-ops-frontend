@@ -14,7 +14,7 @@ import {
 import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
-import { TbTransactionBitcoin, TbGaugeFilled } from "react-icons/tb";
+import { TbTransactionBitcoin, TbGaugeFilled, TbHeartRateMonitor } from "react-icons/tb";
 import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
@@ -71,6 +71,12 @@ const LinkItems = [
     icon: FaRegChartBar,
     target: "/liquidity-buffers",
     description: "View liquidity buffer allocations",
+  },
+  {
+    name: "Gauge Monitoring",
+    icon: TbHeartRateMonitor,
+    target: "/gauge-kill-list",
+    description: "Check for gauge kill-list",
   },
 ];
 
