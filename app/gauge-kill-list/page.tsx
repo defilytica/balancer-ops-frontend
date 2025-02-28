@@ -10,7 +10,7 @@ import {
   VStack,
   useColorModeValue, Button,
 } from "@chakra-ui/react";
-import DuneGaugeDataTable from "@/components/DuneGaugeDataTable";
+import DuneGaugeDataTable from "@/components/tables/DuneGaugeDataTable";
 import { useDuneData } from "@/lib/hooks/useDuneData";
 import { DownloadIcon } from "@chakra-ui/icons";
 
