@@ -33,12 +33,13 @@ import {
   generateInitializeBufferPayload,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -84,7 +85,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     [tokensData?.tokenGetTokens, selectedToken?.underlyingTokenAddress],
   );
 
-  const networksWithV3Deployed = useMemo(() => {
+  const networkOptionsWithV3 = useMemo(() => {
     const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(network =>
       networksWithVaultExplorer.includes(network.apiID.toLowerCase()),
@@ -269,20 +270,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         </Alert>
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
           <Box flex="1">
-            <FormControl isRequired>
-              <FormLabel>Network</FormLabel>
-              <Select
-                value={selectedNetwork}
-                onChange={handleNetworkChange}
-                placeholder="Select Network"
-              >
-                {networksWithV3Deployed.map(network => (
-                  <option key={network.chainId} value={network.apiID}>
-                    {network.label}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            <NetworkSelector
+              networks={networks}
+              networkOptions={networkOptionsWithV3}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+            />
           </Box>
 
           <Box flex="1">

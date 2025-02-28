@@ -10,7 +10,7 @@ export default async function FeeSetterPage() {
 
   return (
     <Suspense fallback={<Skeleton w="full" h="500px" />}>
-      <ChangeSwapFeeV3Module addressBook={addressBook}  />
+      <ChangeSwapFeeV3Module addressBook={addressBook} />
     </Suspense>
   );
 }

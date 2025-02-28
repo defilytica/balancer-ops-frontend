@@ -1,6 +1,12 @@
+"use client";
+
 import React from "react";
 import {
-  Box,
+  Card as ChakraCard,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Flex,
   VStack,
   HStack,
   Text,
@@ -12,10 +18,13 @@ import {
   IconButton,
   Image,
   Progress,
-  Link,
+  Button,
+  Box,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
+import Link from "next/link";
 import { calculateDistributionAmounts, formatTokenName } from "@/lib/data/injector/helpers";
+import { colors } from "@/lib/services/chakra/themes/base/colors";
 
 interface TokenInfo {
   symbol: string;
@@ -60,9 +69,6 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
     incorrectlySetupGauges,
   } = data;
 
-  const bgColor = useColorModeValue("white", "gray.700");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-
   const formatAmount = (amount: number | string): string => {
     return Number(amount).toFixed(1);
   };
@@ -70,90 +76,120 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
   const distributedPercentage = total > 0 ? (distributed / total) * 100 : 0;
   const remainingPercentage = (remaining / total) * 100;
 
+  const explorerUrl = `${network}/${address}?version=${v2 ? "v2" : "v1"}`;
+
   return (
-    <Box
-      borderWidth="1px"
-      borderRadius="lg"
-      p={6}
-      shadow="md"
-      bg={bgColor}
-      borderColor={borderColor}
-    >
-      <VStack align="stretch" spacing={4}>
-        <HStack justify="space-between" width="100%" flexWrap="nowrap">
-          <Heading size="md" isTruncated maxWidth="70%">
-            {formatTokenName(token)}
-          </Heading>
-          <HStack flexShrink={0}>
+    <ChakraCard align="center" boxShadow="md" borderRadius="md">
+      <CardHeader w="full">
+        <Flex align="center" justify="space-between" w="full">
+          <Flex align="center" gap={2} flex="1">
             {networks[network] && (
-              <Image src={networks[network].logo} alt={`${network} logo`} boxSize="20px" />
+              <Flex
+                w={10}
+                h={10}
+                align="center"
+                justify="center"
+                color="white"
+                rounded="full"
+                flexShrink={0}
+              >
+                <Image src={networks[network].logo} alt={`${network} logo`} boxSize="18px" />
+              </Flex>
             )}
-            <IconButton
-              aria-label="View on explorer"
+            <Text size="md" variant="secondary" isTruncated maxWidth="calc(100% - 30px)">
+              {formatTokenName(token)}
+            </Text>
+          </Flex>
+          <IconButton
+            aria-label="View on explorer"
+            as="a"
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            icon={<ExternalLinkIcon />}
+            variant="ghost"
+            ml="auto"
+          />
+        </Flex>
+      </CardHeader>
+
+      <CardBody w="full">
+        <VStack align="stretch" spacing={4} w="full">
+          <HStack justify="space-between">
+            <Text fontWeight="bold">Token:</Text>
+            <Text textAlign="right">{tokenInfo.symbol}</Text>
+          </HStack>
+
+          <Box>
+            <Text fontWeight="bold" mb={2}>
+              Distribution Progress
+            </Text>
+            <Progress value={distributedPercentage} size="md" colorScheme="green" mb={2} />
+            <HStack justify="space-between">
+              <Text fontSize="sm">
+                {formatAmount(distributed)} / {formatAmount(total)} {tokenInfo.symbol}
+              </Text>
+              <Text fontSize="sm" fontWeight="medium">
+                {distributedPercentage.toFixed(1)}%
+              </Text>
+            </HStack>
+          </Box>
+
+          <HStack justify="space-between">
+            <Text fontWeight="bold">Balance:</Text>
+            <Text textAlign="right">{formatAmount(contractBalance)}</Text>
+          </HStack>
+
+          {incorrectlySetupGauges.length > 0 && (
+            <Alert status="error" borderRadius="md">
+              <Box flex="1">
+                <AlertTitle>Gauge Setup Warning!</AlertTitle>
+                <AlertDescription>
+                  {incorrectlySetupGauges.length} gauge
+                  {incorrectlySetupGauges.length > 1 ? "s are" : " is"} not correctly set up. This
+                  may result in rewards not being distributed properly.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
+
+          {additionalTokensRequired > 0 && (
+            <Alert status="error" borderRadius="md">
+              <Box flex="1">
+                <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
+                <AlertDescription>
+                  Additional {formatAmount(additionalTokensRequired)} {tokenInfo.symbol} required to
+                  complete all distributions.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
+        </VStack>
+      </CardBody>
+
+      <CardFooter>
+        {incorrectlySetupGauges.length > 0 ? (
+          <Link href={`rewards-injector/${address}`} legacyBehavior>
+            <Button variant="secondary" rightIcon={<ExternalLinkIcon />}>
+              More Information
+            </Button>
+          </Link>
+        ) : (
+          <Link href={explorerUrl} passHref legacyBehavior>
+            <Button
               as="a"
-              href={`${network}/${address}?version=${v2 ? "v2" : "v1"}`}
+              variant="secondary"
+              rightIcon={<ExternalLinkIcon />}
               target="_blank"
               rel="noopener noreferrer"
-              size="sm"
-              icon={<ExternalLinkIcon />}
-              variant="ghost"
-            />
-          </HStack>
-        </HStack>
-        <HStack justify="space-between">
-          <Text fontWeight="bold">Token:</Text>
-          <Text textAlign="right">{tokenInfo.symbol}</Text>
-        </HStack>
-
-        <Box>
-          <Text fontWeight="bold" mb={2}>
-            Distribution Progress
-          </Text>
-          <Progress value={distributedPercentage} size="md" colorScheme="green" mb={2} />
-          <HStack justify="space-between">
-            <Text fontSize="sm">
-              {formatAmount(distributed)} / {formatAmount(total)} {tokenInfo.symbol}
-            </Text>
-            <Text fontSize="sm" fontWeight="medium">
-              {distributedPercentage.toFixed(1)}%
-            </Text>
-          </HStack>
-        </Box>
-
-        <HStack justify="space-between">
-          <Text fontWeight="bold">Balance:</Text>
-          <Text textAlign="right">{formatAmount(contractBalance)}</Text>
-        </HStack>
-
-        {incorrectlySetupGauges.length > 0 && (
-          <Alert status="error" borderRadius="md">
-            <Box flex="1">
-              <AlertTitle>Gauge Setup Warning!</AlertTitle>
-              <AlertDescription>
-                {incorrectlySetupGauges.length} gauge
-                {incorrectlySetupGauges.length > 1 ? "s are" : " is"} not correctly set up. This may
-                result in rewards not being distributed properly.
-              </AlertDescription>
-              <Link href={`rewards-injector/${address}`} mt={2} fontWeight="bold">
-                More Information
-              </Link>
-            </Box>
-          </Alert>
+            >
+              View Details
+            </Button>
+          </Link>
         )}
-
-        {additionalTokensRequired > 0 && (
-          <Alert status="error" borderRadius="md">
-            <Box flex="1">
-              <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
-              <AlertDescription>
-                Additional {formatAmount(additionalTokensRequired)} {tokenInfo.symbol} required to
-                complete all distributions.
-              </AlertDescription>
-            </Box>
-          </Alert>
-        )}
-      </VStack>
-    </Box>
+      </CardFooter>
+    </ChakraCard>
   );
 };
 

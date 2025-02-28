@@ -49,6 +49,7 @@ import {
   InputGroup,
   InputRightElement,
   IconButton,
+  Link,
 } from "@chakra-ui/react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -72,6 +73,7 @@ import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
 import { ChildGaugeFactory } from "@/abi/ChildGaugeFactory";
 import { WeightCapType } from "@/types/types";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 interface CreateGaugeProps {
   addressBook: AddressBook;
@@ -461,13 +463,15 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         })
         // Filter for non-null events and find the gauge creation event
         .filter(Boolean)
-        .find((event: { name: string }) =>
-          // Check for both possible event names
-          event?.name === "RootGaugeCreated" || event?.name === "GaugeCreated"
+        .find(
+          (event: { name: string }) =>
+            // Check for both possible event names
+            event?.name === "RootGaugeCreated" || event?.name === "GaugeCreated",
         );
 
       // Safely access the gauge address from event args
-      const rootGaugeAddress = gaugeCreatedEvent?.args?.[0] || // First argument might be the gauge address
+      const rootGaugeAddress =
+        gaugeCreatedEvent?.args?.[0] || // First argument might be the gauge address
         gaugeCreatedEvent?.args?.gauge || // Named argument
         null; // Fallback if not found
 
@@ -480,11 +484,11 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         prev.map(t =>
           t.hash === tx.hash
             ? {
-              ...t,
-              status: "success",
-              address: rootGaugeAddress || undefined // Only set if we found it
-            }
-            : t
+                ...t,
+                status: "success",
+                address: rootGaugeAddress || undefined, // Only set if we found it
+              }
+            : t,
         ),
       );
 
@@ -497,7 +501,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
         status: "success",
         duration: 5000,
       });
-
     } catch (error: any) {
       console.error("Root gauge creation error:", error);
       toast({
@@ -546,9 +549,19 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
           <AlertIcon />
           <AlertDescription>
             <Text fontWeight="bold" mb={2}>
-              Important Information:
+              Hints
             </Text>
             <UnorderedList spacing={2}>
+              <ListItem>
+                For a general FAQ on gauges and how incentives are managed, consult our{" "}
+                <Link
+                  href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/incentive-management.html"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  incentive management docs.
+                </Link>
+              </ListItem>
               <ListItem>
                 For mainnet pools, only one transaction is needed to create the gauge
               </ListItem>
@@ -559,10 +572,16 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                   <ListItem>Create a root gauge on Ethereum mainnet</ListItem>
                 </OrderedList>
               </ListItem>
-              <ListItem>After creation, a governance proposal is required</ListItem>
-              <ListItem>Votes occur every Thursday</ListItem>
-              <ListItem>L2 gauges have a one-week delay in BAL emissions after approval</ListItem>
-              <ListItem>L2 gauges need &gt;0.1% of votes for regular emissions</ListItem>
+              <ListItem>
+                If you intend to apply for a veBAL gauge, consult{" "}
+                <Link
+                  href="https://forum.balancer.fi/t/instructions-overview/2674"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  this documentation
+                </Link>
+              </ListItem>
             </UnorderedList>
           </AlertDescription>
         </Alert>
@@ -589,20 +608,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       <Box mb={8}>
         <Stack spacing={6}>
           {/* Network Selection */}
-          <FormControl>
-            <FormLabel>Network</FormLabel>
-            <Select
-              value={selectedNetwork}
-              onChange={handleNetworkChange}
-              placeholder="Select Network"
-            >
-              {NETWORK_OPTIONS.map(network => (
-                <option key={network.chainId} value={network.apiID}>
-                  {network.label}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
+          <NetworkSelector
+            networks={networks}
+            networkOptions={NETWORK_OPTIONS}
+            selectedNetwork={selectedNetwork}
+            handleNetworkChange={handleNetworkChange}
+          />
 
           {/* Pool Selection */}
           {selectedNetwork && (

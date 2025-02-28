@@ -240,10 +240,10 @@ const PoolCreatorPage: React.FC = () => {
               <Flex align="center">
                 <AlertCircle color="red" />
                 <Text fontSize="sm" color="white" ml={2}>
-                  Creating and adding liquidity to pools involves significant risks. Carefully review
-                  all pool parameters and ensure you understand the implications before deployment. We
-                  are not responsible for any losses incurred through pool creation or management
-                  using this tool.
+                  Creating and adding liquidity to pools involves significant risks. Carefully
+                  review all pool parameters and ensure you understand the implications before
+                  deployment. We are not responsible for any losses incurred through pool creation
+                  or management using this tool.
                 </Text>
               </Flex>
             </CardBody>

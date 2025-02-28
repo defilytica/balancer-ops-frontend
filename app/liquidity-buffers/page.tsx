@@ -72,7 +72,7 @@ export default function LiquidityBuffersPage() {
         <Heading as="h2" size="lg" variant="special" mb={2}>
           Liquidity Buffers
         </Heading>
-        <Text mb={8}>See the allocation of the liquidity buffers in the boosted pools.</Text>
+        <Text mb={8}>Liquidity buffer allocation visualization in Balancer v3 boosted pools.</Text>
         {renderContent()}
       </Box>
     </Box>

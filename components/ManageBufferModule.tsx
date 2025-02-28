@@ -52,6 +52,7 @@ import { useQuery as useTanStackQuery } from "@tanstack/react-query";
 import React, { useCallback, useMemo, useState } from "react";
 import { isAddress } from "viem";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
@@ -461,20 +462,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         </FormControl>
         <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
           <Box flex="1">
-            <FormControl isRequired>
-              <FormLabel>Network</FormLabel>
-              <Select
-                value={selectedNetwork}
-                onChange={handleNetworkChange}
-                placeholder="Select Network"
-              >
-                {networkOptionsWithV3.map(network => (
-                  <option key={network.chainId} value={network.apiID}>
-                    {network.label}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            <NetworkSelector
+              networks={networks}
+              networkOptions={networkOptionsWithV3}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+            />
           </Box>
 
           <Box flex="1">

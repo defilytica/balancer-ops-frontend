@@ -66,7 +66,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
-              No buffer allocated
+              No buffer needed
             </Text>
           </HStack>
         </Center>
@@ -100,13 +100,27 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     }
 
     // Case 4: Empty buffer
-    if (isEmptyBuffer) {
+    if (isEmptyBuffer && token.underlyingToken?.isErc4626) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
-              No buffer allocated
+              Empty Buffer! Needs to be initialized!
+            </Text>
+          </HStack>
+        </Center>
+      );
+    }
+
+    // Case 5: Fake ERC4626 / underlying token doesn't need a buffer
+    if (isEmptyBuffer && !token.underlyingToken?.isErc4626) {
+      return (
+        <Center h="full" bg="whiteAlpha.50" rounded="md">
+          <HStack>
+            <Icon as={BiErrorCircle} boxSize={4} />
+            <Text fontSize="sm" color={textColor}>
+              No buffer allocated / needed (fake ERC4626)
             </Text>
           </HStack>
         </Center>

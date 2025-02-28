@@ -4,28 +4,15 @@ import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import CustomCard from "@/components/CustomCard";
 
 const CATEGORIZED_PAYLOADS = {
-  "Gauge Management": [
-    "enable-gauge",
-    "kill-gauge",
-  ],
+  "Gauge Management": ["enable-gauge", "kill-gauge"],
   "Reward Configuration": [
     "add-reward-to-gauge",
     "set-reward-distributor-to-gauge",
-    "injector-configurator"
+    "injector-configurator",
   ],
-  "Pool Management (v3)": [
-    "initialize-buffer",
-    "manage-buffer",
-    "fee-setter-v3",
-  ],
-  "Financial Operations": [
-    "create-payment",
-    "cctp-bridge"
-  ],
-  "Pool Management (v2)": [
-    "fee-setter",
-  ],
-
+  "Pool Management (v3)": ["initialize-buffer", "manage-buffer", "fee-setter-v3"],
+  "Financial Operations": ["create-payment", "cctp-bridge"],
+  "Pool Management (v2)": ["fee-setter"],
 };
 
 const PayloadBuilder = () => {
@@ -43,18 +30,10 @@ const PayloadBuilder = () => {
       <VStack spacing={8} align="stretch">
         {Object.entries(CATEGORIZED_PAYLOADS).map(([category, payloadKeys]) => (
           <Box key={category}>
-            <Heading
-              as="h3"
-              size="md"
-              mb={4}
-              pb={2}
-            >
+            <Heading as="h3" size="md" mb={4} pb={2}>
               {category}
             </Heading>
-            <SimpleGrid
-              columns={{ base: 1, md: 2, lg: 3 }}
-              spacing={4}
-            >
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
               {payloadKeys.map(key => {
                 const payload = getPayloadByKey(key);
                 if (!payload) return null;

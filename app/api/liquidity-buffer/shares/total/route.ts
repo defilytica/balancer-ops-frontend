@@ -10,18 +10,12 @@ export async function GET(request: NextRequest) {
   const wrappedToken = searchParams.get("wrappedToken");
 
   if (!network || !wrappedToken) {
-    return NextResponse.json(
-      { error: "Missing required parameters" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
   const networkConfig = networks[network];
   if (!networkConfig) {
-    return NextResponse.json(
-      { error: "Invalid network specified" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid network specified" }, { status: 400 });
   }
 
   let addressBook = await fetchAddressBook();
@@ -30,7 +24,7 @@ export async function GET(request: NextRequest) {
     addressBook,
     network,
     "20241205-v3-vault-explorer",
-    "VaultExplorer"
+    "VaultExplorer",
   );
 
   if (!vaultExplorerAddress) {
@@ -38,24 +32,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const provider = new JsonRpcProvider(
-      `${networkConfig.rpc}${process.env.DRPC_API_KEY}`
-    );
-    
-    const vaultExplorer = new Contract(
-      vaultExplorerAddress,
-      vaultExplorerABI,
-      provider
-    );
+    const provider = new JsonRpcProvider(`${networkConfig.rpc}${process.env.DRPC_API_KEY}`);
+
+    const vaultExplorer = new Contract(vaultExplorerAddress, vaultExplorerABI, provider);
 
     const shares = await vaultExplorer.getBufferTotalShares(wrappedToken);
-    
+
     return NextResponse.json({ shares: shares.toString() });
   } catch (error) {
     console.error("Error fetching buffer shares:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch buffer shares" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch buffer shares" }, { status: 500 });
   }
-} 
+}

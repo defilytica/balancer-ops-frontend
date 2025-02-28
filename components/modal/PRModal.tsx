@@ -27,7 +27,18 @@ import {
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import { createPR } from "@/lib/services/createPR";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, getISOWeek, getYear } from "date-fns";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  addWeeks,
+  subWeeks,
+  getISOWeek,
+  getYear,
+  isBefore,
+  isSameWeek,
+} from "date-fns";
 
 interface PRCreationModalProps {
   isOpen: boolean;
@@ -40,6 +51,14 @@ interface PRCreationModalProps {
 const isValidBranchName = (name: string) => {
   const regex = /^(?!.*\.\.)[^\s~^:?*\\[]+(?<!\.lock)$/;
   return regex.test(name) && !name.startsWith("-") && !name.includes("@{");
+};
+
+// Get the start of next week (Monday)
+const getStartOfNextWeek = () => {
+  const now = new Date();
+  // Start from current date, add days until we reach next Monday
+  const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7; // If today is Monday, go to next Monday
+  return addDays(now, daysUntilNextMonday);
 };
 
 interface ForkStatus {
@@ -65,7 +84,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const [filePath, setFilePath] = useState("");
   const [prDescription, setPrDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [selectedWeek, setSelectedWeek] = useState(getStartOfNextWeek());
   const [branchError, setBranchError] = useState("");
   const toast = useToast();
 
@@ -124,7 +143,35 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   }, [isOpen, prRepo]);
 
   const handleWeekChange = (direction: "prev" | "next") => {
-    setSelectedWeek(prev => (direction === "prev" ? subWeeks(prev, 1) : addWeeks(prev, 1)));
+    if (direction === "next") {
+      // Always allow going to future weeks
+      setSelectedWeek(prev => addWeeks(prev, 1));
+    } else {
+      // For "prev", check if going back would result in current week or earlier
+      const prevWeek = subWeeks(selectedWeek, 1);
+      const now = new Date();
+
+      // Only allow if the previous week is still in the future
+      // This checks if the prev week starts after today or is not the current week
+      if (!isBefore(prevWeek, now) && !isSameWeek(prevWeek, now, { weekStartsOn: 1 })) {
+        setSelectedWeek(prevWeek);
+      } else {
+        // Optionally: show a toast notification that you can't select current/past weeks
+        toast({
+          title: "Invalid selection",
+          description: "Only future weeks can be selected",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
+  const isPrevButtonDisabled = () => {
+    const prevWeek = subWeeks(selectedWeek, 1);
+    const now = new Date();
+    return isBefore(prevWeek, now) || isSameWeek(prevWeek, now, { weekStartsOn: 1 });
   };
 
   const formatWeekRange = (date: Date) => {
@@ -244,7 +291,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
 
           {needsWeekSelector && (
             <FormControl mb={4}>
-              <FormLabel>Select Week</FormLabel>
+              <FormLabel>Select Week of On-chain Execution</FormLabel>
               <Flex align="center" justify="space-between" bg="transparent" p={2} borderRadius="md">
                 <IconButton
                   icon={<ChevronLeftIcon />}
@@ -252,6 +299,8 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
                   aria-label="Previous week"
                   size="md"
                   variant="ghost"
+                  isDisabled={isPrevButtonDisabled()}
+                  _disabled={{ opacity: 0.4, cursor: "not-allowed" }}
                 />
                 <Box textAlign="center" flex={1}>
                   <Text fontWeight="bold">{formatWeekRange(selectedWeek)}</Text>
