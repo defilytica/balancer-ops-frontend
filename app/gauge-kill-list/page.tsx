@@ -19,7 +19,7 @@ export default function DuneDashboardPage() {
   const queryId = 4517325;
 
   // Use our custom hook to fetch and manage data
-  const { data, loading, error, sortData, sortColumn, sortDirection } = useDuneData(queryId);
+  const { data, loading, error, sortData, sortColumn, sortDirection, lastExecutionTime } = useDuneData(queryId);
 
   // Function to download data as CSV
   const downloadCSV = () => {
@@ -77,6 +77,11 @@ export default function DuneDashboardPage() {
             <Text >
               List of gauges that didn't receive votes for more than 60 days and are considered to be eliminated (killed) from the veBAL system.
             </Text>
+            {lastExecutionTime?
+            <Text>
+              List updates every Friday 00:00 UTC. Last update: { new Date(lastExecutionTime).toLocaleDateString()  }
+            </Text> : null
+            }
           </Box>
           <Box maxW="100px">
           <Button
