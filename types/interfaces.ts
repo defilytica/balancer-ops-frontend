@@ -187,8 +187,8 @@ export interface GaugeData {
   last_vote_percentage: number;
   median_60d_tvl: number;
   avg_60d_tvl: number;
-  max_avg_60d_tvl: number;
-  min_avg_60d_tvl: number;
+  max_60d_tvl: number;
+  min_60d_tvl: number;
   days_above_100k_tvl: number;
   last_day_above_100k: number;
 }

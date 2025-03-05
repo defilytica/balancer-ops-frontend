@@ -25,7 +25,7 @@ export default function DuneDashboardPage() {
     if (!rawData || !Array.isArray(rawData)) return [];
     return rawData.filter(row => {
       // Check if avg_60d_tvl exists and is less than 100k
-      return row.avg_60d_tvl < 100000;
+      return row.max_60d_tvl < 100000;
     });
   }, [rawData]);
 
@@ -41,7 +41,7 @@ export default function DuneDashboardPage() {
       'Days Since Last Vote',
       'Last Vote Amount (veBAL)',
       'Last Vote Percentage (%)',
-      'Average TVL (60d)'
+      'Max. TVL (60d)'
     ];
 
     // Convert data to CSV rows
@@ -85,7 +85,7 @@ export default function DuneDashboardPage() {
               Gauges to be killed
             </Heading>
             <Text >
-              List of gauges that didn't receive votes for more than 60 days and are considered to be eliminated (killed) from the veBAL system.
+              List of gauges that didn't receive votes for more than 60 days, as well as pool TVL not reaching $100k in that period. The pools presented in this list are considered to be eliminated (killed) from the veBAL system.
             </Text>
             {lastExecutionTime?
             <Text>

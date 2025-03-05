@@ -22,8 +22,16 @@ import {
   useToast,
   useDisclosure,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useState } from "react";
+import {
+  AddIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  DeleteIcon,
+  DownloadIcon,
+  AttachmentIcon
+} from "@chakra-ui/icons";
+import Papa from 'papaparse';
+import React, { useState, useRef } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -40,6 +48,10 @@ export default function KillGaugePage() {
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
+  const [isProcessingCsv, setIsProcessingCsv] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [autoGeneratePayload, setAutoGeneratePayload] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -64,6 +76,112 @@ export default function KillGaugePage() {
     setHumanReadableText(text);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingCsv(true);
+    setUploadedFileName(file.name);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+      complete: (results) => {
+        try {
+          // Check if there are parse errors
+          if (results.errors && results.errors.length > 0) {
+            throw new Error(`CSV parsing error: ${results.errors[0].message}`);
+          }
+
+          // Check if we have data
+          if (!results.data || results.data.length === 0) {
+            throw new Error('The CSV file appears to be empty');
+          }
+
+          // Type-cast the data array to work with it safely
+          const typedData = results.data as Array<Record<string, unknown>>;
+
+          // Check for Root Gauge column presence
+          const firstRow = typedData[0];
+          const columns = Object.keys(firstRow);
+
+          // Find the Root Gauge column (case-insensitive)
+          const rootGaugeColumn = columns.find(col =>
+            col.toLowerCase().trim() === 'root gauge'
+          );
+
+          if (!rootGaugeColumn) {
+            throw new Error('Could not find "Root Gauge" column in the CSV');
+          }
+
+          // Extract all root gauge values
+          const rootGauges = typedData
+            .map(row => String(row[rootGaugeColumn] || '').trim())
+            .filter(gauge => gauge !== '');
+
+          // Update gauges state with values from CSV
+          if (rootGauges.length > 0) {
+            setGauges(rootGauges.map(id => ({ id })));
+
+            toast({
+              title: "CSV processed successfully",
+              description: `Found ${rootGauges.length} gauge IDs in the CSV file`,
+              status: "success",
+              duration: 5000,
+              isClosable: true,
+            });
+
+            // Automatically generate the payload if enabled
+            if (autoGeneratePayload && rootGauges.length > 0) {
+              let payload = generateKillGaugePayload(rootGauges.map(id => ({ target: id })));
+              setGeneratedPayload(JSON.stringify(payload, null, 4));
+              toast({
+                title: "Payload generated",
+                description: `Generated payload for ${rootGauges.length} gauge IDs`,
+                status: "info",
+                duration: 3000,
+                isClosable: true,
+              });
+            }
+          } else {
+            toast({
+              title: "No gauge IDs found",
+              description: "The CSV file doesn't contain any valid gauge IDs",
+              status: "warning",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Error processing CSV",
+            description: error instanceof Error ? error.message : "Unknown error occurred",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        } finally {
+          setIsProcessingCsv(false);
+        }
+      },
+      error: (error) => {
+        toast({
+          title: "Error parsing CSV",
+          description: error.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        setIsProcessingCsv(false);
+      }
+    });
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
@@ -86,6 +204,10 @@ export default function KillGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
+                Upload a CSV file containing gauge data to automatically populate gauge IDs. At minimum, a column labeled "Root Gauge" has to be present for successful parsing.
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
                 Ensure that the gauge contracts are no longer needed before removing them.
               </ListItem>
               <ListItem>
@@ -97,12 +219,91 @@ export default function KillGaugePage() {
           </AlertDescription>
         </Box>
       </Alert>
+
+      {/* CSV Upload Section */}
+      <Card mb="20px" p="15px">
+        <Box>
+          <Text fontSize="lg" fontWeight="medium" mb="10px">
+            Upload Gauge Data CSV
+          </Text>
+          <Flex direction="column" gap="10px">
+            <Flex alignItems="center">
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                style={{ display: "none" }}
+                ref={fileInputRef}
+              />
+              <Button
+                onClick={triggerFileUpload}
+                leftIcon={<AttachmentIcon />}
+                isLoading={isProcessingCsv}
+                loadingText="Processing"
+                variant="outline"
+                mr="10px"
+              >
+                {uploadedFileName ? "Change File" : "Upload CSV"}
+              </Button>
+              {uploadedFileName && (
+                <Text fontSize="sm" color="gray.600">
+                  {uploadedFileName}
+                </Text>
+              )}
+            </Flex>
+
+            <Flex alignItems="center">
+              <FormControl display="flex" alignItems="center">
+                <FormLabel htmlFor="auto-generate" mb="0" fontSize="sm">
+                  Auto-generate payload after CSV upload
+                </FormLabel>
+                <input
+                  id="auto-generate"
+                  type="checkbox"
+                  checked={autoGeneratePayload}
+                  onChange={(e) => setAutoGeneratePayload(e.target.checked)}
+                  style={{ marginLeft: '8px' }}
+                />
+              </FormControl>
+            </Flex>
+          </Flex>
+        </Box>
+      </Card>
+
+      {/* Gauge Summary Section - visible when gauges are loaded from CSV */}
+      {uploadedFileName && gauges.length > 0 && (
+        <Card mb="20px" p="15px">
+          <Box>
+            <Text fontSize="lg" fontWeight="medium" mb="10px">
+              Loaded Gauge Summary
+            </Text>
+            <Text fontSize="sm" mb="8px">
+              {gauges.length} gauge{gauges.length !== 1 ? 's' : ''} loaded from CSV
+            </Text>
+            <Button
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              onClick={() => {
+                setGauges([{ id: "" }]);
+                setUploadedFileName(null);
+                setGeneratedPayload(null);
+              }}
+              mb="10px"
+            >
+              Clear All Gauges
+            </Button>
+          </Box>
+        </Card>
+      )}
+
+      {/* Manual Gauge Entry Section */}
       <>
         {gauges.map((gauge, index) => (
           <Card key={"kill-card" + index} mb="10px">
             <Box key={index} display="flex" alignItems="flex-end">
               <FormControl mr="10px" flex="1">
-                <FormLabel>Gauge ID #{index + 1}</FormLabel>
+                <FormLabel>Root Gauge ID #{index + 1}</FormLabel>
                 <Input
                   value={gauge.id}
                   onChange={e => {

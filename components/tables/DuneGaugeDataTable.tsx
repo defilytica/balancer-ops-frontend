@@ -5,7 +5,6 @@ import {
   Text,
   Flex,
   Spinner,
-  chakra,
   Link,
   Card,
   VStack,
@@ -71,7 +70,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
     { key: 'days_since_last_vote', label: 'Days Since Last Vote' },
     { key: 'last_vote_amount', label: 'Last Vote Amount (veBAL)' },
     { key: 'last_vote_percentage', label: 'Last Vote Percentage (%)' },
-    { key: 'avg_60d_tvl', label: 'Avg. TVL (60d)' },
+    { key: 'max_60d_tvl', label: 'Max. TVL (60d)' },
   ];
 
   const SortableHeader: React.FC<{
@@ -184,7 +183,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
                 {row.last_vote_percentage.toFixed(2)}%
               </Box>
               <Box as="td" p={3} textAlign="right">
-                {formatUSD(row.avg_60d_tvl)}
+                {formatUSD(row.max_60d_tvl)}
               </Box>
               <Box as="td" p={3}>
                 {getStatusBadge(row.days_since_last_vote)}
