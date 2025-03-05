@@ -25,11 +25,12 @@ query GetPools($chainIn: [GqlChain!]){
     }
 }
 
-query GetBoostedPools {
+query GetBoostedPools($chainIn: [GqlChain!]) {
   poolGetPools(
     where: {
       protocolVersionIn: [3]
       tagIn: ["BOOSTED"]
+      chainIn: $chainIn
       chainNotIn: SONIC
     }
     orderBy: totalLiquidity
