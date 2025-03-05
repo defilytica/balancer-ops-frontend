@@ -5,7 +5,6 @@ import {
   Text,
   Flex,
   Spinner,
-  chakra,
   Link,
   Card,
   VStack,
@@ -18,6 +17,7 @@ import {
 import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 import { GaugeData } from "@/types/interfaces";
 import { SortableColumn, SortDirection } from "@/types/types";
+import { formatUSD } from "@/lib/services/formatters";
 
 interface DuneDataTableProps {
   data: GaugeData[];
@@ -70,6 +70,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
     { key: 'days_since_last_vote', label: 'Days Since Last Vote' },
     { key: 'last_vote_amount', label: 'Last Vote Amount (veBAL)' },
     { key: 'last_vote_percentage', label: 'Last Vote Percentage (%)' },
+    { key: 'max_60d_tvl', label: 'Max. TVL (60d)' },
   ];
 
   const SortableHeader: React.FC<{
@@ -101,9 +102,9 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
 
   if (isMobile) {
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={2} align="stretch">
         {data.map((row, index) => (
-          <Card key={index} p={4}>
+          <Card key={index} p={2}>
             <VStack align="stretch" spacing={2}>
               <HStack justify="space-between">
                 <Text fontWeight="bold">{row.symbol}</Text>
@@ -151,10 +152,10 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
             <Box
               as="tr"
               key={index}
-              _hover={{ bg: "gray.50" }}
+              _hover={{ bg: "gray.500" }}
               transition="background-color 0.2s"
             >
-              <Box as="td" p={3}>
+              <Box as="td" p={2}>
                 <Text fontWeight="medium">{row.symbol}</Text>
               </Box>
               <Box as="td" p={3}>
@@ -180,6 +181,9 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
               </Box>
               <Box as="td" p={3} textAlign="right">
                 {row.last_vote_percentage.toFixed(2)}%
+              </Box>
+              <Box as="td" p={3} textAlign="right">
+                {formatUSD(row.max_60d_tvl)}
               </Box>
               <Box as="td" p={3}>
                 {getStatusBadge(row.days_since_last_vote)}

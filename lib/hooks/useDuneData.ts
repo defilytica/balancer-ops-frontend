@@ -9,6 +9,7 @@ export const useDuneData = (queryId: number) => {
   const [error, setError] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<SortableColumn>('days_since_last_vote');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [lastExecutionTime, setLastExecutionTime] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +23,7 @@ export const useDuneData = (queryId: number) => {
 
         const duneResponse: DuneResponse = await response.json();
         setData(duneResponse.result.rows);
+        setLastExecutionTime(duneResponse.execution_ended_at);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -62,5 +64,5 @@ export const useDuneData = (queryId: number) => {
     setSortDirection(direction);
   };
 
-  return { data, loading, error, sortData, sortColumn, sortDirection };
+  return { data, loading, error, sortData, sortColumn, sortDirection, lastExecutionTime };
 };
