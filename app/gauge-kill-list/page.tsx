@@ -1,7 +1,6 @@
-// app/dune-dashboard/page.tsx
 'use client';
 
-import React from 'react';
+import React, { useMemo } from "react";
 import {
   Box,
   Container,
@@ -16,10 +15,19 @@ import { DownloadIcon } from "@chakra-ui/icons";
 
 export default function DuneDashboardPage() {
   // Dune query ID for gauge Kill list
-  const queryId = 4517325;
+  const queryId = 4805654;
 
   // Use our custom hook to fetch and manage data
-  const { data, loading, error, sortData, sortColumn, sortDirection, lastExecutionTime } = useDuneData(queryId);
+  const { data : rawData, loading, error, sortData, sortColumn, sortDirection, lastExecutionTime } = useDuneData(queryId);
+
+  // Filter data to only show rows where avg_60d_tvl < 100k
+  const data = useMemo(() => {
+    if (!rawData || !Array.isArray(rawData)) return [];
+    return rawData.filter(row => {
+      // Check if avg_60d_tvl exists and is less than 100k
+      return row.avg_60d_tvl < 100000;
+    });
+  }, [rawData]);
 
   // Function to download data as CSV
   const downloadCSV = () => {
@@ -32,7 +40,8 @@ export default function DuneDashboardPage() {
       'Last Vote Date',
       'Days Since Last Vote',
       'Last Vote Amount (veBAL)',
-      'Last Vote Percentage (%)'
+      'Last Vote Percentage (%)',
+      'Average TVL (60d)'
     ];
 
     // Convert data to CSV rows
@@ -42,7 +51,8 @@ export default function DuneDashboardPage() {
       new Date(row.last_vote_date).toLocaleDateString(),
       row.days_since_last_vote,
       row.last_vote_amount,
-      row.last_vote_percentage.toFixed(2)
+      row.last_vote_percentage.toFixed(2),
+      row.avg_60d_tvl
     ]);
 
     // Add headers to the beginning
