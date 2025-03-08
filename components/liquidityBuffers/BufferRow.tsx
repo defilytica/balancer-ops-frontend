@@ -14,7 +14,6 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
 import { BiErrorCircle } from "react-icons/bi";
 import {
   Bar,
@@ -26,38 +25,34 @@ import {
 } from "recharts";
 import { formatUnits } from "viem";
 import { BufferTooltip } from "./BufferTooltip";
-import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
-import { networks } from "@/constants/constants";
 
 interface BufferRowProps {
   token: PoolToken;
   isLastToken: boolean;
+  buffer?: {
+    underlyingBalance: bigint;
+    wrappedBalance: bigint;
+    state: {
+      isLoading: boolean;
+      isError: boolean;
+    };
+  };
 }
 
-export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
+export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
-  let network = token.chain!.toLowerCase();
+  const { isLoading, isError } = buffer?.state || {};
 
-  const {
-    data: bufferBalance,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["bufferBalance", token.address, network],
-    queryFn: () => fetchBufferBalance(token.address, network),
-    enabled: token.isErc4626 && !!networks[network],
-  });
-
-  const balance = bufferBalance && {
-    underlyingBalance: bufferBalance.underlyingBalance,
-    wrappedBalance: bufferBalance.wrappedBalance,
+  const formatBufferValue = (value: bigint, decimals: number) => {
+    const formattedValue = Number(formatUnits(value, decimals));
+    return value > 0 && formattedValue < 0.01 ? "< 0.01" : formatValue(value, decimals);
   };
 
   const isEmptyBuffer =
-    balance && balance.underlyingBalance === BigInt(0) && balance.wrappedBalance === BigInt(0);
+    buffer && buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
 
   const ratios =
-    balance && calculateRatios(balance.underlyingBalance, balance.wrappedBalance, token.decimals!);
+    buffer && calculateRatios(buffer.underlyingBalance, buffer.wrappedBalance, token.decimals!);
 
   const renderContent = () => {
     if (!token.isErc4626) {
@@ -66,7 +61,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
-              No buffer needed
+              No buffer needed (non-ERC4626)
             </Text>
           </HStack>
         </Center>
@@ -86,7 +81,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     }
 
     // Case 3: Error state or no data
-    if (isError || !bufferBalance || !balance) {
+    if (isError || !buffer) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md" border="1px solid red.200">
           <HStack>
@@ -100,7 +95,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     }
 
     // Case 4: Empty buffer
-    if (isEmptyBuffer && token.underlyingToken?.isErc4626) {
+    if (isEmptyBuffer && token.isErc4626) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
@@ -113,6 +108,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
       );
     }
 
+    // TODO: Check if this condition is correct
     // Case 5: Fake ERC4626 / underlying token doesn't need a buffer
     if (isEmptyBuffer && !token.underlyingToken?.isErc4626) {
       return (
@@ -130,8 +126,8 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
     const chartData = [
       {
         token,
-        underlying: Number(formatUnits(balance.underlyingBalance, token.decimals!)),
-        wrapped: Number(formatUnits(balance.wrappedBalance, token.decimals!)),
+        underlying: Number(formatUnits(buffer.underlyingBalance, token.decimals!)),
+        wrapped: Number(formatUnits(buffer.wrappedBalance, token.decimals!)),
       },
     ];
 
@@ -155,14 +151,14 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#627EEA" />
             <Text color={textColor}>
-              Underlying: {formatValue(balance.underlyingBalance, token.decimals!)}{" "}
+              Underlying: {formatBufferValue(buffer.underlyingBalance, token.decimals!)}{" "}
               {token.underlyingToken?.symbol}
             </Text>
           </HStack>
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#E5E5E5" />
             <Text color={textColor}>
-              Wrapped: {formatValue(balance.wrappedBalance, token.decimals!)} {token.symbol}
+              Wrapped: {formatBufferValue(buffer.wrappedBalance, token.decimals!)} {token.symbol}
             </Text>
           </HStack>
         </HStack>

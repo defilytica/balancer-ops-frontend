@@ -16,14 +16,15 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { InfoOutlineIcon } from "@chakra-ui/icons";
-import { type Pool } from "@/types/interfaces";
+import { type Pool, PoolToken } from "@/types/interfaces";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferRow } from "./BufferRow";
 import { networks } from "@/constants/constants";
 import { getLendingProtocolFromTags } from "@/lib/utils/getLendingProtocolFromTags";
+import { PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
 
 interface PoolCardProps {
-  pool: Pool;
+  pool: PoolWithBufferBalances;
 }
 
 export const PoolCard = ({ pool }: PoolCardProps) => {
@@ -95,10 +96,11 @@ export const PoolCard = ({ pool }: PoolCardProps) => {
         </HStack>
       </CardHeader>
       <CardBody p={6}>
-        {pool.poolTokens.map((token, index) => (
+        {pool.poolTokens.map((token: PoolToken, index: number) => (
           <BufferRow
             key={token.address}
             token={token}
+            buffer={pool.buffers?.[token.address]}
             isLastToken={index === pool.poolTokens.length - 1}
           />
         ))}

@@ -203,6 +203,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
             networkOptions={NETWORK_OPTIONS}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
+            label="Network"
           />
         </GridItem>
 

@@ -283,6 +283,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             networkOptions={networkOptionsWithV3}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
+            label="Network"
           />
         </GridItem>
 

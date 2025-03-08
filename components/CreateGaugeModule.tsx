@@ -613,6 +613,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
             networkOptions={NETWORK_OPTIONS}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
+            label="Network"
           />
 
           {/* Pool Selection */}
