@@ -25,35 +25,80 @@ import {
   VStack,
   HStack,
   Badge,
+  Link,
+  Spinner,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon, ExternalLinkIcon, CheckCircleIcon } from "@chakra-ui/icons";
 import { ethers } from "ethers";
+import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
-import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { AddressBook } from "@/types/interfaces";
 import { ChildChainGaugeInjectorV2Factory } from "@/abi/ChildChainGaugeInjectorV2Factory";
 import AddressInput from "@/components/AdressInput";
+
+// ERC20 Token ABI (minimal for name, symbol and decimals)
+const ERC20_ABI = [
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "name",
+    "outputs": [{ "name": "", "type": "string" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [{ "name": "", "type": "string" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{ "name": "", "type": "uint8" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
 
 interface InjectorCreationProps {
   addressBook: AddressBook;
 }
 
+interface TransactionState {
+  hash: string;
+  status: "pending" | "success" | "error";
+  address?: string;
+}
+
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [factoryAddress, setFactoryAddress] = useState("");
-  const [keeperAddresses, setKeeperAddresses] = useState<string[]>([""]);
+  const [keeperAddresses, setKeeperAddresses] = useState<string[]>(["0x0000000000000000000000000000000000000000"]);
   const [minWaitPeriodSeconds, setMinWaitPeriodSeconds] = useState("518400"); // Default: 6 days
   const [injectTokenAddress, setInjectTokenAddress] = useState("");
-  const [maxInjectionAmount, setMaxInjectionAmount] = useState("");
+  const [tokenInfo, setTokenInfo] = useState<{name: string; symbol: string; decimals: number} | null>(null);
+  const [isLoadingToken, setIsLoadingToken] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [maxInjectionAmount, setMaxInjectionAmount] = useState("0");
   const [owner, setOwner] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [transactionData, setTransactionData] = useState<any>(null);
+  const [transactions, setTransactions] = useState<TransactionState[]>([]);
   const [deployedInjectors, setDeployedInjectors] = useState<string[]>([]);
   const [currentChainId, setCurrentChainId] = useState<string | null>(null);
+  const [isDev, setIsDev] = useState(false);
 
   const toast = useToast();
+  const { address } = useAccount();
+  const { chains, switchChain } = useSwitchChain();
 
   // Get current network on component mount and when window.ethereum changes
   useEffect(() => {
@@ -63,6 +108,14 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
           const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
           setCurrentChainId(network.chainId.toString());
+
+          // Auto-select network based on connected chain
+          const matchingNetwork = NETWORK_OPTIONS.find(
+            n => n.chainId === network.chainId.toString()
+          );
+          if (matchingNetwork && selectedNetwork === "") {
+            setSelectedNetwork(matchingNetwork.apiID);
+          }
         } catch (error) {
           console.error("Failed to get chain ID:", error);
           setCurrentChainId(null);
@@ -81,12 +134,19 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       });
     }
 
+    // Check if we're in development mode
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "development") {
+      setIsDev(true);
+    } else if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+      setIsDev(true);
+    }
+
     return () => {
       if (typeof window !== "undefined" && window.ethereum) {
         window.ethereum.removeListener("chainChanged", checkChainId);
       }
     };
-  }, []);
+  }, [selectedNetwork]);
 
   // Fetch factory address for the selected network
   useEffect(() => {
@@ -106,6 +166,52 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     }
   }, [selectedNetwork, addressBook]);
 
+  // Fetch token info when token address changes
+  useEffect(() => {
+    const fetchTokenInfo = async () => {
+      if (!injectTokenAddress || !ethers.isAddress(injectTokenAddress) || !selectedNetwork) {
+        setTokenInfo(null);
+        setTokenError(null);
+        return;
+      }
+
+      setIsLoadingToken(true);
+      setTokenError(null);
+
+      try {
+        if (typeof window !== "undefined" && window.ethereum) {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const tokenContract = new ethers.Contract(
+            injectTokenAddress,
+            ERC20_ABI,
+            provider
+          );
+
+          // Fetch token details
+          const [name, symbol, decimals] = await Promise.all([
+            tokenContract.name(),
+            tokenContract.symbol(),
+            tokenContract.decimals()
+          ]);
+
+          setTokenInfo({
+            name,
+            symbol,
+            decimals: Number(decimals)
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch token info:", error);
+        setTokenError("Failed to fetch token information. Please verify this is a valid ERC-20 token address.");
+        setTokenInfo(null);
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+
+    fetchTokenInfo();
+  }, [injectTokenAddress, selectedNetwork]);
+
   // Fetch deployed injectors for the selected network
   useEffect(() => {
     const fetchDeployedInjectors = async () => {
@@ -120,10 +226,6 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
             provider
           );
 
-          // This is a placeholder - the actual method call depends on what's available in your contract
-          // const injectors = await factoryContract.getDeployedInjectors();
-          // setDeployedInjectors(injectors);
-
           // For now, we'll just clear the array
           setDeployedInjectors([]);
         }
@@ -135,12 +237,27 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     fetchDeployedInjectors();
   }, [factoryAddress, selectedNetwork]);
 
-  const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleNetworkChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
     setFactoryAddress("");
-    setTransactionData(null);
-  }, []);
+    setTransactions([]);
+
+    // Find the corresponding chain ID for the selected network
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        await switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
+      }
+    }
+  }, [switchChain, toast]);
 
   const handleAddKeeper = () => {
     setKeeperAddresses([...keeperAddresses, ""]);
@@ -156,6 +273,13 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     const updatedKeepers = [...keeperAddresses];
     updatedKeepers[index] = value;
     setKeeperAddresses(updatedKeepers);
+  };
+
+  // Function to get explorer URL based on network
+  const getExplorerUrl = (network: string, hash: string) => {
+    const networkKey = network.toLowerCase();
+    const explorerBase = networks[networkKey]?.explorer || networks.mainnet.explorer;
+    return `${explorerBase}tx/${hash}`;
   };
 
   const validateInputs = (): string | null => {
@@ -231,37 +355,58 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         owner
       );
 
-      setTransactionData({
-        hash: tx.hash,
-        data: tx.data,
-        from: tx.from,
-        to: tx.to,
-      });
+      // Add transaction to state
+      setTransactions([
+        {
+          hash: tx.hash,
+          status: "pending"
+        }
+      ]);
 
       // Wait for transaction to be mined
       const receipt = await tx.wait();
 
+      // Get deployed injector address from events
+      const injectorCreatedEvent = receipt.logs
+        .map((log: { topics: any; data: any }) => {
+          try {
+            return factoryContract.interface.parseLog({
+              topics: [...log.topics],
+              data: log.data,
+            });
+          } catch {
+            return null;
+          }
+        })
+        .find((event: { name: string }) => event?.name === "InjectorCreated");
+
+      const injectorAddress = injectorCreatedEvent?.args?.injector;
+
+      // Update transaction state with success and address
+      setTransactions(prev =>
+        prev.map(t =>
+          t.hash === tx.hash
+            ? {
+              ...t,
+              status: "success",
+              address: injectorAddress
+            }
+            : t
+        )
+      );
+
       toast({
         title: "Injector Created",
-        description: `Transaction hash: ${tx.hash}`,
+        description: `Injector created successfully at ${injectorAddress}`,
         status: "success",
         duration: 5000,
         isClosable: true,
       });
 
-      // Update the transaction data with receipt information
-      setTransactionData({
-        hash: tx.hash,
-        data: tx.data,
-        from: tx.from,
-        to: tx.to,
-        blockNumber: receipt?.blockNumber,
-        confirmations: receipt?.confirmations,
-        status: receipt?.status === 1 ? "Success" : "Failed",
-      });
-
-      // Refresh deployed injectors
-      // Implement your refresh logic here
+      // Add the new injector to the list of deployed injectors
+      if (injectorAddress) {
+        setDeployedInjectors([...deployedInjectors, injectorAddress]);
+      }
 
     } catch (error) {
       console.error("Transaction failed:", error);
@@ -270,6 +415,14 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       if (error instanceof Error) {
         errorMessage = error.message;
       }
+
+      setTransactions(prev =>
+        prev.map(t =>
+          t.hash === prev[0]?.hash
+            ? { ...t, status: "error" }
+            : t
+        )
+      );
 
       toast({
         title: "Transaction Failed",
@@ -284,6 +437,79 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
   };
 
   const isCorrectNetwork = currentChainId === NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId;
+
+  // Function to simulate a successful transaction (dev only)
+  const simulateSuccessfulTransaction = () => {
+    // Mock transaction hash (random)
+    const mockTxHash = `0x${Array.from({length: 64}, () =>
+      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+    // Mock injector address
+    const mockInjectorAddress = `0x${Array.from({length: 40}, () =>
+      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+    // First add pending transaction
+    setTransactions([
+      {
+        hash: mockTxHash,
+        status: "pending"
+      }
+    ]);
+
+    // After 2 seconds, update to success with address
+    setTimeout(() => {
+      setTransactions(prev =>
+        prev.map(tx =>
+          tx.hash === mockTxHash
+            ? { ...tx, status: "success", address: mockInjectorAddress }
+            : tx
+        )
+      );
+
+      // Add to deployed injectors
+      setDeployedInjectors(prev => [...prev, mockInjectorAddress]);
+
+      toast({
+        title: "Simulated Success",
+        description: `Mock injector created at ${mockInjectorAddress}`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    }, 2000);
+  };
+
+  // Function to simulate token verification (dev only)
+  const simulateTokenVerification = () => {
+    if (!injectTokenAddress || !ethers.isAddress(injectTokenAddress)) {
+      toast({
+        title: "Invalid Address",
+        description: "Please enter a valid address first",
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+
+    setIsLoadingToken(true);
+    setTokenError(null);
+    setTokenInfo(null);
+
+    // Simulate loading delay
+    setTimeout(() => {
+      setIsLoadingToken(false);
+      // Randomly simulate either success or error
+      if (Math.random() > 0.3) {
+        setTokenInfo({
+          name: "Mock Token",
+          symbol: "MOCK",
+          decimals: 18
+        });
+      } else {
+        setTokenError("Failed to fetch token information. Please verify this is a valid ERC-20 token address.");
+      }
+    }, 1500);
+  };
 
   return (
     <Container maxW="container.lg">
@@ -342,7 +568,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                       <AddressInput
                         value={keeper}
                         onChange={(e) => handleKeeperChange(index, e.target.value)}
-                        placeholder="0x... (zero address for anyone)"
+                        placeholder="0x0000000000000000000000000000000000000000 (zero address for anyone)"
                       />
                       {index > 0 && (
                         <Button colorScheme="red" size="sm" onClick={() => handleRemoveKeeper(index)}>
@@ -382,6 +608,47 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                     onChange={(e) => setInjectTokenAddress(e.target.value)}
                     placeholder="0x..."
                   />
+
+                  {isLoadingToken && (
+                    <Flex mt={2}>
+                      <Spinner size="sm" mr={2} />
+                      <Text fontSize="sm">Verifying token...</Text>
+                    </Flex>
+                  )}
+
+                  {tokenError && (
+                    <Alert status="error" mt={2} size="sm">
+                      <AlertIcon />
+                      <AlertDescription fontSize="sm">{tokenError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {tokenInfo && (
+                    <Box mt={2} p={2} borderWidth="1px" borderRadius="md" bgColor="blue.50">
+                      <Flex alignItems="center">
+                        <CheckCircleIcon color="green.500" mr={2} />
+                        <Text fontWeight="medium">
+                          {tokenInfo.name} ({tokenInfo.symbol})
+                        </Text>
+                        {selectedNetwork && (
+                          <Link
+                            href={`${networks[selectedNetwork.toLowerCase()]?.explorer}token/${injectTokenAddress}`}
+                            isExternal
+                            ml={2}
+                            color="blue.600"
+                            fontSize="sm"
+                            display="flex"
+                            alignItems="center"
+                          >
+                            Verify <ExternalLinkIcon mx={1} />
+                          </Link>
+                        )}
+                      </Flex>
+                      <Text fontSize="xs" color="gray.600" mt={1}>
+                        Decimals: {tokenInfo.decimals}
+                      </Text>
+                    </Box>
+                  )}
                 </FormControl>
 
                 {/* Max Injection Amount */}
@@ -415,25 +682,101 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
             </CardBody>
           </Card>
 
-          <Button
-            colorScheme="blue"
-            size="lg"
-            onClick={handleCreateInjector}
-            isLoading={isSubmitting}
-            loadingText="Creating Injector..."
-            isDisabled={!isCorrectNetwork || !factoryAddress}
-            mb={6}
-          >
-            Create Injector
-          </Button>
+          <HStack spacing={4} mb={6}>
+            <Button
+              colorScheme="blue"
+              size="lg"
+              onClick={handleCreateInjector}
+              isLoading={isSubmitting}
+              loadingText="Creating Injector..."
+              isDisabled={!isCorrectNetwork || !factoryAddress}
+            >
+              Create Injector
+            </Button>
+
+            {isDev && (
+              <VStack align="start" spacing={2} mt={2}>
+                <Button
+                  colorScheme="purple"
+                  size="lg"
+                  onClick={simulateSuccessfulTransaction}
+                  leftIcon={<span role="img" aria-label="development">🧪</span>}
+                >
+                  Simulate Success (Dev Only)
+                </Button>
+                <Button
+                  colorScheme="teal"
+                  size="sm"
+                  onClick={simulateTokenVerification}
+                  leftIcon={<span role="img" aria-label="token">🪙</span>}
+                >
+                  Simulate Token Verification
+                </Button>
+              </VStack>
+            )}
+          </HStack>
 
           {!isCorrectNetwork && selectedNetwork && (
             <Alert status="warning" mb={4}>
               <AlertIcon />
-              <AlertDescription>
-                Please connect to the correct network in your wallet to continue.
-              </AlertDescription>
+              <Box>
+                <AlertDescription>
+                  Please connect to the correct network in your wallet to continue.
+                </AlertDescription>
+                <Button
+                  mt={2}
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() => {
+                    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+                    if (networkOption) {
+                      switchChain({ chainId: Number(networkOption.chainId) });
+                    }
+                  }}
+                >
+                  Switch to {selectedNetwork}
+                </Button>
+              </Box>
             </Alert>
+          )}
+
+          {/* Transaction History Section */}
+          {transactions.length > 0 && (
+            <Card mb={6}>
+              <CardHeader>
+                <Heading size="md">Transaction History</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  {transactions.map((tx, index) => (
+                    <Flex key={index} align="center" justify="space-between">
+                      <HStack spacing={2}>
+                        <Text fontSize="medium">Injector:</Text>
+                        {tx.address && <Text fontWeight="medium">{tx.address}</Text>}
+                      </HStack>
+                      <HStack spacing={4}>
+                        <Button
+                          as="a"
+                          href={getExplorerUrl(selectedNetwork, tx.hash)}
+                          target="_blank"
+                          variant="link"
+                          rightIcon={<ExternalLinkIcon />}
+                          size="sm"
+                        >
+                          {tx.hash.substring(0, 6)}...{tx.hash.substring(tx.hash.length - 4)}
+                        </Button>
+                        <Badge colorScheme={
+                          tx.status === "success" ? "green" :
+                            tx.status === "pending" ? "orange" : "red"
+                        }>
+                          {tx.status}
+                        </Badge>
+                      </HStack>
+                    </Flex>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Card>
           )}
 
           {deployedInjectors.length > 0 && (
@@ -450,20 +793,6 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                     </Flex>
                   ))}
                 </VStack>
-              </CardBody>
-            </Card>
-          )}
-
-          {transactionData && (
-            <Card>
-              <CardHeader>
-                <Heading size="md">Transaction Details</Heading>
-              </CardHeader>
-              <CardBody>
-                <JsonViewerEditor
-                  jsonData={JSON.stringify(transactionData, null, 2)}
-                  onJsonChange={() => {}}
-                />
               </CardBody>
             </Card>
           )}

@@ -701,6 +701,10 @@ export type GqlPoolDynamicData = {
   lifetimeSwapFees: Scalars['BigDecimal']['output'];
   lifetimeVolume: Scalars['BigDecimal']['output'];
   poolId: Scalars['ID']['output'];
+  protocolFees24h: Scalars['BigDecimal']['output'];
+  protocolFees48h: Scalars['BigDecimal']['output'];
+  protocolYieldCapture24h: Scalars['BigDecimal']['output'];
+  protocolYieldCapture48h: Scalars['BigDecimal']['output'];
   sharePriceAth: Scalars['BigDecimal']['output'];
   sharePriceAthTimestamp: Scalars['Int']['output'];
   sharePriceAtl: Scalars['BigDecimal']['output'];
@@ -2575,6 +2579,11 @@ export type Mutation = {
 };
 
 
+export type MutationBeetsPoolLoadReliquarySnapshotsForAllFarmsArgs = {
+  chain: GqlChain;
+};
+
+
 export type MutationPoolLoadOnChainDataForAllPoolsArgs = {
   chains: Array<GqlChain>;
 };
@@ -2792,6 +2801,7 @@ export type QueryAggregatorPoolsArgs = {
 
 
 export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
+  chain?: InputMaybe<GqlChain>;
   id: Scalars['String']['input'];
   range: GqlPoolSnapshotDataRange;
 };
