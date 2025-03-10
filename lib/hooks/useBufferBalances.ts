@@ -23,8 +23,15 @@ export function useBufferBalances(pools: Pool[] = []) {
         .filter(token => token.isErc4626)
         .map(token => ({
           queryKey: ["bufferBalance", pool.address, pool.chain, token.address],
-          queryFn: () => fetchBufferBalance(token.address, token.chain!!.toLowerCase()),
-          enabled: !!token.isErc4626 && !!networks[token.chain!!.toLowerCase()],
+          queryFn: () =>
+            fetchBufferBalance(
+              token.address,
+              token.chain ? token.chain.toLowerCase() : pool.chain.toLowerCase(),
+            ),
+          enabled:
+            !!token.isErc4626 &&
+            !!networks[token.chain ? token.chain.toLowerCase() : pool.chain.toLowerCase()],
+          staleTime: 30_000,
         })),
     ),
   });

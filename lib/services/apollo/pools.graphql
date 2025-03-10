@@ -55,6 +55,7 @@ query GetBoostedPools($chainIn: [GqlChain!]) {
         name
         decimals
         isErc4626
+        logoURI
         underlyingToken {
             chainId
             address

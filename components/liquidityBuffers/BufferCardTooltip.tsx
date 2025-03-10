@@ -1,7 +1,7 @@
 import { Box, Text, HStack, Badge, VStack, useColorModeValue } from "@chakra-ui/react";
 import { PoolToken } from "@/types/interfaces";
 
-interface BufferTooltipProps {
+interface BufferCardTooltipProps {
   active?: boolean;
   payload?: Array<{
     value: number;
@@ -14,7 +14,7 @@ interface BufferTooltipProps {
   }>;
 }
 
-export const BufferTooltip = ({ active, payload }: BufferTooltipProps) => {
+export const BufferCardTooltip = ({ active, payload }: BufferCardTooltipProps) => {
   const bgColor = useColorModeValue("white", "background.level2");
 
   if (!active || !payload?.length) return null;

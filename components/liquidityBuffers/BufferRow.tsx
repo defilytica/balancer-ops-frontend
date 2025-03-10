@@ -24,7 +24,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatUnits } from "viem";
-import { BufferTooltip } from "./BufferTooltip";
+import { BufferCardTooltip } from "./BufferCardTooltip";
 
 interface BufferRowProps {
   token: PoolToken;
@@ -139,7 +139,7 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" hide />
               <RechartsTooltip
-                content={<BufferTooltip />}
+                content={<BufferCardTooltip />}
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
               />
               <Bar dataKey="underlying" stackId="a" fill="#627EEA" radius={[4, 0, 0, 4]} />

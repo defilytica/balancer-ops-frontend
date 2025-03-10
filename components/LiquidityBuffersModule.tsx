@@ -21,11 +21,14 @@ import {
   FormControl,
   FormLabel,
   Divider,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
 import { MdFilterListAlt } from "react-icons/md";
 import { PoolCard } from "@/components/liquidityBuffers/PoolCard";
+import { BufferTable } from "@/components/liquidityBuffers/BufferTable";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { ViewSwitcher, ViewMode } from "@/components/liquidityBuffers/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
@@ -41,6 +44,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const [selectedNetwork, setSelectedNetwork] = useState("ALL");
   const [showOnlyEmptyBuffers, setShowOnlyEmptyBuffers] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARD);
 
   const { loading, error, data } = useQuery<GetBoostedPoolsQuery>(GetBoostedPoolsDocument, {
     variables: selectedNetwork !== "ALL" ? { chainIn: [selectedNetwork] } : {},
@@ -62,7 +66,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       return pool.poolTokens.some(token => {
         if (!token.isErc4626) return false;
         const buffer = pool.buffers?.[token.address];
-        if (!buffer) return false;
+        if (!buffer || buffer.state?.isError) return false;
         return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
       });
     });
@@ -84,18 +88,15 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     ];
   }, [addressBook]);
 
-  const networksWithAll = useMemo(
-    () => ({
-      ...networks,
-      all: {
-        logo: GlobeLogo.src,
-        rpc: "",
-        explorer: "",
-        chainId: "",
-      },
-    }),
-    [],
-  );
+  const networksWithAll = {
+    ...networks,
+    all: {
+      logo: GlobeLogo.src,
+      rpc: "",
+      explorer: "",
+      chainId: "",
+    },
+  };
 
   const handleFilterToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsFiltering(true);
@@ -157,7 +158,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       );
     }
 
-    return (
+    return viewMode === ViewMode.CARD ? (
       <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
         {filteredPools.map(pool => (
           <GridItem key={pool.address} rowSpan={pool.poolTokens.length + 1}>
@@ -165,6 +166,8 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           </GridItem>
         ))}
       </SimpleGrid>
+    ) : (
+      <BufferTable pools={filteredPools} />
     );
   };
 
@@ -174,7 +177,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
         direction={{ base: "column", md: "row" }}
         align={{ base: "flex-start", md: "center" }}
         justify="space-between"
-        mb={8}
+        mb={2}
         wrap="wrap"
         gap={4}
       >
@@ -195,7 +198,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           <Divider />
           <FormControl display="flex" alignItems="center" justifyContent="space-between" px={1}>
             <HStack spacing={2}>
-              <Icon as={MdFilterListAlt} />
+              <Icon as={MdFilterListAlt} color={useColorModeValue("gray.600", "gray.200")} />
               <FormLabel mb="0" fontSize="md">
                 Empty buffers only
               </FormLabel>
@@ -203,6 +206,10 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
             <Switch isChecked={showOnlyEmptyBuffers} onChange={handleFilterToggle} size="md" />
           </FormControl>
         </Flex>
+      </Flex>
+
+      <Flex justify="flex-start" mb={4}>
+        <ViewSwitcher viewMode={viewMode} onChange={setViewMode} />
       </Flex>
 
       {renderContent()}
