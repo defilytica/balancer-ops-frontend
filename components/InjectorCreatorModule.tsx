@@ -26,9 +26,9 @@ import {
   HStack,
   Badge,
   Link,
-  Spinner,
+  Spinner, Center, Table, Th, Tbody, Td, Thead, Tr,
 } from "@chakra-ui/react";
-import { InfoIcon, ExternalLinkIcon, CheckCircleIcon } from "@chakra-ui/icons";
+import { InfoIcon, ExternalLinkIcon, CheckCircleIcon, CopyIcon } from "@chakra-ui/icons";
 import { ethers } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -37,6 +37,7 @@ import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { AddressBook } from "@/types/interfaces";
 import { ChildChainGaugeInjectorV2Factory } from "@/abi/ChildChainGaugeInjectorV2Factory";
 import AddressInput from "@/components/AdressInput";
+import axios from "axios";
 
 // ERC20 Token ABI (minimal for name, symbol and decimals)
 const ERC20_ABI = [
@@ -79,6 +80,17 @@ interface TransactionState {
   address?: string;
 }
 
+// Add these interface definitions
+interface InjectorInfo {
+  address: string;
+  token: string;
+}
+
+interface NetworkInjectorResponse {
+  factory: string | null;
+  injectors: InjectorInfo[];
+}
+
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [factoryAddress, setFactoryAddress] = useState("");
@@ -95,6 +107,9 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
   const [deployedInjectors, setDeployedInjectors] = useState<string[]>([]);
   const [currentChainId, setCurrentChainId] = useState<string | null>(null);
   const [isDev, setIsDev] = useState(false);
+  const [existingInjectors, setExistingInjectors] = useState<InjectorInfo[]>([]);
+  const [existingInjectorForToken, setExistingInjectorForToken] = useState<string | null>(null);
+  const [isLoadingInjectors, setIsLoadingInjectors] = useState(false);
 
   const toast = useToast();
   const { address } = useAccount();
@@ -212,7 +227,94 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     fetchTokenInfo();
   }, [injectTokenAddress, selectedNetwork]);
 
-  // Fetch deployed injectors for the selected network
+  // Fetch deployed injectors for network
+  useEffect(() => {
+    const fetchNetworkInjectors = async () => {
+      if (!selectedNetwork) {
+        setExistingInjectors([]);
+        setDeployedInjectors([]);
+        setFactoryAddress("");
+        return;
+      }
+
+      setIsLoadingInjectors(true);
+
+      try {
+        const response = await axios.get<NetworkInjectorResponse>(
+          `/api/injector/v2/network?network=${selectedNetwork.toLowerCase()}`
+        );
+
+        if (response.data.factory) {
+          setFactoryAddress(response.data.factory);
+        } else {
+          setFactoryAddress("");
+        }
+
+        if (response.data.injectors && Array.isArray(response.data.injectors)) {
+          // Set existing injectors with tokens
+          setExistingInjectors(response.data.injectors);
+
+          // Also update deployedInjectors for backward compatibility
+          setDeployedInjectors(response.data.injectors.map(inj => inj.address));
+        } else {
+          setExistingInjectors([]);
+          setDeployedInjectors([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch injectors for network:", error);
+        toast({
+          title: "Error fetching injectors",
+          description: "Could not load existing injectors for this network.",
+          status: "error",
+          duration: 5000,
+        });
+        setExistingInjectors([]);
+        setDeployedInjectors([]);
+      } finally {
+        setIsLoadingInjectors(false);
+      }
+    };
+
+    fetchNetworkInjectors();
+  }, [selectedNetwork, toast]);
+
+  useEffect(() => {
+    const checkExistingInjector = () => {
+      if (!injectTokenAddress || !ethers.isAddress(injectTokenAddress)) {
+        setExistingInjectorForToken(null);
+        return;
+      }
+
+      // Skip check if no injectors are loaded yet
+      if (!existingInjectors || existingInjectors.length === 0) {
+        setExistingInjectorForToken(null);
+        return;
+      }
+
+      console.log("Checking for existing injector with token:", injectTokenAddress);
+      console.log("Available injectors:", existingInjectors);
+
+      // Normalize the token address for case-insensitive comparison
+      const normalizedTokenAddress = injectTokenAddress.toLowerCase();
+
+      // Find any injector that uses this token
+      const matchingInjector = existingInjectors.find(
+        inj => inj.token && inj.token.toLowerCase() === normalizedTokenAddress
+      );
+
+      console.log("Matching injector found:", matchingInjector);
+
+      if (matchingInjector) {
+        setExistingInjectorForToken(matchingInjector.address);
+      } else {
+        setExistingInjectorForToken(null);
+      }
+    };
+
+    checkExistingInjector();
+  }, [injectTokenAddress, existingInjectors]);
+
+  // TODO: remove Fetch deployed injectors for the selected network
   useEffect(() => {
     const fetchDeployedInjectors = async () => {
       if (!factoryAddress || !selectedNetwork) return;
@@ -511,11 +613,53 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     }, 1500);
   };
 
+  const ExistingInjectorWarning = () => {
+    console.log("Existing injector for token:", existingInjectorForToken);
+
+    if (!existingInjectorForToken) {
+      return null;
+    }
+
+    return (
+      <Alert status="warning" mt={2} size="sm">
+        <AlertIcon />
+        <Box>
+          <AlertDescription fontSize="sm" fontWeight="medium">
+            An injector for this token already exists!
+          </AlertDescription>
+          <HStack mt={1}>
+            <Text fontSize="sm">Address: {existingInjectorForToken}</Text>
+            {selectedNetwork && (
+              <Link
+                href={`${networks[selectedNetwork.toLowerCase()]?.explorer}address/${existingInjectorForToken}`}
+                isExternal
+                color="blue.600"
+                fontSize="sm"
+                display="flex"
+                alignItems="center"
+              >
+                View <ExternalLinkIcon mx={1} />
+              </Link>
+            )}
+          </HStack>
+          <Text fontSize="xs" mt={1}>
+            Only create a new injector for the same token if it is really needed!
+          </Text>
+        </Box>
+      </Alert>
+    );
+  };
+
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        Create Injector
+      <Heading as="h2" size="lg" variant="special" mb={2}>
+        Deploy a Token Rewards Injector (v2)
       </Heading>
+      <Box mb={6}>
+      <Text>
+        Use this interface to deploy a token rewards injector that can schedule token emissions on Balancer staking gauges
+      </Text>
+      </Box>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -624,7 +768,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   )}
 
                   {tokenInfo && (
-                    <Box mt={2} p={2} borderWidth="1px" borderRadius="md" bgColor="blue.50">
+                    <Box mt={2} p={2} borderWidth="1px" borderRadius="md" bgColor="gray.500">
                       <Flex alignItems="center">
                         <CheckCircleIcon color="green.500" mr={2} />
                         <Text fontWeight="medium">
@@ -635,7 +779,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                             href={`${networks[selectedNetwork.toLowerCase()]?.explorer}token/${injectTokenAddress}`}
                             isExternal
                             ml={2}
-                            color="blue.600"
+                            color="gray.800"
                             fontSize="sm"
                             display="flex"
                             alignItems="center"
@@ -644,11 +788,12 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                           </Link>
                         )}
                       </Flex>
-                      <Text fontSize="xs" color="gray.600" mt={1}>
+                      <Text fontSize="xs" color="gray.800" mt={1}>
                         Decimals: {tokenInfo.decimals}
                       </Text>
                     </Box>
                   )}
+                  <ExistingInjectorWarning />
                 </FormControl>
 
                 {/* Max Injection Amount */}
@@ -785,14 +930,101 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 <Heading size="md">Deployed Injectors</Heading>
               </CardHeader>
               <CardBody>
-                <VStack align="stretch" spacing={2}>
-                  {deployedInjectors.map((injector, index) => (
-                    <Flex key={index} justify="space-between" p={2} borderWidth="1px" borderRadius="md">
-                      <Text>{injector}</Text>
-                      <Badge colorScheme="green">Active</Badge>
-                    </Flex>
-                  ))}
-                </VStack>
+                {isLoadingInjectors ? (
+                  <Center py={4}>
+                    <Spinner mr={2} />
+                    <Text>Loading injectors...</Text>
+                  </Center>
+                ) : (
+                  <Box overflowX="auto">
+                    <Table variant="simple" size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th>Address</Th>
+                          <Th>Reward Token</Th>
+                          <Th textAlign="right">Status</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {existingInjectors.map((injector, index) => (
+                          <Tr key={index}>
+                            <Td>
+                              <HStack spacing={1}>
+                                <Text fontSize="sm" fontFamily="mono">
+                                  {injector.address.substring(0, 8)}...{injector.address.substring(injector.address.length - 6)}
+                                </Text>
+                                <Link
+                                  href={`${networks[selectedNetwork.toLowerCase()]?.explorer}address/${injector.address}`}
+                                  isExternal
+                                  color="blue.600"
+                                  fontSize="sm"
+                                >
+                                  <ExternalLinkIcon />
+                                </Link>
+                                <Tooltip label="Copy address">
+                                  <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(injector.address);
+                                      toast({
+                                        title: "Address copied",
+                                        status: "success",
+                                        duration: 2000,
+                                        isClosable: true,
+                                      });
+                                    }}
+                                  >
+                                    <CopyIcon />
+                                  </Button>
+                                </Tooltip>
+                              </HStack>
+                            </Td>
+                            <Td>
+                              {injector.token ? (
+                                <HStack spacing={1}>
+                                  <Text fontSize="sm" fontFamily="mono">
+                                    {injector.token.substring(0, 8)}...{injector.token.substring(injector.token.length - 6)}
+                                  </Text>
+                                  <Link
+                                    href={`${networks[selectedNetwork.toLowerCase()]?.explorer}token/${injector.token}`}
+                                    isExternal
+                                    color="blue.600"
+                                    fontSize="sm"
+                                  >
+                                    <ExternalLinkIcon />
+                                  </Link>
+                                  <Tooltip label="Copy token address">
+                                    <Button
+                                      size="xs"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(injector.token);
+                                        toast({
+                                          title: "Token address copied",
+                                          status: "success",
+                                          duration: 2000,
+                                          isClosable: true,
+                                        });
+                                      }}
+                                    >
+                                      <CopyIcon />
+                                    </Button>
+                                  </Tooltip>
+                                </HStack>
+                              ) : (
+                                <Text color="gray.500" fontSize="sm">Unknown</Text>
+                              )}
+                            </Td>
+                            <Td textAlign="right">
+                              <Badge colorScheme="green" ml="auto">Active</Badge>
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                )}
               </CardBody>
             </Card>
           )}
