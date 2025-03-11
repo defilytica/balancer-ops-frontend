@@ -18,25 +18,31 @@ import { calculateRatios } from "@/lib/utils/calculateRatios";
 import { formatValue } from "@/lib/utils/formatValue";
 import { BiErrorCircle } from "react-icons/bi";
 import { useMemo } from "react";
+import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 
 interface BufferTableTooltipProps {
   pool: PoolWithBufferBalances;
-  erc4626Count: number;
 }
 
-export const BufferTableTooltip = ({ pool, erc4626Count }: BufferTableTooltipProps) => {
-  const erc4626Tokens = useMemo(
-    () => pool.poolTokens.filter(token => token.isErc4626),
+export const BufferTableTooltip = ({ pool }: BufferTableTooltipProps) => {
+  const realErc4626Tokens = useMemo(
+    () => filterRealErc4626Tokens(pool.poolTokens),
     [pool.poolTokens],
   );
 
-  const isLoading = erc4626Tokens.some(token => pool.buffers?.[token.address]?.state?.isLoading);
-  const hasError = erc4626Tokens.some(token => pool.buffers?.[token.address]?.state?.isError);
+  const isLoading = realErc4626Tokens.some(
+    token => pool.buffers?.[token.address]?.state?.isLoading,
+  );
+  const hasError = realErc4626Tokens.some(token => pool.buffers?.[token.address]?.state?.isError);
 
-  const nonEmptyBufferCount = Object.values(pool.buffers || {}).filter(buffer => {
-    if (buffer.state?.isError) return true;
-    return buffer.underlyingBalance > BigInt(0) || buffer.wrappedBalance > BigInt(0);
-  }).length;
+  const nonEmptyBufferCount = useMemo(() => {
+    return realErc4626Tokens.filter(token => {
+      const buffer = pool.buffers?.[token.address];
+      if (!buffer) return false;
+      if (buffer.state?.isError) return true;
+      return buffer.underlyingBalance > BigInt(0) || buffer.wrappedBalance > BigInt(0);
+    }).length;
+  }, [realErc4626Tokens, pool.buffers]);
 
   const formatBufferValue = (value: bigint, decimals: number) => {
     const formattedValue = Number(formatUnits(value, decimals));
@@ -47,7 +53,7 @@ export const BufferTableTooltip = ({ pool, erc4626Count }: BufferTableTooltipPro
     return (
       <Box p={4}>
         <Stack spacing={4} divider={<Divider />}>
-          {erc4626Tokens.map(token => {
+          {realErc4626Tokens.map(token => {
             const buffer = pool.buffers?.[token.address];
             if (!buffer) return null;
 
@@ -123,6 +129,10 @@ export const BufferTableTooltip = ({ pool, erc4626Count }: BufferTableTooltipPro
     <>
       {isLoading ? (
         <Spinner size="xs" />
+      ) : realErc4626Tokens.length === 0 ? (
+        <Text display="inline-block" color="font.primary">
+          0/0
+        </Text>
       ) : (
         <Popover trigger="hover" placement="bottom">
           <PopoverTrigger>
@@ -138,10 +148,10 @@ export const BufferTableTooltip = ({ pool, erc4626Count }: BufferTableTooltipPro
             ) : (
               <Text
                 display="inline-block"
-                color={nonEmptyBufferCount < erc4626Count ? "red.400" : "font.primary"}
+                color={nonEmptyBufferCount < realErc4626Tokens.length ? "red.400" : "font.primary"}
                 _hover={{ color: "font.highlight", cursor: "pointer" }}
               >
-                {nonEmptyBufferCount}/{erc4626Count}
+                {nonEmptyBufferCount}/{realErc4626Tokens.length}
               </Text>
             )}
           </PopoverTrigger>

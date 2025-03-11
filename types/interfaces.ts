@@ -89,6 +89,7 @@ export interface PoolToken {
   price?: number;
   chain?: string;
   isErc4626?: boolean;
+  useUnderlyingForAddRemove?: boolean;
   underlyingToken?: UnderlyingToken;
 }
 

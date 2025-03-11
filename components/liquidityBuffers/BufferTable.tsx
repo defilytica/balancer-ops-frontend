@@ -20,6 +20,7 @@ import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferTableTooltip } from "./BufferTableTooltip";
 import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
+import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 
 interface BufferTableProps {
   pools: PoolWithBufferBalances[];
@@ -49,7 +50,7 @@ export const BufferTable = ({ pools }: BufferTableProps) => {
         </Thead>
         <Tbody>
           {pools.map(pool => {
-            const erc4626Count = pool.poolTokens.filter(token => token.isErc4626).length;
+            const realErc4626Count = filterRealErc4626Tokens(pool.poolTokens).length;
             return (
               <Tr key={pool.address} _hover={{ bg: "whiteAlpha.50" }}>
                 <Td>
@@ -89,10 +90,10 @@ export const BufferTable = ({ pools }: BufferTableProps) => {
                   </Text>
                 </Td>
                 <Td isNumeric>
-                  <Text>{erc4626Count}</Text>
+                  <Text>{realErc4626Count}</Text>
                 </Td>
                 <Td isNumeric>
-                  <BufferTableTooltip pool={pool} erc4626Count={erc4626Count} />
+                  <BufferTableTooltip pool={pool} />
                 </Td>
               </Tr>
             );

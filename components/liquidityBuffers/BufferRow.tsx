@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { formatUnits } from "viem";
 import { BufferCardTooltip } from "./BufferCardTooltip";
+import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
 interface BufferRowProps {
   token: PoolToken;
@@ -55,6 +56,7 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
     buffer && calculateRatios(buffer.underlyingBalance, buffer.wrappedBalance, token.decimals!);
 
   const renderContent = () => {
+    // Case1: Non-ERC4626 token
     if (!token.isErc4626) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
@@ -68,7 +70,21 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
       );
     }
 
-    // Case 2: Loading state
+    // Case 2: Fake ERC4626 / underlying token doesn't need a buffer
+    if (!isRealErc4626Token(token)) {
+      return (
+        <Center h="full" bg="whiteAlpha.50" rounded="md">
+          <HStack>
+            <Icon as={BiErrorCircle} boxSize={4} />
+            <Text fontSize="sm" color={textColor}>
+              No buffer allocated / needed (fake ERC4626)
+            </Text>
+          </HStack>
+        </Center>
+      );
+    }
+
+    // Case 3: Loading state
     if (isLoading) {
       return (
         <Skeleton
@@ -80,7 +96,7 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
       );
     }
 
-    // Case 3: Error state or no data
+    // Case 4: Error state or no data
     if (isError || !buffer) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md" border="1px solid red.200">
@@ -94,29 +110,14 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
       );
     }
 
-    // Case 4: Empty buffer
-    if (isEmptyBuffer && token.isErc4626) {
+    // Case 5: Empty buffer
+    if (isEmptyBuffer) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
               Empty Buffer! Needs to be initialized!
-            </Text>
-          </HStack>
-        </Center>
-      );
-    }
-
-    // TODO: Check if this condition is correct
-    // Case 5: Fake ERC4626 / underlying token doesn't need a buffer
-    if (isEmptyBuffer && !token.underlyingToken?.isErc4626) {
-      return (
-        <Center h="full" bg="whiteAlpha.50" rounded="md">
-          <HStack>
-            <Icon as={BiErrorCircle} boxSize={4} />
-            <Text fontSize="sm" color={textColor}>
-              No buffer allocated / needed (fake ERC4626)
             </Text>
           </HStack>
         </Center>
@@ -178,7 +179,7 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
               {token.symbol}
             </Badge>
           </HStack>
-          {token.isErc4626 && !isEmptyBuffer && ratios && (
+          {isRealErc4626Token(token) && !isEmptyBuffer && ratios && (
             <Text fontSize="sm" color={textColor}>
               {ratios.underlying}% - {ratios.wrapped}%
             </Text>

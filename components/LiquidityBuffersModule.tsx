@@ -35,6 +35,7 @@ import { AddressBook, Pool } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { useBufferBalances, PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
 import GlobeLogo from "@/public/imgs/globe.svg";
+import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
 interface LiquidityBuffersModuleProps {
   addressBook: AddressBook;
@@ -56,21 +57,24 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     },
   });
 
-  const poolsWithBalances = useBufferBalances((data?.poolGetPools || []) as unknown as Pool[]);
+  const poolsWithBufferBalances = useBufferBalances(
+    (data?.poolGetPools || []) as unknown as Pool[],
+  );
 
   const filteredPools = useMemo(() => {
-    if (!showOnlyEmptyBuffers) return poolsWithBalances;
+    if (!showOnlyEmptyBuffers) return poolsWithBufferBalances;
 
-    return poolsWithBalances.filter((pool: PoolWithBufferBalances) => {
-      // Show pool if any ERC4626 token has empty buffer
+    return poolsWithBufferBalances.filter((pool: PoolWithBufferBalances) => {
+      // Show pool if a "real" ERC4626 token has empty buffer
       return pool.poolTokens.some(token => {
-        if (!token.isErc4626) return false;
+        if (!isRealErc4626Token(token)) return false;
+
         const buffer = pool.buffers?.[token.address];
         if (!buffer || buffer.state?.isError) return false;
         return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
       });
     });
-  }, [poolsWithBalances, showOnlyEmptyBuffers]);
+  }, [poolsWithBufferBalances, showOnlyEmptyBuffers]);
 
   const networkOptionsV3WithAll = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
