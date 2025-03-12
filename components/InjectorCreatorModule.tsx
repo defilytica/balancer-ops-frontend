@@ -26,9 +26,9 @@ import {
   HStack,
   Badge,
   Link,
-  Spinner, Center, Table, Th, Tbody, Td, Thead, Tr,
+  Spinner, Center, Table, Th, Tbody, Td, Thead, Tr, AlertTitle, List, ListItem, ListIcon,
 } from "@chakra-ui/react";
-import { InfoIcon, ExternalLinkIcon, CheckCircleIcon, CopyIcon } from "@chakra-ui/icons";
+import { InfoIcon, ExternalLinkIcon, CheckCircleIcon, CopyIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { ethers } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -86,6 +86,12 @@ interface InjectorInfo {
   token: string;
 }
 
+interface InjectorTokenInfo {
+  address: string;
+  symbol: string | null;
+  decimals: number | null;
+}
+
 interface NetworkInjectorResponse {
   factory: string | null;
   injectors: InjectorInfo[];
@@ -109,6 +115,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
   const [isDev, setIsDev] = useState(false);
   const [existingInjectors, setExistingInjectors] = useState<InjectorInfo[]>([]);
   const [existingInjectorForToken, setExistingInjectorForToken] = useState<string | null>(null);
+  const [injectorTokenInfo, setInjectorTokenInfo] = useState<Record<string, InjectorTokenInfo>>({});
   const [isLoadingInjectors, setIsLoadingInjectors] = useState(false);
 
   const toast = useToast();
@@ -162,6 +169,102 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       }
     };
   }, [selectedNetwork]);
+
+  // Fetch token infos
+  useEffect(() => {
+    const fetchInjectorTokenSymbols = async () => {
+      if (!existingInjectors.length || !selectedNetwork) return;
+
+      // Create a set of unique token addresses to avoid duplicate fetches
+      const uniqueTokenAddresses = new Set<string>();
+      existingInjectors.forEach(injector => {
+        if (injector.token && ethers.isAddress(injector.token)) {
+          uniqueTokenAddresses.add(injector.token.toLowerCase());
+        }
+      });
+
+      // Skip if no valid tokens
+      if (uniqueTokenAddresses.size === 0) return;
+
+      // For each unique token, fetch the symbol
+      const tokenInfoMap: Record<string, InjectorTokenInfo> = {};
+
+      if (typeof window !== "undefined" && window.ethereum) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+
+        // Process tokens in batches to avoid overwhelming the provider
+        const batchSize = 5;
+        const tokenAddresses = Array.from(uniqueTokenAddresses);
+        const batches = Math.ceil(tokenAddresses.length / batchSize);
+
+        for (let i = 0; i < batches; i++) {
+          const batchStart = i * batchSize;
+          const batchEnd = Math.min(batchStart + batchSize, tokenAddresses.length);
+          const currentBatch = tokenAddresses.slice(batchStart, batchEnd);
+
+          // Process batch in parallel
+          const promises = currentBatch.map(async (tokenAddress) => {
+            try {
+              const tokenContract = new ethers.Contract(
+                tokenAddress,
+                ERC20_ABI,
+                provider
+              );
+
+              // Fetch token symbol and decimals
+              const [symbol, decimals] = await Promise.all([
+                tokenContract.symbol(),
+                tokenContract.decimals()
+              ]);
+
+              return {
+                tokenAddress,
+                info: {
+                  address: tokenAddress,
+                  symbol,
+                  decimals: Number(decimals)
+                }
+              };
+            } catch (error) {
+              console.error(`Failed to fetch token info for ${tokenAddress}:`, error);
+              return {
+                tokenAddress,
+                info: {
+                  address: tokenAddress,
+                  symbol: null,
+                  decimals: null
+                }
+              };
+            }
+          });
+
+          const results = await Promise.all(promises);
+
+          // Add results to the token info map
+          results.forEach(result => {
+            tokenInfoMap[result.tokenAddress] = result.info;
+          });
+        }
+
+        setInjectorTokenInfo(tokenInfoMap);
+      }
+    };
+
+    fetchInjectorTokenSymbols();
+  }, [existingInjectors, selectedNetwork]);
+
+  const getTokenSymbol = (tokenAddress: string | null): string => {
+    if (!tokenAddress) return 'Unknown';
+
+    const normalizedAddress = tokenAddress.toLowerCase();
+    const info = injectorTokenInfo[normalizedAddress];
+
+    if (info?.symbol) {
+      return info.symbol;
+    }
+
+    return '...';
+  };
 
   // Fetch factory address for the selected network
   useEffect(() => {
@@ -660,7 +763,55 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         Use this interface to deploy a token rewards injector that can schedule token emissions on Balancer staking gauges
       </Text>
       </Box>
-
+      <Alert status="info" mt={4} mb={4}>
+        <Box flex="1">
+          <Flex align={"center"}>
+            <AlertIcon />
+            <AlertTitle> Hints</AlertTitle>
+          </Flex>
+          <AlertDescription display="block">
+            <List spacing={2}>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                If you are not sure which parameters to use, leave the pre-filled defaults as is
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                For more information about incentive programs, consult {" "}
+                <Link
+                  href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/incentive-management.html"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  this documentation
+                </Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                For more technical details, consult{" "}
+                <Link
+                  href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#child-chain-gauge-injector-v2"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  this documentation
+                </Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} />
+                For full automation, a {" "}
+                <Link
+                  href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#setting-up-a-chainlink-automation-balancer-maxi-specific-notes"
+                  textDecoration="underline"
+                  isExternal
+                >
+                  Chainlink Upkeeper
+                </Link> {" "} has to be configured
+              </ListItem>
+            </List>
+          </AlertDescription>
+        </Box>
+      </Alert>
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
           <NetworkSelector
@@ -942,6 +1093,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                         <Tr>
                           <Th>Address</Th>
                           <Th>Reward Token</Th>
+                          <Th>Token Symbol</Th>
                           <Th textAlign="right">Status</Th>
                         </Tr>
                       </Thead>
@@ -1012,6 +1164,17 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                                     </Button>
                                   </Tooltip>
                                 </HStack>
+                              ) : (
+                                <Text color="gray.500" fontSize="sm">Unknown</Text>
+                              )}
+                            </Td>
+                            <Td>
+                              {injector.token ? (
+                                getTokenSymbol(injector.token) === '...' ? (
+                                  <Spinner size="xs" />
+                                ) : (
+                                  <Text fontWeight="medium">{getTokenSymbol(injector.token)}</Text>
+                                )
                               ) : (
                                 <Text color="gray.500" fontSize="sm">Unknown</Text>
                               )}
