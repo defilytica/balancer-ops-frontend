@@ -26,7 +26,7 @@ import {
 import { BiErrorCircle } from "react-icons/bi";
 import { MdFilterListAlt } from "react-icons/md";
 import { PoolCard } from "@/components/liquidityBuffers/PoolCard";
-import { BufferTable } from "@/components/liquidityBuffers/BufferTable";
+import { BufferTable } from "@/components/tables/BufferTable";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { ViewSwitcher, ViewMode } from "@/components/liquidityBuffers/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";

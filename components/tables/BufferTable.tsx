@@ -17,7 +17,7 @@ import {
 import { PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
-import { BufferTableTooltip } from "./BufferTableTooltip";
+import { BufferTableTooltip } from "../liquidityBuffers/BufferTableTooltip";
 import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
@@ -44,7 +44,7 @@ export const BufferTable = ({ pools }: BufferTableProps) => {
             </Th>
             <Th>Pool name</Th>
             <Th isNumeric>TVL</Th>
-            <Th isNumeric>ERC 4626s</Th>
+            <Th isNumeric># of ERC4626</Th>
             <Th isNumeric>Buffers</Th>
           </Tr>
         </Thead>
@@ -63,23 +63,38 @@ export const BufferTable = ({ pools }: BufferTableProps) => {
                   </HStack>
                 </Td>
                 <Td>
-                  <HStack spacing={2}>
+                  <HStack>
                     {pool.poolTokens.map((token, index) => (
-                      <Tooltip
+                      <Box
                         key={index}
-                        bgColor="background.level4"
-                        label={token.symbol}
-                        textColor="font.primary"
-                        placement="bottom"
+                        ml={index === 0 ? 0 : "-15px"}
+                        zIndex={pool.poolTokens.length - index}
                       >
-                        {token.logoURI ? (
-                          <Avatar src={token.logoURI} size="xs" />
-                        ) : (
-                          <Box display="flex">
-                            <Icon as={FaCircle} boxSize="5" />
-                          </Box>
-                        )}
-                      </Tooltip>
+                        <Tooltip
+                          bgColor="background.level4"
+                          label={token.symbol}
+                          textColor="font.primary"
+                          placement="bottom"
+                        >
+                          {token.logoURI ? (
+                            <Avatar
+                              src={token.logoURI}
+                              size="xs"
+                              borderWidth="1px"
+                              borderColor="background.level1"
+                            />
+                          ) : (
+                            <Box display="flex">
+                              <Icon
+                                as={FaCircle}
+                                boxSize="5"
+                                borderWidth="1px"
+                                borderColor="background.level1"
+                              />
+                            </Box>
+                          )}
+                        </Tooltip>
+                      </Box>
                     ))}
                     <Text>{pool.name || pool.symbol}</Text>
                   </HStack>
