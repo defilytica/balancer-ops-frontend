@@ -1,12 +1,10 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import {
   FormControl,
   FormLabel,
-  Box,
   Flex,
   Image,
   Text,
-  useColorModeValue,
   Button,
   Menu,
   MenuButton,
@@ -33,6 +31,7 @@ interface NetworkSelectorProps {
   networkOptions: NetworkOption[];
   selectedNetwork: string;
   handleNetworkChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  label?: string;
 }
 
 export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
@@ -40,6 +39,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   networkOptions,
   selectedNetwork,
   handleNetworkChange,
+  label,
 }) => {
   // Create a synthetic event for our custom handler
   const createSyntheticEvent = (value: string) => {
@@ -84,7 +84,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
 
   return (
     <FormControl maxW="300px">
-      <FormLabel>Network</FormLabel>
+      {label && <FormLabel>{label}</FormLabel>}
       <Menu>
         <MenuButton
           as={Button}

@@ -275,6 +275,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               networkOptions={networkOptionsWithV3}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
+              label="Network"
             />
           </Box>
 

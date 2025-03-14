@@ -798,6 +798,10 @@ type GqlPoolDynamicData {
   lifetimeSwapFees: BigDecimal!
   lifetimeVolume: BigDecimal!
   poolId: ID!
+  protocolFees24h: BigDecimal!
+  protocolFees48h: BigDecimal!
+  protocolYieldCapture24h: BigDecimal!
+  protocolYieldCapture48h: BigDecimal!
   sharePriceAth: BigDecimal!
   sharePriceAthTimestamp: Int!
   sharePriceAtl: BigDecimal!
@@ -2889,7 +2893,7 @@ type MevTaxHookParams {
 }
 
 type Mutation {
-  beetsPoolLoadReliquarySnapshotsForAllFarms: String!
+  beetsPoolLoadReliquarySnapshotsForAllFarms(chain: GqlChain!): String!
   beetsSyncFbeetsRatio: String!
   poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
   poolLoadSnapshotsForPools(poolIds: [String!]!, reload: Boolean): String!
@@ -2933,7 +2937,7 @@ type Query {
   """Returns all pools for a given filter, specific for aggregators"""
   aggregatorPools(first: Int, orderBy: GqlPoolOrderBy, orderDirection: GqlPoolOrderDirection, skip: Int, where: GqlAggregatorPoolFilter): [GqlPoolAggregator!]!
   beetsGetFbeetsRatio: String!
-  beetsPoolGetReliquaryFarmSnapshots(id: String!, range: GqlPoolSnapshotDataRange!): [GqlReliquaryFarmSnapshot!]!
+  beetsPoolGetReliquaryFarmSnapshots(chain: GqlChain, id: String!, range: GqlPoolSnapshotDataRange!): [GqlReliquaryFarmSnapshot!]!
   blocksGetAverageBlockTime: Float! @deprecated
   blocksGetBlocksPerDay: Float! @deprecated
   blocksGetBlocksPerSecond: Float! @deprecated

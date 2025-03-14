@@ -467,6 +467,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               networkOptions={networkOptionsWithV3}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
+              label="Network"
             />
           </Box>
 

@@ -14,7 +14,6 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
 import { BiErrorCircle } from "react-icons/bi";
 import {
   Bar,
@@ -25,96 +24,54 @@ import {
   YAxis,
 } from "recharts";
 import { formatUnits } from "viem";
-import { BufferTooltip } from "./BufferTooltip";
-import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
-import { networks } from "@/constants/constants";
+import { BufferCardTooltip } from "./BufferCardTooltip";
+import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
 interface BufferRowProps {
   token: PoolToken;
   isLastToken: boolean;
+  buffer?: {
+    underlyingBalance: bigint;
+    wrappedBalance: bigint;
+    state: {
+      isLoading: boolean;
+      isError: boolean;
+    };
+  };
 }
 
-export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
+export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
-  let network = token.chain!.toLowerCase();
+  const { isLoading, isError } = buffer?.state || {};
 
-  const {
-    data: bufferBalance,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["bufferBalance", token.address, network],
-    queryFn: () => fetchBufferBalance(token.address, network),
-    enabled: token.isErc4626 && !!networks[network],
-  });
-
-  const balance = bufferBalance && {
-    underlyingBalance: bufferBalance.underlyingBalance,
-    wrappedBalance: bufferBalance.wrappedBalance,
+  const formatBufferValue = (value: bigint, decimals: number) => {
+    const formattedValue = Number(formatUnits(value, decimals));
+    return value > 0 && formattedValue < 0.01 ? "< 0.01" : formatValue(value, decimals);
   };
 
   const isEmptyBuffer =
-    balance && balance.underlyingBalance === BigInt(0) && balance.wrappedBalance === BigInt(0);
+    buffer && buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
 
   const ratios =
-    balance && calculateRatios(balance.underlyingBalance, balance.wrappedBalance, token.decimals!);
+    buffer && calculateRatios(buffer.underlyingBalance, buffer.wrappedBalance, token.decimals!);
 
   const renderContent = () => {
+    // Case1: Non-ERC4626 token
     if (!token.isErc4626) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
             <Icon as={BiErrorCircle} boxSize={4} />
             <Text fontSize="sm" color={textColor}>
-              No buffer needed
+              No buffer needed (non-ERC4626)
             </Text>
           </HStack>
         </Center>
       );
     }
 
-    // Case 2: Loading state
-    if (isLoading) {
-      return (
-        <Skeleton
-          h="full"
-          startColor="whiteAlpha.100"
-          endColor="whiteAlpha.300"
-          borderRadius="md"
-        />
-      );
-    }
-
-    // Case 3: Error state or no data
-    if (isError || !bufferBalance || !balance) {
-      return (
-        <Center h="full" bg="whiteAlpha.50" rounded="md" border="1px solid red.200">
-          <HStack>
-            <Icon as={BiErrorCircle} boxSize={4} />
-            <Text fontSize="sm" color={textColor}>
-              Failed to load buffer data
-            </Text>
-          </HStack>
-        </Center>
-      );
-    }
-
-    // Case 4: Empty buffer
-    if (isEmptyBuffer && token.underlyingToken?.isErc4626) {
-      return (
-        <Center h="full" bg="whiteAlpha.50" rounded="md">
-          <HStack>
-            <Icon as={BiErrorCircle} boxSize={4} />
-            <Text fontSize="sm" color={textColor}>
-              Empty Buffer! Needs to be initialized!
-            </Text>
-          </HStack>
-        </Center>
-      );
-    }
-
-    // Case 5: Fake ERC4626 / underlying token doesn't need a buffer
-    if (isEmptyBuffer && !token.underlyingToken?.isErc4626) {
+    // Case 2: Fake ERC4626 / underlying token doesn't need a buffer
+    if (!isRealErc4626Token(token)) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
@@ -127,11 +84,51 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
       );
     }
 
+    // Case 3: Loading state
+    if (isLoading) {
+      return (
+        <Skeleton
+          h="full"
+          startColor="whiteAlpha.100"
+          endColor="whiteAlpha.300"
+          borderRadius="md"
+        />
+      );
+    }
+
+    // Case 4: Error state or no data
+    if (isError || !buffer) {
+      return (
+        <Center h="full" bg="whiteAlpha.50" rounded="md" border="1px solid red.200">
+          <HStack>
+            <Icon as={BiErrorCircle} boxSize={4} />
+            <Text fontSize="sm" color={textColor}>
+              Failed to load buffer data
+            </Text>
+          </HStack>
+        </Center>
+      );
+    }
+
+    // Case 5: Empty buffer
+    if (isEmptyBuffer) {
+      return (
+        <Center h="full" bg="whiteAlpha.50" rounded="md">
+          <HStack>
+            <Icon as={BiErrorCircle} boxSize={4} />
+            <Text fontSize="sm" color={textColor}>
+              Empty Buffer! Needs to be initialized!
+            </Text>
+          </HStack>
+        </Center>
+      );
+    }
+
     const chartData = [
       {
         token,
-        underlying: Number(formatUnits(balance.underlyingBalance, token.decimals!)),
-        wrapped: Number(formatUnits(balance.wrappedBalance, token.decimals!)),
+        underlying: Number(formatUnits(buffer.underlyingBalance, token.decimals!)),
+        wrapped: Number(formatUnits(buffer.wrappedBalance, token.decimals!)),
       },
     ];
 
@@ -143,7 +140,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" hide />
               <RechartsTooltip
-                content={<BufferTooltip />}
+                content={<BufferCardTooltip />}
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
               />
               <Bar dataKey="underlying" stackId="a" fill="#627EEA" radius={[4, 0, 0, 4]} />
@@ -155,14 +152,14 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#627EEA" />
             <Text color={textColor}>
-              Underlying: {formatValue(balance.underlyingBalance, token.decimals!)}{" "}
+              Underlying: {formatBufferValue(buffer.underlyingBalance, token.decimals!)}{" "}
               {token.underlyingToken?.symbol}
             </Text>
           </HStack>
           <HStack>
             <Box w="3" h="3" borderRadius="full" bg="#E5E5E5" />
             <Text color={textColor}>
-              Wrapped: {formatValue(balance.wrappedBalance, token.decimals!)} {token.symbol}
+              Wrapped: {formatBufferValue(buffer.wrappedBalance, token.decimals!)} {token.symbol}
             </Text>
           </HStack>
         </HStack>
@@ -182,7 +179,7 @@ export const BufferRow = ({ token, isLastToken }: BufferRowProps) => {
               {token.symbol}
             </Badge>
           </HStack>
-          {token.isErc4626 && !isEmptyBuffer && ratios && (
+          {isRealErc4626Token(token) && !isEmptyBuffer && ratios && (
             <Text fontSize="sm" color={textColor}>
               {ratios.underlying}% - {ratios.wrapped}%
             </Text>

@@ -1,7 +1,7 @@
 import { Box, Text, HStack, Badge, VStack, useColorModeValue } from "@chakra-ui/react";
 import { PoolToken } from "@/types/interfaces";
 
-interface BufferTooltipProps {
+interface BufferCardTooltipProps {
   active?: boolean;
   payload?: Array<{
     value: number;
@@ -14,7 +14,7 @@ interface BufferTooltipProps {
   }>;
 }
 
-export const BufferTooltip = ({ active, payload }: BufferTooltipProps) => {
+export const BufferCardTooltip = ({ active, payload }: BufferCardTooltipProps) => {
   const bgColor = useColorModeValue("white", "background.level2");
 
   if (!active || !payload?.length) return null;
@@ -24,6 +24,11 @@ export const BufferTooltip = ({ active, payload }: BufferTooltipProps) => {
   const ratios = {
     underlying: ((underlying / total) * 100).toFixed(1),
     wrapped: ((wrapped / total) * 100).toFixed(1),
+  };
+
+  const formatNumber = (value: number) => {
+    if (value === 0 || value >= 0.01) return value.toFixed(2);
+    return "< 0.01";
   };
 
   return (
@@ -46,13 +51,13 @@ export const BufferTooltip = ({ active, payload }: BufferTooltipProps) => {
         <HStack justify="space-between" minW="200px">
           <Text color="gray.400">Underlying:</Text>
           <Text color="#627EEA" fontWeight="medium">
-            {underlying.toFixed(2)} ({ratios.underlying}%)
+            {formatNumber(underlying)} ({ratios.underlying}%)
           </Text>
         </HStack>
         <HStack justify="space-between">
           <Text color="gray.400">Wrapped:</Text>
           <Text color="#E5E5E5" fontWeight="medium">
-            {wrapped.toFixed(2)} ({ratios.wrapped}%)
+            {formatNumber(wrapped)} ({ratios.wrapped}%)
           </Text>
         </HStack>
       </VStack>
