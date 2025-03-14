@@ -15,6 +15,7 @@ import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { TbTransactionBitcoin, TbGaugeFilled, TbHeartRateMonitor } from "react-icons/tb";
+import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
@@ -45,6 +46,12 @@ const LinkItems = [
         icon: RiAlertLine,
         target: "/rewards-injector/status",
         description: "Check Injector status",
+      },
+      {
+        name: "Deploy New Injector",
+        icon: PiRocketLaunchBold,
+        target: "/injector-creator-v2",
+        description: "Deploy a new rewards injector",
       },
     ],
   },
