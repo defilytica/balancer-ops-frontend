@@ -97,6 +97,28 @@ interface NetworkInjectorResponse {
   injectors: InjectorInfo[];
 }
 
+const convertToRawAmount = (humanAmount: string, decimals: number): string => {
+  if (!humanAmount || humanAmount === '' || !decimals) return "0";
+  try {
+    // Convert from human-readable to raw uint256 value
+    return ethers.parseUnits(humanAmount, decimals).toString();
+  } catch (error) {
+    console.error("Error converting amount:", error);
+    return "0";
+  }
+};
+
+const convertToHumanReadable = (rawAmount: string, decimals: number): string => {
+  if (!rawAmount || rawAmount === '0' || !decimals) return "";
+  try {
+    // Convert from raw uint256 to human-readable value
+    return ethers.formatUnits(rawAmount, decimals);
+  } catch (error) {
+    console.error("Error formatting amount:", error);
+    return "";
+  }
+};
+
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [factoryAddress, setFactoryAddress] = useState("");
@@ -107,6 +129,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [maxInjectionAmount, setMaxInjectionAmount] = useState("0");
+  const [humanReadableAmount, setHumanReadableAmount] = useState("");
+  const [isMaxAmountValid, setIsMaxAmountValid] = useState(true);
   const [owner, setOwner] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactions, setTransactions] = useState<TransactionState[]>([]);
@@ -442,6 +466,34 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     fetchDeployedInjectors();
   }, [factoryAddress, selectedNetwork]);
 
+  // State change upon token decimals change
+  useEffect(() => {
+    if (tokenInfo?.decimals && maxInjectionAmount !== "0") {
+      // Update human-readable amount when token info changes
+      setHumanReadableAmount(convertToHumanReadable(maxInjectionAmount, tokenInfo.decimals));
+    } else {
+      setHumanReadableAmount("");
+    }
+  }, [tokenInfo?.decimals]);
+
+  const handleHumanAmountChange = (value: string): void => {
+    setHumanReadableAmount(value);
+    if (!value || value === '' || !tokenInfo?.decimals) {
+      setMaxInjectionAmount("0");
+      setIsMaxAmountValid(true);
+      return;
+    }
+
+    try {
+      const rawValue = convertToRawAmount(value, tokenInfo.decimals);
+      setMaxInjectionAmount(rawValue);
+      setIsMaxAmountValid(true);
+    } catch (error) {
+      console.error("Invalid amount:", error);
+      setIsMaxAmountValid(false);
+    }
+  };
+
   const handleNetworkChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
@@ -493,6 +545,15 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     if (!minWaitPeriodSeconds) return "Minimum wait period is required";
     if (!injectTokenAddress) return "Inject token address is required";
     if (!owner) return "Owner address is required";
+
+    // Add validation for max injection amount
+    if (maxInjectionAmount === "0") {
+      return "Max injection amount must be greater than 0 for the injector to fire";
+    }
+
+    if (!isMaxAmountValid) {
+      return "Invalid max injection amount format";
+    }
 
     // Validate addresses
     try {
@@ -547,9 +608,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       const filteredKeepers = keeperAddresses.filter(addr => addr.trim() !== "");
 
       // Parse maxInjectionAmount
-      const parsedMaxAmount = maxInjectionAmount
-        ? ethers.parseUnits(maxInjectionAmount, 18)
-        : BigInt(0);
+      const parsedMaxAmount = BigInt(maxInjectionAmount);
 
       // Call contract method
       const tx = await factoryContract.createInjector(
@@ -783,18 +842,18 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   textDecoration="underline"
                   isExternal
                 >
-                  this documentation
+                  the partner onboarding docs
                 </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                For more technical details, consult{" "}
+                For more technical details about the injector contract, consult{" "}
                 <Link
                   href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#child-chain-gauge-injector-v2"
                   textDecoration="underline"
                   isExternal
                 >
-                  this documentation
+                  the repo README
                 </Link>
               </ListItem>
               <ListItem>
@@ -951,13 +1010,50 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 <FormControl isRequired>
                   <Flex alignItems="center">
                     <FormLabel>Max Injection Amount</FormLabel>
-                    <Tooltip label="Maximum amount of tokens that can be injected in a single transaction. Set to 0 for no limit.">
+                    <Tooltip label="Maximum amount of tokens that can be injected in a single transaction. Must be greater than 0 for the injector to fire.">
                       <InfoIcon ml={1} />
                     </Tooltip>
                   </Flex>
-                  <NumberInput value={maxInjectionAmount} onChange={setMaxInjectionAmount} min={0}>
-                    <NumberInputField placeholder="Enter max amount (0 for no limit)" />
+                  <NumberInput
+                    value={humanReadableAmount}
+                    onChange={handleHumanAmountChange}
+                    min={0.000000001}
+                    isDisabled={!tokenInfo?.decimals}
+                    isInvalid={!isMaxAmountValid}
+                  >
+                    <NumberInputField
+                      placeholder={tokenInfo?.decimals ? "Enter amount in tokens" : "Enter token address first"}
+                    />
                   </NumberInput>
+
+                  {tokenInfo?.decimals && (
+                    <Flex mt={1} justifyContent="space-between" fontSize="sm">
+                      <Text color={humanReadableAmount ? "green.500" : "gray.500"}>
+                        {humanReadableAmount ? (
+                          <>
+                            {humanReadableAmount} {tokenInfo.symbol}
+                          </>
+                        ) : (
+                          "Enter an amount"
+                        )}
+                      </Text>
+                      <Text color="gray.500">
+                        Raw: {maxInjectionAmount !== "0" ? maxInjectionAmount : "N/A"}
+                      </Text>
+                    </Flex>
+                  )}
+
+                  {!tokenInfo?.decimals && (
+                    <Text fontSize="xs" color="orange.500" mt={1}>
+                      Please enter a token address first to enable this field
+                    </Text>
+                  )}
+
+                  {maxInjectionAmount === "0" && tokenInfo?.decimals && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Warning: Max injection amount must be greater than 0 for the injector to fire
+                    </Text>
+                  )}
                 </FormControl>
 
                 {/* Owner Address */}
