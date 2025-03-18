@@ -75,6 +75,8 @@ export default function RewardsInjectorContainer({
               const injectors = maxiKeepers.gaugeRewardsInjectors;
               if (injectors) {
                 for (const [token, address] of Object.entries(injectors)) {
+                  // Skip the _deprecated field
+                  if (token === "_deprecated") continue;
                   allAddressesWithOptions.push({
                     network,
                     address,
