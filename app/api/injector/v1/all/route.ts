@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
         if (injectors) {
           for (const [token, address] of Object.entries(injectors)) {
             // Check if we have cached data for this injector
+            // Skip the _deprecated field entirely
+            if (token === "_deprecated") continue;
             const cachedInjector = await prisma.injector.findUnique({
               where: {
                 network_address: {
