@@ -50,6 +50,7 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfigurationViewerV2 } from "./RewardsInjectorConfigurationViewerV2";
 import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -280,6 +281,35 @@ function RewardsInjectorConfiguratorV2({
     setGeneratedPayload(newJson as BatchFile);
   };
 
+  const shortenAddress = (address: string): string => {
+    if (!address || address.length < 10) return address;
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  // Prepare pre-filled values for PR modal
+  const getPrefillValues = () => {
+    if (!selectedAddress || !operation) {
+      return {};
+    }
+
+    const uniqueId = generateUniqueId();
+    const injectorAddress = generatedPayload?.transactions?.[0]?.to || '';
+    const networkName = selectedAddress.network.toLowerCase();
+    const opType = operation;
+
+    // Count valid recipients
+    const recipientCount = opType === 'add'
+      ? addConfig.recipients.filter(r => r.trim()).length
+      : removeConfig.recipients.filter(r => r.trim()).length;
+
+    return {
+      prefillBranchName: `feature/injector-${opType}-${injectorAddress}-${uniqueId}`,
+      prefillPrName: `${opType === 'add' ? 'Add' : 'Remove'} ${tokenSymbol} Injector Schedule on ${networkName}`,
+      prefillDescription: `Configures the ${tokenSymbol} rewards injector ${injectorAddress} to ${opType} schedule${recipientCount !== 1 ? 's' : ''} for ${recipientCount} recipient${recipientCount !== 1 ? 's' : ''}.`,
+      prefillFilePath: `MaxiOps/injectorScheduling/${networkName}/injector-${injectorAddress}-${opType}-${uniqueId}.json`
+    };
+  };
+
   return (
     <Container maxW="container.xl">
       <Box mb="10px">
@@ -508,6 +538,7 @@ function RewardsInjectorConfiguratorV2({
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
             network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
+            {...getPrefillValues()}
           />
         </Box>
       )}

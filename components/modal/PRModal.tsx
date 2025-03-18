@@ -1,3 +1,4 @@
+// Simplified PR Modal with pre-filled values
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -46,6 +47,17 @@ interface PRCreationModalProps {
   payload: any;
   type: string;
   network?: string;
+  // New pre-filled props
+  prefillBranchName?: string;
+  prefillPrName?: string;
+  prefillDescription?: string;
+  prefillFilePath?: string;
+}
+
+interface ForkStatus {
+  forkRepo: string;
+  isOutdated: boolean;
+  behindBy?: number;
 }
 
 const isValidBranchName = (name: string) => {
@@ -61,19 +73,22 @@ const getStartOfNextWeek = () => {
   return addDays(now, daysUntilNextMonday);
 };
 
-interface ForkStatus {
-  forkRepo: string;
-  isOutdated: boolean;
-  behindBy?: number;
-}
+// Generate a unique ID to prevent branch conflicts
+const generateUniqueId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+};
 
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
-  isOpen,
-  onClose,
-  payload,
-  type,
-  network,
-}) => {
+                                                                  isOpen,
+                                                                  onClose,
+                                                                  payload,
+                                                                  type,
+                                                                  network,
+                                                                  prefillBranchName,
+                                                                  prefillPrName,
+                                                                  prefillDescription,
+                                                                  prefillFilePath,
+                                                                }) => {
   const payloadOption = PAYLOAD_OPTIONS.find(option => option.key === type);
   const repoOptions = payloadOption ? payloadOption.repos : [];
 
@@ -88,22 +103,40 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const [branchError, setBranchError] = useState("");
   const toast = useToast();
 
-  const { branchNamePlaceholder, prNamePlaceholder } = payloadOption || {};
-  const needsWeekSelector = payloadOption?.prTypePath.includes("YYYY-WXX");
+  const { branchNamePlaceholder, prNamePlaceholder, prTypePath } = payloadOption || {};
+  const needsWeekSelector = prTypePath?.includes("YYYY-WXX");
 
+  // Initialize values when the modal opens or prefill values change
   useEffect(() => {
-    const basePath = payloadOption?.prTypePath || "";
-    const year = getYear(selectedWeek);
-    const weekNum = getISOWeek(selectedWeek);
-    const weekStr = `W${weekNum}`;
-    let newPath = basePath.replace("YYYY", year.toString()).replace("WXX", weekStr);
+    if (isOpen) {
+      // Set pre-filled values if provided, otherwise use defaults
+      setPrBranch(prefillBranchName || `${branchNamePlaceholder || `feature/${type}`}-${generateUniqueId()}`);
+      setPrName(prefillPrName || prNamePlaceholder || `${type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ')}`);
+      setPrDescription(prefillDescription || "");
 
-    if (network && newPath.includes("[chain]")) {
-      newPath = newPath.replace("[chain]", network.toLowerCase());
+      // Only set filePath if prefill not provided - we'll calculate it otherwise
+      if (prefillFilePath) {
+        setFilePath(prefillFilePath);
+      }
     }
+  }, [isOpen, prefillBranchName, prefillPrName, prefillDescription, prefillFilePath]);
 
-    setFilePath(`${newPath}${type}.json`);
-  }, [type, selectedWeek, network]);
+  // Calculate file path based on week and type if not pre-filled
+  useEffect(() => {
+    if (!prefillFilePath && prTypePath) {
+      const basePath = prTypePath;
+      const year = getYear(selectedWeek);
+      const weekNum = getISOWeek(selectedWeek);
+      const weekStr = `W${weekNum}`;
+      let newPath = basePath.replace("YYYY", year.toString()).replace("WXX", weekStr);
+
+      if (network && newPath.includes("[chain]")) {
+        newPath = newPath.replace("[chain]", network.toLowerCase());
+      }
+
+      setFilePath(`${newPath}${type}-${generateUniqueId()}.json`);
+    }
+  }, [type, selectedWeek, network, prefillFilePath, prTypePath]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -123,7 +156,6 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         }
 
         const status = await response.json();
-        console.log(status);
         setForkStatus(status);
       } catch (error) {
         console.error("Error checking fork status:", error);
@@ -152,11 +184,9 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
       const now = new Date();
 
       // Only allow if the previous week is still in the future
-      // This checks if the prev week starts after today or is not the current week
       if (!isBefore(prevWeek, now) && !isSameWeek(prevWeek, now, { weekStartsOn: 1 })) {
         setSelectedWeek(prevWeek);
       } else {
-        // Optionally: show a toast notification that you can't select current/past weeks
         toast({
           title: "Invalid selection",
           description: "Only future weeks can be selected",
