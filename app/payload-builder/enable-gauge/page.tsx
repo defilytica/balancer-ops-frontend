@@ -39,6 +39,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -59,6 +60,26 @@ export default function EnableGaugePage() {
 
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
+  };
+
+  // Prepare pre-filled values for PR modal
+  const getPrefillValues = () => {
+    // Only include gauges with non-empty IDs
+    const validGauges = gauges.filter(g => g.id.trim());
+    if (validGauges.length === 0) return {};
+
+    const uniqueId = generateUniqueId();
+
+    // Get first gauge ID for naming
+    const firstGaugeId = validGauges[0].id.substring(0, 8);
+
+    return {
+      prefillBranchName: `feature/enable-gauge-${firstGaugeId}-${uniqueId}`,
+      prefillPrName: `Enable ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} on ${gauges[0].network}`,
+      prefillDescription: `This PR enables ${validGauges.length} gauge${validGauges.length !== 1 ? 's' : ''} for BAL rewards${gauges.length > 0 ? ` on: multiple networks` : ''}.`,
+      // Adjust file path as needed based on your repository structure
+      prefillFilePath: `BIPs/enable-gauges-${firstGaugeId}-${uniqueId}.json`
+    };
   };
 
   const handleOpenPRModal = () => {
@@ -251,6 +272,7 @@ export default function EnableGaugePage() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );
