@@ -29,8 +29,12 @@ import {
   AlertDescription,
   Divider,
   Spinner,
+  Link,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, CopyIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import { ethers } from "ethers";
+import { useAccount, useSwitchChain } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 
 import { AddressOption } from "@/types/interfaces";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
@@ -50,6 +54,7 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfigurationViewerV2 } from "./RewardsInjectorConfigurationViewerV2";
 import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
+import { ChildChainGaugeInjectorV2ABI } from "@/abi/ChildChainGaugeInjectorV2ABI";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -70,16 +75,23 @@ interface RecipientConfigData {
   rawAmountPerPeriod: string;
 }
 
+interface TransactionState {
+  hash: string;
+  status: "pending" | "success" | "error";
+  type: "add" | "remove";
+  address?: string;
+}
+
 function RewardsInjectorConfiguratorV2({
-  addresses,
-  selectedAddress,
-  onAddressSelect,
-  selectedSafe,
-  injectorData,
-  isLoading,
-  isV2,
-  onVersionToggle,
-}: RewardsInjectorConfiguratorV2Props) {
+                                         addresses,
+                                         selectedAddress,
+                                         onAddressSelect,
+                                         selectedSafe,
+                                         injectorData,
+                                         isLoading,
+                                         isV2,
+                                         onVersionToggle,
+                                       }: RewardsInjectorConfiguratorV2Props) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
@@ -104,14 +116,96 @@ function RewardsInjectorConfiguratorV2({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [operation, setOperation] = useState<"add" | "remove" | null>(null);
 
+  // State for wallet interaction
+  const { address: connectedWallet } = useAccount();
+  const { chain } = useAccount();
+  const { chains, switchChain } = useSwitchChain();
+  const { openConnectModal } = useConnectModal();
+  const [isOwner, setIsOwner] = useState(false);
+  const [txPending, setTxPending] = useState(false);
+  const [switchingNetwork, setSwitchingNetwork] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionState[]>([]);
+
   useEffect(() => {
     if (selectedAddress && injectorData) {
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setTokenDecimals(injectorData.tokenInfo.decimals);
       setGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
+
+      // Check if connected wallet is the owner
+      checkOwnership();
     }
-  }, [selectedAddress, injectorData]);
+  }, [selectedAddress, injectorData, connectedWallet]);
+
+  // Handle selection of a new injector
+  const handleAddressSelect = (address: AddressOption) => {
+    onAddressSelect(address);
+
+    // Reset operation and transactions
+    setOperation(null);
+    setTransactions([]);
+
+    // Check if we need to switch networks (do this after selection)
+    if (address) {
+      handleNetworkSwitch(address);
+    }
+  };
+
+  // Function to handle network switching
+  const handleNetworkSwitch = async (address: AddressOption = selectedAddress!) => {
+    if (!address) return;
+
+    try {
+      setSwitchingNetwork(true);
+      const targetChainId = Number(getChainId(address.network));
+
+      // Only switch if we're on a different network
+      if (chain?.id !== targetChainId) {
+        await switchChain({ chainId: targetChainId });
+
+        toast({
+          title: "Network Switched",
+          description: `Switched to ${address.network}`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error switching network:", error);
+      toast({
+        title: "Error Switching Network",
+        description: "Please switch network manually in your wallet",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setSwitchingNetwork(false);
+    }
+  };
+
+  const checkOwnership = async () => {
+    if (!selectedAddress || !connectedWallet) {
+      setIsOwner(false);
+      return;
+    }
+
+    try {
+      // Ensure we're in browser environment
+      if (typeof window === "undefined" || !window.ethereum) {
+        setIsOwner(false);
+        return;
+      }
+
+      // Check if the connected wallet matches the selected safe
+      setIsOwner(selectedSafe.toLowerCase() === connectedWallet.toLowerCase());
+    } catch (error) {
+      console.error("Error checking ownership:", error);
+      setIsOwner(false);
+    }
+  };
 
   const handleConfigChange = (newConfig: RecipientConfigData) => {
     if (operation === "add") {
@@ -180,7 +274,6 @@ function RewardsInjectorConfiguratorV2({
           const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
           const gaugeRemaining = gaugeTotal - gaugeDistributed;
 
-          console.log(gaugeTotal, gaugeDistributed, gaugeRemaining);
           newTotal -= gaugeTotal / 10 ** tokenDecimals;
           newDistributed -= gaugeDistributed / 10 ** tokenDecimals;
           newRemaining -= gaugeRemaining / 10 ** tokenDecimals;
@@ -193,19 +286,6 @@ function RewardsInjectorConfiguratorV2({
       distributed: newDistributed,
       remaining: newRemaining,
     };
-  };
-
-  const calculateDistributionAmounts = (addConfig: RecipientConfigData) => {
-    if (!addConfig.amountPerPeriod || !addConfig.maxPeriods) {
-      return { total: 0, distributed: 0, remaining: 0 };
-    }
-
-    const amount = parseFloat(addConfig.amountPerPeriod) || 0;
-    const maxPeriods = parseInt(addConfig.maxPeriods) || 0;
-    const totalRecipients = addConfig.recipients.filter(r => r.trim()).length;
-
-    const total = amount * maxPeriods * totalRecipients;
-    return { total, distributed: 0, remaining: total };
   };
 
   const formatAmount = (amount: number) => {
@@ -240,14 +320,14 @@ function RewardsInjectorConfiguratorV2({
         scheduleInputs:
           operation === "add"
             ? addConfig.recipients.map(recipient => ({
-                gaugeAddress: recipient,
-                rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
-                maxPeriods: addConfig.maxPeriods,
-                doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
-              }))
+              gaugeAddress: recipient,
+              rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
+              maxPeriods: addConfig.maxPeriods,
+              doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
+            }))
             : removeConfig.recipients.map(recipient => ({
-                gaugeAddress: recipient,
-              })),
+              gaugeAddress: recipient,
+            })),
       });
 
       setGeneratedPayload(payload);
@@ -262,12 +342,354 @@ function RewardsInjectorConfiguratorV2({
     }
   };
 
+  // Function for direct wallet execution
+  const executeWithWallet = async () => {
+    if (!selectedAddress || !operation) {
+      toast({
+        title: "Cannot Execute",
+        description: "Missing required information",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Check for wallet connection
+    if (!connectedWallet) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to execute transactions",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      openConnectModal?.();
+      return;
+    }
+
+    // Check if we're in browser environment
+    if (typeof window === "undefined" || !window.ethereum) {
+      toast({
+        title: "Browser Wallet Not Detected",
+        description: "Please ensure your wallet is connected",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Check for ownership before execution
+    if (!isOwner) {
+      toast({
+        title: "Not Authorized",
+        description: "Your wallet is not the owner of this injector",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Check if we're on the correct network
+    const targetChainId = Number(getChainId(selectedAddress.network));
+    const currentChainId = chain?.id;
+
+    if (currentChainId !== targetChainId) {
+      toast({
+        title: "Wrong Network",
+        description: `Please switch to ${selectedAddress.network}`,
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Try to switch networks automatically
+      try {
+        setSwitchingNetwork(true);
+        await switchChain({ chainId: targetChainId });
+        setSwitchingNetwork(false);
+      } catch (error) {
+        setSwitchingNetwork(false);
+        toast({
+          title: "Network Switch Failed",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Give a moment for network to update before continuing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Now execute the transaction
+    try {
+      setTxPending(true);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Verify we're on the correct network before sending
+      const network = await provider.getNetwork();
+      if (network.chainId !== BigInt(targetChainId)) {
+        throw new Error(`Wrong network detected. Please switch to ${selectedAddress.network}`);
+      }
+
+      const injectorContract = new ethers.Contract(
+        selectedAddress.address,
+        ChildChainGaugeInjectorV2ABI,
+        signer
+      );
+
+      // Prepare parameters and validate them
+      let filteredRecipients: string[] = [];
+      let txPromise;
+
+      if (operation === "add") {
+        filteredRecipients = addConfig.recipients.filter(r => r.trim());
+
+        if (filteredRecipients.length === 0) {
+          throw new Error("No valid recipients specified");
+        }
+
+        // Validate parameters
+        if (!addConfig.rawAmountPerPeriod || addConfig.rawAmountPerPeriod === "0") {
+          throw new Error("Amount per period must be greater than 0");
+        }
+
+        if (!addConfig.maxPeriods || addConfig.maxPeriods === "0") {
+          throw new Error("Max periods must be greater than 0");
+        }
+
+        // Additional sanity check: ensure addresses are valid
+        filteredRecipients.forEach(addr => {
+          if (!ethers.isAddress(addr)) {
+            throw new Error(`Invalid address format: ${addr}`);
+          }
+        });
+
+        // First try estimating gas to catch errors before sending
+        try {
+          console.log("Estimating gas for add operation with params:", {
+            recipients: filteredRecipients,
+            amountPerPeriod: addConfig.rawAmountPerPeriod,
+            maxPeriods: addConfig.maxPeriods,
+            doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp
+          });
+
+          await injectorContract.addRecipients.estimateGas(
+            filteredRecipients,
+            addConfig.rawAmountPerPeriod,
+            addConfig.maxPeriods,
+            addConfig.doNotStartBeforeTimestamp
+          );
+        } catch (estError: any) {
+          console.error("Gas estimation error:", estError);
+
+          // Try to decode the error message
+          let errorMsg = "Transaction would fail";
+
+          // Check for common errors
+          if (estError.message.includes("recipient already exists")) {
+            errorMsg = "One or more recipients already exist in this injector";
+          } else if (estError.message.includes("insufficient funds")) {
+            errorMsg = "Insufficient funds in the injector contract";
+          } else if (estError.message.includes("not the owner")) {
+            errorMsg = "Your wallet is not authorized to configure this injector";
+          }
+
+          throw new Error(`${errorMsg}. Details: ${estError.message}`);
+        }
+
+        // If gas estimation succeeds, send the transaction
+        txPromise = injectorContract.addRecipients(
+          filteredRecipients,
+          addConfig.rawAmountPerPeriod,
+          addConfig.maxPeriods,
+          addConfig.doNotStartBeforeTimestamp,
+          // Add gas buffer to ensure transaction doesn't fail due to gas estimation
+          { gasLimit: 1000000 }
+        );
+
+      } else if (operation === "remove") {
+        filteredRecipients = removeConfig.recipients.filter(r => r.trim());
+
+        if (filteredRecipients.length === 0) {
+          throw new Error("No valid recipients specified");
+        }
+
+        // Validate addresses
+        filteredRecipients.forEach(addr => {
+          if (!ethers.isAddress(addr)) {
+            throw new Error(`Invalid address format: ${addr}`);
+          }
+        });
+
+        // Check if recipients actually exist in the gauges
+        const nonExistentGauges = filteredRecipients.filter(addr =>
+          !gauges.some(gauge => gauge.gaugeAddress.toLowerCase() === addr.toLowerCase())
+        );
+
+        if (nonExistentGauges.length > 0) {
+          throw new Error(`Some recipients don't exist in the injector: ${nonExistentGauges[0]}`);
+        }
+
+        // First try estimating gas to catch errors before sending
+        try {
+          console.log("Estimating gas for remove operation with params:", { recipients: filteredRecipients });
+          await injectorContract.removeRecipients.estimateGas(filteredRecipients);
+        } catch (estError: any) {
+          console.error("Gas estimation error:", estError);
+          throw new Error(`Transaction would fail: ${estError.message}`);
+        }
+
+        // If gas estimation succeeds, send the transaction
+        txPromise = injectorContract.removeRecipients(
+          filteredRecipients,
+          // Add gas buffer
+          { gasLimit: 500000 }
+        );
+      } else {
+        throw new Error("Invalid operation specified");
+      }
+
+      // Create a placeholder transaction in state
+      const tempTxId = `pending-${Date.now()}`;
+      setTransactions(prev => [
+        ...prev,
+        {
+          hash: tempTxId,
+          status: "pending",
+          type: operation,
+        },
+      ]);
+
+      toast({
+        title: "Confirming Transaction",
+        description: "Please confirm the transaction in your wallet",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Execute the transaction
+      const tx = await txPromise;
+
+      // Update transaction state with hash
+      setTransactions(prev =>
+        prev.map(t =>
+          t.hash === tempTxId
+            ? {
+              ...t,
+              hash: tx.hash,
+              status: "pending",
+            }
+            : t
+        )
+      );
+
+      toast({
+        title: "Transaction Submitted",
+        description: "Your transaction is being processed",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Wait for transaction to be mined
+      const receipt = await tx.wait();
+
+      // Update transaction state with success
+      setTransactions(prev =>
+        prev.map(t =>
+          t.hash === tx.hash || t.hash === tempTxId
+            ? {
+              ...t,
+              hash: tx.hash,
+              status: "success",
+            }
+            : t
+        )
+      );
+
+      toast({
+        title: "Transaction Successful",
+        description: "The injector has been configured successfully",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+
+    } catch (error: any) {
+      console.error("Transaction error:", error);
+
+      let errorMessage = "Transaction failed";
+
+      // Try to extract a more useful error message
+      if (error?.message) {
+        if (error.message.includes("user rejected transaction")) {
+          errorMessage = "Transaction was rejected in your wallet";
+        } else if (error.message.includes("insufficient funds")) {
+          errorMessage = "Insufficient funds to send this transaction";
+        } else if (error.message.includes("gas required exceeds allowance")) {
+          errorMessage = "Gas estimation failed - the transaction would fail";
+        } else if (error.message.includes("execution reverted")) {
+          // For custom contract errors
+          if (error.message.includes("recipient already exists")) {
+            errorMessage = "One or more recipients already exist in this injector";
+          } else if (error.message.includes("non-existent recipient")) {
+            errorMessage = "One or more recipients don't exist in this injector";
+          } else {
+            errorMessage = "Contract execution reverted - the operation is not allowed";
+          }
+        } else {
+          // Use the caught error message
+          errorMessage = error.message;
+        }
+      }
+
+      // Update transaction state with error
+      setTransactions(prev => {
+        // Handle case where transaction wasn't created but error was thrown
+        const txExists = prev.find(t =>
+          (t.status === "pending" && t.type === operation) ||
+          t.hash.startsWith('pending-')
+        );
+
+        if (!txExists) {
+          return [...prev, { hash: "error", status: "error", type: operation }];
+        }
+
+        // Update existing pending transactions of this type
+        return prev.map(t =>
+          ((t.status === "pending" && t.type === operation) || t.hash.startsWith('pending-'))
+            ? { ...t, hash: t.hash.startsWith('pending-') ? 'failed' : t.hash, status: "error" }
+            : t
+        );
+      });
+
+      toast({
+        title: "Transaction Failed",
+        description: errorMessage,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setTxPending(false);
+    }
+  };
+
   const handleOpenPRModal = () => {
     if (generatedPayload) {
       onOpen();
     } else {
       toast({
-        title: "No payload generated",
+        title: "No Payload Generated",
         description: "Please generate a payload first",
         status: "warning",
         duration: 5000,
@@ -280,6 +702,62 @@ function RewardsInjectorConfiguratorV2({
     setGeneratedPayload(newJson as BatchFile);
   };
 
+  // Get explorer URL based on network
+  const getExplorerUrl = (txHash: string) => {
+    if (!selectedAddress) return '#';
+    const networkKey = selectedAddress.network.toLowerCase();
+    const explorerBase = networks[networkKey]?.explorer || networks.mainnet.explorer;
+    return `${explorerBase}tx/${txHash}`;
+  };
+
+  // Render transaction history
+  const renderTransactionHistory = () => {
+    if (transactions.length === 0) return null;
+
+    return (
+      <Box mt={6} mb={6}>
+        <Heading size="md" mb={4}>Transaction History</Heading>
+        {transactions.map((tx, index) => (
+          <Alert
+            key={index}
+            status={tx.status === "success" ? "success" : tx.status === "pending" ? "info" : "error"}
+            mb={2}
+            variant="left-accent"
+          >
+            <AlertIcon />
+            <Box flex="1">
+              <Flex justify="space-between" align="center">
+                <AlertTitle>
+                  {tx.type === "add" ? "Add Recipients" : "Remove Recipients"} - {" "}
+                  {tx.status === "success"
+                    ? "Success"
+                    : tx.status === "pending"
+                      ? "Pending"
+                      : "Failed"}
+                </AlertTitle>
+                <Link
+                  href={getExplorerUrl(tx.hash)}
+                  isExternal
+                  display="flex"
+                  alignItems="center"
+                >
+                  View <ExternalLinkIcon mx="2px" />
+                </Link>
+              </Flex>
+              <AlertDescription display="block">
+                Transaction: {tx.hash.substring(0, 6)}...{tx.hash.substring(tx.hash.length - 4)}
+              </AlertDescription>
+            </Box>
+          </Alert>
+        ))}
+      </Box>
+    );
+  };
+
+  // Check if we need to show a network mismatch warning
+  const isWrongNetwork = selectedAddress && chain &&
+    Number(getChainId(selectedAddress.network)) !== chain.id;
+
   return (
     <Container maxW="container.xl">
       <Box mb="10px">
@@ -287,21 +765,28 @@ function RewardsInjectorConfiguratorV2({
           Injector Schedule Payload Configurator
         </Heading>
         <Text mb={6}>
-          Build a injector schedule payload to configure reward emissions on a gauge set.
+          Build an injector schedule payload to configure reward emissions on a gauge set.
         </Text>
       </Box>
+
+      {/* Network and Injector Selection */}
       <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
         <Menu>
           <MenuButton
             as={Button}
             rightIcon={<ChevronDownIcon />}
-            isDisabled={isLoading}
+            isDisabled={isLoading || switchingNetwork}
             whiteSpace="normal"
             height="auto"
             blockSize="auto"
             w="100%"
           >
-            {selectedAddress ? (
+            {switchingNetwork ? (
+              <Flex alignItems="center">
+                <Spinner size="sm" mr={2} />
+                <Text>Switching network...</Text>
+              </Flex>
+            ) : selectedAddress ? (
               <Flex alignItems="center">
                 <Image
                   src={networks[selectedAddress.network]?.logo}
@@ -326,8 +811,8 @@ function RewardsInjectorConfiguratorV2({
           <MenuList w="135%" maxHeight="60vh" overflowY="auto">
             {addresses.map(address => (
               <MenuItem
-                key={address.network + address.token}
-                onClick={() => onAddressSelect(address)}
+                key={address.network + address.token + Math.random().toString()}
+                onClick={() => handleAddressSelect(address)}
                 w="100%"
               >
                 <Flex alignItems="center" w="100%">
@@ -352,7 +837,7 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && (
           <IconButton
-            aria-label={""}
+            aria-label="View on explorer"
             as="a"
             href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${selectedAddress.address}`}
             target="_blank"
@@ -382,6 +867,64 @@ function RewardsInjectorConfiguratorV2({
           </FormLabel>
         </FormControl>
       </Flex>
+
+      {/* Network warning alert */}
+      {isWrongNetwork && (
+        <Alert status="warning" mb={4}>
+          <AlertIcon />
+          <Box flex="1">
+            <AlertTitle>Network Mismatch</AlertTitle>
+            <AlertDescription>
+              Please switch to {selectedAddress.network} to interact with this injector.
+              <Button
+                size="sm"
+                colorScheme="blue"
+                variant="outline"
+                ml={4}
+                onClick={() => handleNetworkSwitch()}
+                isLoading={switchingNetwork}
+              >
+                Switch Network
+              </Button>
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
+
+      {/* Connection status */}
+      {!connectedWallet && selectedAddress && (
+        <Alert status="info" mb={4}>
+          <AlertIcon />
+          <Box flex="1">
+            <AlertTitle>Wallet Not Connected</AlertTitle>
+            <AlertDescription display="flex" alignItems="center">
+              Connect your wallet to interact with this injector.
+              <Button
+                size="sm"
+                colorScheme="blue"
+                variant="outline"
+                ml={4}
+                onClick={openConnectModal}
+              >
+                Connect Wallet
+              </Button>
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
+
+      {/* Owner notice */}
+      {isOwner && (
+        <Alert status="success" mb={4}>
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Owner Detected</AlertTitle>
+            <AlertDescription>
+              Your connected wallet is the owner of this injector. You can execute configurations directly.
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
 
       {selectedAddress && !isLoading && (
         <>
@@ -445,10 +988,12 @@ function RewardsInjectorConfiguratorV2({
             />
           </Box>
           <Box mt={6} gap={4}>
-            <Button onClick={() => setOperation("add")} mr={4}>
+            <Button onClick={() => setOperation("add")} mr={4} variant={operation === "add" ? "solid" : "outline"}>
               Add Recipients
             </Button>
-            <Button onClick={() => setOperation("remove")}>Remove Recipients</Button>
+            <Button onClick={() => setOperation("remove")} variant={operation === "remove" ? "solid" : "outline"}>
+              Remove Recipients
+            </Button>
           </Box>
           <Box mt={6}>
             <EditableInjectorConfigV2
@@ -469,39 +1014,96 @@ function RewardsInjectorConfiguratorV2({
       )}
 
       {selectedAddress && !isLoading && (
-        <Flex justifyContent="space-between" mt={6} mb={6}>
-          <Button colorScheme="blue" onClick={generatePayload}>
+        <Flex justifyContent="space-between" mt={6} mb={6} flexWrap="wrap" gap={3}>
+          <Button
+            colorScheme="blue"
+            onClick={generatePayload}
+            isDisabled={!operation}
+          >
             Generate Payload
           </Button>
+
+          {/* Direct execution button for wallet owners */}
+          {isOwner && operation && (
+            <Button
+              colorScheme="green"
+              onClick={executeWithWallet}
+              isLoading={txPending || switchingNetwork}
+              loadingText={switchingNetwork ? "Switching Network..." : "Executing..."}
+              isDisabled={
+                !operation ||
+                isWrongNetwork ||
+                (operation === "add" && (!addConfig.recipients[0] || !addConfig.rawAmountPerPeriod || !addConfig.maxPeriods)) ||
+                (operation === "remove" && !removeConfig.recipients[0])
+              }
+            >
+              Execute with Wallet
+            </Button>
+          )}
+
           {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
         </Flex>
       )}
-      <Divider />
 
-      {generatedPayload && (
-        <JsonViewerEditor jsonData={generatedPayload} onJsonChange={handleJsonChange} />
+      {/* Transaction History */}
+      {transactions.length > 0 && renderTransactionHistory()}
+
+      {/* Debug Information (for development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box mt={4} p={4} borderWidth="1px" borderRadius="md" bg="gray.50">
+          <Heading size="sm" mb={2}>Debug Information</Heading>
+          <Text fontSize="sm" fontFamily="mono" whiteSpace="pre-wrap">
+            {operation === "add" ? (
+              <>
+                <strong>Operation:</strong> Add Recipients<br />
+                <strong>Recipients:</strong> {addConfig.recipients.filter(r => r.trim()).join(', ')}<br />
+                <strong>Amount Per Period:</strong> {addConfig.amountPerPeriod} ({addConfig.rawAmountPerPeriod})<br />
+                <strong>Max Periods:</strong> {addConfig.maxPeriods}<br />
+                <strong>Do Not Start Before:</strong> {addConfig.doNotStartBeforeTimestamp}<br />
+                <strong>Connected Wallet:</strong> {connectedWallet || 'Not connected'}<br />
+                <strong>Selected Network:</strong> {selectedAddress?.network || 'None'}<br />
+                <strong>Current Chain ID:</strong> {chain?.id || 'Unknown'}
+              </>
+            ) : operation === "remove" ? (
+              <>
+                <strong>Operation:</strong> Remove Recipients<br />
+                <strong>Recipients:</strong> {removeConfig.recipients.filter(r => r.trim()).join(', ')}<br />
+                <strong>Connected Wallet:</strong> {connectedWallet || 'Not connected'}<br />
+                <strong>Selected Network:</strong> {selectedAddress?.network || 'None'}<br />
+                <strong>Current Chain ID:</strong> {chain?.id || 'Unknown'}
+              </>
+            ) : 'No operation selected'}
+          </Text>
+        </Box>
       )}
 
+      <Divider />
+
+      {/* JSON Payload Section */}
       {generatedPayload && (
-        <Box display="flex" alignItems="center" mt="20px">
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<DownloadIcon />}
-            onClick={() => handleDownloadClick(JSON.stringify(generatedPayload))}
-          >
-            Download Payload
-          </Button>
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<CopyIcon />}
-            onClick={() => copyJsonToClipboard(JSON.stringify(generatedPayload), toast)}
-          >
-            Copy Payload to Clipboard
-          </Button>
-          <OpenPRButton onClick={handleOpenPRModal} />
-          <Box mt={8} />
+        <>
+          <Box mt={6}>
+            <JsonViewerEditor jsonData={generatedPayload} onJsonChange={handleJsonChange} />
+          </Box>
+
+          <Box display="flex" alignItems="center" mt={6} flexWrap="wrap" gap={3}>
+            <Button
+              variant="secondary"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(JSON.stringify(generatedPayload))}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(JSON.stringify(generatedPayload), toast)}
+            >
+              Copy to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} />
+          </Box>
+
           <PRCreationModal
             type={"injector-configurator"}
             isOpen={isOpen}
@@ -509,7 +1111,7 @@ function RewardsInjectorConfiguratorV2({
             payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
             network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
           />
-        </Box>
+        </>
       )}
     </Container>
   );
