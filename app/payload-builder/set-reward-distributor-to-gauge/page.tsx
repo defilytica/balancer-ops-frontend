@@ -45,6 +45,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export interface SetDistributorInput {
   targetGauge: string;
@@ -165,6 +166,56 @@ export default function SetRewardDistributorPage() {
     setUiState(prev => ({ ...prev, hasAddedReward: true }));
   };
 
+  const getPrefillValues = () => {
+    // Check if we have any rewards added
+    if (rewardAdds.length === 0) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get the first reward for naming
+    const firstReward = rewardAdds[0];
+
+    // Create a truncated version of the first gauge address for the branch name
+    const shortGaugeId = firstReward.targetGauge.substring(0, 8);
+
+    // Create a truncated version of the reward token for description
+    const shortTokenId = firstReward.rewardToken.substring(0, 8);
+
+    // Get all networks involved (could be multiple if setting distributors on different networks)
+    const networksMap: Record<string, boolean> = {};
+    rewardAdds.forEach(reward => {
+      // Find the network name from chainId
+      const networkOption = NETWORK_OPTIONS.find(option => option.chainId === reward.chainId);
+      if (networkOption) {
+        networksMap[networkOption.label] = true;
+      }
+    });
+    const networks = Object.keys(networksMap);
+    const networkText = networks.length === 1 ? networks[0] : "multiple networks";
+
+    // Create summary for description
+    let rewardSummary = "";
+    if (rewardAdds.length === 1) {
+      rewardSummary = `token ${shortTokenId} on gauge ${shortGaugeId}`;
+    } else if (rewardAdds.length <= 3) {
+      // List all rewards if 3 or fewer
+      rewardSummary = rewardAdds.map(reward =>
+        `${reward.rewardToken.substring(0, 8)} on ${reward.targetGauge.substring(0, 8)}`
+      ).join(', ');
+    } else {
+      // Summarize if more than 3
+      rewardSummary = `${rewardAdds.length} reward tokens on ${rewardAdds.length} gauges`;
+    }
+
+    return {
+      prefillBranchName: `feature/set-distributor-${shortGaugeId}-${uniqueId}`,
+      prefillPrName: `Update Reward Distributor${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
+      prefillDescription: `This PR updates the distributor${rewardAdds.length !== 1 ? 's' : ''} for ${rewardSummary} on ${networkText}.`,
+      prefillFilePath: `BIPs/set-distributors-${shortGaugeId}-${uniqueId}.json`
+    };
+  };
+
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
@@ -182,9 +233,8 @@ export default function SetRewardDistributorPage() {
             </AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <Text fontSize="sm" mb={2} color="gray.600">
-              Use this option only when you need to change an existing distributor. Do not use this
-              method for other cases.
+            <Text fontSize="sm" mb={2} >
+              Use this option only when you need to change an existing distributor for a reward token. If you need to add a new reward token and distributor, use the "Add Reward" Payload builder instead!
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>
@@ -196,7 +246,7 @@ export default function SetRewardDistributorPage() {
                 Make sure to select the correct network for the gauge
               </ListItem>
               <ListItem>
-                <ListIcon as={InfoIcon} color="blue.500" />
+                <ListIcon as={ChevronRightIcon} color="blue.500" />
                 Only use this payload builder if you need to modify the distributor for an existing
                 reward token!
               </ListItem>
@@ -390,6 +440,7 @@ export default function SetRewardDistributorPage() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );

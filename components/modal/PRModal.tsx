@@ -40,6 +40,7 @@ import {
   isBefore,
   isSameWeek,
 } from "date-fns";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 interface PRCreationModalProps {
   isOpen: boolean;
@@ -71,11 +72,6 @@ const getStartOfNextWeek = () => {
   // Start from current date, add days until we reach next Monday
   const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7; // If today is Monday, go to next Monday
   return addDays(now, daysUntilNextMonday);
-};
-
-// Generate a unique ID to prevent branch conflicts
-const generateUniqueId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
 };
 
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
@@ -134,9 +130,33 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         newPath = newPath.replace("[chain]", network.toLowerCase());
       }
 
-      setFilePath(`${newPath}${type}-${generateUniqueId()}.json`);
+      // Instead of appending the whole filename, we'll just set the basePath
+      // The prefillFilePath from the calling component will be used later
+      setFilePath(newPath);
     }
   }, [type, selectedWeek, network, prefillFilePath, prTypePath]);
+
+  const combinePathAndFilename = () => {
+    // If prefillFilePath is a full path (containing /), use it as is
+    if (prefillFilePath?.includes('/')) {
+      return prefillFilePath;
+    }
+
+    // If we have both a base path from prTypePath and a filename from prefillFilePath
+    if (filePath && prefillFilePath) {
+      // Make sure we don't have double slashes
+      const pathWithSlash = filePath.endsWith('/') ? filePath : `${filePath}/`;
+      return `${pathWithSlash}${prefillFilePath}`;
+    }
+
+    // If we only have prefillFilePath (just a filename), use it with a default path
+    if (prefillFilePath) {
+      return `${prTypePath || ''}${prefillFilePath}`;
+    }
+
+    // If we only have filePath (just a path), use it with a default filename
+    return filePath || '';
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -221,7 +241,9 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   };
 
   const handleCreatePR = async () => {
-    if (!filePath) {
+    const finalFilePath = combinePathAndFilename();
+
+    if (!finalFilePath) {
       toast({
         title: "Error",
         description: "Please provide a file path",
@@ -240,7 +262,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         branchName: prBranch,
         title: prName,
         description: prDescription,
-        filePath: filePath,
+        filePath: finalFilePath,
         toast,
       });
       onClose();
