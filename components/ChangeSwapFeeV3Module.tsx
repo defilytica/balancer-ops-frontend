@@ -64,6 +64,7 @@ import { isZeroAddress } from "@ethereumjs/util";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
 
@@ -269,6 +270,36 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
   const feeChange = newFee - currentFee;
   const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_DAO_OWNER;
+
+  const getPrefillValues = () => {
+    // Make sure we have a selected pool and new swap fee
+    if (!selectedPool || !newSwapFee) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Create a truncated version of the pool address for the branch name
+    const shortPoolId = selectedPool.address.substring(0, 8);
+
+    // Get pool name for the description
+    const poolName = selectedPool.name;
+
+    // Create fee change description
+    const currentFee = parseFloat(selectedPool.dynamicData.swapFee) * 100;
+    const newFee = parseFloat(newSwapFee);
+    const feeChangeDirection = newFee > currentFee ? "increase" : "decrease";
+
+    // Find the network name from the selected network
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+    const networkName = networkOption?.label || selectedNetwork;
+
+    return {
+      prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
+      prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
+      prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
+      prefillFilePath: `BIPs/set-swap-fee-${selectedPool.address}-${uniqueId}.json`
+    };
+  };
 
   return (
     <Container maxW="container.lg">
@@ -495,10 +526,11 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"set-swapfee"}
+            type={"set-swapfee-v3"}
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            {...getPrefillValues()}
           />
         </Box>
       )}

@@ -45,6 +45,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export interface AddRewardInput {
   targetGauge: string;
@@ -165,6 +166,59 @@ export default function AddRewardToGaugePage() {
     setUiState(prev => ({ ...prev, hasAddedReward: true }));
   };
 
+  const getPrefillValues = () => {
+    // Check if we have any rewards added
+    if (rewardAdds.length === 0) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get the first reward for naming
+    const firstReward = rewardAdds[0];
+
+    // Create a truncated version of the first gauge address for the branch name
+    const shortGaugeId = firstReward.targetGauge.substring(0, 8);
+
+    // Create a truncated version of the reward token for description
+    const shortTokenId = firstReward.rewardToken.substring(0, 8);
+
+    // Get all networks involved
+    const networksMap: Record<string, boolean> = {};
+    rewardAdds.forEach(reward => {
+      // Find the network name from chainId
+      const networkOption = NETWORK_OPTIONS.find(option => option.chainId === reward.chainId);
+      if (networkOption) {
+        networksMap[networkOption.label] = true;
+      }
+    });
+    const networks = Object.keys(networksMap);
+    const networkText = networks.length === 1 ? networks[0] : "multiple networks";
+
+    // Create summary for description
+    let rewardSummary = "";
+    if (rewardAdds.length === 1) {
+      rewardSummary = `token ${shortTokenId} to gauge ${shortGaugeId}`;
+    } else if (rewardAdds.length <= 3) {
+      // List all rewards if 3 or fewer
+      rewardSummary = rewardAdds.map(reward =>
+        `${reward.rewardToken.substring(0, 8)} to ${reward.targetGauge.substring(0, 8)}`
+      ).join(', ');
+    } else {
+      // Summarize if more than 3
+      rewardSummary = `${rewardAdds.length} reward tokens to ${rewardAdds.length} gauges`;
+    }
+
+    // Just provide the filename portion - let the modal combine it with the path
+    const fileName = `add-rewards-${shortGaugeId}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/add-rewards-${shortGaugeId}-${uniqueId}`,
+      prefillPrName: `Add Reward${rewardAdds.length !== 1 ? 's' : ''} to Gauge${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
+      prefillDescription: `This PR adds reward${rewardAdds.length !== 1 ? 's' : ''} (${rewardSummary}) on ${networkText}.`,
+      prefillFilePath: fileName
+    };
+  };
+
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
@@ -182,9 +236,9 @@ export default function AddRewardToGaugePage() {
             </AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <Text fontSize="sm" mb={1} color="gray.600">
-              Use this option when you need to enable a new reward token and distributor for a
-              gauge.
+            <Text fontSize="sm" mb={2}>
+              Use this option if you need to enable a new reward token and distributor for a
+              staking gauge.
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>
@@ -390,6 +444,7 @@ export default function AddRewardToGaugePage() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );
