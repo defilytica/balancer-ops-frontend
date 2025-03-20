@@ -50,6 +50,7 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfigurationViewerV2 } from "./RewardsInjectorConfigurationViewerV2";
 import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
+import { uuidv4 } from "@walletconnect/utils";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -71,15 +72,15 @@ interface RecipientConfigData {
 }
 
 function RewardsInjectorConfiguratorV2({
-  addresses,
-  selectedAddress,
-  onAddressSelect,
-  selectedSafe,
-  injectorData,
-  isLoading,
-  isV2,
-  onVersionToggle,
-}: RewardsInjectorConfiguratorV2Props) {
+                                         addresses,
+                                         selectedAddress,
+                                         onAddressSelect,
+                                         selectedSafe,
+                                         injectorData,
+                                         isLoading,
+                                         isV2,
+                                         onVersionToggle,
+                                       }: RewardsInjectorConfiguratorV2Props) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
@@ -180,7 +181,6 @@ function RewardsInjectorConfiguratorV2({
           const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
           const gaugeRemaining = gaugeTotal - gaugeDistributed;
 
-          console.log(gaugeTotal, gaugeDistributed, gaugeRemaining);
           newTotal -= gaugeTotal / 10 ** tokenDecimals;
           newDistributed -= gaugeDistributed / 10 ** tokenDecimals;
           newRemaining -= gaugeRemaining / 10 ** tokenDecimals;
@@ -240,14 +240,14 @@ function RewardsInjectorConfiguratorV2({
         scheduleInputs:
           operation === "add"
             ? addConfig.recipients.map(recipient => ({
-                gaugeAddress: recipient,
-                rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
-                maxPeriods: addConfig.maxPeriods,
-                doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
-              }))
+              gaugeAddress: recipient,
+              rawAmountPerPeriod: addConfig.rawAmountPerPeriod,
+              maxPeriods: addConfig.maxPeriods,
+              doNotStartBeforeTimestamp: addConfig.doNotStartBeforeTimestamp,
+            }))
             : removeConfig.recipients.map(recipient => ({
-                gaugeAddress: recipient,
-              })),
+              gaugeAddress: recipient,
+            })),
       });
 
       setGeneratedPayload(payload);
@@ -326,7 +326,7 @@ function RewardsInjectorConfiguratorV2({
           <MenuList w="135%" maxHeight="60vh" overflowY="auto">
             {addresses.map(address => (
               <MenuItem
-                key={address.network + address.token}
+                key={`${address.network}-${address.address}-${uuidv4()}`}
                 onClick={() => onAddressSelect(address)}
                 w="100%"
               >
@@ -352,7 +352,7 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && (
           <IconButton
-            aria-label={""}
+            aria-label={"View on explorer"}
             as="a"
             href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${selectedAddress.address}`}
             target="_blank"

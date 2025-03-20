@@ -14,9 +14,9 @@ type RewardsInjectorContainerProps = {
 };
 
 export default function RewardsInjectorContainer({
-  addressBook,
-  isViewer,
-}: RewardsInjectorContainerProps) {
+                                                   addressBook,
+                                                   isViewer,
+                                                 }: RewardsInjectorContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -37,38 +37,77 @@ export default function RewardsInjectorContainer({
 
       try {
         const networks = getNetworks(addressBook);
+
+        // Get the direct URL address and network if available from pathname
+        const pathParts = pathname.split("/");
+        const addressFromPath = pathParts[pathParts.length - 1];
+        const networkFromPath = pathParts[pathParts.length - 2];
+        const isDirectUrlAccess = addressFromPath && networkFromPath
+          && addressFromPath.startsWith("0x")
+          && networks.includes(networkFromPath.toLowerCase());
+
         if (isV2) {
-          const response = await fetch(`/api/injector/v2/factory`);
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            for (const item of data) {
-              const network = item.network;
-              // Fetch token info for each injector
-              for (const address of item.deployedInjectors) {
-                try {
-                  const tokenResponse = await fetch(
-                    `/api/injector/v2/single?address=${address}&network=${network}`,
-                  );
-                  const tokenData = await tokenResponse.json();
-                  allAddressesWithOptions.push({
-                    network: network,
-                    address: address,
-                    token: tokenData.tokenInfo.symbol || "",
-                    tokenAddress: tokenData.tokenInfo.address || "",
-                  });
-                } catch (error) {
-                  console.error(`Error fetching token info for ${address}:`, error);
-                  allAddressesWithOptions.push({
-                    network: network,
-                    address: address,
-                    token: "",
-                    tokenAddress: "",
-                  });
+          // If we have a direct URL to a specific address, just load that one
+          if (isDirectUrlAccess) {
+            try {
+              const tokenResponse = await fetch(
+                `/api/injector/v2/single?address=${addressFromPath}&network=${networkFromPath}`
+              );
+              const tokenData = await tokenResponse.json();
+
+              if (!tokenData.error) {
+                allAddressesWithOptions.push({
+                  network: networkFromPath,
+                  address: addressFromPath,
+                  token: tokenData.tokenInfo.symbol || "",
+                  tokenAddress: tokenData.tokenInfo.address || "",
+                  // Add a unique identifier
+                  id: `${networkFromPath}-${addressFromPath}`
+                });
+              }
+            } catch (error) {
+              console.error(`Error fetching token info for ${addressFromPath}:`, error);
+            }
+          } else {
+            // Load all if we don't have a specific address
+            const response = await fetch(`/api/injector/v2/factory`);
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+              for (const item of data) {
+                const network = item.network;
+                // Fetch token info for each injector
+                for (const address of item.deployedInjectors) {
+                  try {
+                    const tokenResponse = await fetch(
+                      `/api/injector/v2/single?address=${address}&network=${network}`
+                    );
+                    const tokenData = await tokenResponse.json();
+                    allAddressesWithOptions.push({
+                      network: network,
+                      address: address,
+                      token: tokenData.tokenInfo.symbol || "",
+                      tokenAddress: tokenData.tokenInfo.address || "",
+                      // Add a unique identifier
+                      id: `${network}-${address}`
+                    });
+                  } catch (error) {
+                    console.error(`Error fetching token info for ${address}:`, error);
+                    allAddressesWithOptions.push({
+                      network: network,
+                      address: address,
+                      token: "",
+                      tokenAddress: "",
+                      // Add a unique identifier
+                      id: `${network}-${address}`
+                    });
+                  }
                 }
               }
             }
           }
         } else {
+          // V1 injectors loading logic
           for (const network of networks) {
             const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
             if (maxiKeepers) {
@@ -81,12 +120,15 @@ export default function RewardsInjectorContainer({
                     network,
                     address,
                     token,
+                    // Add a unique identifier
+                    id: `${network}-${address}`
                   });
                 }
               }
             }
           }
         }
+
         setAddresses(allAddressesWithOptions);
       } catch (error) {
         console.error("Error loading addresses:", error);
@@ -94,7 +136,7 @@ export default function RewardsInjectorContainer({
         setIsInitialLoading(false);
       }
     },
-    [addressBook],
+    [addressBook, pathname],
   );
 
   useEffect(() => {
@@ -140,7 +182,7 @@ export default function RewardsInjectorContainer({
       const addressFromPath = pathParts[pathParts.length - 1];
       const networkFromPath = pathParts[pathParts.length - 2];
 
-      if (addressFromPath && networkFromPath) {
+      if (addressFromPath && networkFromPath && addressFromPath.startsWith("0x")) {
         const matchingAddress = findAddressOption(addressFromPath, networkFromPath);
         if (
           matchingAddress &&

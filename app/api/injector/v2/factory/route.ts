@@ -3,6 +3,9 @@ import { ethers } from "ethers";
 import { networks } from "@/constants/constants";
 import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 
+// 5 min caching for factory
+const CACHE_DURATION = 300;
+
 const FACTORY_ABI = [
   {
     inputs: [],
@@ -42,8 +45,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    // Create the response with cache headers
+    const response = NextResponse.json(allInjectors);
+    // Set cache control headers
+    response.headers.set('Cache-Control', `s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
+    return response;
 
-    return NextResponse.json(allInjectors);
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
