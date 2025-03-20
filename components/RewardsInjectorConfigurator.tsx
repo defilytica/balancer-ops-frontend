@@ -362,7 +362,7 @@ function RewardsInjectorConfigurator({
       )}
       <Divider />
 
-      {!selectedSafe && !isLoading && (
+      {!selectedAddress || (!selectedSafe && !isLoading) && (
         <Alert status="warning" mb={4}>
           <AlertIcon />
           <AlertDescription>

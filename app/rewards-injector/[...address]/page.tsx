@@ -9,7 +9,8 @@ export default async function RewardsInjectorDetailPage({
   params: { address?: string[] };
 }) {
   const addressBook = await fetchAddressBook();
-  const injectorAddress = params.address?.[0] || null;
+  const networkFromPath = params.address?.[0] || null;
+  const injectorAddress = params.address?.[1] || null;
 
   return (
     <Suspense fallback={<Skeleton w="full" h="500px" />}>

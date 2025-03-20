@@ -83,7 +83,7 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                     borderColor={borderColor}
                   >
                     <VStack align="start" spacing={1}>
-                      <Text fontFamily="mono">{formatAddress(gauge.gaugeAddress)}</Text>
+                      <Text fontFamily="mono">{gauge.gaugeAddress}</Text>
                       <Text fontSize="sm" color={mutedTextColor}>
                         {gauge.poolName}
                       </Text>
