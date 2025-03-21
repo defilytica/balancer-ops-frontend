@@ -293,11 +293,14 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     const networkName = networkOption?.label || selectedNetwork;
 
+    // Create just the filename - path will come from the config
+    const filename = `set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
+
     return {
       prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
       prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
-      prefillFilePath: `BIPs/set-swap-fee-${selectedPool.address}-${uniqueId}.json`
+      prefillFilename: filename
     };
   };
 
@@ -526,7 +529,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"set-swapfee-v3"}
+            type={"fee-setter-v3"}
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}

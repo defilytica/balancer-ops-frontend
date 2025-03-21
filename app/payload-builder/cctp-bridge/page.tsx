@@ -31,6 +31,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { CodeiumEditor } from "@codeium/react-code-editor";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -63,6 +64,46 @@ export default function CCTPBridge() {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isEditing, setIsEditing] = useState(false);
+
+  const getPrefillValues = () => {
+    // Check if we have any inputs with values
+    if (!inputs.length || !generatedPayload) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get total value being bridged
+    const totalValue = inputs.reduce((sum, input) => sum + Number(input.value), 0);
+
+    // Get source and destination domains for description
+    const sourceDomain = "Ethereum"; // CCTP bridges always start from Ethereum in this implementation
+
+    // Create a list of destination domains
+    const destinationDomains = new Set<string>();
+    inputs.forEach(input => {
+      const domainOption = DOMAIN_OPTIONS.find(opt => opt.value === input.destinationDomain);
+      if (domainOption) {
+        destinationDomains.add(domainOption.label);
+      }
+    });
+
+    // Convert set to array and format for display
+    const destinationsArray = Array.from(destinationDomains);
+    const destinationsText = destinationsArray.length === 1
+      ? destinationsArray[0]
+      : destinationsArray.slice(0, -1).join(', ') + ' and ' + destinationsArray.slice(-1);
+
+    // Create just the filename without path prefix
+    const filename = `cctp-bridge-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/cctp-bridge-${uniqueId}`,
+      prefillPrName: `CCTP: Bridge USDC to ${destinationsText}`,
+      prefillDescription: `This PR bridges ${totalValue} USDC from ${sourceDomain} to ${destinationsText} using the Circle Cross-Chain Transfer Protocol.`,
+      prefillFilename: filename // Using the new naming convention
+    };
+  };
+
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -311,6 +352,7 @@ export default function CCTPBridge() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );

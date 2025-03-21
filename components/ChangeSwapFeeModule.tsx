@@ -62,6 +62,7 @@ import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -78,6 +79,40 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const getPrefillValues = () => {
+    // Make sure we have a selected pool and new swap fee
+    if (!selectedPool || !newSwapFee) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Create a truncated version of the pool address for the branch name
+    const shortPoolId = selectedPool.address.substring(0, 8);
+
+    // Get pool name for the description
+    const poolName = selectedPool.name;
+
+    // Create fee change description
+    const currentFee = parseFloat(selectedPool.dynamicData.swapFee) * 100;
+    const newFee = parseFloat(newSwapFee);
+    const feeChangeDirection = newFee > currentFee ? "increase" : "decrease";
+
+    // Find the network name from the selected network
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+    const networkName = networkOption?.label || selectedNetwork;
+
+    // Create just the filename - the path will come from the config
+    const filename = `set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
+      prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
+      prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
+      prefillFilename: filename // Using the new naming convention without path prefix
+    };
+  };
+
 
   const getMultisigForNetwork = useCallback(
     (network: string) => {
@@ -193,7 +228,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   return (
     <Container maxW="container.lg">
       <Heading as="h2" size="lg" variant="special" mb={6}>
-        Create Swap Fee Change Payload
+        Create Swap Fee Change Payload (Balancer v2)
       </Heading>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -372,6 +407,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            {...getPrefillValues()}
           />
         </Box>
       )}
