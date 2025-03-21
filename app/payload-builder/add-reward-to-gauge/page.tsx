@@ -208,14 +208,14 @@ export default function AddRewardToGaugePage() {
       rewardSummary = `${rewardAdds.length} reward tokens to ${rewardAdds.length} gauges`;
     }
 
-    // Just provide the filename portion - let the modal combine it with the path
-    const fileName = `add-rewards-${shortGaugeId}-${uniqueId}.json`;
+    // Just provide the filename portion - let the modal combine it with the path from config
+    const filename = `add-rewards-${shortGaugeId}-${uniqueId}.json`;
 
     return {
       prefillBranchName: `feature/add-rewards-${shortGaugeId}-${uniqueId}`,
       prefillPrName: `Add Reward${rewardAdds.length !== 1 ? 's' : ''} to Gauge${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
       prefillDescription: `This PR adds reward${rewardAdds.length !== 1 ? 's' : ''} (${rewardSummary}) on ${networkText}.`,
-      prefillFilePath: fileName
+      prefillFilename: filename
     };
   };
 

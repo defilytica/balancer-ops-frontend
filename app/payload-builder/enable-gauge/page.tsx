@@ -71,12 +71,12 @@ export default function EnableGaugePage() {
     const uniqueId = generateUniqueId();
 
     // Get first gauge ID for naming
-    const firstGaugeId = validGauges[0].id.substring(0, 8);
+    const firstGaugeId = validGauges[0].id.substring(0, 8);;
 
     // Create a comma-separated list of gauge IDs for the description
     const gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(', ');
 
-    // Get the network(s) without using Set iteration
+    // Get the network(s)
     const networksMap: Record<string, boolean> = {};
     validGauges.forEach(g => {
       networksMap[g.network] = true;
@@ -88,7 +88,7 @@ export default function EnableGaugePage() {
       prefillBranchName: `feature/enable-gauge-${firstGaugeId}-${uniqueId}`,
       prefillPrName: `Enable ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} on ${networkText}`,
       prefillDescription: `This PR enables gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) for BAL rewards on ${networkText}.`,
-      prefillFilePath: `BIPs/enable-gauges-${firstGaugeId}-${uniqueId}.json`
+      prefillFilename: `enable-gauges-${firstGaugeId}-${uniqueId}.json`
     };
   };
 

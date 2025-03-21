@@ -208,11 +208,14 @@ export default function SetRewardDistributorPage() {
       rewardSummary = `${rewardAdds.length} reward tokens on ${rewardAdds.length} gauges`;
     }
 
+    // Just provide the filename portion - let the modal combine it with the path from config
+    const filename = `set-distributors-${shortGaugeId}-${uniqueId}.json`;
+
     return {
       prefillBranchName: `feature/set-distributor-${shortGaugeId}-${uniqueId}`,
       prefillPrName: `Update Reward Distributor${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
       prefillDescription: `This PR updates the distributor${rewardAdds.length !== 1 ? 's' : ''} for ${rewardSummary} on ${networkText}.`,
-      prefillFilePath: `BIPs/set-distributors-${shortGaugeId}-${uniqueId}.json`
+      prefillFilename: filename
     };
   };
 

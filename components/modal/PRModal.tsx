@@ -48,11 +48,11 @@ interface PRCreationModalProps {
   payload: any;
   type: string;
   network?: string;
-  // New pre-filled props
   prefillBranchName?: string;
   prefillPrName?: string;
   prefillDescription?: string;
   prefillFilePath?: string;
+  prefillFilename?: string;
 }
 
 interface ForkStatus {
@@ -84,6 +84,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
                                                                   prefillPrName,
                                                                   prefillDescription,
                                                                   prefillFilePath,
+                                                                  prefillFilename,
                                                                 }) => {
   const payloadOption = PAYLOAD_OPTIONS.find(option => option.key === type);
   const repoOptions = payloadOption ? payloadOption.repos : [];
@@ -97,6 +98,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(getStartOfNextWeek());
   const [branchError, setBranchError] = useState("");
+  const [displayPath, setDisplayPath] = useState("");
   const toast = useToast();
 
   const { branchNamePlaceholder, prNamePlaceholder, prTypePath } = payloadOption || {};
@@ -110,16 +112,13 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
       setPrName(prefillPrName || prNamePlaceholder || `${type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ')}`);
       setPrDescription(prefillDescription || "");
 
-      // Only set filePath if prefill not provided - we'll calculate it otherwise
-      if (prefillFilePath) {
-        setFilePath(prefillFilePath);
-      }
+      // Don't set filePath here - we'll calculate it separately
     }
-  }, [isOpen, prefillBranchName, prefillPrName, prefillDescription, prefillFilePath]);
+  }, [isOpen, prefillBranchName, prefillPrName, prefillDescription]);
 
   // Calculate file path based on week and type if not pre-filled
   useEffect(() => {
-    if (!prefillFilePath && prTypePath) {
+    if (prTypePath) {
       const basePath = prTypePath;
       const year = getYear(selectedWeek);
       const weekNum = getISOWeek(selectedWeek);
@@ -130,31 +129,38 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
         newPath = newPath.replace("[chain]", network.toLowerCase());
       }
 
-      // Instead of appending the whole filename, we'll just set the basePath
-      // The prefillFilePath from the calling component will be used later
+      // Set the calculated path from config
       setFilePath(newPath);
     }
-  }, [type, selectedWeek, network, prefillFilePath, prTypePath]);
+  }, [type, selectedWeek, network, prTypePath]);
 
-  const combinePathAndFilename = () => {
-    // If prefillFilePath is a full path (containing /), use it as is
-    if (prefillFilePath?.includes('/')) {
-      return prefillFilePath;
+  // Set total filepath update on Modal state change
+  useEffect(() => {
+    if (filePath) {
+      const finalPath = getFinalFilePath();
+      setDisplayPath(finalPath);
+    }
+  }, [filePath, prefillFilename, prefillFilePath]);
+
+  const getFinalFilePath = () => {
+    // If we have a base path (from config with replacements) and a filename
+    if (filePath && prefillFilename) {
+      const pathWithSlash = filePath.endsWith('/') ? filePath : `${filePath}/`;
+      return `${pathWithSlash}${prefillFilename}`;
     }
 
-    // If we have both a base path from prTypePath and a filename from prefillFilePath
-    if (filePath && prefillFilePath) {
-      // Make sure we don't have double slashes
+    // If we have a base path and the legacy prefillFilePath (which is just a filename)
+    if (filePath && prefillFilePath && !prefillFilePath.includes('/')) {
       const pathWithSlash = filePath.endsWith('/') ? filePath : `${filePath}/`;
       return `${pathWithSlash}${prefillFilePath}`;
     }
 
-    // If we only have prefillFilePath (just a filename), use it with a default path
-    if (prefillFilePath) {
-      return `${prTypePath || ''}${prefillFilePath}`;
+    // For backward compatibility - if prefillFilePath contains a full path
+    if (prefillFilePath && prefillFilePath.includes('/')) {
+      return prefillFilePath;
     }
 
-    // If we only have filePath (just a path), use it with a default filename
+    // If we only have a path from the config and no filename
     return filePath || '';
   };
 
@@ -241,7 +247,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   };
 
   const handleCreatePR = async () => {
-    const finalFilePath = combinePathAndFilename();
+    const finalFilePath = getFinalFilePath();
 
     if (!finalFilePath) {
       toast({
@@ -374,7 +380,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
           <FormControl mb={4}>
             <FormLabel>File Path</FormLabel>
             <Input
-              value={filePath}
+              value={displayPath || filePath}
               onChange={handleFilePathChange}
               placeholder={`Enter or select a path for ${type}.json`}
             />

@@ -205,11 +205,14 @@ export default function KillGaugePage() {
         ` and ${validGauges.length - 3} more`;
     }
 
+    // Create just the filename without the path prefix - the path will come from the PAYLOAD_OPTIONS config
+    const filename = `kill-gauges-${firstGaugeId}-${uniqueId}.json`;
+
     return {
       prefillBranchName: `feature/kill-gauges-${firstGaugeId}-${uniqueId}`,
       prefillPrName: `Kill ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} from the veBAL system`,
       prefillDescription: `This PR removes ${validGauges.length} gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) from the veBAL system.`,
-      prefillFilePath: `BIPs/kill-gauges-${firstGaugeId}-${uniqueId}.json`
+      prefillFilename: filename
     };
   };
 
