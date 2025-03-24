@@ -51,6 +51,7 @@ import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfigurationViewerV2 } from "./RewardsInjectorConfigurationViewerV2";
 import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
 import { uuidv4 } from "@walletconnect/utils";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -278,6 +279,44 @@ function RewardsInjectorConfiguratorV2({
 
   const handleJsonChange = (newJson: string | BatchFile) => {
     setGeneratedPayload(newJson as BatchFile);
+  };
+
+  const getPrefillValues = () => {
+    // Make sure we have a selected injector and an operation type
+    if (!selectedAddress || !operation || !generatedPayload) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get injector details for the filename and description
+    const shortInjectorId = selectedAddress.address.substring(0, 8);
+    const networkName = selectedAddress.network;
+
+    // Get operation-specific details
+    const config = operation === 'add' ? addConfig : removeConfig;
+    const validRecipients = config.recipients.filter(r => r.trim()).length;
+
+    // Get summary info for PR description
+    let summaryInfo = "";
+    if (operation === 'add') {
+      const amountPerPeriod = parseFloat(addConfig.amountPerPeriod) || 0;
+      const maxPeriods = parseInt(addConfig.maxPeriods) || 0;
+      const totalAmount = amountPerPeriod * maxPeriods * validRecipients;
+
+      summaryInfo = `adding ${validRecipients} recipient${validRecipients !== 1 ? 's' : ''} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol}`;
+    } else {
+      summaryInfo = `removing ${validRecipients} recipient${validRecipients !== 1 ? 's' : ''}`;
+    }
+
+    // Create the filename without any path prefix - the path will come from config
+    const filename = `injector-${operation}-recipients-${shortInjectorId}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/injector-${operation}-${shortInjectorId}-${uniqueId}`,
+      prefillPrName: `${operation === 'add' ? 'Add' : 'Remove'} Recipients for ${tokenSymbol} Injector on ${networkName}`,
+      prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} by ${summaryInfo} on ${networkName}.`,
+      prefillFilename: filename
+    };
   };
 
   return (
@@ -508,6 +547,7 @@ function RewardsInjectorConfiguratorV2({
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
             network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
+            {...getPrefillValues()}
           />
         </Box>
       )}
