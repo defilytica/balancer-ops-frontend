@@ -74,6 +74,7 @@ import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
 import { ChildGaugeFactory } from "@/abi/ChildGaugeFactory";
 import { WeightCapType } from "@/types/types";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import PoolSelector from "@/components/PoolSelector";
 
 interface CreateGaugeProps {
   addressBook: AddressBook;
@@ -89,6 +90,7 @@ interface TransactionState {
 interface PoolItem {
   name: string;
   address: string;
+  id: string;
   staking?: {
     gauge?: {
       id: string;
@@ -159,7 +161,8 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     return data.poolGetPools.filter(
       pool =>
         pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
+        pool.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pool.id.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [data?.poolGetPools, searchTerm]);
 
@@ -173,10 +176,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     // Reset transaction and step state when selecting new pool
     setTransactions([]);
     setActiveStep(0);
-
     setSelectedPool(pool);
-    setIsOpen(false);
-    setSearchTerm("");
   };
 
   const clearPoolSelection = () => {
@@ -563,7 +563,10 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                 </Link>
               </ListItem>
               <ListItem>
-                For mainnet pools, only one transaction is needed to create the gauge
+                For mainnet pools, only one transaction is needed to create the (root) gauge
+              </ListItem>
+              <ListItem>
+                The "veBAL Vote Weight Cap" parameter needs to be set for root gauges only. It doesn't affect child chain gauges.
               </ListItem>
               <ListItem>
                 For other networks, you will need to:
@@ -618,114 +621,20 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
 
           {/* Pool Selection */}
           {selectedNetwork && (
-            <FormControl>
-              <FormLabel>Pool</FormLabel>
-              <Popover isOpen={isOpen} onClose={() => setIsOpen(false)} autoFocus={false}>
-                <PopoverTrigger>
-                  <InputGroup>
-                    <Input
-                      value={selectedPool ? selectedPool.name : ""}
-                      placeholder="Search and select a pool"
-                      onClick={() => setIsOpen(true)}
-                      readOnly
-                    />
-                    {selectedPool && (
-                      <InputRightElement>
-                        <IconButton
-                          aria-label="Clear selection"
-                          icon={<CloseIcon />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={e => {
-                            e.stopPropagation();
-                            clearPoolSelection();
-                          }}
-                        />
-                      </InputRightElement>
-                    )}
-                  </InputGroup>
-                </PopoverTrigger>
-                <PopoverContent width={["400px", "400px", "600px", "800px"]}>
-                  <PopoverBody>
-                    <VStack align="stretch" spacing={3}>
-                      <InputGroup>
-                        <Input
-                          placeholder="Search by name or address..."
-                          value={searchTerm}
-                          onChange={e => setSearchTerm(e.target.value)}
-                          autoFocus
-                        />
-                        {searchTerm && (
-                          <InputRightElement>
-                            <IconButton
-                              aria-label="Clear search"
-                              icon={<CloseIcon />}
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setSearchTerm("")}
-                            />
-                          </InputRightElement>
-                        )}
-                      </InputGroup>
-
-                      {loading ? (
-                        <Center py={4}>
-                          <Spinner />
-                        </Center>
-                      ) : error ? (
-                        <Alert status="error">
-                          <AlertIcon />
-                          <AlertDescription>{error.message}</AlertDescription>
-                        </Alert>
-                      ) : filteredPools.length === 0 ? (
-                        <Text color="gray.500" textAlign="center" py={4}>
-                          No pools found
-                        </Text>
-                      ) : (
-                        <List
-                          maxH="300px"
-                          overflowY="auto"
-                          borderRadius="md"
-                          css={{
-                            "&::-webkit-scrollbar": {
-                              width: "4px",
-                            },
-                            "&::-webkit-scrollbar-track": {
-                              width: "6px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                              background: "gray.200",
-                              borderRadius: "24px",
-                            },
-                          }}
-                        >
-                          {filteredPools.map(pool => (
-                            <ListItem
-                              key={pool.address}
-                              onClick={() => handlePoolSelect(pool as unknown as Pool)}
-                              cursor="pointer"
-                              _hover={{ bg: "gray.50" }}
-                              p={3}
-                              borderBottomWidth="1px"
-                              borderBottomColor="gray.100"
-                              transition="background-color 0.2s"
-                            >
-                              {formatPoolDisplay(pool as unknown as Pool)}
-                            </ListItem>
-                          ))}
-                        </List>
-                      )}
-                    </VStack>
-                  </PopoverBody>
-                </PopoverContent>
-              </Popover>
-            </FormControl>
+            <PoolSelector
+              pools={data?.poolGetPools}
+              loading={loading}
+              error={error}
+              selectedPool={selectedPool}
+              onPoolSelect={(pool) => handlePoolSelect(pool as Pool)}
+              onClearSelection={clearPoolSelection}
+            />
           )}
 
           {/* Weight Cap Selection */}
           <FormControl>
             <FormLabel>
-              veBAL Vote Weight Cap
+              veBAL Vote Weight Cap (Root Gauge)
               <Tooltip label="The vote weight cap determines the max. amount of veBAL votes a gauge may receive. 2% cap is recommended for most pools">
                 <InfoIcon ml={2} cursor="help" />
               </Tooltip>
