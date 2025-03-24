@@ -3,7 +3,7 @@ import { Box, Heading, Text, SimpleGrid, VStack } from "@chakra-ui/react";
 import CustomCard from "@/components/CustomCard";
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 
-export const CATEGORIZED_HOOKS = {
+const CATEGORIZED_HOOKS = {
   "Fee Configuration": ["hook-stable-surge"],
 };
 
