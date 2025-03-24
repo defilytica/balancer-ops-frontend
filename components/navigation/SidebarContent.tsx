@@ -14,7 +14,12 @@ import {
 import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
-import { TbTransactionBitcoin, TbGaugeFilled, TbHeartRateMonitor } from "react-icons/tb";
+import {
+  TbTransactionBitcoin,
+  TbGaugeFilled,
+  TbHeartRateMonitor,
+  TbFishHook,
+} from "react-icons/tb";
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
@@ -84,6 +89,12 @@ const LinkItems = [
     icon: TbHeartRateMonitor,
     target: "/gauge-kill-list",
     description: "Check for gauge kill-list",
+  },
+  {
+    name: "Hooks",
+    icon: TbFishHook,
+    target: "/hooks",
+    description: "View and configure hooks",
   },
 ];
 

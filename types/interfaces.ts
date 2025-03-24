@@ -54,6 +54,7 @@ export interface Pool {
     poolId: string;
     totalLiquidity: string;
   };
+  hook?: Hook;
 }
 
 export interface TokenInfo {
@@ -192,4 +193,47 @@ export interface GaugeData {
   min_60d_tvl: number;
   days_above_100k_tvl: number;
   last_day_above_100k: number;
+}
+
+// Base interface for hook params
+export interface BaseHookParams {
+  __typename?: string;
+}
+
+export interface ExitFeeHookParams extends BaseHookParams {
+  __typename?: "ExitFeeHookParams";
+  exitFeePercentage: string;
+}
+
+export interface FeeTakingHookParams extends BaseHookParams {
+  __typename?: "FeeTakingHookParams";
+  addLiquidityFeePercentage: string;
+  removeLiquidityFeePercentage: string;
+  swapFeePercentage: string;
+}
+
+export interface MevTaxHookParams extends BaseHookParams {
+  __typename?: "MevTaxHookParams";
+  mevTaxThreshold: string;
+  mevTaxMultiplier: string;
+  maxMevSwapFeePercentage: string;
+}
+
+export interface StableSurgeHookParams extends BaseHookParams {
+  __typename?: "StableSurgeHookParams";
+  maxSurgeFeePercentage: string;
+  surgeThresholdPercentage: string;
+}
+
+// Union type for all possible hook params
+export type HookParams =
+  | ExitFeeHookParams
+  | FeeTakingHookParams
+  | MevTaxHookParams
+  | StableSurgeHookParams;
+
+export interface Hook {
+  address: string;
+  type: string;
+  params?: HookParams;
 }
