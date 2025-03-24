@@ -430,8 +430,14 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                         <StatLabel>Change</StatLabel>
                         <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
                         <StatHelpText>
-                          <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
-                          {feeChange > 0 ? "Increase" : "Decrease"}
+                          {feeChange === 0 ? (
+                            "No Change"
+                          ) : (
+                            <>
+                              <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
+                              {feeChange > 0 ? "Increase" : "Decrease"}
+                            </>
+                          )}
                         </StatHelpText>
                       </Stat>
                     </StatGroup>
