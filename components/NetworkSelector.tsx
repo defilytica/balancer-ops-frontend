@@ -83,7 +83,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   };
 
   return (
-    <FormControl maxW="300px">
+    <FormControl>
       {label && <FormLabel>{label}</FormLabel>}
       <Menu>
         <MenuButton
