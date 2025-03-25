@@ -56,8 +56,6 @@ import { NetworkSelector } from "@/components/NetworkSelector";
 import { PoolInfoCard } from "./PoolInfoCard";
 import { ParameterChangeCard } from "./ParameterChangeCard";
 
-const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
-
 // Type guard for StableSurgeHookParams
 const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
   if (!params) return false;
@@ -207,8 +205,8 @@ export default function StableSurgeConfigurationModule({
       return;
     }
 
-    // Case 1: Zero address manager (DAO governed)
-    if (isZeroAddress(selectedPool.swapFeeManager)) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed)
+    if (isAuthorizedPool) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -368,7 +366,13 @@ export default function StableSurgeConfigurationModule({
     ? parseFloat(newSurgeThresholdPercentage)
     : currentSurgeThreshold;
 
-  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_DAO_OWNER;
+  const isAuthorizedPool = useMemo(() => {
+    if (!selectedPool?.swapFeeManager) return false;
+    return (
+      isZeroAddress(selectedPool.swapFeeManager) ||
+      selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
+    );
+  }, [selectedPool, selectedMultisig]);
 
   return (
     <Container maxW="container.lg">
@@ -475,13 +479,10 @@ export default function StableSurgeConfigurationModule({
 
           {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
-              <Alert
-                status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"}
-                mt={4}
-              >
+              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
                 <AlertIcon />
                 <AlertDescription>
-                  {isZeroAddress(selectedPool.swapFeeManager)
+                  {isAuthorizedPool
                     ? "This pool is DAO-governed. Changes must be executed through the multisig."
                     : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
                 </AlertDescription>
@@ -570,7 +571,7 @@ export default function StableSurgeConfigurationModule({
           >
             Execute Parameter Change
           </Button>
-        ) : isZeroAddress(selectedPool.swapFeeManager) ? (
+        ) : isAuthorizedPool ? (
           <Button
             variant="primary"
             onClick={handleGenerateClick}
