@@ -116,3 +116,35 @@ query GetV3Pools($chainIn: [GqlChain!]) {
         }
     }
 }
+
+query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
+  poolGetPools(
+    where: { chainIn: $chainIn, protocolVersionIn: [3], chainNotIn: SONIC, tagIn: $tagIn }
+    orderBy: totalLiquidity
+    orderDirection: desc
+  ) {
+    address
+    chain
+    protocolVersion
+    name
+    symbol
+    type
+    version
+    createTime
+    swapFeeManager
+    dynamicData {
+      poolId
+      swapFee
+    }
+    hook {
+      address
+      type
+      params {
+        ... on StableSurgeHookParams {
+          maxSurgeFeePercentage
+          surgeThresholdPercentage
+        }
+      }
+    }
+  }
+}

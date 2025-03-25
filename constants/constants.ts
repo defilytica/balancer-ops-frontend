@@ -170,6 +170,19 @@ export const PAYLOAD_OPTIONS = [
     prNamePlaceholder: "",
     prTypePath: "",
   },
+  {
+    href: "/hooks/stable-surge",
+    key: "hook-stable-surge",
+    label: "Configure StableSurge hook",
+    button_label: "Configure StableSurge",
+    description:
+      "Configure StableSurge hook on a pool deployed on Balancer v3, both for EOAs and under DAO management",
+    icon: TbSettingsDollar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/stablesurge-config",
+    prNamePlaceholder: "Configure StableSurge on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolStableSurgeParams/",
+  },
 ];
 
 //TODO: refactor to reference address book

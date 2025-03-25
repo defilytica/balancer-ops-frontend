@@ -9,9 +9,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Container,
   Divider,
   Flex,
@@ -27,31 +24,23 @@ import {
   PopoverBody,
   PopoverContent,
   PopoverTrigger,
-  Select,
   Spinner,
-  Stat,
-  StatArrow,
-  StatGroup,
-  StatHelpText,
-  StatLabel,
-  StatNumber,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
-  generateDAOSwapFeeChangePayload,
+  generateStableSurgeParamsPayload,
   handleDownloadClick,
-  SwapFeeChangeInput,
+  StableSurgeParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
-  GetV3PoolsDocument,
-  GetV3PoolsQuery,
-  GetV3PoolsQueryVariables,
+  GetV3PoolsWithHooksQuery,
+  GetV3PoolsWithHooksQueryVariables,
+  GetV3PoolsWithHooksDocument,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool } from "@/types/interfaces";
-import { PoolInfoCard } from "@/components/PoolInfoCard";
+import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -61,17 +50,30 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
 import { ethers } from "ethers";
 import { isZeroAddress } from "@ethereumjs/util";
-import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
+import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
-import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { PoolInfoCard } from "./PoolInfoCard";
+import { ParameterChangeCard } from "./ParameterChangeCard";
 
-const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
+// Type guard for StableSurgeHookParams
+const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
+  if (!params) return false;
+  return (
+    params.__typename === "StableSurgeHookParams" ||
+    ("maxSurgeFeePercentage" in params && "surgeThresholdPercentage" in params)
+  );
+};
 
-export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
+export default function StableSurgeConfigurationModule({
+  addressBook,
+}: {
+  addressBook: AddressBook;
+}) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
-  const [newSwapFee, setNewSwapFee] = useState<string>("");
+  const [newMaxSurgeFeePercentage, setNewMaxSurgeFeePercentage] = useState<string>("");
+  const [newSurgeThresholdPercentage, setNewSurgeThresholdPercentage] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
@@ -80,7 +82,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   //Chain state switch
-  const { chains, switchChain } = useSwitchChain();
+  const { switchChain } = useSwitchChain();
 
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
@@ -109,13 +111,13 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     checkManagerStatus();
   }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
 
-  const { loading, error, data } = useQuery<GetV3PoolsQuery, GetV3PoolsQueryVariables>(
-    GetV3PoolsDocument,
-    {
-      variables: { chainIn: [selectedNetwork as any] },
-      skip: !selectedNetwork,
-    },
-  );
+  const { loading, error, data } = useQuery<
+    GetV3PoolsWithHooksQuery,
+    GetV3PoolsWithHooksQueryVariables
+  >(GetV3PoolsWithHooksDocument, {
+    variables: { chainIn: [selectedNetwork as any], tagIn: ["HOOKS_STABLESURGE"] },
+    skip: !selectedNetwork,
+  });
 
   const getMultisigForNetwork = useCallback(
     (network: string) => {
@@ -146,7 +148,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       setSelectedPool(null);
       setGeneratedPayload(null);
       setSearchTerm("");
-      setNewSwapFee("");
+      setNewMaxSurgeFeePercentage("");
+      setNewSurgeThresholdPercentage("");
       setIsCurrentWalletManager(false);
 
       // Find the corresponding chain ID for the selected network
@@ -187,10 +190,14 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   };
 
   const handleGenerateClick = async () => {
-    if (!selectedPool || !newSwapFee || !selectedNetwork) {
+    if (
+      !selectedPool ||
+      (!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage) ||
+      !selectedNetwork
+    ) {
       toast({
         title: "Missing information",
-        description: "Please select a network, pool, and enter a new swap fee",
+        description: "Please select a network, pool, and enter at least one parameter to change",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -198,10 +205,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       return;
     }
 
-    const swapFeePercentage = ((parseFloat(newSwapFee) / 100) * 1e18).toString();
-
-    // Case 1: Zero address manager (DAO governed)
-    if (isZeroAddress(selectedPool.swapFeeManager)) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed)
+    if (isAuthorizedPool) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -214,40 +219,112 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         return;
       }
 
-      const input: SwapFeeChangeInput = {
+      // Use the new helper function to generate the payload
+      const hookAddress = selectedPool.hook?.address;
+      if (!hookAddress) {
+        toast({
+          title: "Missing hook address",
+          description: "The pool must have a hook address to modify hook parameters.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const input: StableSurgeParamsInput = {
         poolAddress: selectedPool.address,
-        newSwapFeePercentage: newSwapFee,
-        poolName: selectedPool.name,
+        newMaxSurgeFeePercentage: newMaxSurgeFeePercentage || undefined,
+        newSurgeThresholdPercentage: newSurgeThresholdPercentage || undefined,
       };
 
-      const payload = generateDAOSwapFeeChangePayload(input, network.chainId, selectedMultisig);
+      const payload = generateStableSurgeParamsPayload(
+        input,
+        network.chainId,
+        hookAddress,
+        selectedMultisig,
+      );
       setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
     // Case 2: Current wallet is the fee manager
     else if (isCurrentWalletManager) {
       try {
+        // This try/catch is needed to handle errors that occur before toast.promise
+        // such as errors during transaction creation, contract method calls, etc.
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        console.log("Signer status:", signer);
-        const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
 
-        const tx = await contract.setStaticSwapFeePercentage(
-          selectedPool.address.toLowerCase(),
-          swapFeePercentage,
+        const hookContract = new ethers.Contract(
+          selectedPool.hook?.address!!,
+          stableSurgeHookAbi,
+          signer,
         );
-        console.log("tx:", tx);
-        await tx.wait();
 
-        toast({
-          title: "Success",
-          description: "Swap fee updated successfully",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
+        // Update max surge fee if provided
+        if (newMaxSurgeFeePercentage) {
+          const txMaxSurgeFeePercentage = BigInt(
+            parseFloat(newMaxSurgeFeePercentage) * 1e16,
+          ).toString();
+          const tx1 = await hookContract.setMaxSurgeFeePercentage(
+            selectedPool.address,
+            txMaxSurgeFeePercentage,
+          );
+
+          // toast.promise handles errors during transaction confirmation (tx.wait)
+          toast.promise(tx1.wait(), {
+            success: {
+              title: "Success",
+              description: `The max surge fee percentage has been updated to ${newMaxSurgeFeePercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              duration: 5000,
+              isClosable: true,
+            },
+            loading: {
+              title: "Updating max surge fee percentage",
+              description: "Waiting for transaction confirmation... Please wait.",
+            },
+            error: (error: any) => ({
+              title: "Error",
+              description: error.message,
+              duration: 7000,
+              isClosable: true,
+            }),
+          });
+        }
+
+        // Update surge threshold if provided
+        if (newSurgeThresholdPercentage) {
+          const txSurgeThresholdPercentage = BigInt(
+            parseFloat(newSurgeThresholdPercentage) * 1e16,
+          ).toString();
+          const tx2 = await hookContract.setSurgeThresholdPercentage(
+            selectedPool.address,
+            txSurgeThresholdPercentage,
+          );
+
+          // toast.promise handles errors during transaction confirmation (tx.wait)
+          toast.promise(tx2.wait(), {
+            success: {
+              title: "Success",
+              description: `The surge threshold percentage has been updated to ${newSurgeThresholdPercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              duration: 5000,
+              isClosable: true,
+            },
+            loading: {
+              title: "Updating surge threshold percentage",
+              description: "Waiting for transaction confirmation... Please wait.",
+            },
+            error: (error: any) => ({
+              title: "Error",
+              description: error.message,
+              duration: 7000,
+              isClosable: true,
+            }),
+          });
+        }
       } catch (error: any) {
+        // This catches errors that happen before toast.promise, such as transaction creation errors
         toast({
-          title: "Transaction Failed",
+          title: "Error executing transactions",
           description: error.message,
           status: "error",
           duration: 5000,
@@ -266,48 +343,41 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     );
   }, [data?.poolGetPools, searchTerm]);
 
-  const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
-  const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
-  const feeChange = newFee - currentFee;
-  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_DAO_OWNER;
+  const currentMaxSurgeFee =
+    selectedPool &&
+    selectedPool.hook?.type === "STABLE_SURGE" &&
+    selectedPool.hook.params &&
+    isStableSurgeHookParams(selectedPool.hook.params)
+      ? parseFloat(selectedPool.hook.params.maxSurgeFeePercentage) * 100
+      : 0;
 
-  const getPrefillValues = () => {
-    // Make sure we have a selected pool and new swap fee
-    if (!selectedPool || !newSwapFee) return {};
+  const currentSurgeThreshold =
+    selectedPool &&
+    selectedPool.hook?.type === "STABLE_SURGE" &&
+    selectedPool.hook.params &&
+    isStableSurgeHookParams(selectedPool.hook.params)
+      ? parseFloat(selectedPool.hook.params.surgeThresholdPercentage) * 100
+      : 0;
 
-    // Generate a unique ID for the branch and file
-    const uniqueId = generateUniqueId();
+  const newMaxFee = newMaxSurgeFeePercentage
+    ? parseFloat(newMaxSurgeFeePercentage)
+    : currentMaxSurgeFee;
+  const newThreshold = newSurgeThresholdPercentage
+    ? parseFloat(newSurgeThresholdPercentage)
+    : currentSurgeThreshold;
 
-    // Create a truncated version of the pool address for the branch name
-    const shortPoolId = selectedPool.address.substring(0, 8);
-
-    // Get pool name for the description
-    const poolName = selectedPool.name;
-
-    // Create fee change description
-    const currentFee = parseFloat(selectedPool.dynamicData.swapFee) * 100;
-    const newFee = parseFloat(newSwapFee);
-    const feeChangeDirection = newFee > currentFee ? "increase" : "decrease";
-
-    // Find the network name from the selected network
-    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
-    const networkName = networkOption?.label || selectedNetwork;
-
-    // Create just the filename - path will come from the config
-    const filename = `set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
-
-    return {
-      prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
-      prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
-      prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
-      prefillFilename: filename
-    };
-  };
+  const isAuthorizedPool = useMemo(() => {
+    if (!selectedPool?.swapFeeManager) return false;
+    return (
+      isZeroAddress(selectedPool.swapFeeManager) ||
+      selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
+    );
+  }, [selectedPool, selectedMultisig]);
 
   return (
     <Container maxW="container.lg">
       <Heading as="h2" size="lg" variant="special" mb={6}>
-        Balancer v3: Create Swap Fee Change Payload
+        Configure StableSurge Hook
       </Heading>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -378,7 +448,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         <>
           {selectedPool && isCurrentWalletManager && (
             <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
+              <PoolInfoCard pool={selectedPool} showHook={true} />
               {isCurrentWalletManager && (
                 <Alert status="info" mt={4}>
                   <AlertIcon />
@@ -394,7 +464,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
           {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
+              <PoolInfoCard pool={selectedPool} showHook={true} />
               {!isAuthorizedPool && (
                 <Alert status="warning" mt={4}>
                   <AlertIcon />
@@ -409,78 +479,84 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
           {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
-              <Alert
-                status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"}
-                mt={4}
-              >
+              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
                 <AlertIcon />
                 <AlertDescription>
-                  {isZeroAddress(selectedPool.swapFeeManager)
+                  {isAuthorizedPool
                     ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+                    : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
                 </AlertDescription>
               </Alert>
             </Box>
           )}
 
           <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 4 }}>
+            <GridItem colSpan={{ base: 12, md: 6 }}>
               <FormControl
                 isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+                mb={4}
               >
-                <FormLabel>New Swap Fee Percentage</FormLabel>
+                <FormLabel>New Max Surge Fee Percentage</FormLabel>
                 <Input
                   type="number"
                   step="0.01"
-                  value={newSwapFee}
-                  onChange={e => setNewSwapFee(e.target.value)}
-                  placeholder="Enter new swap fee (e.g., 0.1)"
+                  value={newMaxSurgeFeePercentage}
+                  onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
+                  placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
                   onWheel={e => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
             </GridItem>
-            <GridItem colSpan={{ base: 12, md: 8 }}>
-              {selectedPool && newSwapFee && (
-                <Card>
-                  <CardHeader>
-                    <Flex alignItems="center">
-                      <DollarSign size={24} />
-                      <Heading size="md" ml={2}>
-                        Swap Fee Change Preview
-                      </Heading>
-                    </Flex>
-                  </CardHeader>
-                  <CardBody>
-                    <StatGroup>
-                      <Stat>
-                        <StatLabel>Current Fee</StatLabel>
-                        <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>New Fee</StatLabel>
-                        <StatNumber>{newFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>Change</StatLabel>
-                        <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
-                        <StatHelpText>
-                          {feeChange === 0 ? (
-                            "No Change"
-                          ) : (
-                            <>
-                              <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
-                              {feeChange > 0 ? "Increase" : "Decrease"}
-                            </>
-                          )}
-                        </StatHelpText>
-                      </Stat>
-                    </StatGroup>
-                  </CardBody>
-                </Card>
-              )}
+
+            <GridItem colSpan={{ base: 12, md: 6 }}>
+              <FormControl
+                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+                mb={4}
+              >
+                <FormLabel>New Surge Threshold Percentage</FormLabel>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={newSurgeThresholdPercentage}
+                  onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
+                  placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
+                />
+              </FormControl>
             </GridItem>
           </Grid>
         </>
+      )}
+
+      {selectedPool && (newMaxSurgeFeePercentage || newSurgeThresholdPercentage) && (
+        <ParameterChangeCard
+          title="Hook Parameters Change Preview"
+          icon={<DollarSign size={24} />}
+          parameters={[
+            ...(newMaxSurgeFeePercentage
+              ? [
+                  {
+                    name: "Max Surge Fee",
+                    currentValue: currentMaxSurgeFee,
+                    newValue: newMaxFee,
+                    precision: 2,
+                    unit: "%",
+                  },
+                ]
+              : []),
+            ...(newSurgeThresholdPercentage
+              ? [
+                  {
+                    name: "Surge Threshold",
+                    currentValue: currentSurgeThreshold,
+                    newValue: newThreshold,
+                    precision: 2,
+                    unit: "%",
+                  },
+                ]
+              : []),
+          ]}
+        />
       )}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         {!selectedPool ? (
@@ -488,11 +564,19 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             Select a Pool
           </Button>
         ) : isCurrentWalletManager ? (
-          <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
-            Execute Fee Change
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+          >
+            Execute Parameter Change
           </Button>
-        ) : isZeroAddress(selectedPool.swapFeeManager) ? (
-          <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
+        ) : isAuthorizedPool ? (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+          >
             Generate Payload
           </Button>
         ) : (
@@ -535,11 +619,10 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"fee-setter-v3"}
+            type={"hook-stable-surge"}
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-            {...getPrefillValues()}
           />
         </Box>
       )}

@@ -1128,3 +1128,84 @@ export function generateRemoveLiquidityPayload(
     transactions,
   };
 }
+
+export interface StableSurgeParamsInput {
+  poolAddress: string;
+  newMaxSurgeFeePercentage?: string;
+  newSurgeThresholdPercentage?: string;
+}
+
+export function generateStableSurgeParamsPayload(
+  input: StableSurgeParamsInput,
+  chainId: string,
+  hookAddress: string,
+  multisig: string,
+) {
+  const transactions = [];
+
+  if (input.newMaxSurgeFeePercentage) {
+    const maxSurgeFeePercentage = percentageToWei(input.newMaxSurgeFeePercentage);
+
+    transactions.push({
+      to: hookAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { internalType: "address", name: "pool", type: "address" },
+          { internalType: "uint256", name: "newMaxSurgeSurgeFeePercentage", type: "uint256" },
+        ],
+        name: "setMaxSurgeFeePercentage",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newMaxSurgeSurgeFeePercentage: maxSurgeFeePercentage,
+      },
+    });
+  }
+
+  if (input.newSurgeThresholdPercentage) {
+    const surgeThresholdPercentage = percentageToWei(input.newSurgeThresholdPercentage);
+
+    transactions.push({
+      to: hookAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { internalType: "address", name: "pool", type: "address" },
+          { internalType: "uint256", name: "newSurgeThresholdPercentage", type: "uint256" },
+        ],
+        name: "setSurgeThresholdPercentage",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newSurgeThresholdPercentage: surgeThresholdPercentage,
+      },
+    });
+  }
+
+  // Generate description based on what's being changed
+  let description = "";
+  if (input.newSurgeThresholdPercentage && input.newMaxSurgeFeePercentage) {
+    description = `Set surge threshold to ${input.newSurgeThresholdPercentage}% and max surge fee to ${input.newMaxSurgeFeePercentage}% for pool ${input.poolAddress}`;
+  } else if (input.newSurgeThresholdPercentage) {
+    description = `Set surge threshold to ${input.newSurgeThresholdPercentage}% for pool ${input.poolAddress}`;
+  } else if (input.newMaxSurgeFeePercentage) {
+    description = `Set max surge fee to ${input.newMaxSurgeFeePercentage}% for pool ${input.poolAddress}`;
+  }
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: description,
+      createdFromSafeAddress: multisig,
+    },
+    transactions,
+  };
+}
