@@ -269,7 +269,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Flex>
         </Alert>
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
-          <Box flex="1">
+          <Box flex="2">
             <NetworkSelector
               networks={networks}
               networkOptions={networkOptionsWithV3}
@@ -279,7 +279,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             />
           </Box>
 
-          <Box flex="1">
+          <Box flex="3">
             <FormControl>
               <FormLabel>Wrapped Token</FormLabel>
               <Flex gap={2}>

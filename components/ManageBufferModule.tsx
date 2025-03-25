@@ -461,7 +461,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           </Select>
         </FormControl>
         <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
-          <Box flex="1">
+          <Box flex="2">
             <NetworkSelector
               networks={networks}
               networkOptions={networkOptionsWithV3}
@@ -471,7 +471,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             />
           </Box>
 
-          <Box flex="1">
+          <Box flex="3">
             <FormControl isRequired>
               <FormLabel>Wrapped Token</FormLabel>
               <TokenSelector

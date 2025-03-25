@@ -611,13 +611,15 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       <Box mb={8}>
         <Stack spacing={6}>
           {/* Network Selection */}
-          <NetworkSelector
-            networks={networks}
-            networkOptions={NETWORK_OPTIONS}
-            selectedNetwork={selectedNetwork}
-            handleNetworkChange={handleNetworkChange}
-            label="Network"
-          />
+          <Box maxW="300px">
+            <NetworkSelector
+              networks={networks}
+              networkOptions={NETWORK_OPTIONS}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+              label="Network"
+            />
+          </Box>
 
           {/* Pool Selection */}
           {selectedNetwork && (
