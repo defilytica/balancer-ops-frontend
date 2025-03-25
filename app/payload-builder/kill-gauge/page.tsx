@@ -43,6 +43,7 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import { VscGithubInverted } from "react-icons/vsc";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export default function KillGaugePage() {
   const [gauges, setGauges] = useState<{ id: string }[]>([{ id: "" }]);
@@ -181,6 +182,40 @@ export default function KillGaugePage() {
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
+
+  const getPrefillValues = () => {
+    // Only include gauges with non-empty IDs
+    const validGauges = gauges.filter(g => g.id.trim());
+    if (validGauges.length === 0) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get first gauge ID for naming (truncated to 8 chars)
+    const firstGaugeId = validGauges[0].id.substring(0, 8);
+
+    // For description, include first few gauge IDs (up to 3) if there are many
+    let gaugeIdsList = "";
+    if (validGauges.length <= 3) {
+      // If 3 or fewer gauges, show all IDs
+      gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(', ');
+    } else {
+      // If more than 3, show the first 3 and indicate there are more
+      gaugeIdsList = validGauges.slice(0, 3).map(g => g.id.substring(0, 8)).join(', ') +
+        ` and ${validGauges.length - 3} more`;
+    }
+
+    // Create just the filename without the path prefix - the path will come from the PAYLOAD_OPTIONS config
+    const filename = `kill-gauges-${firstGaugeId}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/kill-gauges-${firstGaugeId}-${uniqueId}`,
+      prefillPrName: `Kill ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} from the veBAL system`,
+      prefillDescription: `This PR removes ${validGauges.length} gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) from the veBAL system.`,
+      prefillFilename: filename
+    };
+  };
+
 
   return (
     <Container maxW="container.lg">
@@ -393,6 +428,7 @@ export default function KillGaugePage() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );

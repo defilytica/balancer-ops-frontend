@@ -88,15 +88,8 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
   const getStatusBadge = (daysSinceLastVote: number) => {
     let color;
     let status;
-
-    if (daysSinceLastVote <= 100) {
-      color = "yellow";
-      status = "At Risk";
-    } else {
-      color = "red";
-      status = "To be killed";
-    }
-
+    color = "red";
+    status = "To be killed";
     return <Badge colorScheme={color}>{status}</Badge>;
   };
 

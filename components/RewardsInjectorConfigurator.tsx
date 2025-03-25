@@ -48,6 +48,7 @@ import { EditableInjectorConfig } from "./EditableInjectorConfig";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 type RewardsInjectorConfiguratorProps = {
   addresses: AddressOption[];
@@ -174,6 +175,65 @@ function RewardsInjectorConfigurator({
 
   const handleJsonChange = (newJson: string | BatchFile) => {
     setGeneratedPayload(newJson as BatchFile);
+  };
+
+  const getPrefillValues = () => {
+    // Make sure we have a selected injector and configuration
+    if (!selectedAddress || !currentConfig.length || !generatedPayload) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get injector details for the filename and description
+    const shortInjectorId = selectedAddress.address.substring(0, 8);
+    const networkName = selectedAddress.network;
+
+    // Determine what changed between original and current config
+    const addedGauges = currentConfig.filter(
+      gauge => !gauges.some(g => g.gaugeAddress === gauge.gaugeAddress)
+    ).length;
+
+    const removedGauges = gauges.filter(
+      gauge => !currentConfig.some(g => g.gaugeAddress === gauge.gaugeAddress)
+    ).length;
+
+    const modifiedGauges = currentConfig.filter(gauge => {
+      const original = gauges.find(g => g.gaugeAddress === gauge.gaugeAddress);
+      return original && (
+        original.amountPerPeriod !== gauge.amountPerPeriod ||
+        original.maxPeriods !== gauge.maxPeriods
+      );
+    }).length;
+
+    // Create a descriptive summary
+    let changeDescription = [];
+    if (addedGauges > 0) {
+      changeDescription.push(`added ${addedGauges} gauge${addedGauges !== 1 ? 's' : ''}`);
+    }
+    if (removedGauges > 0) {
+      changeDescription.push(`removed ${removedGauges} gauge${removedGauges !== 1 ? 's' : ''}`);
+    }
+    if (modifiedGauges > 0) {
+      changeDescription.push(`modified ${modifiedGauges} gauge${modifiedGauges !== 1 ? 's' : ''}`);
+    }
+
+    // Join the changes with appropriate punctuation
+    let changeSummary = changeDescription.join(', ');
+
+    // Add distribution change information
+    const distributionChangeText = distributionDelta !== 0
+      ? ` with a net ${distributionDelta > 0 ? 'increase' : 'decrease'} of ${formatAmount(Math.abs(distributionDelta))} ${tokenSymbol}`
+      : '';
+
+    // Create the filename without any path prefix - the path will come from config
+    const filename = `injector-config-${shortInjectorId}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/injector-config-${shortInjectorId}-${uniqueId}`,
+      prefillPrName: `Update ${tokenSymbol} Injector Configuration on ${networkName}`,
+      prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} on ${networkName}, ${changeSummary}${distributionChangeText}.`,
+      prefillFilename: filename
+    };
   };
 
   return (
@@ -402,6 +462,7 @@ function RewardsInjectorConfigurator({
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(JSON.stringify(generatedPayload)) : null}
             network={selectedAddress ? selectedAddress.network.toLowerCase() : "mainnet"}
+            {...getPrefillValues()}
           />
         </Box>
       )}

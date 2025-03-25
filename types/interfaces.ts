@@ -36,6 +36,7 @@ export interface Pool {
   chain: string;
   protocolVersion: string;
   address: string;
+  id: string;
   name: string;
   symbol: string;
   type: string;
