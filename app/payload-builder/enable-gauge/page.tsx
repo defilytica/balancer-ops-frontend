@@ -39,6 +39,7 @@ import SimulateTransactionButton from "@/components/btns/SimulateTransactionButt
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -59,6 +60,36 @@ export default function EnableGaugePage() {
 
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
+  };
+
+  // Prepare pre-filled values for PR modal
+  const getPrefillValues = () => {
+    // Only include gauges with non-empty IDs
+    const validGauges = gauges.filter(g => g.id.trim());
+    if (validGauges.length === 0) return {};
+
+    const uniqueId = generateUniqueId();
+
+    // Get first gauge ID for naming
+    const firstGaugeId = validGauges[0].id.substring(0, 8);;
+
+    // Create a comma-separated list of gauge IDs for the description
+    const gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(', ');
+
+    // Get the network(s)
+    const networksMap: Record<string, boolean> = {};
+    validGauges.forEach(g => {
+      networksMap[g.network] = true;
+    });
+    const networks = Object.keys(networksMap);
+    const networkText = networks.length === 1 ? networks[0] : "multiple networks";
+
+    return {
+      prefillBranchName: `feature/enable-gauge-${firstGaugeId}-${uniqueId}`,
+      prefillPrName: `Enable ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} on ${networkText}`,
+      prefillDescription: `This PR enables gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) for BAL rewards on ${networkText}.`,
+      prefillFilename: `enable-gauges-${firstGaugeId}-${uniqueId}.json`
+    };
   };
 
   const handleOpenPRModal = () => {
@@ -251,6 +282,7 @@ export default function EnableGaugePage() {
         isOpen={isOpen}
         onClose={onClose}
         payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        {...getPrefillValues()}
       />
     </Container>
   );
