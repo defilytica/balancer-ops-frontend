@@ -115,7 +115,7 @@ export default function AddRewardToGaugePage() {
     if (selectedOption) {
       setNetwork(selectedNetwork);
       setEntrypoint(selectedOption.entrypoint);
-      setSafeAddress(selectedOption.maxiSafe);
+      setSafeAddress(selectedOption.omniSig);
       setChainId(selectedOption.chainId);
     }
   };
