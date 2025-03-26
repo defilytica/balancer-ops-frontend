@@ -99,6 +99,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const [selectedWeek, setSelectedWeek] = useState(getStartOfNextWeek());
   const [branchError, setBranchError] = useState("");
   const [displayPath, setDisplayPath] = useState("");
+  const [userEditedPath, setUserEditedPath] = useState(false);
   const toast = useToast();
 
   const { branchNamePlaceholder, prNamePlaceholder, prTypePath } = payloadOption || {};
@@ -136,11 +137,11 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
 
   // Set total filepath update on Modal state change
   useEffect(() => {
-    if (filePath) {
+    if (filePath && !userEditedPath) {
       const finalPath = getFinalFilePath();
       setDisplayPath(finalPath);
     }
-  }, [filePath, prefillFilename, prefillFilePath]);
+  }, [filePath, prefillFilename, prefillFilePath, userEditedPath]);
 
   const getFinalFilePath = () => {
     // If we have a base path (from config with replacements) and a filename
@@ -247,7 +248,7 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   };
 
   const handleCreatePR = async () => {
-    const finalFilePath = getFinalFilePath();
+    const finalFilePath = userEditedPath ? displayPath : getFinalFilePath();
 
     if (!finalFilePath) {
       toast({
@@ -285,7 +286,8 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   };
 
   const handleFilePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilePath(e.target.value);
+    setDisplayPath(e.target.value);
+    setUserEditedPath(true);
   };
 
   return (
