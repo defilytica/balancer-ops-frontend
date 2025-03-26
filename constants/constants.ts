@@ -216,7 +216,7 @@ export const NETWORK_OPTIONS = [
     apiID: "ZKEVM",
     chainId: "1101",
     maxiSafe: "0xB59Ab49CA8d064E645Bf2c546d9FE6d1d4147a09",
-    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    omniSig: "0xB59Ab49CA8d064E645Bf2c546d9FE6d1d4147a09", //Overwrite from LM!
     entrypoint: "0xb9aD3466cdd42015cc05d4804DC68D562b6a2065",
   },
   {
