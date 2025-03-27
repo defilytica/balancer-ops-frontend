@@ -238,3 +238,10 @@ export interface Hook {
   type: string;
   params?: HookParams;
 }
+
+export interface GaugeRecipientData {
+  id: string;
+  gaugeId: string | null;
+  isKilled: boolean;
+  relativeWeightCap: number;
+}
