@@ -15,7 +15,7 @@ export const handleDownloadClick = (generatedPayload: any) => {
   const blob = new Blob([payloadString], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "BIP-XXX.json";
+  link.download = "payload.json";
   link.click();
   URL.revokeObjectURL(link.href);
 };
