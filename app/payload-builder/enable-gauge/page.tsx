@@ -25,7 +25,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -33,13 +33,13 @@ import {
   generateHumanReadableForEnableGauge,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
-import { VscGithubInverted } from "react-icons/vsc";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -61,6 +61,8 @@ export default function EnableGaugePage() {
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
   };
+
+  const networkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC")
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {
@@ -183,20 +185,31 @@ export default function EnableGaugePage() {
 
               <FormControl mr="10px" width="200px">
                 <FormLabel>Network</FormLabel>
-                <Select
-                  value={gauge.network}
-                  onChange={e => {
+                <NetworkSelector
+                  networks={networks}
+                  networkOptions={networkOptions}
+                  selectedNetwork={gauge.network}
+                  handleNetworkChange={e => {
                     const updatedGauges = [...gauges];
-                    updatedGauges[index].network = e.target.value;
+
+                    // Map API IDs to proper network names
+                    const networkMapping: Record<string, string> = {
+                      "MAINNET": "Ethereum",
+                      "ARBITRUM": "Arbitrum",
+                      "POLYGON": "Polygon",
+                      "ZKEVM": "Polygon ZKEVM",
+                      "OPTIMISM": "Optimism",
+                      "AVALANCHE": "Avalanche",
+                      "BASE": "Base",
+                      "GNOSIS": "Gnosis",
+                      "FRAXTAL": "Fraxtal",
+                      "MODE": "Mode",
+                    };
+
+                    updatedGauges[index].network = networkMapping[e.target.value] || e.target.value;
                     setGauges(updatedGauges);
                   }}
-                >
-                  {NETWORK_OPTIONS.map(net => (
-                    <option key={net.label} value={net.label}>
-                      {net.label}
-                    </option>
-                  ))}
-                </Select>
+                />
               </FormControl>
 
               <Box>

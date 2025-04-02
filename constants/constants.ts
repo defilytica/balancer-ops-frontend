@@ -12,6 +12,7 @@ import zkevmLogo from "@/public/imgs/zkevm.svg";
 import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import modeLogo from "@/public/imgs/mode.svg";
+import sonicLogo from "@/public/imgs/sonic.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
@@ -267,6 +268,14 @@ export const NETWORK_OPTIONS = [
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "",
   },
+  {
+    label: "Sonic",
+    apiID: "SONIC",
+    chainId: "146",
+    maxiSafe: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -347,6 +356,12 @@ export const networks: Record<string, NetworkInfo> = {
     rpc: "https://lb.drpc.org/ogrpc?network=mode&dkey=",
     explorer: "https://explorer.mode.network/",
     chainId: "34443",
+  },
+  sonic: {
+    logo: sonicLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=sonic&dkey=",
+    explorer: "https://sonicscan.org/",
+    chainId: "146",
   },
 };
 

@@ -64,7 +64,7 @@
     "react-json-view": "^1.21.3",
     "recharts": "^2.13.0",
     "tinycolor2": "^1.6.0",
-    "viem": "^2.21.32",
+    "viem": "^2.24.2",
     "wagmi": "^2.14.11"
   },
   "devDependencies": {
