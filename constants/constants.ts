@@ -192,6 +192,7 @@ export const NETWORK_OPTIONS = [
     apiID: "MAINNET",
     chainId: "1",
     maxiSafe: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   },
   {
@@ -199,6 +200,7 @@ export const NETWORK_OPTIONS = [
     apiID: "ARBITRUM",
     chainId: "42161",
     maxiSafe: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0x97207B095e4D5C9a6e4cfbfcd2C3358E03B90c4A",
   },
   {
@@ -206,6 +208,7 @@ export const NETWORK_OPTIONS = [
     apiID: "POLYGON",
     chainId: "137",
     maxiSafe: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xAB093cd16e765b5B23D34030aaFaF026558e0A19",
   },
   {
@@ -213,6 +216,7 @@ export const NETWORK_OPTIONS = [
     apiID: "ZKEVM",
     chainId: "1101",
     maxiSafe: "0xB59Ab49CA8d064E645Bf2c546d9FE6d1d4147a09",
+    omniSig: "0xB59Ab49CA8d064E645Bf2c546d9FE6d1d4147a09", //Overwrite from LM!
     entrypoint: "0xb9aD3466cdd42015cc05d4804DC68D562b6a2065",
   },
   {
@@ -220,6 +224,7 @@ export const NETWORK_OPTIONS = [
     apiID: "OPTIMISM",
     chainId: "10",
     maxiSafe: "0x09Df1626110803C7b3b07085Ef1E053494155089",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xed86ff0c507D3AF5F35d3523B77C17415FCfFaCb",
   },
   {
@@ -227,6 +232,7 @@ export const NETWORK_OPTIONS = [
     apiID: "AVALANCHE",
     chainId: "43114",
     maxiSafe: "0x326A7778DB9B741Cb2acA0DE07b9402C7685dAc6",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0x4E7bBd911cf1EFa442BC1b2e9Ea01ffE785412EC",
   },
   {
@@ -234,6 +240,7 @@ export const NETWORK_OPTIONS = [
     apiID: "BASE",
     chainId: "8453",
     maxiSafe: "0x65226673F3D202E0f897C862590d7e1A992B2048",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0x9129E834e15eA19b6069e8f08a8EcFc13686B8dC",
   },
   {
@@ -241,6 +248,7 @@ export const NETWORK_OPTIONS = [
     apiID: "GNOSIS",
     chainId: "100",
     maxiSafe: "0x14969B55a675d13a1700F71A37511bc22D90155a",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0x8F42aDBbA1B16EaAE3BB5754915E0D06059aDd75",
   },
   {
@@ -248,6 +256,7 @@ export const NETWORK_OPTIONS = [
     apiID: "FRAXTAL",
     chainId: "2522",
     maxiSafe: "0x7BBAc709a9535464690A435ca7361256496f13Ce",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88",
   },
   {
@@ -255,6 +264,7 @@ export const NETWORK_OPTIONS = [
     apiID: "MODE",
     chainId: "34443",
     maxiSafe: "",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "",
   },
 ];
