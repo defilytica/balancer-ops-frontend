@@ -1,9 +1,16 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Box,
   Button,
+  Card,
+  CardBody,
   Container,
+  Divider,
   Flex,
   FormControl,
   FormLabel,
@@ -14,34 +21,23 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  SimpleGrid,
+  Spinner,
+  Stack,
   Switch,
   Text,
   useDisclosure,
   useMediaQuery,
   useToast,
-  SimpleGrid,
-  Card,
-  CardBody,
-  Stack,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Divider,
-  Spinner,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, AddIcon, DeleteIcon } from "@chakra-ui/icons";
-
+import { AddIcon, ChevronDownIcon, CopyIcon, DeleteIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { AddressOption } from "@/types/interfaces";
-// Import the correct Transaction type
 import SimulateTransactionButton, { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import {
   copyJsonToClipboard,
-  generateInjectorSchedulePayload,
   generateInjectorSchedulePayloadV2,
   handleDownloadClick,
-  InjectorScheduleInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
 import { networks } from "@/constants/constants";
@@ -75,7 +71,7 @@ interface RecipientConfigData {
 }
 
 // Create a type without id for interfacing with EditableInjectorConfigV2
-type EditableRecipientConfigData = Omit<RecipientConfigData, 'id'>;
+type EditableRecipientConfigData = Omit<RecipientConfigData, "id">;
 
 function RewardsInjectorConfiguratorV2({
                                          addresses,
@@ -130,11 +126,11 @@ function RewardsInjectorConfiguratorV2({
   const handleConfigChange = (newConfig: EditableRecipientConfigData, configId: string) => {
     if (operation === "add") {
       setAddConfigs(prev => prev.map(config =>
-        config.id === configId ? { ...newConfig, id: configId } : config
+        config.id === configId ? { ...newConfig, id: configId } : config,
       ));
     } else if (operation === "remove") {
       setRemoveConfigs(prev => prev.map(config =>
-        config.id === configId ? { ...newConfig, id: configId } : config
+        config.id === configId ? { ...newConfig, id: configId } : config,
       ));
     }
   };
@@ -242,7 +238,7 @@ function RewardsInjectorConfiguratorV2({
 
       // Remove duplicates using Array.filter instead of Set
       const uniqueRemovedAddresses = removedAddresses.filter(
-        (address, index, self) => self.indexOf(address) === index
+        (address, index, self) => self.indexOf(address) === index,
       );
 
       uniqueRemovedAddresses.forEach(address => {
@@ -291,7 +287,7 @@ function RewardsInjectorConfiguratorV2({
 
   // Convert min amount to human readable format for the warning
   const minHumanReadableAmount = tokenDecimals ? (MIN_REWARD_AMOUNT_WEI / (10 ** tokenDecimals)).toFixed(
-    Math.min(6, tokenDecimals)
+    Math.min(6, tokenDecimals),
   ) : "0.00";
 
   // Updated to generate multiple transactions in the payload
@@ -420,7 +416,7 @@ function RewardsInjectorConfiguratorV2({
   };
 
   const handleJsonChange = (newJson: string | BatchFile) => {
-    if (typeof newJson === 'string') {
+    if (typeof newJson === "string") {
       try {
         const parsed = JSON.parse(newJson);
         setGeneratedPayload(parsed as BatchFile);
@@ -450,13 +446,13 @@ function RewardsInjectorConfiguratorV2({
     const networkName = selectedAddress.network;
 
     // Get operation-specific details
-    const configs = operation === 'add' ? addConfigs : removeConfigs;
+    const configs = operation === "add" ? addConfigs : removeConfigs;
 
     // Count total recipients and calculate total allocation
     let totalValidRecipients = 0;
     let totalAmount = 0;
 
-    if (operation === 'add') {
+    if (operation === "add") {
       addConfigs.forEach(config => {
         const validRecipients = config.recipients.filter(r => r.trim()).length;
         totalValidRecipients += validRecipients;
@@ -474,10 +470,10 @@ function RewardsInjectorConfiguratorV2({
 
     // Get summary info for PR description
     let summaryInfo = "";
-    if (operation === 'add') {
-      summaryInfo = `adding ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? 's' : ''} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol}`;
+    if (operation === "add") {
+      summaryInfo = `adding ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? "s" : ""} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol}`;
     } else {
-      summaryInfo = `removing ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? 's' : ''}`;
+      summaryInfo = `removing ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? "s" : ""}`;
     }
 
     // Create the filename without any path prefix - the path will come from config
@@ -485,9 +481,9 @@ function RewardsInjectorConfiguratorV2({
 
     return {
       prefillBranchName: `feature/injector-${operation}-${shortInjectorId}-${uniqueId}`,
-      prefillPrName: `${operation === 'add' ? 'Add' : 'Remove'} Recipients for ${tokenSymbol} Injector on ${networkName}`,
+      prefillPrName: `${operation === "add" ? "Add" : "Remove"} Recipients for ${tokenSymbol} Injector on ${networkName}`,
       prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} by ${summaryInfo} on ${networkName}.`,
-      prefillFilename: filename
+      prefillFilename: filename,
     };
   };
 
@@ -650,8 +646,10 @@ function RewardsInjectorConfiguratorV2({
               <AlertIcon />
               <AlertTitle mr={2}>Rewards Too Small!</AlertTitle>
               <AlertDescription>
-                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI or {minHumanReadableAmount} {tokenSymbol}).
-                The gauge cannot handle rewards this small. Please increase the reward amount to be at least 1 WEI / second.
+                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI
+                or {minHumanReadableAmount} {tokenSymbol}).
+                The gauge cannot handle rewards this small. Please increase the reward amount to be at least 1 WEI /
+                second.
               </AlertDescription>
             </Alert>
           )}
@@ -711,7 +709,7 @@ function RewardsInjectorConfiguratorV2({
                       amountPerPeriod: config.amountPerPeriod,
                       maxPeriods: config.maxPeriods,
                       doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
-                      rawAmountPerPeriod: config.rawAmountPerPeriod
+                      rawAmountPerPeriod: config.rawAmountPerPeriod,
                     }}
                     tokenSymbol={tokenSymbol}
                     tokenDecimals={tokenDecimals}
