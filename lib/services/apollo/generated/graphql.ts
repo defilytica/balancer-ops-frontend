@@ -26,10 +26,16 @@ export type Scalars = {
 /** The review data for the ERC4626 token */
 export type Erc4626ReviewData = {
   __typename: 'Erc4626ReviewData';
+  /** If it is an ERC4626 token, this defines whether we can use wrap/unwrap through the buffer in swap paths for this token. */
+  canUseBufferForSwaps?: Maybe<Scalars['Boolean']['output']>;
   /** The filename of the review of the ERC4626 */
   reviewFile: Scalars['String']['output'];
   /** A summary of the ERC4626 review, usually just says safe or unsafe */
   summary: Scalars['String']['output'];
+  /** If it is an ERC4626 token, this defines whether we allow underlying tokens to be used for add/remove operations. */
+  useUnderlyingForAddRemove?: Maybe<Scalars['Boolean']['output']>;
+  /** If it is an ERC4626 token, this defines whether we allow the wrapped tokens to be used for add/remove operations. */
+  useWrappedForAddRemove?: Maybe<Scalars['Boolean']['output']>;
   /** Warnings associated with the ERC4626 */
   warnings: Array<Scalars['String']['output']>;
 };
@@ -92,23 +98,6 @@ export enum GqlChain {
   Sepolia = 'SEPOLIA',
   Sonic = 'SONIC',
   Zkevm = 'ZKEVM'
-}
-
-export type GqlContentNewsItem = {
-  __typename: 'GqlContentNewsItem';
-  discussionUrl?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
-  source: GqlContentNewsItemSource;
-  text: Scalars['String']['output'];
-  timestamp: Scalars['String']['output'];
-  url: Scalars['String']['output'];
-};
-
-export enum GqlContentNewsItemSource {
-  Discord = 'discord',
-  Medium = 'medium',
-  Twitter = 'twitter'
 }
 
 export type GqlFeaturePoolGroupItemExternalLink = {
@@ -343,6 +332,8 @@ export type GqlPoolAggregator = {
   poolTokens: Array<GqlPoolTokenDetail>;
   /** The protocol version on which the pool is deployed, 1, 2 or 3 */
   protocolVersion: Scalars['Int']['output'];
+  /** QuantAmmWeighted specific fields */
+  quantAmmWeightedParams?: Maybe<QuantAmmWeightedParams>;
   /** Data specific to gyro pools */
   root3Alpha?: Maybe<Scalars['String']['output']>;
   /** Data specific to gyro pools */
@@ -1290,6 +1281,61 @@ export enum GqlPoolOrderDirection {
   Desc = 'desc'
 }
 
+export type GqlPoolQuantAmmWeighted = GqlPoolBase & {
+  __typename: 'GqlPoolQuantAmmWeighted';
+  address: Scalars['Bytes']['output'];
+  /** @deprecated Use poolTokens instead */
+  allTokens: Array<GqlPoolTokenExpanded>;
+  categories?: Maybe<Array<Maybe<GqlPoolFilterCategory>>>;
+  chain: GqlChain;
+  createTime: Scalars['Int']['output'];
+  decimals: Scalars['Int']['output'];
+  /** @deprecated Use poolTokens instead */
+  displayTokens: Array<GqlPoolTokenDisplay>;
+  dynamicData: GqlPoolDynamicData;
+  factory?: Maybe<Scalars['Bytes']['output']>;
+  hasAnyAllowedBuffer: Scalars['Boolean']['output'];
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<GqlHook>;
+  id: Scalars['ID']['output'];
+  /** @deprecated Removed without replacement */
+  investConfig: GqlPoolInvestConfig;
+  liquidityManagement?: Maybe<LiquidityManagement>;
+  name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
+  nestingType: GqlPoolNestingType;
+  /**
+   * The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
+   * @deprecated Use swapFeeManager instead
+   */
+  owner?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to pause/unpause the pool (or 0 to delegate to governance) */
+  pauseManager?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to set the pool creator fee percentage */
+  poolCreator?: Maybe<Scalars['Bytes']['output']>;
+  poolTokens: Array<GqlPoolTokenDetail>;
+  protocolVersion: Scalars['Int']['output'];
+  quantAmmWeightedParams?: Maybe<QuantAmmWeightedParams>;
+  staking?: Maybe<GqlPoolStaking>;
+  /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
+  swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
+  symbol: Scalars['String']['output'];
+  tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  /**
+   * All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
+   * @deprecated Use poolTokens instead
+   */
+  tokens: Array<GqlPoolTokenUnion>;
+  type: GqlPoolType;
+  userBalance?: Maybe<GqlPoolUserBalance>;
+  /** @deprecated use protocolVersion instead */
+  vaultVersion: Scalars['Int']['output'];
+  version: Scalars['Int']['output'];
+  /** @deprecated Removed without replacement */
+  withdrawConfig: GqlPoolWithdrawConfig;
+};
+
 export type GqlPoolSnapshot = {
   __typename: 'GqlPoolSnapshot';
   amounts: Array<Scalars['String']['output']>;
@@ -1733,12 +1779,13 @@ export enum GqlPoolType {
   LiquidityBootstrapping = 'LIQUIDITY_BOOTSTRAPPING',
   MetaStable = 'META_STABLE',
   PhantomStable = 'PHANTOM_STABLE',
+  QuantAmmWeighted = 'QUANT_AMM_WEIGHTED',
   Stable = 'STABLE',
   Unknown = 'UNKNOWN',
   Weighted = 'WEIGHTED'
 }
 
-export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolStable | GqlPoolWeighted;
+export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolStable | GqlPoolWeighted;
 
 /** If a user address was provided in the query, the user balance is populated here */
 export type GqlPoolUserBalance = {
@@ -2274,6 +2321,7 @@ export type GqlToken = {
   tradable: Scalars['Boolean']['output'];
   /** The Twitter username of the token */
   twitterUsername?: Maybe<Scalars['String']['output']>;
+  types?: Maybe<Array<GqlTokenType>>;
   /** The ERC4626 underlying token address, if applicable. */
   underlyingTokenAddress?: Maybe<Scalars['String']['output']>;
   /** The website URL of the token */
@@ -2354,6 +2402,8 @@ export type GqlTokenDynamicData = {
 export type GqlTokenFilter = {
   /** Only return tokens with these addresses */
   tokensIn?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Filter by token type */
+  typeIn?: InputMaybe<Array<GqlTokenType>>;
 };
 
 /** Result of the poolReloadPools mutation */
@@ -2385,6 +2435,7 @@ export type GqlTokenPriceChartDataItem = {
 
 export enum GqlTokenType {
   Bpt = 'BPT',
+  Erc4626 = 'ERC4626',
   PhantomBpt = 'PHANTOM_BPT',
   WhiteListed = 'WHITE_LISTED'
 }
@@ -2669,6 +2720,30 @@ export type PoolForBatchSwap = {
   type: GqlPoolType;
 };
 
+export type QuantAmmWeightedDetail = {
+  __typename: 'QuantAMMWeightedDetail';
+  category: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+};
+
+export type QuantAmmWeightedParams = {
+  __typename: 'QuantAmmWeightedParams';
+  absoluteWeightGuardRail: Scalars['String']['output'];
+  details: Array<QuantAmmWeightedDetail>;
+  epsilonMax: Scalars['String']['output'];
+  lambda: Array<Scalars['String']['output']>;
+  lastInterpolationTimePossible: Scalars['String']['output'];
+  lastUpdateIntervalTime: Scalars['String']['output'];
+  maxTradeSizeRatio: Scalars['String']['output'];
+  oracleStalenessThreshold: Scalars['String']['output'];
+  poolRegistry: Scalars['String']['output'];
+  updateInterval: Scalars['String']['output'];
+  weightBlockMultipliers: Array<Scalars['String']['output']>;
+  weightsAtLastUpdateInterval: Array<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename: 'Query';
   /** Returns all pools for a given filter, specific for aggregators */
@@ -2683,7 +2758,6 @@ export type Query = {
   blocksGetBlocksPerSecond: Scalars['Float']['output'];
   /** @deprecated No longer supported */
   blocksGetBlocksPerYear: Scalars['Float']['output'];
-  contentGetNewsItems: Array<GqlContentNewsItem>;
   latestSyncedBlocks: GqlLatestSyncedBlocks;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
@@ -2699,11 +2773,6 @@ export type Query = {
   poolGetBatchSwaps: Array<GqlPoolBatchSwap>;
   /** Getting swap, add and remove events with range */
   poolGetEvents: Array<GqlPoolEvent>;
-  /**
-   * Will de deprecated in favor of poolGetFeaturedPools
-   * @deprecated Use poolGetFeaturedPools instead
-   */
-  poolGetFeaturedPoolGroups: Array<GqlPoolFeaturedPoolGroup>;
   /** Returns the list of featured pools for chains */
   poolGetFeaturedPools: Array<GqlPoolFeaturedPool>;
   /**
@@ -2807,11 +2876,6 @@ export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
 };
 
 
-export type QueryContentGetNewsItemsArgs = {
-  chain?: InputMaybe<GqlChain>;
-};
-
-
 export type QueryPoolEventsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -2841,11 +2905,6 @@ export type QueryPoolGetEventsArgs = {
   range: GqlPoolEventsDataRange;
   typeIn: Array<GqlPoolEventType>;
   userAddress?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryPoolGetFeaturedPoolGroupsArgs = {
-  chains?: InputMaybe<Array<GqlChain>>;
 };
 
 

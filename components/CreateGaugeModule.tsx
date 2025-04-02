@@ -61,7 +61,7 @@ import {
   VeBalGetVotingGaugesDocument,
   VeBalGetVotingGaugesQuery,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool } from "@/types/interfaces";
+import { AddressBook, GaugeRecipientData, Pool } from "@/types/interfaces";
 import {
   GAUGE_WEIGHT_CAPS,
   MAINNET_GAUGE_FACTORY,
@@ -75,6 +75,7 @@ import { ChildGaugeFactory } from "@/abi/ChildGaugeFactory";
 import { WeightCapType } from "@/types/types";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import PoolSelector from "@/components/PoolSelector";
+import { fetchGaugeRecipients } from "@/lib/utils/fetchGaugeRecipients";
 
 interface CreateGaugeProps {
   addressBook: AddressBook;
@@ -110,6 +111,8 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const [weightCap, setWeightCap] = useState<WeightCapType>(GAUGE_WEIGHT_CAPS.TWO_PERCENT);
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [rootGaugeFromAPI, setRootGaugeFromAPI] = useState<GaugeRecipientData | null>(null);
+  const [isLoadingRootGauge, setIsLoadingRootGauge] = useState(false);
 
   const toast = useToast();
   const { address } = useAccount();
@@ -130,19 +133,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const { data: votingGaugesData } = useQuery<VeBalGetVotingGaugesQuery>(
     VeBalGetVotingGaugesDocument,
   );
-
-  const existingRootGauge = useMemo(() => {
-    if (!selectedPool?.staking?.gauge?.id || !votingGaugesData?.veBalGetVotingList) {
-      return null;
-    }
-
-    // Find matching root gauge for the selected child gauge
-    return votingGaugesData.veBalGetVotingList.find(
-      gauge =>
-        gauge.gauge?.childGaugeAddress?.toLowerCase() ===
-        selectedPool.staking?.gauge?.id.toLowerCase(),
-    );
-  }, [selectedPool, votingGaugesData]);
 
   // Function to get explorer URL based on network
   const getExplorerUrl = (network: string, hash: string, type?: "childGauge" | "rootGauge") => {
@@ -166,6 +156,90 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     );
   }, [data?.poolGetPools, searchTerm]);
 
+  const fetchRootGaugeForChildGauge = useCallback(async (childGaugeId: string) => {
+    if (!childGaugeId) return null;
+
+    setIsLoadingRootGauge(true);
+    try {
+      // First, check in the votingGaugesData
+      if (votingGaugesData?.veBalGetVotingList) {
+        const matchingGauge = votingGaugesData.veBalGetVotingList.find(
+          gauge =>
+            gauge.gauge?.childGaugeAddress?.toLowerCase() === childGaugeId.toLowerCase()
+        );
+
+        if (matchingGauge) {
+          setIsLoadingRootGauge(false);
+          return matchingGauge;
+        }
+      }
+
+      // If not found, check using the new API endpoint
+      const gaugeRecipients = await fetchGaugeRecipients(childGaugeId);
+
+      if (gaugeRecipients && gaugeRecipients.length > 0) {
+        // Find the first non-killed gauge, or the first one if all are killed
+        const activeGauge = gaugeRecipients.find((g: GaugeRecipientData) => !g.isKilled) || gaugeRecipients[0];
+        setRootGaugeFromAPI(activeGauge);
+
+        // Transform to match the expected structure in the component
+        const transformedGauge = {
+          address: activeGauge.id,
+          gauge: {
+            address: activeGauge.gaugeId || activeGauge.id,
+            childGaugeAddress: childGaugeId,
+            isKilled: activeGauge.isKilled,
+            relativeWeightCap: activeGauge.relativeWeightCap
+          }
+        };
+
+        setIsLoadingRootGauge(false);
+        return transformedGauge;
+      }
+
+      setIsLoadingRootGauge(false);
+      return null;
+    } catch (error) {
+      console.error("Error fetching root gauge:", error);
+      setIsLoadingRootGauge(false);
+      return null;
+    }
+  }, [votingGaugesData]);
+
+  const existingRootGauge = useMemo(() => {
+    if (!selectedPool?.staking?.gauge?.id) {
+      return null;
+    }
+
+    // First check if the root gauge is in votingGaugesData
+    if (votingGaugesData?.veBalGetVotingList) {
+      const matchingGauge = votingGaugesData.veBalGetVotingList.find(
+        gauge =>
+          gauge.gauge?.childGaugeAddress?.toLowerCase() ===
+          selectedPool.staking?.gauge?.id.toLowerCase(),
+      );
+
+      if (matchingGauge) {
+        return matchingGauge;
+      }
+    }
+
+    // If we have data from the API, use that
+    if (rootGaugeFromAPI) {
+      return {
+        address: rootGaugeFromAPI.id,
+        gauge: {
+          address: rootGaugeFromAPI.gaugeId || rootGaugeFromAPI.id,
+          childGaugeAddress: selectedPool.staking?.gauge?.id,
+          isKilled: rootGaugeFromAPI.isKilled,
+          relativeWeightCap: rootGaugeFromAPI.relativeWeightCap
+        }
+      };
+    }
+
+    return null;
+  }, [selectedPool, votingGaugesData, rootGaugeFromAPI]);
+
   // Add condition to check for existing gauge
   const hasExistingGauge = useMemo(() => {
     return selectedPool?.staking?.gauge?.id != null;
@@ -177,11 +251,13 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     setTransactions([]);
     setActiveStep(0);
     setSelectedPool(pool);
+    setRootGaugeFromAPI(null);
   };
 
   const clearPoolSelection = () => {
     setSelectedPool(null);
     setSearchTerm("");
+    setRootGaugeFromAPI(null);
   };
 
   const shouldSkipChildGauge = hasExistingGauge;
@@ -190,6 +266,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       setActiveStep(1);
     }
   }, [shouldSkipChildGauge]);
+
+  useEffect(() => {
+    if (selectedPool?.staking?.gauge?.id && !existingRootGauge) {
+      fetchRootGaugeForChildGauge(selectedPool.staking.gauge.id);
+    }
+  }, [selectedPool, existingRootGauge, fetchRootGaugeForChildGauge]);
 
   const getChildChainFactoryForNetwork = useCallback(
     (network: string) => {
@@ -247,6 +329,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     setSelectedPool(null);
     setTransactions([]);
     setActiveStep(0);
+    setRootGaugeFromAPI(null);
 
     // Find the corresponding chain ID for the selected network
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
@@ -368,6 +451,20 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const RootGaugeAlert = () => {
     if (!existingRootGauge) return null;
 
+    // Determine if gauge was found via API but not in the voting list
+    const foundOnlyInSubgraph = rootGaugeFromAPI !== null &&
+      !votingGaugesData?.veBalGetVotingList?.some(gauge =>
+        gauge.gauge?.address?.toLowerCase() === rootGaugeFromAPI.id.toLowerCase());
+
+    // Get the relativeWeightCap from the appropriate source
+    const relativeWeightCap = rootGaugeFromAPI?.relativeWeightCap ||
+      existingRootGauge.gauge?.relativeWeightCap;
+
+    // Format the cap as a percentage if it exists
+    const formattedCap = relativeWeightCap ?
+      `${(Number(relativeWeightCap) * 100).toFixed(0)}%` :
+      'Uncapped';
+
     return (
       <Alert status="warning" mt={4}>
         <AlertIcon />
@@ -376,10 +473,20 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
             Existing Root Gauge Detected
           </Text>
           <Text>
-            This gauge already has a root gauge on Ethereum ({existingRootGauge.gauge?.address}).
+            This pool already has a root gauge on Ethereum ({existingRootGauge.gauge?.address})
             {existingRootGauge.gauge?.isKilled && (
               <Text color="red.500" mt={2}>
                 Note: This root gauge is marked as killed.
+              </Text>
+            )}
+            {foundOnlyInSubgraph &&  (
+              <Text color="red.500" mt={2}>
+                The root gauge has not been added to the gauge controller yet. Proposal needed.
+              </Text>
+            )}
+            {relativeWeightCap && (
+              <Text mt={1}>
+                Weight Cap: <Badge colorScheme="blue">{formattedCap}</Badge>
               </Text>
             )}
           </Text>
@@ -598,7 +705,10 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
               </Text>
               <Text>
                 This pool already has a gauge ({selectedPool?.staking?.gauge?.id}).
-                {!existingRootGauge && " You can proceed to create a root gauge for it."}
+                {selectedNetwork !== "MAINNET" && !existingRootGauge &&
+                  " You can proceed to create a root gauge for it."}
+                {selectedNetwork === "MAINNET" &&
+                  " No additional gauge creation is needed on Ethereum mainnet."}
               </Text>
             </AlertDescription>
           </Alert>
