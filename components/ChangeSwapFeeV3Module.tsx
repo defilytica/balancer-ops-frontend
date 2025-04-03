@@ -537,7 +537,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           >
             Copy Payload to Clipboard
           </Button>
-          <OpenPRButton onClick={handleOpenPRModal} />
+          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork}/>
           <Box mt={8} />
           <PRCreationModal
             type={"fee-setter-v3"}
