@@ -9,9 +9,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Container,
   Divider,
   Flex,
@@ -27,14 +24,7 @@ import {
   PopoverBody,
   PopoverContent,
   PopoverTrigger,
-  Select,
   Spinner,
-  Stat,
-  StatArrow,
-  StatGroup,
-  StatHelpText,
-  StatLabel,
-  StatNumber,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -65,8 +55,7 @@ import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
-
-const AUTHORIZED_DAO_OWNER = "0x0000000000000000000000000000000000000000";
+import { ParameterChangeCard } from "./ParameterChangeCard";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -80,7 +69,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   //Chain state switch
-  const { chains, switchChain } = useSwitchChain();
+  const { switchChain } = useSwitchChain();
 
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
@@ -198,10 +187,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       return;
     }
 
-    const swapFeePercentage = ((parseFloat(newSwapFee) / 100) * 1e18).toString();
-
-    // Case 1: Zero address manager (DAO governed)
-    if (isZeroAddress(selectedPool.swapFeeManager)) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed)
+    if (isAuthorizedPool) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -226,28 +213,43 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     // Case 2: Current wallet is the fee manager
     else if (isCurrentWalletManager) {
       try {
+        // This try/catch is needed to handle errors that occur before toast.promise
+        // such as errors during transaction creation, contract method calls, etc.
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        console.log("Signer status:", signer);
+
         const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+
+        const swapFeePercentage = ((parseFloat(newSwapFee) / 100) * 1e18).toString();
 
         const tx = await contract.setStaticSwapFeePercentage(
           selectedPool.address.toLowerCase(),
           swapFeePercentage,
         );
-        console.log("tx:", tx);
-        await tx.wait();
 
-        toast({
-          title: "Success",
-          description: "Swap fee updated successfully",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
+        // toast.promise handles errors during transaction confirmation (tx.wait)
+        toast.promise(tx.wait(), {
+          success: {
+            title: "Success",
+            description: `The swap fee has been updated to ${newSwapFee}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+            duration: 5000,
+            isClosable: true,
+          },
+          loading: {
+            title: "Updating swap fee",
+            description: "Waiting for transaction confirmation... Please wait.",
+          },
+          error: (error: any) => ({
+            title: "Error",
+            description: error.message,
+            duration: 7000,
+            isClosable: true,
+          }),
         });
       } catch (error: any) {
+        // This catches errors that happen before toast.promise, such as transaction creation errors
         toast({
-          title: "Transaction Failed",
+          title: "Error executing transaction",
           description: error.message,
           status: "error",
           duration: 5000,
@@ -267,9 +269,16 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   }, [data?.poolGetPools, searchTerm]);
 
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
-  const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
-  const feeChange = newFee - currentFee;
-  const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_DAO_OWNER;
+  const newFee = newSwapFee ? parseFloat(newSwapFee) : currentFee;
+
+  // Check if the pool is authorized for DAO governance (zero address or matches the multisig)
+  const isAuthorizedPool = useMemo(() => {
+    if (!selectedPool?.swapFeeManager) return false;
+    return (
+      isZeroAddress(selectedPool.swapFeeManager) ||
+      selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
+    );
+  }, [selectedPool, selectedMultisig]);
 
   const getPrefillValues = () => {
     // Make sure we have a selected pool and new swap fee
@@ -409,13 +418,10 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
           {selectedPool && !isCurrentWalletManager && (
             <Box mb={6}>
-              <Alert
-                status={isZeroAddress(selectedPool.swapFeeManager) ? "info" : "warning"}
-                mt={4}
-              >
+              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
                 <AlertIcon />
                 <AlertDescription>
-                  {isZeroAddress(selectedPool.swapFeeManager)
+                  {isAuthorizedPool
                     ? "This pool is DAO-governed. Changes must be executed through the multisig."
                     : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
                 </AlertDescription>
@@ -424,9 +430,10 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           )}
 
           <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 4 }}>
+            <GridItem colSpan={{ base: 12, md: 6 }}>
               <FormControl
                 isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+                mb={4}
               >
                 <FormLabel>New Swap Fee Percentage</FormLabel>
                 <Input
@@ -434,54 +441,31 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
                   step="0.01"
                   value={newSwapFee}
                   onChange={e => setNewSwapFee(e.target.value)}
-                  placeholder="Enter new swap fee (e.g., 0.1)"
+                  placeholder={`Current: ${currentFee.toFixed(4)}%`}
                   onWheel={e => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
             </GridItem>
-            <GridItem colSpan={{ base: 12, md: 8 }}>
-              {selectedPool && newSwapFee && (
-                <Card>
-                  <CardHeader>
-                    <Flex alignItems="center">
-                      <DollarSign size={24} />
-                      <Heading size="md" ml={2}>
-                        Swap Fee Change Preview
-                      </Heading>
-                    </Flex>
-                  </CardHeader>
-                  <CardBody>
-                    <StatGroup>
-                      <Stat>
-                        <StatLabel>Current Fee</StatLabel>
-                        <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>New Fee</StatLabel>
-                        <StatNumber>{newFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>Change</StatLabel>
-                        <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
-                        <StatHelpText>
-                          {feeChange === 0 ? (
-                            "No Change"
-                          ) : (
-                            <>
-                              <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
-                              {feeChange > 0 ? "Increase" : "Decrease"}
-                            </>
-                          )}
-                        </StatHelpText>
-                      </Stat>
-                    </StatGroup>
-                  </CardBody>
-                </Card>
-              )}
-            </GridItem>
           </Grid>
         </>
       )}
+
+      {selectedPool && newSwapFee && (
+        <ParameterChangeCard
+          title="Swap Fee Change Preview"
+          icon={<DollarSign size={24} />}
+          parameters={[
+            {
+              name: "Swap Fee",
+              currentValue: currentFee,
+              newValue: newFee,
+              precision: 4,
+              unit: "%",
+            },
+          ]}
+        />
+      )}
+
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         {!selectedPool ? (
           <Button variant="primary" isDisabled={true}>
@@ -491,7 +475,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
             Execute Fee Change
           </Button>
-        ) : isZeroAddress(selectedPool.swapFeeManager) ? (
+        ) : isAuthorizedPool ? (
           <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
             Generate Payload
           </Button>
