@@ -26,11 +26,12 @@ import {
   transformToHumanReadable,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { AddressBook } from "@/types/interfaces";
-import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { NETWORK_OPTIONS, WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
 import { getCategoryData, getNetworks, getSubCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 interface CreatePaymentProps {
   addressBook: AddressBook;
@@ -49,9 +50,38 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     [key: string]: string;
   }>({});
 
+  // Create network options for NetworkSelector
+  const [networkOptions, setNetworkOptions] = useState<Array<{
+    label: string;
+    apiID: string;
+    chainId: string;
+  }>>([]);
+
   useEffect(() => {
     const networks = getNetworks(addressBook);
     setAvailableNetworks(networks);
+
+    // Create network options for the NetworkSelector
+    const options = networks.map(network => {
+      // Find matching network in NETWORK_OPTIONS if possible
+      const matchingOption = NETWORK_OPTIONS.find(
+        option => option.apiID.toLowerCase() === network.toLowerCase()
+      );
+
+      if (matchingOption) {
+        return matchingOption;
+      } else {
+        // Fallback if no matching option found
+        return {
+          label: network.charAt(0).toUpperCase() + network.slice(1),
+          apiID: network.toUpperCase(),
+          chainId: "0" // Default chainId if not found
+        };
+      }
+    });
+
+    setNetworkOptions(options);
+
     if (networks.length > 0) {
       setSelectedNetwork(networks[0]);
     }
@@ -90,6 +120,28 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
 
     setSelectedMultisig("");
   }, [selectedNetwork, addressBook]);
+
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedApiID = e.target.value;
+
+    // Map API IDs to proper network names (lowercase for this component)
+    const networkMapping: Record<string, string> = {
+      "MAINNET": "mainnet",
+      "ARBITRUM": "arbitrum",
+      "POLYGON": "polygon",
+      "ZKEVM": "zkevm",
+      "OPTIMISM": "optimism",
+      "AVALANCHE": "avalanche",
+      "BASE": "base",
+      "GNOSIS": "gnosis",
+      "FRAXTAL": "fraxtal",
+      "MODE": "mode",
+    };
+
+    // Set the network using the mapping or fallback to lowercase version of the API ID
+    const mappedNetwork = networkMapping[selectedApiID] || selectedApiID.toLowerCase();
+    setSelectedNetwork(mappedNetwork);
+  };
 
   const handleRemovePayment = (index: number) => {
     const newPayments = [...payments];
@@ -168,6 +220,9 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       });
   };
 
+  // Filter out SONIC from network options
+  const filteredNetworkOptions = networkOptions.filter(network => network.apiID !== "SONIC" && network.apiID !== 'BSC');
+
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
@@ -184,13 +239,12 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
             <FormControl maxWidth="sm">
               <FormLabel>Select Network</FormLabel>
-              <Select value={selectedNetwork} onChange={e => setSelectedNetwork(e.target.value)}>
-                {availableNetworks.map(network => (
-                  <option key={network} value={network}>
-                    {network.toUpperCase()}
-                  </option>
-                ))}
-              </Select>
+              <NetworkSelector
+                networks={networks}
+                networkOptions={filteredNetworkOptions}
+                selectedNetwork={selectedNetwork}
+                handleNetworkChange={handleNetworkChange}
+              />
             </FormControl>
           </SimpleGrid>
         </Box>

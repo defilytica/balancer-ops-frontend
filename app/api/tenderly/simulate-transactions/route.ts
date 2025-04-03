@@ -47,7 +47,6 @@ interface BatchFile {
 
 async function getProviderForNetwork(chainId: string): Promise<ethers.Provider> {
   // Find the network info by chainId
-  console.log("chainId", chainId);
   const networkEntry = Object.entries(networks).find(([_, info]) => info.chainId === chainId);
 
   if (!networkEntry) {

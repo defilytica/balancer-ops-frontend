@@ -79,6 +79,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
   const getPrefillValues = () => {
     // Make sure we have a selected pool and new swap fee
@@ -235,7 +236,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         <GridItem colSpan={{ base: 12, md: 4 }}>
           <NetworkSelector
             networks={networks}
-            networkOptions={NETWORK_OPTIONS}
+            networkOptions={filteredNetworkOptions}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
             label="Network"

@@ -112,16 +112,17 @@ export default function AddRewardToGaugePage() {
 
   const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
-  // Updated network handling for NetworkSelector component
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedNetwork = e.target.value;
-    // Find the corresponding network option to get chainId, entrypoint and safeAddress
+    const selectedApiID = e.target.value;
+
+    // First find the network option by apiID
     const selectedOption = NETWORK_OPTIONS.find(
-      option => option.label === selectedNetwork
+      option => option.apiID === selectedApiID
     );
 
     if (selectedOption) {
-      setNetwork(selectedNetwork);
+      // Set the label as the network name
+      setNetwork(selectedOption.label);
       setEntrypoint(selectedOption.entrypoint);
       setSafeAddress(selectedOption.omniSig);
       setChainId(selectedOption.chainId);

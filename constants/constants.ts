@@ -35,6 +35,9 @@ export const GOVERNANCE_ADDRESS = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 export const V3_VAULT_ADDRESS = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
 
+// SONIC specific addresses that are not mapped in our address book
+export const SONIC_VAULT_EXPLORER = "0x6F6CD1a69A19d45df0C300A57829b21713637300"
+
 export const PAYLOAD_OPTIONS = [
   {
     href: "/payload-builder/create-payment",
@@ -382,7 +385,11 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
       address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
       decimals: 18,
     },
-    // Add more mainnet tokens as needed
+    {
+      symbol: "sUSDS",
+      address: "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD",
+      decimals: 18,
+    },
   ],
   arbitrum: [
     {
