@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Contract, JsonRpcProvider } from "ethers";
-import { networks } from "@/constants/constants";
+import { networks, SONIC_VAULT_EXPLORER } from "@/constants/constants";
 import { fetchAddressBook, getAddress } from "@/lib/data/maxis/addressBook";
 import { vaultExplorerABI } from "@/abi/VaultExplorer";
 
@@ -20,12 +20,17 @@ export async function GET(request: NextRequest) {
 
   let addressBook = await fetchAddressBook();
 
-  const vaultExplorerAddress = getAddress(
-    addressBook,
-    network,
-    "20241205-v3-vault-explorer",
-    "VaultExplorer",
-  );
+  let vaultExplorerAddress;
+  if (network.toLowerCase() === "sonic") {
+    vaultExplorerAddress = SONIC_VAULT_EXPLORER;
+  } else {
+    vaultExplorerAddress = getAddress(
+      addressBook,
+      network,
+      "20241205-v3-vault-explorer",
+      "VaultExplorer",
+    );
+  }
 
   if (!vaultExplorerAddress) {
     throw new Error("VaultExplorer address not found");

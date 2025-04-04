@@ -16,11 +16,7 @@ import {
   FormControl,
   FormLabel,
   Heading,
-  Input,
-  List,
   ListItem,
-  Select,
-  Spinner,
   useToast,
   Step,
   StepDescription,
@@ -36,23 +32,14 @@ import {
   RadioGroup,
   Stack,
   Tooltip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
   VStack,
-  Center,
   UnorderedList,
   OrderedList,
   HStack,
   Badge,
-  InputGroup,
-  InputRightElement,
-  IconButton,
   Link,
 } from "@chakra-ui/react";
 import { useAccount, useSwitchChain } from "wagmi";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ethers } from "ethers";
 import {
   GetPoolsDocument,
@@ -68,7 +55,7 @@ import {
   NETWORK_OPTIONS,
   networks,
 } from "@/constants/constants";
-import { CloseIcon, ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
 import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
 import { ChildGaugeFactory } from "@/abi/ChildGaugeFactory";
@@ -110,16 +97,15 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [weightCap, setWeightCap] = useState<WeightCapType>(GAUGE_WEIGHT_CAPS.TWO_PERCENT);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
   const [rootGaugeFromAPI, setRootGaugeFromAPI] = useState<GaugeRecipientData | null>(null);
   const [isLoadingRootGauge, setIsLoadingRootGauge] = useState(false);
 
   const toast = useToast();
   const { address } = useAccount();
-  const { openConnectModal } = useConnectModal();
 
   //Chain state switch
-  const { chains, switchChain } = useSwitchChain();
+  const { switchChain } = useSwitchChain();
+  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
   //Pool data
   const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
@@ -724,7 +710,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
           <Box maxW="300px">
             <NetworkSelector
               networks={networks}
-              networkOptions={NETWORK_OPTIONS}
+              networkOptions={filteredNetworkOptions}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
               label="Network"

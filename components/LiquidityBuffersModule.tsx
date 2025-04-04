@@ -79,7 +79,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const networkOptionsV3WithAll = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     const filteredNetworks = NETWORK_OPTIONS.filter(network =>
-      networksWithV3.includes(network.apiID.toLowerCase()),
+      networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
 
     return [

@@ -23,6 +23,7 @@ import {
   polygon,
   polygonZkEvm,
   sepolia,
+  sonic
 } from "wagmi/chains";
 import { http } from "viem";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
@@ -35,6 +36,7 @@ import BaseLogo from "@/public/imgs/base.svg";
 import zkevmLogo from "@/public/imgs/zkevm.svg";
 import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
+import sonicLogo from "@/public/imgs/sonic.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
@@ -104,6 +106,10 @@ const customChains = {
     ...fraxtal,
     iconUrl: fraxtalLogo.src,
   },
+  sonic: {
+    ...sonic,
+    iconUrl: sonicLogo.src,
+  },
 };
 
 export type WagmiConfig = ReturnType<typeof createConfig>;
@@ -120,6 +126,7 @@ export const wagmiConfig: Config = createConfig({
     customChains.sepolia,
     customChains.mode,
     customChains.fraxtal,
+    customChains.sonic,
   ],
   transports: {
     [mainnet.id]: http("https://eth.llamarpc.com"),
@@ -133,6 +140,7 @@ export const wagmiConfig: Config = createConfig({
     [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
     [mode.id]: http("https://mode.drpc.org"),
     [fraxtal.id]: http("https://fraxtal.drpc.org"),
+    [sonic.id]: http("https://sonic.drpc.org"),
   },
   connectors,
   ssr: true,
