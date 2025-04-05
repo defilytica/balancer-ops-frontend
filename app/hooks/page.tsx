@@ -4,7 +4,7 @@ import CustomCard from "@/components/CustomCard";
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 
 const CATEGORIZED_HOOKS = {
-  "Fee Configuration": ["hook-stable-surge"],
+  "Fee Configuration": ["hook-stable-surge", "hook-mev-capture"],
 };
 
 const HooksPage = () => {

@@ -144,6 +144,11 @@ query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
           maxSurgeFeePercentage
           surgeThresholdPercentage
         }
+        ... on MevTaxHookParams {
+          maxMevSwapFeePercentage
+          mevTaxMultiplier
+          mevTaxThreshold
+        }
       }
     }
   }

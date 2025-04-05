@@ -30,9 +30,9 @@ import {
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
-  generateStableSurgeParamsPayload,
+  generateMevCaptureParamsPayload,
   handleDownloadClick,
-  StableSurgeParamsInput,
+  MevCaptureParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
@@ -40,7 +40,7 @@ import {
   GetV3PoolsWithHooksQueryVariables,
   GetV3PoolsWithHooksDocument,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/interfaces";
+import { AddressBook, Pool, MevTaxHookParams, HookParams } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -50,30 +50,32 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
 import { ethers } from "ethers";
 import { isZeroAddress } from "@ethereumjs/util";
-import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
+import { mevCaptureHookAbi } from "@/abi/MevCaptureHook";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { PoolInfoCard } from "./PoolInfoCard";
-import { ParameterChangeCard } from "./ParameterChangeCard";
+import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
+import { Decimal } from "decimal.js-light";
+import { bn, fp, parseScientific } from "@/lib/utils/numbers";
 
-// Type guard for StableSurgeHookParams
-export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
+// Type guard for MevTaxHookParams
+export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
   if (!params) return false;
   return (
-    params.__typename === "StableSurgeHookParams" ||
-    ("maxSurgeFeePercentage" in params && "surgeThresholdPercentage" in params)
+    params.__typename === "MevTaxHookParams" ||
+    ("mevTaxThreshold" in params && "mevTaxMultiplier" in params)
   );
 };
 
-export default function StableSurgeConfigurationModule({
+export default function MevCaptureHookConfigurationModule({
   addressBook,
 }: {
   addressBook: AddressBook;
 }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
-  const [newMaxSurgeFeePercentage, setNewMaxSurgeFeePercentage] = useState<string>("");
-  const [newSurgeThresholdPercentage, setNewSurgeThresholdPercentage] = useState<string>("");
+  const [newMevTaxThreshold, setNewMevTaxThreshold] = useState<string>("");
+  const [newMevTaxMultiplier, setNewMevTaxMultiplier] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
@@ -115,7 +117,7 @@ export default function StableSurgeConfigurationModule({
     GetV3PoolsWithHooksQuery,
     GetV3PoolsWithHooksQueryVariables
   >(GetV3PoolsWithHooksDocument, {
-    variables: { chainIn: [selectedNetwork as any], tagIn: ["HOOKS_STABLESURGE"] },
+    variables: { chainIn: [selectedNetwork as any], tagIn: ["HOOKS_MEVCAPTURE"] },
     skip: !selectedNetwork,
   });
 
@@ -148,8 +150,8 @@ export default function StableSurgeConfigurationModule({
       setSelectedPool(null);
       setGeneratedPayload(null);
       setSearchTerm("");
-      setNewMaxSurgeFeePercentage("");
-      setNewSurgeThresholdPercentage("");
+      setNewMevTaxThreshold("");
+      setNewMevTaxMultiplier("");
       setIsCurrentWalletManager(false);
 
       // Find the corresponding chain ID for the selected network
@@ -190,11 +192,7 @@ export default function StableSurgeConfigurationModule({
   };
 
   const handleGenerateClick = async () => {
-    if (
-      !selectedPool ||
-      (!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage) ||
-      !selectedNetwork
-    ) {
+    if (!selectedPool || (!newMevTaxThreshold && !newMevTaxMultiplier) || !selectedNetwork) {
       toast({
         title: "Missing information",
         description: "Please select a network, pool, and enter at least one parameter to change",
@@ -232,13 +230,13 @@ export default function StableSurgeConfigurationModule({
         return;
       }
 
-      const input: StableSurgeParamsInput = {
+      const input: MevCaptureParamsInput = {
         poolAddress: selectedPool.address,
-        newMaxSurgeFeePercentage: newMaxSurgeFeePercentage || undefined,
-        newSurgeThresholdPercentage: newSurgeThresholdPercentage || undefined,
+        newMevTaxThreshold: newMevTaxThreshold || undefined,
+        newMevTaxMultiplier: newMevTaxMultiplier || undefined,
       };
 
-      const payload = generateStableSurgeParamsPayload(
+      const payload = generateMevCaptureParamsPayload(
         input,
         network.chainId,
         hookAddress,
@@ -249,37 +247,32 @@ export default function StableSurgeConfigurationModule({
     // Case 2: Current wallet is the fee manager
     else if (isCurrentWalletManager) {
       try {
-        // This try/catch is needed to handle errors that occur before toast.promise
-        // such as errors during transaction creation, contract method calls, etc.
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
 
         const hookContract = new ethers.Contract(
           selectedPool.hook?.address!!,
-          stableSurgeHookAbi,
+          mevCaptureHookAbi,
           signer,
         );
 
-        // Update max surge fee if provided
-        if (newMaxSurgeFeePercentage) {
-          const txMaxSurgeFeePercentage = BigInt(
-            parseFloat(newMaxSurgeFeePercentage) * 1e16,
-          ).toString();
-          const tx1 = await hookContract.setMaxSurgeFeePercentage(
+        // Update MEV tax threshold if provided
+        if (newMevTaxThreshold) {
+          const txMevTaxThreshold = fp(newMevTaxThreshold).toString();
+          const tx1 = await hookContract.setPoolMevTaxThreshold(
             selectedPool.address,
-            txMaxSurgeFeePercentage,
+            txMevTaxThreshold,
           );
 
-          // toast.promise handles errors during transaction confirmation (tx.wait)
           toast.promise(tx1.wait(), {
             success: {
               title: "Success",
-              description: `The max surge fee percentage has been updated to ${newMaxSurgeFeePercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The MEV tax threshold has been updated to ${newMevTaxThreshold}. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
             loading: {
-              title: "Updating max surge fee percentage",
+              title: "Updating MEV tax threshold",
               description: "Waiting for transaction confirmation... Please wait.",
             },
             error: (error: any) => ({
@@ -291,26 +284,23 @@ export default function StableSurgeConfigurationModule({
           });
         }
 
-        // Update surge threshold if provided
-        if (newSurgeThresholdPercentage) {
-          const txSurgeThresholdPercentage = BigInt(
-            parseFloat(newSurgeThresholdPercentage) * 1e16,
-          ).toString();
-          const tx2 = await hookContract.setSurgeThresholdPercentage(
+        // Update MEV tax multiplier if provided
+        if (newMevTaxMultiplier) {
+          const txMevTaxMultiplier = BigInt(newMevTaxMultiplier) * BigInt(1e18);
+          const tx2 = await hookContract.setPoolMevTaxMultiplier(
             selectedPool.address,
-            txSurgeThresholdPercentage,
+            txMevTaxMultiplier.toString(),
           );
 
-          // toast.promise handles errors during transaction confirmation (tx.wait)
           toast.promise(tx2.wait(), {
             success: {
               title: "Success",
-              description: `The surge threshold percentage has been updated to ${newSurgeThresholdPercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The MEV tax multiplier has been updated to ${newMevTaxMultiplier}. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
             loading: {
-              title: "Updating surge threshold percentage",
+              title: "Updating MEV tax multiplier",
               description: "Waiting for transaction confirmation... Please wait.",
             },
             error: (error: any) => ({
@@ -322,7 +312,6 @@ export default function StableSurgeConfigurationModule({
           });
         }
       } catch (error: any) {
-        // This catches errors that happen before toast.promise, such as transaction creation errors
         toast({
           title: "Error executing transactions",
           description: error.message,
@@ -343,28 +332,21 @@ export default function StableSurgeConfigurationModule({
     );
   }, [data?.poolGetPools, searchTerm]);
 
-  const currentMaxSurgeFee =
+  const currentMevTaxThreshold =
     selectedPool &&
-    selectedPool.hook?.type === "STABLE_SURGE" &&
+    selectedPool.hook?.type === "MEV_TAX" &&
     selectedPool.hook.params &&
-    isStableSurgeHookParams(selectedPool.hook.params)
-      ? parseFloat(selectedPool.hook.params.maxSurgeFeePercentage) * 100
-      : 0;
+    isMevTaxHookParams(selectedPool.hook.params)
+      ? selectedPool.hook.params.mevTaxThreshold
+      : "0";
 
-  const currentSurgeThreshold =
+  const currentMevTaxMultiplier =
     selectedPool &&
-    selectedPool.hook?.type === "STABLE_SURGE" &&
+    selectedPool.hook?.type === "MEV_TAX" &&
     selectedPool.hook.params &&
-    isStableSurgeHookParams(selectedPool.hook.params)
-      ? parseFloat(selectedPool.hook.params.surgeThresholdPercentage) * 100
-      : 0;
-
-  const newMaxFee = newMaxSurgeFeePercentage
-    ? parseFloat(newMaxSurgeFeePercentage)
-    : currentMaxSurgeFee;
-  const newThreshold = newSurgeThresholdPercentage
-    ? parseFloat(newSurgeThresholdPercentage)
-    : currentSurgeThreshold;
+    isMevTaxHookParams(selectedPool.hook.params)
+      ? selectedPool.hook.params.mevTaxMultiplier
+      : "0";
 
   const isAuthorizedPool = useMemo(() => {
     if (!selectedPool?.swapFeeManager) return false;
@@ -377,7 +359,7 @@ export default function StableSurgeConfigurationModule({
   return (
     <Container maxW="container.lg">
       <Heading as="h2" size="lg" variant="special" mb={6}>
-        Configure StableSurge Hook
+        Configure MEV Capture Hook
       </Heading>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -484,7 +466,7 @@ export default function StableSurgeConfigurationModule({
                 <AlertDescription>
                   {isAuthorizedPool
                     ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+                    : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
                 </AlertDescription>
               </Alert>
             </Box>
@@ -496,13 +478,12 @@ export default function StableSurgeConfigurationModule({
                 isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
                 mb={4}
               >
-                <FormLabel>New Max Surge Fee Percentage</FormLabel>
+                <FormLabel>New MEV Tax Threshold</FormLabel>
                 <Input
                   type="number"
-                  step="0.01"
-                  value={newMaxSurgeFeePercentage}
-                  onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
-                  placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
+                  value={newMevTaxThreshold}
+                  onChange={e => setNewMevTaxThreshold(e.target.value)}
+                  placeholder={`Current: ${currentMevTaxThreshold}`}
                   onWheel={e => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
@@ -513,13 +494,13 @@ export default function StableSurgeConfigurationModule({
                 isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
                 mb={4}
               >
-                <FormLabel>New Surge Threshold Percentage</FormLabel>
+                <FormLabel>New MEV Tax Multiplier</FormLabel>
                 <Input
                   type="number"
-                  step="0.01"
-                  value={newSurgeThresholdPercentage}
-                  onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
-                  placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
+                  step="1"
+                  value={newMevTaxMultiplier}
+                  onChange={e => setNewMevTaxMultiplier(e.target.value)}
+                  placeholder={`Current: ${currentMevTaxMultiplier}`}
                   onWheel={e => (e.target as HTMLInputElement).blur()}
                 />
               </FormControl>
@@ -528,30 +509,31 @@ export default function StableSurgeConfigurationModule({
         </>
       )}
 
-      {selectedPool && (newMaxSurgeFeePercentage || newSurgeThresholdPercentage) && (
-        <ParameterChangeCard
+      {selectedPool && (newMevTaxThreshold || newMevTaxMultiplier) && (
+        <ParameterChangePreviewCard
           title="Hook Parameters Change Preview"
           icon={<DollarSign size={24} />}
           parameters={[
-            ...(newMaxSurgeFeePercentage
+            ...(newMevTaxThreshold
               ? [
                   {
-                    name: "Max Surge Fee",
-                    currentValue: currentMaxSurgeFee,
-                    newValue: newMaxFee,
-                    precision: 2,
-                    unit: "%",
+                    name: "MEV Tax Threshold",
+                    currentValue: currentMevTaxThreshold,
+                    newValue: newMevTaxThreshold,
+                    difference: new Decimal(newMevTaxThreshold)
+                      .minus(new Decimal(currentMevTaxThreshold))
+                      .toString(),
+                    formatValue: parseScientific,
                   },
                 ]
               : []),
-            ...(newSurgeThresholdPercentage
+            ...(newMevTaxMultiplier
               ? [
                   {
-                    name: "Surge Threshold",
-                    currentValue: currentSurgeThreshold,
-                    newValue: newThreshold,
-                    precision: 2,
-                    unit: "%",
+                    name: "MEV Tax Multiplier",
+                    currentValue: currentMevTaxMultiplier.toString(),
+                    newValue: newMevTaxMultiplier,
+                    difference: (bn(newMevTaxMultiplier) - bn(currentMevTaxMultiplier)).toString(),
                   },
                 ]
               : []),
@@ -567,7 +549,7 @@ export default function StableSurgeConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+            isDisabled={!newMevTaxThreshold && !newMevTaxMultiplier}
           >
             Execute Parameter Change
           </Button>
@@ -575,7 +557,7 @@ export default function StableSurgeConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+            isDisabled={!newMevTaxThreshold && !newMevTaxMultiplier}
           >
             Generate Payload
           </Button>
@@ -619,7 +601,7 @@ export default function StableSurgeConfigurationModule({
           <OpenPRButton onClick={handleOpenPRModal} />
           <Box mt={8} />
           <PRCreationModal
-            type={"hook-stable-surge"}
+            type={"hook-mev-capture"}
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}

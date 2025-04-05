@@ -183,6 +183,19 @@ export const PAYLOAD_OPTIONS = [
     prNamePlaceholder: "Configure StableSurge on Pool XYZ",
     prTypePath: "MaxiOps/PoolParameterChanges/PoolStableSurgeParams/",
   },
+  {
+    href: "/hooks/mev-capture",
+    key: "hook-mev-capture",
+    label: "Configure MEV Capture hook",
+    button_label: "Configure MEV Capture",
+    description:
+      "Configure MevCapture hook on a pool deployed on Balancer v3, both for EOAs and under DAO management",
+    icon: TbSettingsDollar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/mevcapture-config",
+    prNamePlaceholder: "Configure MEV Capture on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolMevCaptureParams/",
+  },
 ];
 
 //TODO: refactor to reference address book
