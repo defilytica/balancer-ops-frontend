@@ -123,6 +123,7 @@ query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
     orderBy: totalLiquidity
     orderDirection: desc
   ) {
+    id
     address
     chain
     protocolVersion

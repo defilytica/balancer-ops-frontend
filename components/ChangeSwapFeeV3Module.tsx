@@ -55,7 +55,7 @@ import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
-import { ParameterChangeCard } from "./ParameterChangeCard";
+import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -451,16 +451,16 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       )}
 
       {selectedPool && newSwapFee && (
-        <ParameterChangeCard
+        <ParameterChangePreviewCard
           title="Swap Fee Change Preview"
           icon={<DollarSign size={24} />}
           parameters={[
             {
               name: "Swap Fee",
-              currentValue: currentFee,
-              newValue: newFee,
-              precision: 4,
-              unit: "%",
+              currentValue: currentFee.toFixed(4),
+              newValue: newFee.toFixed(4),
+              difference: (newFee - currentFee).toFixed(4),
+              formatValue: (value: string) => `${value}%`,
             },
           ]}
         />

@@ -18,12 +18,6 @@ import {
   GridItem,
   Heading,
   Input,
-  List,
-  ListItem,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   Spinner,
   useDisclosure,
   useToast,
@@ -57,6 +51,7 @@ import { PoolInfoCard } from "./PoolInfoCard";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import { Decimal } from "decimal.js-light";
 import { bn, fp, parseScientific } from "@/lib/utils/numbers";
+import PoolSelector from "./PoolSelector";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -77,7 +72,6 @@ export default function MevCaptureHookConfigurationModule({
   const [newMevTaxThreshold, setNewMevTaxThreshold] = useState<string>("");
   const [newMevTaxMultiplier, setNewMevTaxMultiplier] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
@@ -149,7 +143,6 @@ export default function MevCaptureHookConfigurationModule({
       setSelectedMultisig(getMultisigForNetwork(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
-      setSearchTerm("");
       setNewMevTaxThreshold("");
       setNewMevTaxMultiplier("");
       setIsCurrentWalletManager(false);
@@ -172,10 +165,16 @@ export default function MevCaptureHookConfigurationModule({
     [getMultisigForNetwork, switchChain, toast],
   );
 
-  // Check manager status when pool is selected
-  const handlePoolSelection = useCallback(async (pool: Pool) => {
-    setSelectedPool(pool); // Set pool immediately for UI update
-  }, []);
+  const handlePoolSelect = (pool: Pool) => {
+    setSelectedPool(pool);
+  };
+
+  const clearPoolSelection = () => {
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewMevTaxThreshold("");
+    setNewMevTaxMultiplier("");
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -323,15 +322,6 @@ export default function MevCaptureHookConfigurationModule({
     }
   };
 
-  const filteredPools = useMemo(() => {
-    if (!data?.poolGetPools) return [];
-    return data.poolGetPools.filter(
-      pool =>
-        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [data?.poolGetPools, searchTerm]);
-
   const currentMevTaxThreshold =
     selectedPool &&
     selectedPool.hook?.type === "MEV_TAX" &&
@@ -374,45 +364,16 @@ export default function MevCaptureHookConfigurationModule({
         </GridItem>
 
         <GridItem colSpan={{ base: 12, md: 8 }}>
-          <FormControl isDisabled={!selectedNetwork}>
-            <FormLabel>Select Pool</FormLabel>
-            <Popover>
-              <PopoverTrigger>
-                <Input
-                  value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
-                  placeholder="Search and select a pool"
-                  readOnly
-                />
-              </PopoverTrigger>
-              <PopoverContent width="100%">
-                <PopoverBody>
-                  <Input
-                    placeholder="Search pools..."
-                    mb={2}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                  <List maxH="200px" overflowY="auto">
-                    {filteredPools.map(pool => (
-                      <ListItem
-                        key={pool.address}
-                        onClick={() => {
-                          handlePoolSelection(pool as unknown as Pool);
-                          onClose();
-                        }}
-                        cursor="pointer"
-                        _hover={{ bg: "gray.100" }}
-                        p={2}
-                      >
-                        {pool.name} - {pool.address.slice(0, 6)}...
-                        {pool.address.slice(-4)}
-                      </ListItem>
-                    ))}
-                  </List>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
-          </FormControl>
+          {selectedNetwork && (
+            <PoolSelector
+              pools={data?.poolGetPools}
+              loading={loading}
+              error={error}
+              selectedPool={selectedPool}
+              onPoolSelect={pool => handlePoolSelect(pool as Pool)}
+              onClearSelection={clearPoolSelection}
+            />
+          )}
         </GridItem>
       </Grid>
 
