@@ -28,7 +28,7 @@ import {
 import { AddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
-import { getCategoryData, getNetworks, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -58,32 +58,24 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   }>>([]);
 
   useEffect(() => {
-    const networks = getNetworks(addressBook);
-    setAvailableNetworks(networks);
+    // Directly determine available networks from token whitelist
+    const availableNetworks = Object.keys(WHITELISTED_PAYMENT_TOKENS);
+    setAvailableNetworks(availableNetworks);
 
-    // Create network options for the NetworkSelector
-    const options = networks.map(network => {
-      // Find matching network in NETWORK_OPTIONS if possible
-      const matchingOption = NETWORK_OPTIONS.find(
-        option => option.apiID.toLowerCase() === network.toLowerCase()
-      );
-
-      if (matchingOption) {
-        return matchingOption;
-      } else {
-        // Fallback if no matching option found
-        return {
-          label: network.charAt(0).toUpperCase() + network.slice(1),
-          apiID: network.toUpperCase(),
-          chainId: "0" // Default chainId if not found
-        };
-      }
+    // Create simplified network options for the NetworkSelector
+    const options = availableNetworks.map(network => {
+      // Standardize format: internal value is lowercase, display value is capitalized
+      return {
+        label: network.charAt(0).toUpperCase() + network.slice(1), // First letter capitalized for display
+        apiID: network, // Keep the original network name (lowercase)
+        chainId: "0" // Default chainId if not found
+      };
     });
 
     setNetworkOptions(options);
 
-    if (networks.length > 0) {
-      setSelectedNetwork(networks[0]);
+    if (availableNetworks.length > 0) {
+      setSelectedNetwork(availableNetworks[0]);
     }
   }, [addressBook]);
 
@@ -121,26 +113,10 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     setSelectedMultisig("");
   }, [selectedNetwork, addressBook]);
 
+  // Simplified handleNetworkChange - no conversion needed
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedApiID = e.target.value;
-
-    // Map API IDs to proper network names (lowercase for this component)
-    const networkMapping: Record<string, string> = {
-      "MAINNET": "mainnet",
-      "ARBITRUM": "arbitrum",
-      "POLYGON": "polygon",
-      "ZKEVM": "zkevm",
-      "OPTIMISM": "optimism",
-      "AVALANCHE": "avalanche",
-      "BASE": "base",
-      "GNOSIS": "gnosis",
-      "FRAXTAL": "fraxtal",
-      "MODE": "mode",
-    };
-
-    // Set the network using the mapping or fallback to lowercase version of the API ID
-    const mappedNetwork = networkMapping[selectedApiID] || selectedApiID.toLowerCase();
-    setSelectedNetwork(mappedNetwork);
+    // Since our apiID is already in the correct format (lowercase), we can use it directly
+    setSelectedNetwork(e.target.value);
   };
 
   const handleRemovePayment = (index: number) => {
@@ -220,8 +196,10 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       });
   };
 
-  // Filter out SONIC from network options
-  const filteredNetworkOptions = networkOptions.filter(network => network.apiID !== "SONIC" && network.apiID !== 'BSC');
+  // Filter out SONIC and BSC from network options - use lowercase for consistency
+  const filteredNetworkOptions = networkOptions.filter(network =>
+    network.apiID !== "sonic" && network.apiID !== 'bsc'
+  );
 
   return (
     <Container maxW="container.lg">

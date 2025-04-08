@@ -14,7 +14,7 @@ import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
 import { TbSettingsDollar } from "react-icons/tb";
-import { NetworkInfo } from "@/types/types";
+import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
 
 export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
@@ -484,3 +484,18 @@ export const GAUGE_WEIGHT_CAPS = {
   TEN_PERCENT: "100000000000000000", // 10% cap
   UNCAPPED: "1000000000000000000", // No cap
 } as const;
+
+
+// Define a consistent mapping of network IDs to display names
+export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
+  mainnet: "Ethereum",
+  arbitrum: "Arbitrum",
+  polygon: "Polygon",
+  zkevm: "Polygon ZKEVM",
+  optimism: "Optimism",
+  avalanche: "Avalanche",
+  base: "Base",
+  gnosis: "Gnosis",
+  fraxtal: "Fraxtal",
+  mode: "Mode"
+};

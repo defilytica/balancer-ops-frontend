@@ -17,7 +17,6 @@ import {
   List,
   ListIcon,
   ListItem,
-  Select,
   Text,
   Card,
   useToast,
@@ -25,7 +24,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -33,13 +32,14 @@ import {
   generateHumanReadableForEnableGauge,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { GAUGE_NETWORK_MAP, networks } from "@/constants/constants";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { GaugeNetworkId } from "@/types/types";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -62,7 +62,13 @@ export default function EnableGaugePage() {
     setHumanReadableText(text);
   };
 
-  const networkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC")
+  // Simplified network options to handle gauge adder special use-case
+  const networkOptions = Object.entries(GAUGE_NETWORK_MAP).map(([apiID, label]) => ({
+    label,
+    apiID, // Using the key directly
+    chainId: "0" // Default chainId
+  })).filter(network => network.apiID !== "sonic");
+
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {
@@ -191,22 +197,16 @@ export default function EnableGaugePage() {
                   selectedNetwork={gauge.network}
                   handleNetworkChange={e => {
                     const updatedGauges = [...gauges];
+                    const selectedApiID = e.target.value;
+                    // Add type checking before accessing the map
+                    if (selectedApiID in GAUGE_NETWORK_MAP) {
+                      // Using type assertion to tell TypeScript this is a valid key
+                      updatedGauges[index].network = GAUGE_NETWORK_MAP[selectedApiID as GaugeNetworkId];
+                    } else {
+                      // Fallback for any network IDs not in our map
+                      updatedGauges[index].network = selectedApiID;
+                    }
 
-                    // Map API IDs to proper network names
-                    const networkMapping: Record<string, string> = {
-                      "MAINNET": "Ethereum",
-                      "ARBITRUM": "Arbitrum",
-                      "POLYGON": "Polygon",
-                      "ZKEVM": "Polygon ZKEVM",
-                      "OPTIMISM": "Optimism",
-                      "AVALANCHE": "Avalanche",
-                      "BASE": "Base",
-                      "GNOSIS": "Gnosis",
-                      "FRAXTAL": "Fraxtal",
-                      "MODE": "Mode",
-                    };
-
-                    updatedGauges[index].network = networkMapping[e.target.value] || e.target.value;
                     setGauges(updatedGauges);
                   }}
                 />
