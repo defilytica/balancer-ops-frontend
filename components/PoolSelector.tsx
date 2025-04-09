@@ -35,17 +35,20 @@ interface PoolSelectorProps {
 }
 
 const PoolSelector = ({
-  pools,
-  loading,
-  error,
-  selectedPool,
-  onPoolSelect,
-  onClearSelection,
-}: PoolSelectorProps) => {
+                        pools,
+                        loading,
+                        error,
+                        selectedPool,
+                        onPoolSelect,
+                        onClearSelection,
+                      }: PoolSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
-  const dropdownBg = useColorModeValue("white", colors.gray[700]);
+
+  // Color modes
+  const dropdownBgColor = useColorModeValue("white", "gray.700");
+  const hoverBgColor = useColorModeValue("gray.100", "gray.600")
 
   // Close dropdown when clicking outside
   useOutsideClick({
@@ -144,7 +147,7 @@ const PoolSelector = ({
             mt={1}
             borderRadius="md"
             boxShadow="lg"
-            bg={dropdownBg}
+            bg={dropdownBgColor}
             borderWidth="1px"
             maxH="300px"
             overflowY="auto"
@@ -186,7 +189,7 @@ const PoolSelector = ({
                       setSearchTerm("");
                     }}
                     cursor="pointer"
-                    _hover={{ bg: "gray.600" }}
+                    _hover={{ bg: hoverBgColor }}
                     p={3}
                     borderBottomWidth="1px"
                     borderBottomColor="gray.500"
