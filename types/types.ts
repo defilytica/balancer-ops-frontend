@@ -17,3 +17,5 @@ export type SortDirection = 'asc' | 'desc';
 
 // Table: Define column type for sorting
 export type SortableColumn = keyof GaugeData;
+
+export type GaugeNetworkId = 'mainnet' | 'arbitrum' | 'polygon' | 'zkevm' | 'optimism' | 'avalanche' | 'base' | 'gnosis' | 'fraxtal' | 'mode';

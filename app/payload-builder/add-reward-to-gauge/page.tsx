@@ -18,7 +18,6 @@ import {
   List,
   ListIcon,
   ListItem,
-  Select,
   SimpleGrid,
   Text,
   useDisclosure,
@@ -40,12 +39,13 @@ import {
   generateHumanReadableAddReward,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 export interface AddRewardInput {
   targetGauge: string;
@@ -110,10 +110,19 @@ export default function AddRewardToGaugePage() {
     }
   };
 
-  const handleNetworkChange = (selectedNetwork: string) => {
-    const selectedOption = NETWORK_OPTIONS.find(option => option.label === selectedNetwork);
+  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedApiID = e.target.value;
+
+    // First find the network option by apiID
+    const selectedOption = NETWORK_OPTIONS.find(
+      option => option.apiID === selectedApiID
+    );
+
     if (selectedOption) {
-      setNetwork(selectedNetwork);
+      // Set the label as the network name
+      setNetwork(selectedOption.label);
       setEntrypoint(selectedOption.entrypoint);
       setSafeAddress(selectedOption.omniSig);
       setChainId(selectedOption.chainId);
@@ -260,15 +269,14 @@ export default function AddRewardToGaugePage() {
       </Alert>
 
       <Card p={4} mb="10px">
-        <FormControl mb={4} maxWidth="md">
-          <FormLabel>Network</FormLabel>
-          <Select value={network} onChange={e => handleNetworkChange(e.target.value)}>
-            {NETWORK_OPTIONS.map(option => (
-              <option key={option.label} value={option.label}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+        <FormControl mb={4} maxWidth="250px">
+          <NetworkSelector
+            networks={networks}
+            networkOptions={filteredNetworkOptions}
+            selectedNetwork={network}
+            handleNetworkChange={handleNetworkChange}
+            label="Network"
+          />
         </FormControl>
 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={4}>

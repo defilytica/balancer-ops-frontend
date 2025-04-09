@@ -32,7 +32,6 @@ query GetBoostedPools($chainIn: [GqlChain!]) {
       protocolVersionIn: [3]
       tagIn: ["BOOSTED"]
       chainIn: $chainIn
-      chainNotIn: SONIC
     }
     orderBy: totalLiquidity
     orderDirection: desc
@@ -77,7 +76,6 @@ query GetV3Pools($chainIn: [GqlChain!]) {
         where: {
             chainIn:$chainIn
             protocolVersionIn: [3]
-            chainNotIn: SONIC
         }
         orderBy: totalLiquidity
         orderDirection: desc
@@ -119,7 +117,10 @@ query GetV3Pools($chainIn: [GqlChain!]) {
 
 query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
   poolGetPools(
-    where: { chainIn: $chainIn, protocolVersionIn: [3], chainNotIn: SONIC, tagIn: $tagIn }
+    where: {
+        chainIn: $chainIn,
+        protocolVersionIn: [3],
+        tagIn: $tagIn }
     orderBy: totalLiquidity
     orderDirection: desc
   ) {
