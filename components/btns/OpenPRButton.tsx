@@ -25,11 +25,7 @@ const OpenPRButton = ({ onClick, network }: OpenPRButtonProps) => {
   }
 
   return (
-    <Tooltip
-      label={tooltipMessage}
-      isDisabled={isAuthenticated && !isSonic}
-      hasArrow
-    >
+    <Tooltip label={tooltipMessage} isDisabled={isAuthenticated && !isSonic} hasArrow>
       <Button
         leftIcon={<VscGithubInverted />}
         onClick={onClick}

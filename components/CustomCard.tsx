@@ -8,7 +8,6 @@ import {
   Flex,
   Heading,
   Text,
-  Avatar,
   Button,
   useColorModeValue,
 } from "@chakra-ui/react";

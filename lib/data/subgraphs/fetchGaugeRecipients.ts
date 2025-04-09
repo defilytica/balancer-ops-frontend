@@ -1,5 +1,8 @@
 // API endpoint for the GraphQL subgraph
-const SUBGRAPH_URL = 'https://gateway-arbitrum.network.thegraph.com/api/' + process.env.GRAPH_API_KEY + '/subgraphs/id/4sESujoqmztX6pbichs4wZ1XXyYrkooMuHA8sKkYxpTn';
+const SUBGRAPH_URL =
+  "https://gateway-arbitrum.network.thegraph.com/api/" +
+  process.env.GRAPH_API_KEY +
+  "/subgraphs/id/4sESujoqmztX6pbichs4wZ1XXyYrkooMuHA8sKkYxpTn";
 
 // GraphQL query
 const GAUGE_RECIPIENTS_QUERY = `
@@ -23,9 +26,9 @@ const GAUGE_RECIPIENTS_QUERY = `
 export async function fetchGaugeRecipientsFromSubgraph(recipient: string) {
   // Execute the GraphQL query
   const response = await fetch(SUBGRAPH_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       query: GAUGE_RECIPIENTS_QUERY,

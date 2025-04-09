@@ -101,7 +101,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         <MenuList width="100%">
           {networkOptions.map(network => (
             <MenuItem
-              key={network.chainId}
+              key={network.chainId + network.apiID}
               onClick={() => onSelectNetwork(network.apiID)}
               bg={selectedNetwork === network.apiID ? "gray.600" : "transparent"}
             >

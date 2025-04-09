@@ -14,7 +14,7 @@ export async function fetchGaugeRecipients(recipient: string) {
     const data = await response.json();
     return data.gauges;
   } catch (error) {
-    console.error('Error fetching gauge recipients:', error);
+    console.error("Error fetching gauge recipients:", error);
     throw error;
   }
 }

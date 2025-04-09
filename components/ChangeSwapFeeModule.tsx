@@ -20,7 +20,6 @@ import {
   Input,
   List,
   ListItem,
-  Select,
   Spinner,
   useToast,
   useDisclosure,
@@ -54,7 +53,6 @@ import { Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
-import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
@@ -110,10 +108,9 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
       prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
-      prefillFilename: filename // Using the new naming convention without path prefix
+      prefillFilename: filename, // Using the new naming convention without path prefix
     };
   };
-
 
   const getMultisigForNetwork = useCallback(
     (network: string) => {

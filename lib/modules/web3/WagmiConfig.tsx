@@ -23,7 +23,7 @@ import {
   polygon,
   polygonZkEvm,
   sepolia,
-  sonic
+  sonic,
 } from "wagmi/chains";
 import { http } from "viem";
 import MainnetLogo from "@/public/imgs/mainnet.svg";

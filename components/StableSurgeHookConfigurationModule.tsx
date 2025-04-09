@@ -116,9 +116,9 @@ export default function StableSurgeHookConfigurationModule({
   const getMultisigForNetwork = useCallback(
     (network: string) => {
       // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === 'sonic') {
+      if (network.toLowerCase() === "sonic") {
         const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic? sonic?.maxiSafe : "";
+        return sonic ? sonic?.maxiSafe : "";
       }
       const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
       if (multisigs && multisigs["maxi_omni"]) {
@@ -136,7 +136,9 @@ export default function StableSurgeHookConfigurationModule({
 
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network => (networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === 'SONIC'));
+    return NETWORK_OPTIONS.filter(
+      network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
+    );
   }, [addressBook]);
 
   const handleNetworkChange = useCallback(

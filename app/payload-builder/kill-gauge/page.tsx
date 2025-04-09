@@ -28,9 +28,9 @@ import {
   CopyIcon,
   DeleteIcon,
   DownloadIcon,
-  AttachmentIcon
+  AttachmentIcon,
 } from "@chakra-ui/icons";
-import Papa from 'papaparse';
+import Papa from "papaparse";
 import React, { useState, useRef } from "react";
 import {
   copyJsonToClipboard,
@@ -88,7 +88,7 @@ export default function KillGaugePage() {
       header: true,
       skipEmptyLines: true,
       dynamicTyping: true,
-      complete: (results) => {
+      complete: results => {
         try {
           // Check if there are parse errors
           if (results.errors && results.errors.length > 0) {
@@ -97,7 +97,7 @@ export default function KillGaugePage() {
 
           // Check if we have data
           if (!results.data || results.data.length === 0) {
-            throw new Error('The CSV file appears to be empty');
+            throw new Error("The CSV file appears to be empty");
           }
 
           // Type-cast the data array to work with it safely
@@ -108,9 +108,7 @@ export default function KillGaugePage() {
           const columns = Object.keys(firstRow);
 
           // Find the Root Gauge column (case-insensitive)
-          const rootGaugeColumn = columns.find(col =>
-            col.toLowerCase().trim() === 'root gauge'
-          );
+          const rootGaugeColumn = columns.find(col => col.toLowerCase().trim() === "root gauge");
 
           if (!rootGaugeColumn) {
             throw new Error('Could not find "Root Gauge" column in the CSV');
@@ -118,8 +116,8 @@ export default function KillGaugePage() {
 
           // Extract all root gauge values
           const rootGauges = typedData
-            .map(row => String(row[rootGaugeColumn] || '').trim())
-            .filter(gauge => gauge !== '');
+            .map(row => String(row[rootGaugeColumn] || "").trim())
+            .filter(gauge => gauge !== "");
 
           // Update gauges state with values from CSV
           if (rootGauges.length > 0) {
@@ -166,7 +164,7 @@ export default function KillGaugePage() {
           setIsProcessingCsv(false);
         }
       },
-      error: (error) => {
+      error: error => {
         toast({
           title: "Error parsing CSV",
           description: error.message,
@@ -175,7 +173,7 @@ export default function KillGaugePage() {
           isClosable: true,
         });
         setIsProcessingCsv(false);
-      }
+      },
     });
   };
 
@@ -198,11 +196,14 @@ export default function KillGaugePage() {
     let gaugeIdsList = "";
     if (validGauges.length <= 3) {
       // If 3 or fewer gauges, show all IDs
-      gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(', ');
+      gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(", ");
     } else {
       // If more than 3, show the first 3 and indicate there are more
-      gaugeIdsList = validGauges.slice(0, 3).map(g => g.id.substring(0, 8)).join(', ') +
-        ` and ${validGauges.length - 3} more`;
+      gaugeIdsList =
+        validGauges
+          .slice(0, 3)
+          .map(g => g.id.substring(0, 8))
+          .join(", ") + ` and ${validGauges.length - 3} more`;
     }
 
     // Create just the filename without the path prefix - the path will come from the PAYLOAD_OPTIONS config
@@ -210,12 +211,11 @@ export default function KillGaugePage() {
 
     return {
       prefillBranchName: `feature/kill-gauges-${firstGaugeId}-${uniqueId}`,
-      prefillPrName: `Kill ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} from the veBAL system`,
-      prefillDescription: `This PR removes ${validGauges.length} gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) from the veBAL system.`,
-      prefillFilename: filename
+      prefillPrName: `Kill ${validGauges.length} Gauge${validGauges.length !== 1 ? "s" : ""} from the veBAL system`,
+      prefillDescription: `This PR removes ${validGauges.length} gauge${validGauges.length !== 1 ? "s" : ""} (${gaugeIdsList}) from the veBAL system.`,
+      prefillFilename: filename,
     };
   };
-
 
   return (
     <Container maxW="container.lg">
@@ -239,7 +239,9 @@ export default function KillGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Upload a CSV file containing gauge data to automatically populate gauge IDs. At minimum, a column labeled "Root Gauge" has to be present for successful parsing.
+                Upload a CSV file containing gauge data to automatically populate gauge IDs. At
+                minimum, a column labeled &quot;Root Gauge&quot; has to be present for successful
+                parsing.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
@@ -296,8 +298,8 @@ export default function KillGaugePage() {
                   id="auto-generate"
                   type="checkbox"
                   checked={autoGeneratePayload}
-                  onChange={(e) => setAutoGeneratePayload(e.target.checked)}
-                  style={{ marginLeft: '8px' }}
+                  onChange={e => setAutoGeneratePayload(e.target.checked)}
+                  style={{ marginLeft: "8px" }}
                 />
               </FormControl>
             </Flex>
@@ -313,7 +315,7 @@ export default function KillGaugePage() {
               Loaded Gauge Summary
             </Text>
             <Text fontSize="sm" mb="8px">
-              {gauges.length} gauge{gauges.length !== 1 ? 's' : ''} loaded from CSV
+              {gauges.length} gauge{gauges.length !== 1 ? "s" : ""} loaded from CSV
             </Text>
             <Button
               size="sm"

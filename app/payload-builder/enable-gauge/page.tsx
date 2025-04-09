@@ -63,12 +63,13 @@ export default function EnableGaugePage() {
   };
 
   // Simplified network options to handle gauge adder special use-case
-  const networkOptions = Object.entries(GAUGE_NETWORK_MAP).map(([apiID, label]) => ({
-    label,
-    apiID, // Using the key directly
-    chainId: "0" // Default chainId
-  })).filter(network => network.apiID !== "sonic");
-
+  const networkOptions = Object.entries(GAUGE_NETWORK_MAP)
+    .map(([apiID, label]) => ({
+      label,
+      apiID, // Using the key directly
+      chainId: "0", // Default chainId
+    }))
+    .filter(network => network.apiID !== "sonic");
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {
@@ -79,10 +80,10 @@ export default function EnableGaugePage() {
     const uniqueId = generateUniqueId();
 
     // Get first gauge ID for naming
-    const firstGaugeId = validGauges[0].id.substring(0, 8);;
+    const firstGaugeId = validGauges[0].id.substring(0, 8);
 
     // Create a comma-separated list of gauge IDs for the description
-    const gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(', ');
+    const gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(", ");
 
     // Get the network(s)
     const networksMap: Record<string, boolean> = {};
@@ -94,9 +95,9 @@ export default function EnableGaugePage() {
 
     return {
       prefillBranchName: `feature/enable-gauge-${firstGaugeId}-${uniqueId}`,
-      prefillPrName: `Enable ${validGauges.length} Gauge${validGauges.length !== 1 ? 's' : ''} on ${networkText}`,
-      prefillDescription: `This PR enables gauge${validGauges.length !== 1 ? 's' : ''} (${gaugeIdsList}) for BAL rewards on ${networkText}.`,
-      prefillFilename: `enable-gauges-${firstGaugeId}-${uniqueId}.json`
+      prefillPrName: `Enable ${validGauges.length} Gauge${validGauges.length !== 1 ? "s" : ""} on ${networkText}`,
+      prefillDescription: `This PR enables gauge${validGauges.length !== 1 ? "s" : ""} (${gaugeIdsList}) for BAL rewards on ${networkText}.`,
+      prefillFilename: `enable-gauges-${firstGaugeId}-${uniqueId}.json`,
     };
   };
 
@@ -136,11 +137,13 @@ export default function EnableGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Input field "Root Gauge" refers to the root gauge contract from Ethereum Mainnet.
+                Input field &quot;Root Gauge&quot; refers to the root gauge contract from Ethereum
+                Mainnet.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                Input field "Network" refers to the chain, where the target pool is deployed.
+                Input field &quot;Network&quot; refers to the chain, where the target pool is
+                deployed.
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
@@ -201,7 +204,8 @@ export default function EnableGaugePage() {
                     // Add type checking before accessing the map
                     if (selectedApiID in GAUGE_NETWORK_MAP) {
                       // Using type assertion to tell TypeScript this is a valid key
-                      updatedGauges[index].network = GAUGE_NETWORK_MAP[selectedApiID as GaugeNetworkId];
+                      updatedGauges[index].network =
+                        GAUGE_NETWORK_MAP[selectedApiID as GaugeNetworkId];
                     } else {
                       // Fallback for any network IDs not in our map
                       updatedGauges[index].network = selectedApiID;

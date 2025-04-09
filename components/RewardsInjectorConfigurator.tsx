@@ -190,40 +190,42 @@ function RewardsInjectorConfigurator({
 
     // Determine what changed between original and current config
     const addedGauges = currentConfig.filter(
-      gauge => !gauges.some(g => g.gaugeAddress === gauge.gaugeAddress)
+      gauge => !gauges.some(g => g.gaugeAddress === gauge.gaugeAddress),
     ).length;
 
     const removedGauges = gauges.filter(
-      gauge => !currentConfig.some(g => g.gaugeAddress === gauge.gaugeAddress)
+      gauge => !currentConfig.some(g => g.gaugeAddress === gauge.gaugeAddress),
     ).length;
 
     const modifiedGauges = currentConfig.filter(gauge => {
       const original = gauges.find(g => g.gaugeAddress === gauge.gaugeAddress);
-      return original && (
-        original.amountPerPeriod !== gauge.amountPerPeriod ||
-        original.maxPeriods !== gauge.maxPeriods
+      return (
+        original &&
+        (original.amountPerPeriod !== gauge.amountPerPeriod ||
+          original.maxPeriods !== gauge.maxPeriods)
       );
     }).length;
 
     // Create a descriptive summary
     let changeDescription = [];
     if (addedGauges > 0) {
-      changeDescription.push(`added ${addedGauges} gauge${addedGauges !== 1 ? 's' : ''}`);
+      changeDescription.push(`added ${addedGauges} gauge${addedGauges !== 1 ? "s" : ""}`);
     }
     if (removedGauges > 0) {
-      changeDescription.push(`removed ${removedGauges} gauge${removedGauges !== 1 ? 's' : ''}`);
+      changeDescription.push(`removed ${removedGauges} gauge${removedGauges !== 1 ? "s" : ""}`);
     }
     if (modifiedGauges > 0) {
-      changeDescription.push(`modified ${modifiedGauges} gauge${modifiedGauges !== 1 ? 's' : ''}`);
+      changeDescription.push(`modified ${modifiedGauges} gauge${modifiedGauges !== 1 ? "s" : ""}`);
     }
 
     // Join the changes with appropriate punctuation
-    let changeSummary = changeDescription.join(', ');
+    let changeSummary = changeDescription.join(", ");
 
     // Add distribution change information
-    const distributionChangeText = distributionDelta !== 0
-      ? ` with a net ${distributionDelta > 0 ? 'increase' : 'decrease'} of ${formatAmount(Math.abs(distributionDelta))} ${tokenSymbol}`
-      : '';
+    const distributionChangeText =
+      distributionDelta !== 0
+        ? ` with a net ${distributionDelta > 0 ? "increase" : "decrease"} of ${formatAmount(Math.abs(distributionDelta))} ${tokenSymbol}`
+        : "";
 
     // Create the filename without any path prefix - the path will come from config
     const filename = `injector-config-${shortInjectorId}-${uniqueId}.json`;
@@ -232,7 +234,7 @@ function RewardsInjectorConfigurator({
       prefillBranchName: `feature/injector-config-${shortInjectorId}-${uniqueId}`,
       prefillPrName: `Update ${tokenSymbol} Injector Configuration on ${networkName}`,
       prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} on ${networkName}, ${changeSummary}${distributionChangeText}.`,
-      prefillFilename: filename
+      prefillFilename: filename,
     };
   };
 
@@ -422,15 +424,16 @@ function RewardsInjectorConfigurator({
       )}
       <Divider />
 
-      {!selectedAddress || (!selectedSafe && !isLoading) && (
-        <Alert status="warning" mb={4}>
-          <AlertIcon />
-          <AlertDescription>
-            This injector does not have an owner configured yet. Make sure to set an owner first
-            before attempting to configure this injector.
-          </AlertDescription>
-        </Alert>
-      )}
+      {!selectedAddress ||
+        (!selectedSafe && !isLoading && (
+          <Alert status="warning" mb={4}>
+            <AlertIcon />
+            <AlertDescription>
+              This injector does not have an owner configured yet. Make sure to set an owner first
+              before attempting to configure this injector.
+            </AlertDescription>
+          </Alert>
+        ))}
 
       {generatedPayload && (
         <JsonViewerEditor jsonData={generatedPayload} onJsonChange={handleJsonChange} />

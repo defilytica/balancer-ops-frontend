@@ -26,7 +26,8 @@ interface PoolInfoCardProps {
 
 export const PoolInfoCard: React.FC<PoolInfoCardProps> = ({ pool, showHook = false }) => {
   const formattedAttributes = useFormattedPoolAttributes(pool);
-  const formattedHookAttributes = showHook ? useFormattedHookAttributes(pool) : [];
+  // Always call the hook, regardless of showHook value
+  const formattedHookAttributes = useFormattedHookAttributes(pool);
 
   return (
     <Card>
@@ -92,6 +93,7 @@ export const PoolInfoCard: React.FC<PoolInfoCardProps> = ({ pool, showHook = fal
                 </HStack>
               </Show>
 
+              {/* Only render the attributes when showHook is true, but always call the hook */}
               {formattedHookAttributes.map(attribute => (
                 <Stack
                   width="full"

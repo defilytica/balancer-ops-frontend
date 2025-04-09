@@ -15,7 +15,6 @@ import {
   CardHeader,
   CardBody,
   Heading,
-  useMediaQuery,
   Badge,
 } from "@chakra-ui/react";
 import { AddIcon, InfoIcon, DeleteIcon } from "@chakra-ui/icons";
@@ -44,7 +43,6 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   onConfigChange,
   operation,
 }) => {
-  const [isMobile] = useMediaQuery("(max-width: 48em)");
   const [config, setConfig] = useState<RecipientConfigData>(
     initialData || {
       recipients: [""],

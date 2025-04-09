@@ -26,7 +26,6 @@ import {
   generateCCTPBridgePayload,
   generateHumanReadableCCTPBridge,
 } from "../payloadHelperFunctions";
-import { VscGithubInverted } from "react-icons/vsc";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
@@ -89,9 +88,10 @@ export default function CCTPBridge() {
 
     // Convert set to array and format for display
     const destinationsArray = Array.from(destinationDomains);
-    const destinationsText = destinationsArray.length === 1
-      ? destinationsArray[0]
-      : destinationsArray.slice(0, -1).join(', ') + ' and ' + destinationsArray.slice(-1);
+    const destinationsText =
+      destinationsArray.length === 1
+        ? destinationsArray[0]
+        : destinationsArray.slice(0, -1).join(", ") + " and " + destinationsArray.slice(-1);
 
     // Create just the filename without path prefix
     const filename = `cctp-bridge-${uniqueId}.json`;
@@ -100,10 +100,9 @@ export default function CCTPBridge() {
       prefillBranchName: `feature/cctp-bridge-${uniqueId}`,
       prefillPrName: `CCTP: Bridge USDC to ${destinationsText}`,
       prefillDescription: `This PR bridges ${totalValue} USDC from ${sourceDomain} to ${destinationsText} using the Circle Cross-Chain Transfer Protocol.`,
-      prefillFilename: filename // Using the new naming convention
+      prefillFilename: filename, // Using the new naming convention
     };
   };
-
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {

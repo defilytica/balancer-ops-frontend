@@ -20,8 +20,8 @@ const INJECTOR_ABI = [
     name: "InjectTokenAddress",
     outputs: [{ internalType: "address", name: "", type: "address" }],
     stateMutability: "view",
-    type: "function"
-  }
+    type: "function",
+  },
 ];
 
 export async function GET(request: NextRequest) {
@@ -31,10 +31,7 @@ export async function GET(request: NextRequest) {
     const network = searchParams.get("network");
 
     if (!network) {
-      return NextResponse.json(
-        { error: "Network parameter is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Network parameter is required" }, { status: 400 });
     }
 
     const normalizedNetwork = network.toLowerCase();
@@ -65,18 +62,18 @@ export async function GET(request: NextRequest) {
     const injectorAddresses = await fetchDeployedInjectors(factoryAddress, normalizedNetwork);
 
     // Get token for each injector
-    const injectorsWithTokens = await fetchInjectorsWithTokens(injectorAddresses, normalizedNetwork);
+    const injectorsWithTokens = await fetchInjectorsWithTokens(
+      injectorAddresses,
+      normalizedNetwork,
+    );
 
     return NextResponse.json({
       factory: factoryAddress,
-      injectors: injectorsWithTokens
+      injectors: injectorsWithTokens,
     });
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred while fetching data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
   }
 }
 
@@ -90,7 +87,7 @@ async function fetchDeployedInjectors(factoryAddress: string, network: string) {
   } catch (error) {
     console.error(
       `Error fetching deployed injectors for factory ${factoryAddress} on ${network}:`,
-      error
+      error,
     );
     return [];
   }
@@ -109,13 +106,13 @@ async function fetchInjectorsWithTokens(injectorAddresses: string[], network: st
 
       injectorsWithTokens.push({
         address: injectorAddress,
-        token: tokenAddress
+        token: tokenAddress,
       });
     } catch (error) {
       console.error(`Error fetching token for injector ${injectorAddress}:`, error);
       injectorsWithTokens.push({
         address: injectorAddress,
-        token: null
+        token: null,
       });
     }
   }
