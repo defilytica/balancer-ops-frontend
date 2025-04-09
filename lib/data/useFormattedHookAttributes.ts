@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Pool } from "@/types/interfaces";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
 import { isStableSurgeHookParams } from "@/components/StableSurgeConfigurationModule";
+import { formatGwei, parseEther } from "viem";
 
 export function useFormattedHookAttributes(pool: Pool | null) {
   return useMemo(() => {
@@ -32,11 +33,11 @@ export function useFormattedHookAttributes(pool: Pool | null) {
       specificAttributes = [
         {
           title: "Mev Tax Threshold",
-          value: pool.hook.params.mevTaxThreshold,
+          value: formatGwei(parseEther(pool.hook.params.mevTaxThreshold)),
         },
         {
           title: "Mev Tax Multiplier",
-          value: pool.hook.params.mevTaxMultiplier,
+          value: (Number(pool.hook.params.mevTaxMultiplier) / 1e6).toString(),
         },
       ];
     }

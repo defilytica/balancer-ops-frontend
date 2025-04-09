@@ -1,10 +1,9 @@
 import { V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
-import { ethers, JsonRpcSigner } from "ethers";
+import { ethers, JsonRpcSigner, parseUnits } from "ethers";
 import { encodeFunctionData } from "viem";
 import { vaultAdminAbi } from "@/abi/VaultAdmin";
-import { fp } from "@/lib/utils/numbers";
 
 export interface EnableGaugeInput {
   gauge: string;
@@ -1226,8 +1225,8 @@ export function generateMevCaptureParamsPayload(
   const transactions = [];
 
   if (input.newMevTaxThreshold) {
-    // Scale up and convert from Decimal to BigInt
-    const mevTaxThreshold = fp(input.newMevTaxThreshold);
+    // Convert threshold from GWei to Wei
+    const mevTaxThreshold = parseUnits(input.newMevTaxThreshold, "gwei");
 
     transactions.push({
       to: hookAddress,
@@ -1249,7 +1248,8 @@ export function generateMevCaptureParamsPayload(
   }
 
   if (input.newMevTaxMultiplier) {
-    const payloadMevTaxMultiplier = BigInt(input.newMevTaxMultiplier) * BigInt(1e18);
+    // Convert multiplier from MEther to Wei
+    const payloadMevTaxMultiplier = parseUnits(input.newMevTaxMultiplier, 24);
 
     transactions.push({
       to: hookAddress,
