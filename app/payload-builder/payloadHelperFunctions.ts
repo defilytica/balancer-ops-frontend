@@ -1225,7 +1225,7 @@ export function generateMevCaptureParamsPayload(
   const transactions = [];
 
   if (input.newMevTaxThreshold) {
-    // Convert threshold from GWei to Wei
+    // Convert threshold from Gwei to Wei
     const mevTaxThreshold = parseUnits(input.newMevTaxThreshold, "gwei");
 
     transactions.push({

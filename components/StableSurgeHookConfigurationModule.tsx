@@ -60,7 +60,7 @@ export const isStableSurgeHookParams = (params?: HookParams): params is StableSu
   );
 };
 
-export default function StableSurgeConfigurationModule({
+export default function StableSurgeHookConfigurationModule({
   addressBook,
 }: {
   addressBook: AddressBook;

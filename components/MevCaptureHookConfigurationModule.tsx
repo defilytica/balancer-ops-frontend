@@ -137,9 +137,9 @@ export default function MevCaptureHookConfigurationModule({
     [addressBook],
   );
 
-  const networkOptionsWithV3 = useMemo(() => {
-    const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network => networksWithV3.includes(network.apiID.toLowerCase()));
+  const networkOptions = useMemo(() => {
+    const allowedNetworks = ["base", "optimism"];
+    return NETWORK_OPTIONS.filter(network => allowedNetworks.includes(network.apiID.toLowerCase()));
   }, [addressBook]);
 
   const handleNetworkChange = useCallback(
@@ -154,7 +154,7 @@ export default function MevCaptureHookConfigurationModule({
       setIsCurrentWalletManager(false);
 
       // Find the corresponding chain ID for the selected network
-      const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+      const networkOption = networkOptions.find(n => n.apiID === newNetwork);
       if (networkOption) {
         try {
           switchChain({ chainId: Number(networkOption.chainId) });
@@ -215,12 +215,12 @@ export default function MevCaptureHookConfigurationModule({
     }
 
     if (numValue < MIN_THRESHOLD_GWEI) {
-      setMevTaxThresholdError(`Value must be at least ${MIN_THRESHOLD_GWEI} GWei`);
+      setMevTaxThresholdError(`Value must be at least ${MIN_THRESHOLD_GWEI} Gwei`);
       return false;
     }
 
     if (numValue > MAX_THRESHOLD_GWEI) {
-      setMevTaxThresholdError(`Value must not exceed ${MAX_THRESHOLD_GWEI} GWei`);
+      setMevTaxThresholdError(`Value must not exceed ${MAX_THRESHOLD_GWEI} Gwei`);
       return false;
     }
 
@@ -354,9 +354,8 @@ export default function MevCaptureHookConfigurationModule({
           signer,
         );
 
-        // Update MEV tax threshold if provided (convert from GWei to Wei)
+        // Update MEV tax threshold if provided (convert from Gwei to Wei)
         if (newMevTaxThreshold) {
-          // Convert GWei to Wei
           const txMevTaxThreshold = parseUnits(newMevTaxThreshold, "gwei");
 
           const tx1 = await hookContract.setPoolMevTaxThreshold(
@@ -367,7 +366,7 @@ export default function MevCaptureHookConfigurationModule({
           toast.promise(tx1.wait(), {
             success: {
               title: "Success",
-              description: `The MEV tax threshold has been updated to ${newMevTaxThreshold} GWei. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The MEV tax threshold has been updated to ${newMevTaxThreshold} Gwei. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
@@ -470,7 +469,7 @@ export default function MevCaptureHookConfigurationModule({
         <GridItem colSpan={{ base: 12, md: 4 }}>
           <NetworkSelector
             networks={networks}
-            networkOptions={networkOptionsWithV3}
+            networkOptions={networkOptions}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
             label="Network"
@@ -554,7 +553,7 @@ export default function MevCaptureHookConfigurationModule({
                 mb={4}
                 isInvalid={!!mevTaxThresholdError}
               >
-                <FormLabel>New MEV Tax Threshold (GWei)</FormLabel>
+                <FormLabel>New MEV Tax Threshold (Gwei)</FormLabel>
                 <Input
                   type="number"
                   value={newMevTaxThreshold}
@@ -566,7 +565,7 @@ export default function MevCaptureHookConfigurationModule({
                   max={MAX_THRESHOLD_GWEI}
                 />
                 <FormHelperText>
-                  Enter a value between {MIN_THRESHOLD_GWEI} and {MAX_THRESHOLD_GWEI} GWei
+                  Enter a value between {MIN_THRESHOLD_GWEI} and {MAX_THRESHOLD_GWEI} Gwei
                 </FormHelperText>
                 {mevTaxThresholdError && (
                   <FormErrorMessage>{mevTaxThresholdError}</FormErrorMessage>
