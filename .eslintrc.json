@@ -8,7 +8,7 @@
   "rules": {
     "prettier/prettier": "error",
     "no-unused-vars": "warn",
-    "no-console": "warn",
+    "no-console": "off",
     "react/no-unescaped-entities": "warn",
     "react/display-name": "warn",
     "import/no-anonymous-default-export": "warn",

@@ -21,7 +21,6 @@ export default function RewardsInjectorContainer({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
-  const [selectedSafe, setSelectedSafe] = useState(String);
   const [injectorData, setInjectorData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);

@@ -18,7 +18,8 @@ const rateLimiter = new RateLimiter({
 });
 
 export async function GET(request: NextRequest) {
-  const ip = request.ip ?? request.headers.get("X-Forwarded-For") ?? "unknown";
+  const ip =
+    request.headers.get("x-real-ip") ?? request.headers.get("X-Forwarded-For") ?? "unknown";
   const forceReload = request.nextUrl.searchParams.get("forceReload") === "true";
 
   if (forceReload) {

@@ -5,22 +5,31 @@ import { RainbowKitProvider, Theme, darkTheme, lightTheme } from "@rainbow-me/ra
 import { WagmiProvider } from "wagmi";
 import { theme, useTheme } from "@chakra-ui/react";
 import { merge } from "lodash";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, memo } from "react";
 import { WagmiConfig } from "./WagmiConfig";
 import { CustomAvatar } from "./CustomAvatar";
 import { useIsMounted } from "@/lib/shared/hooks/useIsMounted";
 import { useThemeColorMode } from "@/lib/services/chakra/useThemeColorMode";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const queryClient = new QueryClient();
+// Create singleton query client
+let queryClientInstance: QueryClient | null = null;
+const getQueryClient = () => {
+  if (!queryClientInstance) {
+    queryClientInstance = new QueryClient();
+  }
+  return queryClientInstance;
+};
 
-export function Web3Provider({
+// Use memo to prevent unnecessary re-renders
+const Web3ProviderComponent = ({
   children,
   wagmiConfig,
-}: PropsWithChildren<{ wagmiConfig: WagmiConfig }>) {
+}: PropsWithChildren<{ wagmiConfig: WagmiConfig }>) => {
   const isMounted = useIsMounted();
   const { colors, radii, shadows } = useTheme();
   const colorMode = useThemeColorMode();
+  const queryClient = getQueryClient();
 
   if (!isMounted) return null;
 
@@ -67,12 +76,20 @@ export function Web3Provider({
   const customTheme = colorMode === "dark" ? _darkTheme : _lightTheme;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <WagmiProvider config={wagmiConfig}>
-        <RainbowKitProvider avatar={CustomAvatar} theme={customTheme}>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          avatar={CustomAvatar}
+          theme={customTheme}
+          // Set a key to force reinitialization when necessary
+          key={`rainbowkit-${colorMode}`}
+        >
           {children}
         </RainbowKitProvider>
-      </WagmiProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const Web3Provider = memo(Web3ProviderComponent);
