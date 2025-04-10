@@ -124,6 +124,7 @@ query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
     orderBy: totalLiquidity
     orderDirection: desc
   ) {
+    id
     address
     chain
     protocolVersion
@@ -144,6 +145,11 @@ query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
         ... on StableSurgeHookParams {
           maxSurgeFeePercentage
           surgeThresholdPercentage
+        }
+        ... on MevTaxHookParams {
+          maxMevSwapFeePercentage
+          mevTaxMultiplier
+          mevTaxThreshold
         }
       }
     }

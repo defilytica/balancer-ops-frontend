@@ -35,16 +35,17 @@ interface PoolSelectorProps {
 }
 
 const PoolSelector = ({
-                        pools,
-                        loading,
-                        error,
-                        selectedPool,
-                        onPoolSelect,
-                        onClearSelection,
-                      }: PoolSelectorProps) => {
+  pools,
+  loading,
+  error,
+  selectedPool,
+  onPoolSelect,
+  onClearSelection,
+}: PoolSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
+  const dropdownBg = useColorModeValue("white", colors.gray[700]);
 
   // Close dropdown when clicking outside
   useOutsideClick({
@@ -143,7 +144,7 @@ const PoolSelector = ({
             mt={1}
             borderRadius="md"
             boxShadow="lg"
-            bg={useColorModeValue("white", colors.gray[700])}
+            bg={dropdownBg}
             borderWidth="1px"
             maxH="300px"
             overflowY="auto"

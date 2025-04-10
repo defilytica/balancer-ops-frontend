@@ -1,7 +1,7 @@
 import { V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
-import { ethers, JsonRpcSigner } from "ethers";
+import { ethers, JsonRpcSigner, parseUnits } from "ethers";
 import { encodeFunctionData } from "viem";
 import { vaultAdminAbi } from "@/abi/VaultAdmin";
 
@@ -1195,6 +1195,89 @@ export function generateStableSurgeParamsPayload(
     description = `Set surge threshold to ${input.newSurgeThresholdPercentage}% for pool ${input.poolAddress}`;
   } else if (input.newMaxSurgeFeePercentage) {
     description = `Set max surge fee to ${input.newMaxSurgeFeePercentage}% for pool ${input.poolAddress}`;
+  }
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: description,
+      createdFromSafeAddress: multisig,
+    },
+    transactions,
+  };
+}
+
+export interface MevCaptureParamsInput {
+  poolAddress: string;
+  newMevTaxThreshold?: string;
+  newMevTaxMultiplier?: string;
+}
+
+export function generateMevCaptureParamsPayload(
+  input: MevCaptureParamsInput,
+  chainId: string,
+  hookAddress: string,
+  multisig: string,
+) {
+  const transactions = [];
+
+  if (input.newMevTaxThreshold) {
+    // Convert threshold from Gwei to Wei
+    const mevTaxThreshold = parseUnits(input.newMevTaxThreshold, "gwei");
+
+    transactions.push({
+      to: hookAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { internalType: "address", name: "pool", type: "address" },
+          { internalType: "uint256", name: "newPoolMevTaxThreshold", type: "uint256" },
+        ],
+        name: "setPoolMevTaxThreshold",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newPoolMevTaxThreshold: mevTaxThreshold.toString(),
+      },
+    });
+  }
+
+  if (input.newMevTaxMultiplier) {
+    // Convert multiplier from MEther to Wei
+    const payloadMevTaxMultiplier = parseUnits(input.newMevTaxMultiplier, 24);
+
+    transactions.push({
+      to: hookAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { internalType: "address", name: "pool", type: "address" },
+          { internalType: "uint256", name: "newPoolMevTaxMultiplier", type: "uint256" },
+        ],
+        name: "setPoolMevTaxMultiplier",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newPoolMevTaxMultiplier: payloadMevTaxMultiplier.toString(),
+      },
+    });
+  }
+
+  // Generate description based on what's being changed
+  let description = "";
+  if (input.newMevTaxThreshold && input.newMevTaxMultiplier) {
+    description = `Set MEV tax threshold to ${input.newMevTaxThreshold} and MEV tax multiplier to ${input.newMevTaxMultiplier} for pool ${input.poolAddress}`;
+  } else if (input.newMevTaxThreshold) {
+    description = `Set MEV tax threshold to ${input.newMevTaxThreshold} for pool ${input.poolAddress}`;
+  } else if (input.newMevTaxMultiplier) {
+    description = `Set MEV tax multiplier to ${input.newMevTaxMultiplier} for pool ${input.poolAddress}`;
   }
 
   return {

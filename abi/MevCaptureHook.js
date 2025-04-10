@@ -1,0 +1,663 @@
+export const mevCaptureHookAbi = [
+  {
+    type: "constructor",
+    inputs: [
+      { name: "vault", internalType: "contract IVault", type: "address" },
+      {
+        name: "registry",
+        internalType: "contract IBalancerContractRegistry",
+        type: "address",
+      },
+      {
+        name: "defaultMevTaxMultiplier",
+        internalType: "uint256",
+        type: "uint256",
+      },
+      {
+        name: "defaultMevTaxThreshold",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  { type: "error", inputs: [], name: "InvalidBalancerContractRegistry" },
+  {
+    type: "error",
+    inputs: [{ name: "pool", internalType: "address", type: "address" }],
+    name: "MevCaptureHookNotRegisteredInPool",
+  },
+  {
+    type: "error",
+    inputs: [
+      { name: "feePercentage", internalType: "uint256", type: "uint256" },
+      { name: "maxFeePercentage", internalType: "uint256", type: "uint256" },
+    ],
+    name: "MevSwapFeePercentageAboveMax",
+  },
+  {
+    type: "error",
+    inputs: [{ name: "sender", internalType: "address", type: "address" }],
+    name: "MevTaxExemptSenderAlreadyAdded",
+  },
+  {
+    type: "error",
+    inputs: [{ name: "sender", internalType: "address", type: "address" }],
+    name: "SenderIsNotVault",
+  },
+  { type: "error", inputs: [], name: "SenderNotAllowed" },
+  {
+    type: "error",
+    inputs: [{ name: "sender", internalType: "address", type: "address" }],
+    name: "SenderNotRegisteredAsMevTaxExempt",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "newDefaultMevTaxMultiplier",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    name: "DefaultMevTaxMultiplierSet",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "newDefaultMevTaxThreshold",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    name: "DefaultMevTaxThresholdSet",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "maxMevSwapFeePercentage",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    name: "MaxMevSwapFeePercentageSet",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [{ name: "enabled", internalType: "bool", type: "bool", indexed: false }],
+    name: "MevTaxEnabledSet",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "sender",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+    ],
+    name: "MevTaxExemptSenderAdded",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "sender",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+    ],
+    name: "MevTaxExemptSenderRemoved",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "pool",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+      {
+        name: "newPoolMevTaxMultiplier",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    name: "PoolMevTaxMultiplierSet",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "pool",
+        internalType: "address",
+        type: "address",
+        indexed: false,
+      },
+      {
+        name: "newPoolMevTaxThreshold",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    name: "PoolMevTaxThresholdSet",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "senders", internalType: "address[]", type: "address[]" }],
+    name: "addMevTaxExemptSenders",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "disableMevTax",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "enableMevTax",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "selector", internalType: "bytes4", type: "bytes4" }],
+    name: "getActionId",
+    outputs: [{ name: "", internalType: "bytes32", type: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getAuthorizer",
+    outputs: [{ name: "", internalType: "contract IAuthorizer", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getBalancerContractRegistry",
+    outputs: [
+      {
+        name: "",
+        internalType: "contract IBalancerContractRegistry",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getDefaultMevTaxMultiplier",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getDefaultMevTaxThreshold",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getHookFlags",
+    outputs: [
+      {
+        name: "",
+        internalType: "struct HookFlags",
+        type: "tuple",
+        components: [
+          {
+            name: "enableHookAdjustedAmounts",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallBeforeInitialize",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallAfterInitialize",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallComputeDynamicSwapFee",
+            internalType: "bool",
+            type: "bool",
+          },
+          { name: "shouldCallBeforeSwap", internalType: "bool", type: "bool" },
+          { name: "shouldCallAfterSwap", internalType: "bool", type: "bool" },
+          {
+            name: "shouldCallBeforeAddLiquidity",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallAfterAddLiquidity",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallBeforeRemoveLiquidity",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "shouldCallAfterRemoveLiquidity",
+            internalType: "bool",
+            type: "bool",
+          },
+        ],
+      },
+    ],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getMaxMevSwapFeePercentage",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "pool", internalType: "address", type: "address" }],
+    name: "getPoolMevTaxMultiplier",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "pool", internalType: "address", type: "address" }],
+    name: "getPoolMevTaxThreshold",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "getVault",
+    outputs: [{ name: "", internalType: "contract IVault", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "isMevTaxEnabled",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "sender", internalType: "address", type: "address" }],
+    name: "isMevTaxExemptSender",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "address", type: "address" },
+      { name: "", internalType: "address", type: "address" },
+      { name: "", internalType: "enum AddLiquidityKind", type: "uint8" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "amountsInRaw", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "uint256", type: "uint256" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onAfterAddLiquidity",
+    outputs: [
+      { name: "", internalType: "bool", type: "bool" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "uint256", type: "uint256" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onAfterInitialize",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "address", type: "address" },
+      { name: "", internalType: "address", type: "address" },
+      { name: "", internalType: "enum RemoveLiquidityKind", type: "uint8" },
+      { name: "", internalType: "uint256", type: "uint256" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "amountsOutRaw", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onAfterRemoveLiquidity",
+    outputs: [
+      { name: "", internalType: "bool", type: "bool" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        internalType: "struct AfterSwapParams",
+        type: "tuple",
+        components: [
+          { name: "kind", internalType: "enum SwapKind", type: "uint8" },
+          { name: "tokenIn", internalType: "contract IERC20", type: "address" },
+          {
+            name: "tokenOut",
+            internalType: "contract IERC20",
+            type: "address",
+          },
+          {
+            name: "amountInScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "amountOutScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "tokenInBalanceScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "tokenOutBalanceScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "amountCalculatedScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "amountCalculatedRaw",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          { name: "router", internalType: "address", type: "address" },
+          { name: "pool", internalType: "address", type: "address" },
+          { name: "userData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+    ],
+    name: "onAfterSwap",
+    outputs: [
+      { name: "", internalType: "bool", type: "bool" },
+      { name: "", internalType: "uint256", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "address", type: "address" },
+      { name: "pool", internalType: "address", type: "address" },
+      { name: "kind", internalType: "enum AddLiquidityKind", type: "uint8" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "uint256", type: "uint256" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onBeforeAddLiquidity",
+    outputs: [{ name: "success", internalType: "bool", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onBeforeInitialize",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "address", type: "address" },
+      { name: "pool", internalType: "address", type: "address" },
+      { name: "kind", internalType: "enum RemoveLiquidityKind", type: "uint8" },
+      { name: "", internalType: "uint256", type: "uint256" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "uint256[]", type: "uint256[]" },
+      { name: "", internalType: "bytes", type: "bytes" },
+    ],
+    name: "onBeforeRemoveLiquidity",
+    outputs: [{ name: "success", internalType: "bool", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        internalType: "struct PoolSwapParams",
+        type: "tuple",
+        components: [
+          { name: "kind", internalType: "enum SwapKind", type: "uint8" },
+          {
+            name: "amountGivenScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "balancesScaled18",
+            internalType: "uint256[]",
+            type: "uint256[]",
+          },
+          { name: "indexIn", internalType: "uint256", type: "uint256" },
+          { name: "indexOut", internalType: "uint256", type: "uint256" },
+          { name: "router", internalType: "address", type: "address" },
+          { name: "userData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "", internalType: "address", type: "address" },
+    ],
+    name: "onBeforeSwap",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "params",
+        internalType: "struct PoolSwapParams",
+        type: "tuple",
+        components: [
+          { name: "kind", internalType: "enum SwapKind", type: "uint8" },
+          {
+            name: "amountGivenScaled18",
+            internalType: "uint256",
+            type: "uint256",
+          },
+          {
+            name: "balancesScaled18",
+            internalType: "uint256[]",
+            type: "uint256[]",
+          },
+          { name: "indexIn", internalType: "uint256", type: "uint256" },
+          { name: "indexOut", internalType: "uint256", type: "uint256" },
+          { name: "router", internalType: "address", type: "address" },
+          { name: "userData", internalType: "bytes", type: "bytes" },
+        ],
+      },
+      { name: "pool", internalType: "address", type: "address" },
+      {
+        name: "staticSwapFeePercentage",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "onComputeDynamicSwapFeePercentage",
+    outputs: [
+      { name: "", internalType: "bool", type: "bool" },
+      { name: "", internalType: "uint256", type: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "", internalType: "address", type: "address" },
+      { name: "pool", internalType: "address", type: "address" },
+      {
+        name: "",
+        internalType: "struct TokenConfig[]",
+        type: "tuple[]",
+        components: [
+          { name: "token", internalType: "contract IERC20", type: "address" },
+          { name: "tokenType", internalType: "enum TokenType", type: "uint8" },
+          {
+            name: "rateProvider",
+            internalType: "contract IRateProvider",
+            type: "address",
+          },
+          { name: "paysYieldFees", internalType: "bool", type: "bool" },
+        ],
+      },
+      {
+        name: "",
+        internalType: "struct LiquidityManagement",
+        type: "tuple",
+        components: [
+          {
+            name: "disableUnbalancedLiquidity",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "enableAddLiquidityCustom",
+            internalType: "bool",
+            type: "bool",
+          },
+          {
+            name: "enableRemoveLiquidityCustom",
+            internalType: "bool",
+            type: "bool",
+          },
+          { name: "enableDonation", internalType: "bool", type: "bool" },
+        ],
+      },
+    ],
+    name: "onRegister",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "senders", internalType: "address[]", type: "address[]" }],
+    name: "removeMevTaxExemptSenders",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "newDefaultMevTaxMultiplier",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "setDefaultMevTaxMultiplier",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "newDefaultMevTaxThreshold",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "setDefaultMevTaxThreshold",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "maxMevSwapFeePercentage",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "setMaxMevSwapFeePercentage",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "pool", internalType: "address", type: "address" },
+      {
+        name: "newPoolMevTaxMultiplier",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "setPoolMevTaxMultiplier",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [
+      { name: "pool", internalType: "address", type: "address" },
+      {
+        name: "newPoolMevTaxThreshold",
+        internalType: "uint256",
+        type: "uint256",
+      },
+    ],
+    name: "setPoolMevTaxThreshold",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+];

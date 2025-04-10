@@ -18,12 +18,6 @@ import {
   GridItem,
   Heading,
   Input,
-  List,
-  ListItem,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   Spinner,
   useDisclosure,
   useToast,
@@ -54,10 +48,11 @@ import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { PoolInfoCard } from "./PoolInfoCard";
-import { ParameterChangeCard } from "./ParameterChangeCard";
+import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
+import PoolSelector from "./PoolSelector";
 
 // Type guard for StableSurgeHookParams
-const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
+export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
   if (!params) return false;
   return (
     params.__typename === "StableSurgeHookParams" ||
@@ -65,7 +60,7 @@ const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHook
   );
 };
 
-export default function StableSurgeConfigurationModule({
+export default function StableSurgeHookConfigurationModule({
   addressBook,
 }: {
   addressBook: AddressBook;
@@ -75,7 +70,6 @@ export default function StableSurgeConfigurationModule({
   const [newMaxSurgeFeePercentage, setNewMaxSurgeFeePercentage] = useState<string>("");
   const [newSurgeThresholdPercentage, setNewSurgeThresholdPercentage] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
@@ -152,7 +146,6 @@ export default function StableSurgeConfigurationModule({
       setSelectedMultisig(getMultisigForNetwork(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
-      setSearchTerm("");
       setNewMaxSurgeFeePercentage("");
       setNewSurgeThresholdPercentage("");
       setIsCurrentWalletManager(false);
@@ -176,9 +169,16 @@ export default function StableSurgeConfigurationModule({
   );
 
   // Check manager status when pool is selected
-  const handlePoolSelection = useCallback(async (pool: Pool) => {
-    setSelectedPool(pool); // Set pool immediately for UI update
-  }, []);
+  const handlePoolSelect = (pool: Pool) => {
+    setSelectedPool(pool);
+  };
+
+  const clearPoolSelection = () => {
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewMaxSurgeFeePercentage("");
+    setNewSurgeThresholdPercentage("");
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -339,15 +339,6 @@ export default function StableSurgeConfigurationModule({
     }
   };
 
-  const filteredPools = useMemo(() => {
-    if (!data?.poolGetPools) return [];
-    return data.poolGetPools.filter(
-      pool =>
-        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [data?.poolGetPools, searchTerm]);
-
   const currentMaxSurgeFee =
     selectedPool &&
     selectedPool.hook?.type === "STABLE_SURGE" &&
@@ -363,13 +354,6 @@ export default function StableSurgeConfigurationModule({
     isStableSurgeHookParams(selectedPool.hook.params)
       ? parseFloat(selectedPool.hook.params.surgeThresholdPercentage) * 100
       : 0;
-
-  const newMaxFee = newMaxSurgeFeePercentage
-    ? parseFloat(newMaxSurgeFeePercentage)
-    : currentMaxSurgeFee;
-  const newThreshold = newSurgeThresholdPercentage
-    ? parseFloat(newSurgeThresholdPercentage)
-    : currentSurgeThreshold;
 
   const isAuthorizedPool = useMemo(() => {
     if (!selectedPool?.swapFeeManager) return false;
@@ -397,45 +381,16 @@ export default function StableSurgeConfigurationModule({
         </GridItem>
 
         <GridItem colSpan={{ base: 12, md: 8 }}>
-          <FormControl isDisabled={!selectedNetwork}>
-            <FormLabel>Select Pool</FormLabel>
-            <Popover>
-              <PopoverTrigger>
-                <Input
-                  value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
-                  placeholder="Search and select a pool"
-                  readOnly
-                />
-              </PopoverTrigger>
-              <PopoverContent width="100%">
-                <PopoverBody>
-                  <Input
-                    placeholder="Search pools..."
-                    mb={2}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                  <List maxH="200px" overflowY="auto">
-                    {filteredPools.map(pool => (
-                      <ListItem
-                        key={pool.address}
-                        onClick={() => {
-                          handlePoolSelection(pool as unknown as Pool);
-                          onClose();
-                        }}
-                        cursor="pointer"
-                        _hover={{ bg: "gray.100" }}
-                        p={2}
-                      >
-                        {pool.name} - {pool.address.slice(0, 6)}...
-                        {pool.address.slice(-4)}
-                      </ListItem>
-                    ))}
-                  </List>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
-          </FormControl>
+          {selectedNetwork && (
+            <PoolSelector
+              pools={data?.poolGetPools}
+              loading={loading}
+              error={error}
+              selectedPool={selectedPool}
+              onPoolSelect={pool => handlePoolSelect(pool as Pool)}
+              onClearSelection={clearPoolSelection}
+            />
+          )}
         </GridItem>
       </Grid>
 
@@ -534,7 +489,7 @@ export default function StableSurgeConfigurationModule({
       )}
 
       {selectedPool && (newMaxSurgeFeePercentage || newSurgeThresholdPercentage) && (
-        <ParameterChangeCard
+        <ParameterChangePreviewCard
           title="Hook Parameters Change Preview"
           icon={<DollarSign size={24} />}
           parameters={[
@@ -542,10 +497,10 @@ export default function StableSurgeConfigurationModule({
               ? [
                   {
                     name: "Max Surge Fee",
-                    currentValue: currentMaxSurgeFee,
-                    newValue: newMaxFee,
-                    precision: 2,
-                    unit: "%",
+                    currentValue: currentMaxSurgeFee.toFixed(2),
+                    newValue: Number(newMaxSurgeFeePercentage).toFixed(2),
+                    difference: (Number(newMaxSurgeFeePercentage) - currentMaxSurgeFee).toFixed(2),
+                    formatValue: (value: string) => `${value}%`,
                   },
                 ]
               : []),
@@ -553,10 +508,12 @@ export default function StableSurgeConfigurationModule({
               ? [
                   {
                     name: "Surge Threshold",
-                    currentValue: currentSurgeThreshold,
-                    newValue: newThreshold,
-                    precision: 2,
-                    unit: "%",
+                    currentValue: currentSurgeThreshold.toFixed(2),
+                    newValue: Number(newSurgeThresholdPercentage).toFixed(2),
+                    difference: (
+                      Number(newSurgeThresholdPercentage) - currentSurgeThreshold
+                    ).toFixed(2),
+                    formatValue: (value: string) => `${value}%`,
                   },
                 ]
               : []),

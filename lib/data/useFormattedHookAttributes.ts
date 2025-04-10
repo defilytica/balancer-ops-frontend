@@ -1,14 +1,8 @@
 import { useMemo } from "react";
-import { Pool, HookParams, StableSurgeHookParams } from "@/types/interfaces";
-
-// Type guard for StableSurgeHookParams
-const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
-  if (!params) return false;
-  return (
-    params.__typename === "StableSurgeHookParams" ||
-    ("maxSurgeFeePercentage" in params && "surgeThresholdPercentage" in params)
-  );
-};
+import { Pool } from "@/types/interfaces";
+import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
+import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
+import { formatGwei, parseEther } from "viem";
 
 export function useFormattedHookAttributes(pool: Pool | null) {
   return useMemo(() => {
@@ -16,7 +10,6 @@ export function useFormattedHookAttributes(pool: Pool | null) {
 
     const baseAttributes = [{ title: "Hook Address", value: pool.hook.address }];
 
-    // Add hook-specific attributes based on hook type
     let specificAttributes: { title: string; value: string }[] = [];
 
     if (
@@ -36,7 +29,18 @@ export function useFormattedHookAttributes(pool: Pool | null) {
       ];
     }
 
-    // Add other hook types here as needed
+    if (pool.hook.type === "MEV_TAX" && pool.hook.params && isMevTaxHookParams(pool.hook.params)) {
+      specificAttributes = [
+        {
+          title: "Mev Tax Threshold",
+          value: `${formatGwei(parseEther(pool.hook.params.mevTaxThreshold))} Gwei`,
+        },
+        {
+          title: "Mev Tax Multiplier",
+          value: (Number(pool.hook.params.mevTaxMultiplier) / 1e6).toString(),
+        },
+      ];
+    }
 
     // Filter out attributes with empty values and return
     return [...baseAttributes, ...specificAttributes].filter(({ value }) => value != null);
