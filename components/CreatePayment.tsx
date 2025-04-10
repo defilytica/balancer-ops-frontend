@@ -26,11 +26,12 @@ import {
   transformToHumanReadable,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { AddressBook } from "@/types/interfaces";
-import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { NETWORK_OPTIONS, WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
-import { getCategoryData, getNetworks, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
+import { NetworkSelector } from "@/components/NetworkSelector";
 
 interface CreatePaymentProps {
   addressBook: AddressBook;
@@ -49,11 +50,32 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     [key: string]: string;
   }>({});
 
+  // Create network options for NetworkSelector
+  const [networkOptions, setNetworkOptions] = useState<Array<{
+    label: string;
+    apiID: string;
+    chainId: string;
+  }>>([]);
+
   useEffect(() => {
-    const networks = getNetworks(addressBook);
-    setAvailableNetworks(networks);
-    if (networks.length > 0) {
-      setSelectedNetwork(networks[0]);
+    // Directly determine available networks from token whitelist
+    const availableNetworks = Object.keys(WHITELISTED_PAYMENT_TOKENS);
+    setAvailableNetworks(availableNetworks);
+
+    // Create simplified network options for the NetworkSelector
+    const options = availableNetworks.map(network => {
+      // Standardize format: internal value is lowercase, display value is capitalized
+      return {
+        label: network.charAt(0).toUpperCase() + network.slice(1), // First letter capitalized for display
+        apiID: network, // Keep the original network name (lowercase)
+        chainId: "0" // Default chainId if not found
+      };
+    });
+
+    setNetworkOptions(options);
+
+    if (availableNetworks.length > 0) {
+      setSelectedNetwork(availableNetworks[0]);
     }
   }, [addressBook]);
 
@@ -90,6 +112,12 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
 
     setSelectedMultisig("");
   }, [selectedNetwork, addressBook]);
+
+  // Simplified handleNetworkChange - no conversion needed
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Since our apiID is already in the correct format (lowercase), we can use it directly
+    setSelectedNetwork(e.target.value);
+  };
 
   const handleRemovePayment = (index: number) => {
     const newPayments = [...payments];
@@ -168,6 +196,11 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       });
   };
 
+  // Filter out SONIC and BSC from network options - use lowercase for consistency
+  const filteredNetworkOptions = networkOptions.filter(network =>
+    network.apiID !== "sonic" && network.apiID !== 'bsc'
+  );
+
   return (
     <Container maxW="container.lg">
       <Box mb="10px">
@@ -184,13 +217,12 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
             <FormControl maxWidth="sm">
               <FormLabel>Select Network</FormLabel>
-              <Select value={selectedNetwork} onChange={e => setSelectedNetwork(e.target.value)}>
-                {availableNetworks.map(network => (
-                  <option key={network} value={network}>
-                    {network.toUpperCase()}
-                  </option>
-                ))}
-              </Select>
+              <NetworkSelector
+                networks={networks}
+                networkOptions={filteredNetworkOptions}
+                selectedNetwork={selectedNetwork}
+                handleNetworkChange={handleNetworkChange}
+              />
             </FormControl>
           </SimpleGrid>
         </Box>

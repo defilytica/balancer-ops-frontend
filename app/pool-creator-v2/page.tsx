@@ -9,9 +9,12 @@ import {
   Grid,
   GridItem,
   Heading,
-  Stack,
   useToast,
   Text,
+  Alert,
+  AlertIcon,
+  Button,
+  Center,
 } from "@chakra-ui/react";
 import React, { useCallback, useState } from "react";
 import { PoolTypeSelector } from "@/components/poolCreator/PoolTypeSelector";
@@ -26,6 +29,7 @@ import PoolLookup from "@/components/poolCreator/PoolLookup";
 import { PoolConfig } from "@/types/interfaces";
 import { AlertCircle } from "react-feather";
 import MobileWarning from "@/components/MobileWarning";
+import { useAccount, useConnect } from "wagmi";
 
 const PoolCreatorPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -33,6 +37,8 @@ const PoolCreatorPage: React.FC = () => {
   const toast = useToast();
   const { poolConfig, setPoolConfig, updatePoolType, updateTokens, updateSettings, isStepValid } =
     usePoolCreator();
+  const { chainId, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
 
   const validateStep = useCallback(
     (step: number): boolean => {
@@ -86,8 +92,7 @@ const PoolCreatorPage: React.FC = () => {
             return true;
           });
 
-        case 2: // Pool Settings
-          // Add validation for pool-specific settings
+        case 2:
           return true;
 
         default:
@@ -198,12 +203,64 @@ const PoolCreatorPage: React.FC = () => {
     setActiveStep(1);
   }
 
+  // Show connect wallet message if chainId is undefined
+  if (!isConnected || chainId === undefined) {
+    return (
+      <MobileWarning>
+        <Box p={8}>
+          <Heading as="h2" size="lg" variant="special" mb={5}>
+            Balancer v2 Pool Creator
+          </Heading>
+          <Card>
+            <CardBody>
+              <Alert status="error" mb={6}>
+                <AlertIcon />
+                <Text>No Wallet Connected</Text>
+              </Alert>
+              <Text>
+                Please connect on the top right to proceed
+              </Text>
+            </CardBody>
+          </Card>
+        </Box>
+      </MobileWarning>
+    );
+  }
+
+  // Show warning for chainId 146
+  if (chainId === 146) {
+    return (
+      <MobileWarning>
+        <Box p={8}>
+          <Heading as="h2" size="lg" variant="special" mb={5}>
+            Balancer v2 Pool Creator
+          </Heading>
+          <Card>
+            <CardBody>
+              <Alert status="error" mb={6}>
+                <AlertIcon />
+                <Text>This chain is not supported</Text>
+              </Alert>
+              <Text>
+                Chain ID 146 is not supported by the Balancer v2 Pool Creator. Please switch to a supported network.
+              </Text>
+            </CardBody>
+          </Card>
+        </Box>
+      </MobileWarning>
+    );
+  }
+
+  // Show regular pool creator for other chain IDs
   return (
     <MobileWarning>
       <Box p={8}>
-        <Heading as="h2" size="lg" variant="special" mb={6}>
+        <Heading as="h2" size="lg" variant="special" mb={1}>
           Balancer v2 Pool Creator
         </Heading>
+        <Text mb={5}>
+          Select a network on the top right and create a Balancer v2 pool. This tool only supports pool creation of whitelisted tokens.
+        </Text>
         <PoolCreatorStepper activeStep={activeStep} />
         <Grid templateColumns="5fr 1fr" gap={8} mt={8}>
           <GridItem>

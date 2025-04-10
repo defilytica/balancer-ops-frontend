@@ -12,8 +12,9 @@ import zkevmLogo from "@/public/imgs/zkevm.svg";
 import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import modeLogo from "@/public/imgs/mode.svg";
+import sonicLogo from "@/public/imgs/sonic.svg";
 import { TbSettingsDollar } from "react-icons/tb";
-import { NetworkInfo } from "@/types/types";
+import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
 
 export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
@@ -33,6 +34,9 @@ export const tokenDecimals: Record<string, number> = {
 export const GOVERNANCE_ADDRESS = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 export const V3_VAULT_ADDRESS = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
+
+// SONIC specific addresses that are not mapped in our address book
+export const SONIC_VAULT_EXPLORER = "0x6F6CD1a69A19d45df0C300A57829b21713637300"
 
 export const PAYLOAD_OPTIONS = [
   {
@@ -280,6 +284,14 @@ export const NETWORK_OPTIONS = [
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "",
   },
+  {
+    label: "Sonic",
+    apiID: "SONIC",
+    chainId: "146",
+    maxiSafe: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -361,6 +373,12 @@ export const networks: Record<string, NetworkInfo> = {
     explorer: "https://explorer.mode.network/",
     chainId: "34443",
   },
+  sonic: {
+    logo: sonicLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=sonic&dkey=",
+    explorer: "https://sonicscan.org/",
+    chainId: "146",
+  },
 };
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
@@ -380,7 +398,11 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
       address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
       decimals: 18,
     },
-    // Add more mainnet tokens as needed
+    {
+      symbol: "sUSDS",
+      address: "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD",
+      decimals: 18,
+    },
   ],
   arbitrum: [
     {
@@ -475,3 +497,18 @@ export const GAUGE_WEIGHT_CAPS = {
   TEN_PERCENT: "100000000000000000", // 10% cap
   UNCAPPED: "1000000000000000000", // No cap
 } as const;
+
+
+// Define a consistent mapping of network IDs to display names
+export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
+  mainnet: "Ethereum",
+  arbitrum: "Arbitrum",
+  polygon: "Polygon",
+  zkevm: "Polygon ZKEVM",
+  optimism: "Optimism",
+  avalanche: "Avalanche",
+  base: "Base",
+  gnosis: "Gnosis",
+  fraxtal: "Fraxtal",
+  mode: "Mode"
+};

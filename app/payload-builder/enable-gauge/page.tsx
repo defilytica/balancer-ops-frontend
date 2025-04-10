@@ -17,7 +17,6 @@ import {
   List,
   ListIcon,
   ListItem,
-  Select,
   Text,
   Card,
   useToast,
@@ -33,13 +32,14 @@ import {
   generateHumanReadableForEnableGauge,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS } from "@/constants/constants";
-import { VscGithubInverted } from "react-icons/vsc";
+import { GAUGE_NETWORK_MAP, networks } from "@/constants/constants";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { NetworkSelector } from "@/components/NetworkSelector";
+import { GaugeNetworkId } from "@/types/types";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -61,6 +61,14 @@ export default function EnableGaugePage() {
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
   };
+
+  // Simplified network options to handle gauge adder special use-case
+  const networkOptions = Object.entries(GAUGE_NETWORK_MAP).map(([apiID, label]) => ({
+    label,
+    apiID, // Using the key directly
+    chainId: "0" // Default chainId
+  })).filter(network => network.apiID !== "sonic");
+
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {
@@ -183,20 +191,25 @@ export default function EnableGaugePage() {
 
               <FormControl mr="10px" width="200px">
                 <FormLabel>Network</FormLabel>
-                <Select
-                  value={gauge.network}
-                  onChange={e => {
+                <NetworkSelector
+                  networks={networks}
+                  networkOptions={networkOptions}
+                  selectedNetwork={gauge.network}
+                  handleNetworkChange={e => {
                     const updatedGauges = [...gauges];
-                    updatedGauges[index].network = e.target.value;
+                    const selectedApiID = e.target.value;
+                    // Add type checking before accessing the map
+                    if (selectedApiID in GAUGE_NETWORK_MAP) {
+                      // Using type assertion to tell TypeScript this is a valid key
+                      updatedGauges[index].network = GAUGE_NETWORK_MAP[selectedApiID as GaugeNetworkId];
+                    } else {
+                      // Fallback for any network IDs not in our map
+                      updatedGauges[index].network = selectedApiID;
+                    }
+
                     setGauges(updatedGauges);
                   }}
-                >
-                  {NETWORK_OPTIONS.map(net => (
-                    <option key={net.label} value={net.label}>
-                      {net.label}
-                    </option>
-                  ))}
-                </Select>
+                />
               </FormControl>
 
               <Box>
