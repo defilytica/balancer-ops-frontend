@@ -63,7 +63,7 @@
     "react-feather": "^2.0.10",
     "react-icons": "^5.2.1",
     "react-json-view": "^1.21.3",
-    "recharts": "^2.13.0",
+    "recharts": "^2.15.2",
     "tinycolor2": "^1.6.0",
     "viem": "^2.24.2",
     "wagmi": "^2.14.16"
