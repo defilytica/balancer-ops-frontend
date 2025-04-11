@@ -48,9 +48,8 @@ export async function GET(request: NextRequest) {
     // Create the response with cache headers
     const response = NextResponse.json(allInjectors);
     // Set cache control headers
-    response.headers.set('Cache-Control', `s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
+    response.headers.set("Cache-Control", `s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
     return response;
-
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });

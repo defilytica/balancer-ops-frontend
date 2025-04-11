@@ -12,7 +12,6 @@ import {
   Box,
   Text,
   VStack,
-  HStack,
   useMediaQuery,
   IconButton,
   Tooltip,

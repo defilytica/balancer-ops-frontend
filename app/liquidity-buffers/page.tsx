@@ -4,7 +4,7 @@ import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
 import LiquidityBuffersModule from "@/components/LiquidityBuffersModule";
 import { Box } from "@chakra-ui/react";
 
-export default async function () {
+export default async function LiquidityBufferPage() {
   //Fetch address book data
   const addressBook = await fetchAddressBook();
 

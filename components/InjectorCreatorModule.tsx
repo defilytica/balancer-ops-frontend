@@ -26,9 +26,26 @@ import {
   HStack,
   Badge,
   Link,
-  Spinner, Center, Table, Th, Tbody, Td, Thead, Tr, AlertTitle, List, ListItem, ListIcon,
+  Spinner,
+  Center,
+  Table,
+  Th,
+  Tbody,
+  Td,
+  Thead,
+  Tr,
+  AlertTitle,
+  List,
+  ListItem,
+  ListIcon,
 } from "@chakra-ui/react";
-import { InfoIcon, ExternalLinkIcon, CheckCircleIcon, CopyIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import {
+  InfoIcon,
+  ExternalLinkIcon,
+  CheckCircleIcon,
+  CopyIcon,
+  ChevronRightIcon,
+} from "@chakra-ui/icons";
 import { ethers } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -42,32 +59,32 @@ import axios from "axios";
 // ERC20 Token ABI (minimal for name, symbol and decimals)
 const ERC20_ABI = [
   {
-    "constant": true,
-    "inputs": [],
-    "name": "name",
-    "outputs": [{ "name": "", "type": "string" }],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
+    constant: true,
+    inputs: [],
+    name: "name",
+    outputs: [{ name: "", type: "string" }],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
   },
   {
-    "constant": true,
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [{ "name": "", "type": "string" }],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
+    constant: true,
+    inputs: [],
+    name: "symbol",
+    outputs: [{ name: "", type: "string" }],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
   },
   {
-    "constant": true,
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [{ "name": "", "type": "uint8" }],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  }
+    constant: true,
+    inputs: [],
+    name: "decimals",
+    outputs: [{ name: "", type: "uint8" }],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 
 interface InjectorCreationProps {
@@ -98,7 +115,7 @@ interface NetworkInjectorResponse {
 }
 
 const convertToRawAmount = (humanAmount: string, decimals: number): string => {
-  if (!humanAmount || humanAmount === '' || !decimals) return "0";
+  if (!humanAmount || humanAmount === "" || !decimals) return "0";
   try {
     // Convert from human-readable to raw uint256 value
     return ethers.parseUnits(humanAmount, decimals).toString();
@@ -109,7 +126,7 @@ const convertToRawAmount = (humanAmount: string, decimals: number): string => {
 };
 
 const convertToHumanReadable = (rawAmount: string, decimals: number): string => {
-  if (!rawAmount || rawAmount === '0' || !decimals) return "";
+  if (!rawAmount || rawAmount === "0" || !decimals) return "";
   try {
     // Convert from raw uint256 to human-readable value
     return ethers.formatUnits(rawAmount, decimals);
@@ -122,10 +139,16 @@ const convertToHumanReadable = (rawAmount: string, decimals: number): string => 
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [factoryAddress, setFactoryAddress] = useState("");
-  const [keeperAddresses, setKeeperAddresses] = useState<string[]>(["0x0000000000000000000000000000000000000000"]);
+  const [keeperAddresses, setKeeperAddresses] = useState<string[]>([
+    "0x0000000000000000000000000000000000000000",
+  ]);
   const [minWaitPeriodSeconds, setMinWaitPeriodSeconds] = useState("518400"); // Default: 6 days
   const [injectTokenAddress, setInjectTokenAddress] = useState("");
-  const [tokenInfo, setTokenInfo] = useState<{name: string; symbol: string; decimals: number} | null>(null);
+  const [tokenInfo, setTokenInfo] = useState<{
+    name: string;
+    symbol: string;
+    decimals: number;
+  } | null>(null);
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [maxInjectionAmount, setMaxInjectionAmount] = useState("0");
@@ -157,7 +180,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
 
           // Auto-select network based on connected chain
           const matchingNetwork = NETWORK_OPTIONS.find(
-            n => n.chainId === network.chainId.toString()
+            n => n.chainId === network.chainId.toString(),
           );
           if (matchingNetwork && selectedNetwork === "") {
             setSelectedNetwork(matchingNetwork.apiID);
@@ -227,18 +250,14 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
           const currentBatch = tokenAddresses.slice(batchStart, batchEnd);
 
           // Process batch in parallel
-          const promises = currentBatch.map(async (tokenAddress) => {
+          const promises = currentBatch.map(async tokenAddress => {
             try {
-              const tokenContract = new ethers.Contract(
-                tokenAddress,
-                ERC20_ABI,
-                provider
-              );
+              const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
 
               // Fetch token symbol and decimals
               const [symbol, decimals] = await Promise.all([
                 tokenContract.symbol(),
-                tokenContract.decimals()
+                tokenContract.decimals(),
               ]);
 
               return {
@@ -246,8 +265,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 info: {
                   address: tokenAddress,
                   symbol,
-                  decimals: Number(decimals)
-                }
+                  decimals: Number(decimals),
+                },
               };
             } catch (error) {
               console.error(`Failed to fetch token info for ${tokenAddress}:`, error);
@@ -256,8 +275,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 info: {
                   address: tokenAddress,
                   symbol: null,
-                  decimals: null
-                }
+                  decimals: null,
+                },
               };
             }
           });
@@ -278,7 +297,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
   }, [existingInjectors, selectedNetwork]);
 
   const getTokenSymbol = (tokenAddress: string | null): string => {
-    if (!tokenAddress) return 'Unknown';
+    if (!tokenAddress) return "Unknown";
 
     const normalizedAddress = tokenAddress.toLowerCase();
     const info = injectorTokenInfo[normalizedAddress];
@@ -287,13 +306,17 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       return info.symbol;
     }
 
-    return '...';
+    return "...";
   };
 
   // Fetch factory address for the selected network
   useEffect(() => {
     if (selectedNetwork) {
-      const maxiKeepers = getCategoryData(addressBook, selectedNetwork.toLowerCase(), "maxiKeepers");
+      const maxiKeepers = getCategoryData(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "maxiKeepers",
+      );
       console.log(maxiKeepers);
       if (maxiKeepers && maxiKeepers.injectorV2) {
         const factories = maxiKeepers.injectorV2;
@@ -323,28 +346,26 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       try {
         if (typeof window !== "undefined" && window.ethereum) {
           const provider = new ethers.BrowserProvider(window.ethereum);
-          const tokenContract = new ethers.Contract(
-            injectTokenAddress,
-            ERC20_ABI,
-            provider
-          );
+          const tokenContract = new ethers.Contract(injectTokenAddress, ERC20_ABI, provider);
 
           // Fetch token details
           const [name, symbol, decimals] = await Promise.all([
             tokenContract.name(),
             tokenContract.symbol(),
-            tokenContract.decimals()
+            tokenContract.decimals(),
           ]);
 
           setTokenInfo({
             name,
             symbol,
-            decimals: Number(decimals)
+            decimals: Number(decimals),
           });
         }
       } catch (error) {
         console.error("Failed to fetch token info:", error);
-        setTokenError("Failed to fetch token information. Please verify this is a valid ERC-20 token address.");
+        setTokenError(
+          "Failed to fetch token information. Please verify this is a valid ERC-20 token address.",
+        );
         setTokenInfo(null);
       } finally {
         setIsLoadingToken(false);
@@ -368,7 +389,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
 
       try {
         const response = await axios.get<NetworkInjectorResponse>(
-          `/api/injector/v2/network?network=${selectedNetwork.toLowerCase()}`
+          `/api/injector/v2/network?network=${selectedNetwork.toLowerCase()}`,
         );
 
         if (response.data.factory) {
@@ -426,7 +447,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
 
       // Find any injector that uses this token
       const matchingInjector = existingInjectors.find(
-        inj => inj.token && inj.token.toLowerCase() === normalizedTokenAddress
+        inj => inj.token && inj.token.toLowerCase() === normalizedTokenAddress,
       );
 
       console.log("Matching injector found:", matchingInjector);
@@ -452,7 +473,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
           const factoryContract = new ethers.Contract(
             factoryAddress,
             ChildChainGaugeInjectorV2Factory,
-            provider
+            provider,
           );
 
           // For now, we'll just clear the array
@@ -478,7 +499,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
 
   const handleHumanAmountChange = (value: string): void => {
     setHumanReadableAmount(value);
-    if (!value || value === '' || !tokenInfo?.decimals) {
+    if (!value || value === "" || !tokenInfo?.decimals) {
       setMaxInjectionAmount("0");
       setIsMaxAmountValid(true);
       return;
@@ -494,27 +515,30 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     }
   };
 
-  const handleNetworkChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newNetwork = e.target.value;
-    setSelectedNetwork(newNetwork);
-    setFactoryAddress("");
-    setTransactions([]);
+  const handleNetworkChange = useCallback(
+    async (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newNetwork = e.target.value;
+      setSelectedNetwork(newNetwork);
+      setFactoryAddress("");
+      setTransactions([]);
 
-    // Find the corresponding chain ID for the selected network
-    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
-    if (networkOption) {
-      try {
-        await switchChain({ chainId: Number(networkOption.chainId) });
-      } catch (error) {
-        toast({
-          title: "Error switching network",
-          description: "Please switch network manually in your wallet",
-          status: "error",
-          duration: 5000,
-        });
+      // Find the corresponding chain ID for the selected network
+      const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
+      if (networkOption) {
+        try {
+          await switchChain({ chainId: Number(networkOption.chainId) });
+        } catch (error) {
+          toast({
+            title: "Error switching network",
+            description: "Please switch network manually in your wallet",
+            status: "error",
+            duration: 5000,
+          });
+        }
       }
-    }
-  }, [switchChain, toast]);
+    },
+    [switchChain, toast],
+  );
 
   const handleAddKeeper = () => {
     setKeeperAddresses([...keeperAddresses, ""]);
@@ -541,7 +565,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
 
   const validateInputs = (): string | null => {
     if (!factoryAddress) return "Factory address is required";
-    if (!keeperAddresses.some(addr => addr.trim() !== "")) return "At least one keeper address is required";
+    if (!keeperAddresses.some(addr => addr.trim() !== ""))
+      return "At least one keeper address is required";
     if (!minWaitPeriodSeconds) return "Minimum wait period is required";
     if (!injectTokenAddress) return "Inject token address is required";
     if (!owner) return "Owner address is required";
@@ -561,9 +586,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       ethers.getAddress(owner);
 
       // Validate keeper addresses that aren't empty
-      keeperAddresses
-        .filter(addr => addr.trim() !== "")
-        .forEach(addr => ethers.getAddress(addr));
+      keeperAddresses.filter(addr => addr.trim() !== "").forEach(addr => ethers.getAddress(addr));
     } catch (error) {
       if (error instanceof Error) {
         return `Invalid address: ${error.message}`;
@@ -601,7 +624,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       const factoryContract = new ethers.Contract(
         factoryAddress,
         ChildChainGaugeInjectorV2Factory,
-        signer
+        signer,
       );
 
       // Filter out empty keeper addresses
@@ -616,15 +639,15 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         BigInt(minWaitPeriodSeconds || "0"),
         injectTokenAddress,
         parsedMaxAmount,
-        owner
+        owner,
       );
 
       // Add transaction to state
       setTransactions([
         {
           hash: tx.hash,
-          status: "pending"
-        }
+          status: "pending",
+        },
       ]);
 
       // Wait for transaction to be mined
@@ -651,12 +674,12 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         prev.map(t =>
           t.hash === tx.hash
             ? {
-              ...t,
-              status: "success",
-              address: injectorAddress
-            }
-            : t
-        )
+                ...t,
+                status: "success",
+                address: injectorAddress,
+              }
+            : t,
+        ),
       );
 
       toast({
@@ -671,7 +694,6 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       if (injectorAddress) {
         setDeployedInjectors([...deployedInjectors, injectorAddress]);
       }
-
     } catch (error) {
       console.error("Transaction failed:", error);
       let errorMessage = "Transaction failed";
@@ -681,11 +703,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
       }
 
       setTransactions(prev =>
-        prev.map(t =>
-          t.hash === prev[0]?.hash
-            ? { ...t, status: "error" }
-            : t
-        )
+        prev.map(t => (t.hash === prev[0]?.hash ? { ...t, status: "error" } : t)),
       );
 
       toast({
@@ -700,34 +718,35 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     }
   };
 
-  const isCorrectNetwork = currentChainId === NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId;
+  const isCorrectNetwork =
+    currentChainId === NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId;
 
   // Function to simulate a successful transaction (dev only)
   const simulateSuccessfulTransaction = () => {
     // Mock transaction hash (random)
-    const mockTxHash = `0x${Array.from({length: 64}, () =>
-      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    const mockTxHash = `0x${Array.from({ length: 64 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join("")}`;
 
     // Mock injector address
-    const mockInjectorAddress = `0x${Array.from({length: 40}, () =>
-      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    const mockInjectorAddress = `0x${Array.from({ length: 40 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join("")}`;
 
     // First add pending transaction
     setTransactions([
       {
         hash: mockTxHash,
-        status: "pending"
-      }
+        status: "pending",
+      },
     ]);
 
     // After 2 seconds, update to success with address
     setTimeout(() => {
       setTransactions(prev =>
         prev.map(tx =>
-          tx.hash === mockTxHash
-            ? { ...tx, status: "success", address: mockInjectorAddress }
-            : tx
-        )
+          tx.hash === mockTxHash ? { ...tx, status: "success", address: mockInjectorAddress } : tx,
+        ),
       );
 
       // Add to deployed injectors
@@ -767,10 +786,12 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         setTokenInfo({
           name: "Mock Token",
           symbol: "MOCK",
-          decimals: 18
+          decimals: 18,
         });
       } else {
-        setTokenError("Failed to fetch token information. Please verify this is a valid ERC-20 token address.");
+        setTokenError(
+          "Failed to fetch token information. Please verify this is a valid ERC-20 token address.",
+        );
       }
     }, 1500);
   };
@@ -818,9 +839,10 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         Deploy a Token Rewards Injector (v2)
       </Heading>
       <Box mb={6}>
-      <Text>
-        Use this interface to deploy a token rewards injector that can schedule token emissions on Balancer staking gauges
-      </Text>
+        <Text>
+          Use this interface to deploy a token rewards injector that can schedule token emissions on
+          Balancer staking gauges
+        </Text>
       </Box>
       <Alert status="info" mt={4} mb={4}>
         <Box flex="1">
@@ -836,7 +858,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                For more information about incentive programs, consult {" "}
+                For more information about incentive programs, consult{" "}
                 <Link
                   href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/incentive-management.html"
                   textDecoration="underline"
@@ -858,14 +880,15 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                For full automation, a {" "}
+                For full automation, a{" "}
                 <Link
                   href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#setting-up-a-chainlink-automation-balancer-maxi-specific-notes"
                   textDecoration="underline"
                   isExternal
                 >
                   Chainlink Upkeeper
-                </Link> {" "} has to be configured
+                </Link>{" "}
+                has to be configured
               </ListItem>
             </List>
           </AlertDescription>
@@ -921,11 +944,15 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                     <HStack key={index} mb={2}>
                       <AddressInput
                         value={keeper}
-                        onChange={(e) => handleKeeperChange(index, e.target.value)}
+                        onChange={e => handleKeeperChange(index, e.target.value)}
                         placeholder="0x0000000000000000000000000000000000000000 (zero address for anyone)"
                       />
                       {index > 0 && (
-                        <Button colorScheme="red" size="sm" onClick={() => handleRemoveKeeper(index)}>
+                        <Button
+                          colorScheme="red"
+                          size="sm"
+                          onClick={() => handleRemoveKeeper(index)}
+                        >
                           Remove
                         </Button>
                       )}
@@ -944,7 +971,11 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                       <InfoIcon ml={1} />
                     </Tooltip>
                   </Flex>
-                  <NumberInput value={minWaitPeriodSeconds} onChange={setMinWaitPeriodSeconds} min={0}>
+                  <NumberInput
+                    value={minWaitPeriodSeconds}
+                    onChange={setMinWaitPeriodSeconds}
+                    min={0}
+                  >
                     <NumberInputField placeholder="518400" />
                   </NumberInput>
                 </FormControl>
@@ -959,7 +990,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   </Flex>
                   <AddressInput
                     value={injectTokenAddress}
-                    onChange={(e) => setInjectTokenAddress(e.target.value)}
+                    onChange={e => setInjectTokenAddress(e.target.value)}
                     placeholder="0x..."
                   />
 
@@ -1022,7 +1053,9 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                     isInvalid={!isMaxAmountValid}
                   >
                     <NumberInputField
-                      placeholder={tokenInfo?.decimals ? "Enter amount in tokens" : "Enter token address first"}
+                      placeholder={
+                        tokenInfo?.decimals ? "Enter amount in tokens" : "Enter token address first"
+                      }
                     />
                   </NumberInput>
 
@@ -1066,7 +1099,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   </Flex>
                   <AddressInput
                     value={owner}
-                    onChange={(e) => setOwner(e.target.value)}
+                    onChange={e => setOwner(e.target.value)}
                     placeholder="0x..."
                   />
                 </FormControl>
@@ -1092,7 +1125,11 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   colorScheme="purple"
                   size="lg"
                   onClick={simulateSuccessfulTransaction}
-                  leftIcon={<span role="img" aria-label="development">🧪</span>}
+                  leftIcon={
+                    <span role="img" aria-label="development">
+                      🧪
+                    </span>
+                  }
                 >
                   Simulate Success (Dev Only)
                 </Button>
@@ -1100,7 +1137,11 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                   colorScheme="teal"
                   size="sm"
                   onClick={simulateTokenVerification}
-                  leftIcon={<span role="img" aria-label="token">🪙</span>}
+                  leftIcon={
+                    <span role="img" aria-label="token">
+                      🪙
+                    </span>
+                  }
                 >
                   Simulate Token Verification
                 </Button>
@@ -1157,10 +1198,15 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                         >
                           {tx.hash.substring(0, 6)}...{tx.hash.substring(tx.hash.length - 4)}
                         </Button>
-                        <Badge colorScheme={
-                          tx.status === "success" ? "green" :
-                            tx.status === "pending" ? "orange" : "red"
-                        }>
+                        <Badge
+                          colorScheme={
+                            tx.status === "success"
+                              ? "green"
+                              : tx.status === "pending"
+                                ? "orange"
+                                : "red"
+                          }
+                        >
                           {tx.status}
                         </Badge>
                       </HStack>
@@ -1199,7 +1245,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                             <Td>
                               <HStack spacing={1}>
                                 <Text fontSize="sm" fontFamily="mono">
-                                  {injector.address.substring(0, 8)}...{injector.address.substring(injector.address.length - 6)}
+                                  {injector.address.substring(0, 8)}...
+                                  {injector.address.substring(injector.address.length - 6)}
                                 </Text>
                                 <Link
                                   href={`${networks[selectedNetwork.toLowerCase()]?.explorer}address/${injector.address}`}
@@ -1232,7 +1279,8 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                               {injector.token ? (
                                 <HStack spacing={1}>
                                   <Text fontSize="sm" fontFamily="mono">
-                                    {injector.token.substring(0, 8)}...{injector.token.substring(injector.token.length - 6)}
+                                    {injector.token.substring(0, 8)}...
+                                    {injector.token.substring(injector.token.length - 6)}
                                   </Text>
                                   <Link
                                     href={`${networks[selectedNetwork.toLowerCase()]?.explorer}token/${injector.token}`}
@@ -1261,22 +1309,28 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                                   </Tooltip>
                                 </HStack>
                               ) : (
-                                <Text color="gray.500" fontSize="sm">Unknown</Text>
+                                <Text color="gray.500" fontSize="sm">
+                                  Unknown
+                                </Text>
                               )}
                             </Td>
                             <Td>
                               {injector.token ? (
-                                getTokenSymbol(injector.token) === '...' ? (
+                                getTokenSymbol(injector.token) === "..." ? (
                                   <Spinner size="xs" />
                                 ) : (
                                   <Text fontWeight="medium">{getTokenSymbol(injector.token)}</Text>
                                 )
                               ) : (
-                                <Text color="gray.500" fontSize="sm">Unknown</Text>
+                                <Text color="gray.500" fontSize="sm">
+                                  Unknown
+                                </Text>
                               )}
                             </Td>
                             <Td textAlign="right">
-                              <Badge colorScheme="green" ml="auto">Active</Badge>
+                              <Badge colorScheme="green" ml="auto">
+                                Active
+                              </Badge>
                             </Td>
                           </Tr>
                         ))}

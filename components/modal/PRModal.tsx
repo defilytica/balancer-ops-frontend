@@ -75,17 +75,17 @@ const getStartOfNextWeek = () => {
 };
 
 export const PRCreationModal: React.FC<PRCreationModalProps> = ({
-                                                                  isOpen,
-                                                                  onClose,
-                                                                  payload,
-                                                                  type,
-                                                                  network,
-                                                                  prefillBranchName,
-                                                                  prefillPrName,
-                                                                  prefillDescription,
-                                                                  prefillFilePath,
-                                                                  prefillFilename,
-                                                                }) => {
+  isOpen,
+  onClose,
+  payload,
+  type,
+  network,
+  prefillBranchName,
+  prefillPrName,
+  prefillDescription,
+  prefillFilePath,
+  prefillFilename,
+}) => {
   const payloadOption = PAYLOAD_OPTIONS.find(option => option.key === type);
   const repoOptions = payloadOption ? payloadOption.repos : [];
 
@@ -109,8 +109,14 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       // Set pre-filled values if provided, otherwise use defaults
-      setPrBranch(prefillBranchName || `${branchNamePlaceholder || `feature/${type}`}-${generateUniqueId()}`);
-      setPrName(prefillPrName || prNamePlaceholder || `${type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ')}`);
+      setPrBranch(
+        prefillBranchName || `${branchNamePlaceholder || `feature/${type}`}-${generateUniqueId()}`,
+      );
+      setPrName(
+        prefillPrName ||
+          prNamePlaceholder ||
+          `${type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, " ")}`,
+      );
       setPrDescription(prefillDescription || "");
 
       // Don't set filePath here - we'll calculate it separately
@@ -146,23 +152,23 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
   const getFinalFilePath = () => {
     // If we have a base path (from config with replacements) and a filename
     if (filePath && prefillFilename) {
-      const pathWithSlash = filePath.endsWith('/') ? filePath : `${filePath}/`;
+      const pathWithSlash = filePath.endsWith("/") ? filePath : `${filePath}/`;
       return `${pathWithSlash}${prefillFilename}`;
     }
 
     // If we have a base path and the legacy prefillFilePath (which is just a filename)
-    if (filePath && prefillFilePath && !prefillFilePath.includes('/')) {
-      const pathWithSlash = filePath.endsWith('/') ? filePath : `${filePath}/`;
+    if (filePath && prefillFilePath && !prefillFilePath.includes("/")) {
+      const pathWithSlash = filePath.endsWith("/") ? filePath : `${filePath}/`;
       return `${pathWithSlash}${prefillFilePath}`;
     }
 
     // For backward compatibility - if prefillFilePath contains a full path
-    if (prefillFilePath && prefillFilePath.includes('/')) {
+    if (prefillFilePath && prefillFilePath.includes("/")) {
       return prefillFilePath;
     }
 
     // If we only have a path from the config and no filename
-    return filePath || '';
+    return filePath || "";
   };
 
   useEffect(() => {

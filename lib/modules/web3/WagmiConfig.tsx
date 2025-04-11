@@ -23,7 +23,7 @@ import {
   polygon,
   polygonZkEvm,
   sepolia,
-  sonic
+  sonic,
 } from "wagmi/chains";
 import { http } from "viem";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
@@ -40,25 +40,6 @@ import sonicLogo from "@/public/imgs/sonic.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
-
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [
-        // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
-        metaMaskWallet,
-        safeWallet,
-        walletConnectWallet,
-        rabbyWallet,
-        coinbaseWallet,
-        rainbowWallet,
-        injectedWallet,
-      ],
-    },
-  ],
-  { appName, projectId },
-);
 
 // Customize chain icons
 const customChains = {
@@ -112,36 +93,74 @@ const customChains = {
   },
 };
 
-export type WagmiConfig = ReturnType<typeof createConfig>;
-export const wagmiConfig: Config = createConfig({
-  chains: [
-    customChains.mainnet,
-    customChains.arbitrum,
-    customChains.base,
-    customChains.avalanche,
-    customChains.gnosis,
-    customChains.optimism,
-    customChains.polygon,
-    customChains.polygonZkEvm,
-    customChains.sepolia,
-    customChains.mode,
-    customChains.fraxtal,
-    customChains.sonic,
-  ],
-  transports: {
-    [mainnet.id]: http("https://eth.llamarpc.com"),
-    [arbitrum.id]: http("https://arbitrum.llamarpc.com"),
-    [base.id]: http("https://base.llamarpc.com"),
-    [avalanche.id]: http("https://avalanche.drpc.org"),
-    [gnosis.id]: http("https://gnosis.drpc.org"),
-    [optimism.id]: http("https://optimism.drpc.org"),
-    [polygon.id]: http("https://polygon.llamarpc.com"),
-    [polygonZkEvm.id]: http("https://polygon-zkevm.drpc.org"),
-    [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
-    [mode.id]: http("https://mode.drpc.org"),
-    [fraxtal.id]: http("https://fraxtal.drpc.org"),
-    [sonic.id]: http("https://sonic.drpc.org"),
-  },
-  connectors,
-  ssr: true,
-});
+// Create connectors lazily to prevent multiple initializations
+let connectors: ReturnType<typeof connectorsForWallets>;
+const getConnectors = () => {
+  if (!connectors) {
+    connectors = connectorsForWallets(
+      [
+        {
+          groupName: "Recommended",
+          wallets: [
+            // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
+            metaMaskWallet,
+            safeWallet,
+            walletConnectWallet,
+            rabbyWallet,
+            coinbaseWallet,
+            rainbowWallet,
+            injectedWallet,
+          ],
+        },
+      ],
+      { appName, projectId },
+    );
+  }
+  return connectors;
+};
+
+export type WagmiConfig = Config;
+
+// Create the config just once and export it
+let wagmiConfigInstance: Config | null = null;
+
+export function getWagmiConfig(): Config {
+  if (!wagmiConfigInstance) {
+    wagmiConfigInstance = createConfig({
+      chains: [
+        customChains.mainnet,
+        customChains.arbitrum,
+        customChains.base,
+        customChains.avalanche,
+        customChains.gnosis,
+        customChains.optimism,
+        customChains.polygon,
+        customChains.polygonZkEvm,
+        customChains.sepolia,
+        customChains.mode,
+        customChains.fraxtal,
+        customChains.sonic,
+      ],
+      transports: {
+        [mainnet.id]: http("https://eth.llamarpc.com"),
+        [arbitrum.id]: http("https://arbitrum.llamarpc.com"),
+        [base.id]: http("https://base.llamarpc.com"),
+        [avalanche.id]: http("https://avalanche.drpc.org"),
+        [gnosis.id]: http("https://gnosis.drpc.org"),
+        [optimism.id]: http("https://optimism.drpc.org"),
+        [polygon.id]: http("https://polygon.llamarpc.com"),
+        [polygonZkEvm.id]: http("https://polygon-zkevm.drpc.org"),
+        [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
+        [mode.id]: http("https://mode.drpc.org"),
+        [fraxtal.id]: http("https://fraxtal.drpc.org"),
+        [sonic.id]: http("https://sonic.drpc.org"),
+      },
+      connectors: getConnectors(),
+      ssr: true,
+    });
+  }
+  return wagmiConfigInstance;
+}
+
+// For compatibility with existing code
+export const wagmiConfig = getWagmiConfig();

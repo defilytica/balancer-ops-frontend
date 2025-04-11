@@ -1,5 +1,5 @@
 // components/tables/DuneGaugeDataTable.tsx
-import React from 'react';
+import React from "react";
 import {
   Box,
   Text,
@@ -13,8 +13,8 @@ import {
   Badge,
   useMediaQuery,
   Tooltip,
-} from '@chakra-ui/react';
-import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+} from "@chakra-ui/react";
+import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from "@chakra-ui/icons";
 import { GaugeData } from "@/types/interfaces";
 import { SortableColumn, SortDirection } from "@/types/types";
 import { formatUSD } from "@/lib/services/formatters";
@@ -29,13 +29,13 @@ interface DuneDataTableProps {
 }
 
 const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
-                                                            data,
-                                                            loading,
-                                                            error,
-                                                            sortData,
-                                                            sortColumn,
-                                                            sortDirection,
-                                                          }) => {
+  data,
+  loading,
+  error,
+  sortData,
+  sortColumn,
+  sortDirection,
+}) => {
   const [isMobile] = useMediaQuery("(max-width: 48em)");
 
   if (loading) {
@@ -64,13 +64,13 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
 
   // Define column headers and their labels
   const columns: { key: SortableColumn; label: string }[] = [
-    { key: 'symbol', label: 'Symbol' },
-    { key: 'gauge', label: 'Root Gauge' },
-    { key: 'last_vote_date', label: 'Last Vote Date' },
-    { key: 'days_since_last_vote', label: 'Days Since Last Vote' },
-    { key: 'last_vote_amount', label: 'Last Vote Amount (veBAL)' },
-    { key: 'last_vote_percentage', label: 'Last Vote Percentage (%)' },
-    { key: 'max_60d_tvl', label: 'Max. TVL (60d)' },
+    { key: "symbol", label: "Symbol" },
+    { key: "gauge", label: "Root Gauge" },
+    { key: "last_vote_date", label: "Last Vote Date" },
+    { key: "days_since_last_vote", label: "Days Since Last Vote" },
+    { key: "last_vote_amount", label: "Last Vote Amount (veBAL)" },
+    { key: "last_vote_percentage", label: "Last Vote Percentage (%)" },
+    { key: "max_60d_tvl", label: "Max. TVL (60d)" },
   ];
 
   const SortableHeader: React.FC<{
@@ -80,7 +80,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
     <Flex alignItems="center" cursor="pointer" onClick={() => sortData(column)}>
       <Text fontWeight="bold">{label}</Text>
       {sortColumn === column &&
-        (sortDirection === 'asc' ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />)}
+        (sortDirection === "asc" ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />)}
     </Flex>
   );
 
@@ -130,7 +130,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
       <Box as="table" width="100%" style={{ borderCollapse: "collapse" }}>
         <Box as="thead">
           <Box as="tr">
-            {columns.map((column) => (
+            {columns.map(column => (
               <Box as="th" key={column.key} p={3}>
                 <SortableHeader column={column.key} label={column.label} />
               </Box>
@@ -142,12 +142,7 @@ const DuneGaugeDataTable: React.FC<DuneDataTableProps> = ({
         </Box>
         <Box as="tbody">
           {data.map((row, index) => (
-            <Box
-              as="tr"
-              key={index}
-              _hover={{ bg: "gray.500" }}
-              transition="background-color 0.2s"
-            >
+            <Box as="tr" key={index} _hover={{ bg: "gray.500" }} transition="background-color 0.2s">
               <Box as="td" p={2}>
                 <Text fontWeight="medium">{row.symbol}</Text>
               </Box>

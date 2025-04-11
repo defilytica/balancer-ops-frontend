@@ -13,7 +13,7 @@ const rateLimiter = new RateLimiter({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.ip ?? req.headers.get("X-Forwarded-For") ?? "unknown";
+  const ip = req.headers.get("x-real-ip") ?? req.headers.get("X-Forwarded-For") ?? "unknown";
   const isRateLimited = rateLimiter.limit(ip);
 
   if (isRateLimited) {

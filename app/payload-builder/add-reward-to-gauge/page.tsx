@@ -116,9 +116,7 @@ export default function AddRewardToGaugePage() {
     const selectedApiID = e.target.value;
 
     // First find the network option by apiID
-    const selectedOption = NETWORK_OPTIONS.find(
-      option => option.apiID === selectedApiID
-    );
+    const selectedOption = NETWORK_OPTIONS.find(option => option.apiID === selectedApiID);
 
     if (selectedOption) {
       // Set the label as the network name
@@ -209,9 +207,12 @@ export default function AddRewardToGaugePage() {
       rewardSummary = `token ${shortTokenId} to gauge ${shortGaugeId}`;
     } else if (rewardAdds.length <= 3) {
       // List all rewards if 3 or fewer
-      rewardSummary = rewardAdds.map(reward =>
-        `${reward.rewardToken.substring(0, 8)} to ${reward.targetGauge.substring(0, 8)}`
-      ).join(', ');
+      rewardSummary = rewardAdds
+        .map(
+          reward =>
+            `${reward.rewardToken.substring(0, 8)} to ${reward.targetGauge.substring(0, 8)}`,
+        )
+        .join(", ");
     } else {
       // Summarize if more than 3
       rewardSummary = `${rewardAdds.length} reward tokens to ${rewardAdds.length} gauges`;
@@ -222,9 +223,9 @@ export default function AddRewardToGaugePage() {
 
     return {
       prefillBranchName: `feature/add-rewards-${shortGaugeId}-${uniqueId}`,
-      prefillPrName: `Add Reward${rewardAdds.length !== 1 ? 's' : ''} to Gauge${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
-      prefillDescription: `This PR adds reward${rewardAdds.length !== 1 ? 's' : ''} (${rewardSummary}) on ${networkText}.`,
-      prefillFilename: filename
+      prefillPrName: `Add Reward${rewardAdds.length !== 1 ? "s" : ""} to Gauge${rewardAdds.length !== 1 ? "s" : ""} on ${networkText}`,
+      prefillDescription: `This PR adds reward${rewardAdds.length !== 1 ? "s" : ""} (${rewardSummary}) on ${networkText}.`,
+      prefillFilename: filename,
     };
   };
 
@@ -246,8 +247,8 @@ export default function AddRewardToGaugePage() {
           </Flex>
           <AlertDescription display="block">
             <Text fontSize="sm" mb={2}>
-              Use this option if you need to enable a new reward token and distributor for a
-              staking gauge.
+              Use this option if you need to enable a new reward token and distributor for a staking
+              gauge.
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>

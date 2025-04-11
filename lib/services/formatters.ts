@@ -4,13 +4,9 @@ export function formatUSD(
     useShorthand?: boolean;
     decimalPlaces?: number;
     showZeroDecimals?: boolean;
-  } = {}
+  } = {},
 ): string {
-  const {
-    useShorthand = false,
-    decimalPlaces = 2,
-    showZeroDecimals = true
-  } = options;
+  const { useShorthand = false, decimalPlaces = 2, showZeroDecimals = true } = options;
 
   if (value === 0) {
     return showZeroDecimals ? "$0.00" : "$0";
@@ -37,11 +33,11 @@ export function formatUSD(
   }
 
   // Standard formatting using Intl.NumberFormat
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: showZeroDecimals ? decimalPlaces : 0,
-    maximumFractionDigits: decimalPlaces
+    maximumFractionDigits: decimalPlaces,
   });
 
   return formatter.format(value);
@@ -53,12 +49,12 @@ export function formatUSD(
 function stripTrailingZeros(numStr: string, showZeroDecimals: boolean): string {
   if (!showZeroDecimals) {
     // If the number has only zeros after decimal, remove the decimal part
-    if (numStr.includes('.') && !numStr.split('.')[1].match(/[1-9]/)) {
-      return numStr.split('.')[0];
+    if (numStr.includes(".") && !numStr.split(".")[1].match(/[1-9]/)) {
+      return numStr.split(".")[0];
     }
 
     // Remove trailing zeros
-    return numStr.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    return numStr.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
   }
 
   return numStr;

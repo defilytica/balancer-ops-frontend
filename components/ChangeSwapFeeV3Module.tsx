@@ -109,9 +109,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const getMultisigForNetwork = useCallback(
     (network: string) => {
       // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === 'sonic') {
+      if (network.toLowerCase() === "sonic") {
         const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic? sonic?.maxiSafe : "";
+        return sonic ? sonic?.maxiSafe : "";
       }
       const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
       if (multisigs && multisigs["maxi_omni"]) {
@@ -129,7 +129,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network => (networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === 'SONIC'));
+    return NETWORK_OPTIONS.filter(
+      network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
+    );
   }, [addressBook]);
 
   const handleNetworkChange = useCallback(
@@ -314,7 +316,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
       prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
-      prefillFilename: filename
+      prefillFilename: filename,
     };
   };
 
@@ -521,7 +523,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           >
             Copy Payload to Clipboard
           </Button>
-          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork}/>
+          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
           <Box mt={8} />
           <PRCreationModal
             type={"fee-setter-v3"}

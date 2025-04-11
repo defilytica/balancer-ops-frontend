@@ -13,8 +13,6 @@ import {
   Text,
   Alert,
   AlertIcon,
-  Button,
-  Center,
 } from "@chakra-ui/react";
 import React, { useCallback, useState } from "react";
 import { PoolTypeSelector } from "@/components/poolCreator/PoolTypeSelector";
@@ -29,7 +27,7 @@ import PoolLookup from "@/components/poolCreator/PoolLookup";
 import { PoolConfig } from "@/types/interfaces";
 import { AlertCircle } from "react-feather";
 import MobileWarning from "@/components/MobileWarning";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 
 const PoolCreatorPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -38,7 +36,6 @@ const PoolCreatorPage: React.FC = () => {
   const { poolConfig, setPoolConfig, updatePoolType, updateTokens, updateSettings, isStepValid } =
     usePoolCreator();
   const { chainId, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
 
   const validateStep = useCallback(
     (step: number): boolean => {
@@ -217,9 +214,7 @@ const PoolCreatorPage: React.FC = () => {
                 <AlertIcon />
                 <Text>No Wallet Connected</Text>
               </Alert>
-              <Text>
-                Please connect on the top right to proceed
-              </Text>
+              <Text>Please connect on the top right to proceed</Text>
             </CardBody>
           </Card>
         </Box>
@@ -242,7 +237,8 @@ const PoolCreatorPage: React.FC = () => {
                 <Text>This chain is not supported</Text>
               </Alert>
               <Text>
-                Chain ID 146 is not supported by the Balancer v2 Pool Creator. Please switch to a supported network.
+                Chain ID 146 is not supported by the Balancer v2 Pool Creator. Please switch to a
+                supported network.
               </Text>
             </CardBody>
           </Card>
@@ -259,7 +255,8 @@ const PoolCreatorPage: React.FC = () => {
           Balancer v2 Pool Creator
         </Heading>
         <Text mb={5}>
-          Select a network on the top right and create a Balancer v2 pool. This tool only supports pool creation of whitelisted tokens.
+          Select a network on the top right and create a Balancer v2 pool. This tool only supports
+          pool creation of whitelisted tokens.
         </Text>
         <PoolCreatorStepper activeStep={activeStep} />
         <Grid templateColumns="5fr 1fr" gap={8} mt={8}>

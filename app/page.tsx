@@ -1,31 +1,8 @@
 "use client";
-import {
-  Box,
-  Heading,
-  Text,
-  Button,
-  VStack,
-  Container,
-  Grid,
-  GridItem,
-  Link,
-  SimpleGrid,
-  Flex,
-  keyframes,
-  useDisclosure,
-  SlideFade,
-  ScaleFade,
-} from "@chakra-ui/react";
+import { Box, Heading, Text, Button, VStack, Container, Link, Flex } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import {
-  TbTransactionBitcoin,
-  TbGaugeFilled,
-  TbChartBar,
-  TbTemplate,
-  TbActivity,
-} from "react-icons/tb";
-import { MdPool } from "react-icons/md";
+import { TbTransactionBitcoin, TbGaugeFilled, TbActivity } from "react-icons/tb";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import { FaRegChartBar } from "react-icons/fa6";
 

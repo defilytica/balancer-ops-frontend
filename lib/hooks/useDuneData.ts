@@ -1,5 +1,5 @@
 // hooks/useDuneData.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { DuneResponse, GaugeData } from "@/types/interfaces";
 import { SortableColumn, SortDirection } from "@/types/types";
 
@@ -7,8 +7,8 @@ export const useDuneData = (queryId: number) => {
   const [data, setData] = useState<GaugeData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] = useState<SortableColumn>('days_since_last_vote');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortColumn, setSortColumn] = useState<SortableColumn>("days_since_last_vote");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [lastExecutionTime, setLastExecutionTime] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,14 +18,14 @@ export const useDuneData = (queryId: number) => {
         const response = await fetch(`/api/dune?queryId=${queryId}`);
 
         if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error("Failed to fetch data");
         }
 
         const duneResponse: DuneResponse = await response.json();
         setData(duneResponse.result.rows);
         setLastExecutionTime(duneResponse.execution_ended_at);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
       } finally {
         setLoading(false);
       }
@@ -37,13 +37,13 @@ export const useDuneData = (queryId: number) => {
   const sortData = (column: SortableColumn) => {
     // If clicking the same column, toggle direction
     const direction: SortDirection =
-      column === sortColumn && sortDirection === 'asc' ? 'desc' : 'asc';
+      column === sortColumn && sortDirection === "asc" ? "desc" : "asc";
 
     // Clone the data array to avoid mutating state directly
     const sortedData = [...data].sort((a, b) => {
       // Handle numeric columns
-      if (typeof a[column] === 'number' && typeof b[column] === 'number') {
-        return direction === 'asc'
+      if (typeof a[column] === "number" && typeof b[column] === "number") {
+        return direction === "asc"
           ? (a[column] as number) - (b[column] as number)
           : (b[column] as number) - (a[column] as number);
       }
@@ -52,7 +52,7 @@ export const useDuneData = (queryId: number) => {
       const aValue = String(a[column]).toLowerCase();
       const bValue = String(b[column]).toLowerCase();
 
-      if (direction === 'asc') {
+      if (direction === "asc") {
         return aValue.localeCompare(bValue);
       } else {
         return bValue.localeCompare(aValue);

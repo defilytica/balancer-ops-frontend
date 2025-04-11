@@ -17,7 +17,8 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
-  useOutsideClick, useColorModeValue,
+  useOutsideClick,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
 import { Pool } from "@/types/interfaces";
@@ -45,7 +46,10 @@ const PoolSelector = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
-  const dropdownBg = useColorModeValue("white", colors.gray[700]);
+
+  // Color modes
+  const dropdownBgColor = useColorModeValue("white", "gray.700");
+  const hoverBgColor = useColorModeValue("gray.100", "gray.600");
 
   // Close dropdown when clicking outside
   useOutsideClick({
@@ -54,12 +58,14 @@ const PoolSelector = ({
   });
 
   // Filter pools based on search term
-  const filteredPools = pools ? pools.filter(
-    (pool) =>
-      pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pool.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pool.id.toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
+  const filteredPools = pools
+    ? pools.filter(
+        pool =>
+          pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pool.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pool.id.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : [];
 
   // Focus on input when dropdown opens
   useEffect(() => {
@@ -109,10 +115,13 @@ const PoolSelector = ({
             value={isDropdownOpen ? searchTerm : selectedPool ? selectedPool.name : ""}
             placeholder={loading ? "Indexing pools..." : "Search and select a pool"}
             onClick={handleInputClick}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             readOnly={!isDropdownOpen}
             isDisabled={loading}
-            _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+            _focus={{
+              borderColor: "blue.500",
+              boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)",
+            }}
           />
           <InputRightElement>
             {selectedPool ? (
@@ -121,7 +130,7 @@ const PoolSelector = ({
                 icon={<CloseIcon />}
                 size="sm"
                 variant="ghost"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onClearSelection();
                   setSearchTerm("");
@@ -144,7 +153,7 @@ const PoolSelector = ({
             mt={1}
             borderRadius="md"
             boxShadow="lg"
-            bg={dropdownBg}
+            bg={dropdownBgColor}
             borderWidth="1px"
             maxH="300px"
             overflowY="auto"
@@ -177,7 +186,7 @@ const PoolSelector = ({
               </Text>
             ) : (
               <List>
-                {filteredPools.map((pool) => (
+                {filteredPools.map(pool => (
                   <ListItem
                     key={pool.address}
                     onClick={() => {
@@ -186,7 +195,7 @@ const PoolSelector = ({
                       setSearchTerm("");
                     }}
                     cursor="pointer"
-                    _hover={{ bg: "gray.600" }}
+                    _hover={{ bg: hoverBgColor }}
                     p={3}
                     borderBottomWidth="1px"
                     borderBottomColor="gray.500"

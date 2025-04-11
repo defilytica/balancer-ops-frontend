@@ -18,20 +18,12 @@ import {
   List,
   ListIcon,
   ListItem,
-  Select,
   SimpleGrid,
   Text,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import {
-  AddIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  DeleteIcon,
-  DownloadIcon,
-  InfoIcon,
-} from "@chakra-ui/icons";
+import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import {
   copyJsonToClipboard,
@@ -117,9 +109,7 @@ export default function SetRewardDistributorPage() {
     const selectedApiID = e.target.value;
 
     // First find the network option by apiID
-    const selectedOption = NETWORK_OPTIONS.find(
-      option => option.apiID === selectedApiID
-    );
+    const selectedOption = NETWORK_OPTIONS.find(option => option.apiID === selectedApiID);
 
     if (selectedOption) {
       // Set the label as the network name
@@ -210,9 +200,12 @@ export default function SetRewardDistributorPage() {
       rewardSummary = `token ${shortTokenId} on gauge ${shortGaugeId}`;
     } else if (rewardAdds.length <= 3) {
       // List all rewards if 3 or fewer
-      rewardSummary = rewardAdds.map(reward =>
-        `${reward.rewardToken.substring(0, 8)} on ${reward.targetGauge.substring(0, 8)}`
-      ).join(', ');
+      rewardSummary = rewardAdds
+        .map(
+          reward =>
+            `${reward.rewardToken.substring(0, 8)} on ${reward.targetGauge.substring(0, 8)}`,
+        )
+        .join(", ");
     } else {
       // Summarize if more than 3
       rewardSummary = `${rewardAdds.length} reward tokens on ${rewardAdds.length} gauges`;
@@ -223,9 +216,9 @@ export default function SetRewardDistributorPage() {
 
     return {
       prefillBranchName: `feature/set-distributor-${shortGaugeId}-${uniqueId}`,
-      prefillPrName: `Update Reward Distributor${rewardAdds.length !== 1 ? 's' : ''} on ${networkText}`,
-      prefillDescription: `This PR updates the distributor${rewardAdds.length !== 1 ? 's' : ''} for ${rewardSummary} on ${networkText}.`,
-      prefillFilename: filename
+      prefillPrName: `Update Reward Distributor${rewardAdds.length !== 1 ? "s" : ""} on ${networkText}`,
+      prefillDescription: `This PR updates the distributor${rewardAdds.length !== 1 ? "s" : ""} for ${rewardSummary} on ${networkText}.`,
+      prefillFilename: filename,
     };
   };
 
@@ -246,8 +239,10 @@ export default function SetRewardDistributorPage() {
             </AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <Text fontSize="sm" mb={2} >
-              Use this option only when you need to change an existing distributor for a reward token. If you need to add a new reward token and distributor, use the "Add Reward" Payload builder instead!
+            <Text fontSize="sm" mb={2}>
+              Use this option only when you need to change an existing distributor for a reward
+              token. If you need to add a new reward token and distributor, use the &quot; Add
+              Reward &quot; Payload builder instead!
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>

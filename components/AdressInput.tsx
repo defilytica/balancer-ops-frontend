@@ -12,12 +12,12 @@ interface AddressInputProps {
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
-                                                     value,
-                                                     onChange,
-                                                     placeholder = "0x...",
-                                                     isDisabled = false,
-                                                     isRequired = false,
-                                                   }) => {
+  value,
+  onChange,
+  placeholder = "0x...",
+  isDisabled = false,
+  isRequired = false,
+}) => {
   const [isValid, setIsValid] = useState<boolean | null>(null);
 
   useEffect(() => {

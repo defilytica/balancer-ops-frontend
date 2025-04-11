@@ -14,14 +14,13 @@ type RewardsInjectorContainerProps = {
 };
 
 export default function RewardsInjectorContainer({
-                                                   addressBook,
-                                                   isViewer,
-                                                 }: RewardsInjectorContainerProps) {
+  addressBook,
+  isViewer,
+}: RewardsInjectorContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedAddress, setSelectedAddress] = useState<AddressOption | null>(null);
-  const [selectedSafe, setSelectedSafe] = useState(String);
   const [injectorData, setInjectorData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -42,16 +41,18 @@ export default function RewardsInjectorContainer({
         const pathParts = pathname.split("/");
         const addressFromPath = pathParts[pathParts.length - 1];
         const networkFromPath = pathParts[pathParts.length - 2];
-        const isDirectUrlAccess = addressFromPath && networkFromPath
-          && addressFromPath.startsWith("0x")
-          && networks.includes(networkFromPath.toLowerCase());
+        const isDirectUrlAccess =
+          addressFromPath &&
+          networkFromPath &&
+          addressFromPath.startsWith("0x") &&
+          networks.includes(networkFromPath.toLowerCase());
 
         if (isV2) {
           // If we have a direct URL to a specific address, just load that one
           if (isDirectUrlAccess) {
             try {
               const tokenResponse = await fetch(
-                `/api/injector/v2/single?address=${addressFromPath}&network=${networkFromPath}`
+                `/api/injector/v2/single?address=${addressFromPath}&network=${networkFromPath}`,
               );
               const tokenData = await tokenResponse.json();
 
@@ -62,7 +63,7 @@ export default function RewardsInjectorContainer({
                   token: tokenData.tokenInfo.symbol || "",
                   tokenAddress: tokenData.tokenInfo.address || "",
                   // Add a unique identifier
-                  id: `${networkFromPath}-${addressFromPath}`
+                  id: `${networkFromPath}-${addressFromPath}`,
                 });
               }
             } catch (error) {
@@ -80,7 +81,7 @@ export default function RewardsInjectorContainer({
                 for (const address of item.deployedInjectors) {
                   try {
                     const tokenResponse = await fetch(
-                      `/api/injector/v2/single?address=${address}&network=${network}`
+                      `/api/injector/v2/single?address=${address}&network=${network}`,
                     );
                     const tokenData = await tokenResponse.json();
                     allAddressesWithOptions.push({
@@ -89,7 +90,7 @@ export default function RewardsInjectorContainer({
                       token: tokenData.tokenInfo.symbol || "",
                       tokenAddress: tokenData.tokenInfo.address || "",
                       // Add a unique identifier
-                      id: `${network}-${address}`
+                      id: `${network}-${address}`,
                     });
                   } catch (error) {
                     console.error(`Error fetching token info for ${address}:`, error);
@@ -99,7 +100,7 @@ export default function RewardsInjectorContainer({
                       token: "",
                       tokenAddress: "",
                       // Add a unique identifier
-                      id: `${network}-${address}`
+                      id: `${network}-${address}`,
                     });
                   }
                 }
@@ -121,7 +122,7 @@ export default function RewardsInjectorContainer({
                     address,
                     token,
                     // Add a unique identifier
-                    id: `${network}-${address}`
+                    id: `${network}-${address}`,
                   });
                 }
               }

@@ -36,7 +36,7 @@ export const V3_VAULT_ADDRESS = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
 
 // SONIC specific addresses that are not mapped in our address book
-export const SONIC_VAULT_EXPLORER = "0x6F6CD1a69A19d45df0C300A57829b21713637300"
+export const SONIC_VAULT_EXPLORER = "0x6F6CD1a69A19d45df0C300A57829b21713637300";
 
 export const PAYLOAD_OPTIONS = [
   {
@@ -316,7 +316,7 @@ export const networks: Record<string, NetworkInfo> = {
   avalanche: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
-    explorer: "https://snowscan.xyz/",
+    explorer: "https://snowtrace.io/",
     chainId: "43114",
   },
   arbitrum: {
@@ -346,7 +346,7 @@ export const networks: Record<string, NetworkInfo> = {
   avalanche_c: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
-    explorer: "https://snowscan.xyz/",
+    explorer: "https://snowtrace.io/",
     chainId: "43114",
   },
   ethereum: {
@@ -498,7 +498,6 @@ export const GAUGE_WEIGHT_CAPS = {
   UNCAPPED: "1000000000000000000", // No cap
 } as const;
 
-
 // Define a consistent mapping of network IDs to display names
 export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
   mainnet: "Ethereum",
@@ -510,5 +509,5 @@ export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
   base: "Base",
   gnosis: "Gnosis",
   fraxtal: "Fraxtal",
-  mode: "Mode"
+  mode: "Mode",
 };

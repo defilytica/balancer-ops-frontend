@@ -26,7 +26,7 @@ import {
   transformToHumanReadable,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { AddressBook } from "@/types/interfaces";
-import { NETWORK_OPTIONS, WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
+import { WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
 import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -51,11 +51,13 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   }>({});
 
   // Create network options for NetworkSelector
-  const [networkOptions, setNetworkOptions] = useState<Array<{
-    label: string;
-    apiID: string;
-    chainId: string;
-  }>>([]);
+  const [networkOptions, setNetworkOptions] = useState<
+    Array<{
+      label: string;
+      apiID: string;
+      chainId: string;
+    }>
+  >([]);
 
   useEffect(() => {
     // Directly determine available networks from token whitelist
@@ -68,7 +70,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       return {
         label: network.charAt(0).toUpperCase() + network.slice(1), // First letter capitalized for display
         apiID: network, // Keep the original network name (lowercase)
-        chainId: "0" // Default chainId if not found
+        chainId: "0", // Default chainId if not found
       };
     });
 
@@ -197,8 +199,8 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   };
 
   // Filter out SONIC and BSC from network options - use lowercase for consistency
-  const filteredNetworkOptions = networkOptions.filter(network =>
-    network.apiID !== "sonic" && network.apiID !== 'bsc'
+  const filteredNetworkOptions = networkOptions.filter(
+    network => network.apiID !== "sonic" && network.apiID !== "bsc",
   );
 
   return (

@@ -30,9 +30,19 @@ import {
   useMediaQuery,
   useToast,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon, CopyIcon, DeleteIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import {
+  AddIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  DeleteIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+} from "@chakra-ui/icons";
 import { AddressOption } from "@/types/interfaces";
-import SimulateTransactionButton, { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton, {
+  BatchFile,
+  Transaction,
+} from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import {
   copyJsonToClipboard,
@@ -74,36 +84,40 @@ interface RecipientConfigData {
 type EditableRecipientConfigData = Omit<RecipientConfigData, "id">;
 
 function RewardsInjectorConfiguratorV2({
-                                         addresses,
-                                         selectedAddress,
-                                         onAddressSelect,
-                                         selectedSafe,
-                                         injectorData,
-                                         isLoading,
-                                         isV2,
-                                         onVersionToggle,
-                                       }: RewardsInjectorConfiguratorV2Props) {
+  addresses,
+  selectedAddress,
+  onAddressSelect,
+  selectedSafe,
+  injectorData,
+  isLoading,
+  isV2,
+  onVersionToggle,
+}: RewardsInjectorConfiguratorV2Props) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
   // Changed to arrays of configurations
-  const [addConfigs, setAddConfigs] = useState<RecipientConfigData[]>([{
-    id: uuidv4(),
-    recipients: [""],
-    amountPerPeriod: "",
-    maxPeriods: "",
-    doNotStartBeforeTimestamp: "0",
-    rawAmountPerPeriod: "0",
-  }]);
-  const [removeConfigs, setRemoveConfigs] = useState<RecipientConfigData[]>([{
-    id: uuidv4(),
-    recipients: [""],
-    amountPerPeriod: "0",
-    maxPeriods: "0",
-    doNotStartBeforeTimestamp: "0",
-    rawAmountPerPeriod: "0",
-  }]);
+  const [addConfigs, setAddConfigs] = useState<RecipientConfigData[]>([
+    {
+      id: uuidv4(),
+      recipients: [""],
+      amountPerPeriod: "",
+      maxPeriods: "",
+      doNotStartBeforeTimestamp: "0",
+      rawAmountPerPeriod: "0",
+    },
+  ]);
+  const [removeConfigs, setRemoveConfigs] = useState<RecipientConfigData[]>([
+    {
+      id: uuidv4(),
+      recipients: [""],
+      amountPerPeriod: "0",
+      maxPeriods: "0",
+      doNotStartBeforeTimestamp: "0",
+      rawAmountPerPeriod: "0",
+    },
+  ]);
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
 
   // Define Transaction type to fix TypeScript errors
@@ -125,13 +139,13 @@ function RewardsInjectorConfiguratorV2({
   // Updated to handle config changes for multiple configs
   const handleConfigChange = (newConfig: EditableRecipientConfigData, configId: string) => {
     if (operation === "add") {
-      setAddConfigs(prev => prev.map(config =>
-        config.id === configId ? { ...newConfig, id: configId } : config,
-      ));
+      setAddConfigs(prev =>
+        prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
+      );
     } else if (operation === "remove") {
-      setRemoveConfigs(prev => prev.map(config =>
-        config.id === configId ? { ...newConfig, id: configId } : config,
-      ));
+      setRemoveConfigs(prev =>
+        prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
+      );
     }
   };
 
@@ -280,15 +294,17 @@ function RewardsInjectorConfiguratorV2({
   // Check if any rewards are too small
   const MIN_REWARD_AMOUNT_WEI = 604800; // Minimum amount in wei
 
-  const hasSmallRewards = operation === "add" && addConfigs.some(config => {
-    const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
-    return rawAmount > 0 && rawAmount <= MIN_REWARD_AMOUNT_WEI;
-  });
+  const hasSmallRewards =
+    operation === "add" &&
+    addConfigs.some(config => {
+      const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
+      return rawAmount > 0 && rawAmount <= MIN_REWARD_AMOUNT_WEI;
+    });
 
   // Convert min amount to human readable format for the warning
-  const minHumanReadableAmount = tokenDecimals ? (MIN_REWARD_AMOUNT_WEI / (10 ** tokenDecimals)).toFixed(
-    Math.min(6, tokenDecimals),
-  ) : "0.00";
+  const minHumanReadableAmount = tokenDecimals
+    ? (MIN_REWARD_AMOUNT_WEI / 10 ** tokenDecimals).toFixed(Math.min(6, tokenDecimals))
+    : "0.00";
 
   // Updated to generate multiple transactions in the payload
   const generatePayload = () => {
@@ -323,7 +339,11 @@ function RewardsInjectorConfiguratorV2({
         // Generate a transaction for each add config
         for (const config of addConfigs) {
           // Skip empty configurations
-          if (!config.recipients.some(r => r.trim()) || !config.rawAmountPerPeriod || !config.maxPeriods) {
+          if (
+            !config.recipients.some(r => r.trim()) ||
+            !config.rawAmountPerPeriod ||
+            !config.maxPeriods
+          ) {
             continue;
           }
 
@@ -646,10 +666,9 @@ function RewardsInjectorConfiguratorV2({
               <AlertIcon />
               <AlertTitle mr={2}>Rewards Too Small!</AlertTitle>
               <AlertDescription>
-                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI
-                or {minHumanReadableAmount} {tokenSymbol}).
-                The gauge cannot handle rewards this small. Please increase the reward amount to be at least 1 WEI /
-                second.
+                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI or{" "}
+                {minHumanReadableAmount} {tokenSymbol}). The gauge cannot handle rewards this small.
+                Please increase the reward amount to be at least 1 WEI / second.
               </AlertDescription>
             </Alert>
           )}
@@ -674,7 +693,9 @@ function RewardsInjectorConfiguratorV2({
             <Box mt={6}>
               <Flex justifyContent="space-between" alignItems="center" mb={4}>
                 <Heading as="h3" size="md">
-                  {operation === "add" ? "Add Recipients Configuration" : "Remove Recipients Configuration"}
+                  {operation === "add"
+                    ? "Add Recipients Configuration"
+                    : "Remove Recipients Configuration"}
                 </Heading>
                 <Button leftIcon={<AddIcon />} onClick={addConfigGroup} size="sm">
                   Add Configuration Group
@@ -692,7 +713,9 @@ function RewardsInjectorConfiguratorV2({
                   position="relative"
                 >
                   <Flex justifyContent="space-between" alignItems="center" mb={3}>
-                    <Heading as="h4" size="sm">Configuration Group {index + 1}</Heading>
+                    <Heading as="h4" size="sm">
+                      Configuration Group {index + 1}
+                    </Heading>
                     <IconButton
                       aria-label="Delete configuration"
                       icon={<DeleteIcon />}
@@ -714,7 +737,7 @@ function RewardsInjectorConfiguratorV2({
                     tokenSymbol={tokenSymbol}
                     tokenDecimals={tokenDecimals}
                     operation={operation}
-                    onConfigChange={(newConfig) => handleConfigChange(newConfig, config.id)}
+                    onConfigChange={newConfig => handleConfigChange(newConfig, config.id)}
                   />
                 </Box>
               ))}
