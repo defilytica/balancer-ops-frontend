@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     vaultExplorerAddress = getAddress(
       addressBook,
       network,
-      "20241205-v3-vault-explorer",
+      "20250407-v3-vault-explorer-v2",
       "VaultExplorer",
     );
   }

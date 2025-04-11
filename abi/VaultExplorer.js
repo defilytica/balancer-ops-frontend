@@ -79,6 +79,13 @@ export const vaultExplorerABI = [
   {
     type: "function",
     inputs: [{ name: "pool", internalType: "address", type: "address" }],
+    name: "enableRecoveryMode",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "pool", internalType: "address", type: "address" }],
     name: "getAddLiquidityCalledFlag",
     outputs: [{ name: "liquidityAdded", internalType: "bool", type: "bool" }],
     stateMutability: "view",
@@ -233,6 +240,19 @@ export const vaultExplorerABI = [
         type: "uint256[]",
       },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "wrappedToken",
+        internalType: "contract IERC4626",
+        type: "address",
+      },
+    ],
+    name: "getERC4626BufferAsset",
+    outputs: [{ name: "underlyingToken", internalType: "address", type: "address" }],
     stateMutability: "view",
   },
   {
@@ -639,6 +659,19 @@ export const vaultExplorerABI = [
         type: "uint32",
       },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [
+      {
+        name: "wrappedToken",
+        internalType: "contract IERC4626",
+        type: "address",
+      },
+    ],
+    name: "isERC4626BufferInitialized",
+    outputs: [{ name: "isBufferInitialized", internalType: "bool", type: "bool" }],
     stateMutability: "view",
   },
   {
