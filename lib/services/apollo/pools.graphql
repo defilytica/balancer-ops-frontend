@@ -134,7 +134,12 @@ query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
     version
     createTime
     swapFeeManager
+    poolTokens {
+      symbol
+      logoURI
+    }
     dynamicData {
+      totalLiquidity
       poolId
       swapFee
     }
