@@ -115,12 +115,14 @@ query GetV3Pools($chainIn: [GqlChain!]) {
     }
 }
 
-query GetV3PoolsWithHooks($chainIn: [GqlChain!], $tagIn: [String!]) {
+query GetV3PoolsWithHooks($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [String!]) {
   poolGetPools(
     where: {
-        chainIn: $chainIn,
-        protocolVersionIn: [3],
-        tagIn: $tagIn }
+        chainIn: $chainIn
+        chainNotIn: $chainNotIn
+        protocolVersionIn: [3]
+        tagIn: $tagIn
+    }
     orderBy: totalLiquidity
     orderDirection: desc
   ) {

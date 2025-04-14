@@ -68,14 +68,12 @@ export default function HookParametersDashboardModule({
   >(GetV3PoolsWithHooksDocument, {
     variables:
       selectedNetwork !== "ALL"
-        ? { chainIn: [selectedNetwork as GqlChain], tagIn: [hookType.tag] }
-        : { tagIn: [hookType.tag] },
-    context: {
-      uri:
-        selectedNetwork === "SEPOLIA"
-          ? "https://test-api-v3.balancer.fi/"
-          : "https://api-v3.balancer.fi/",
-    },
+        ? {
+            chainIn: [selectedNetwork as GqlChain],
+            chainNotIn: ["SEPOLIA" as GqlChain],
+            tagIn: [hookType.tag],
+          }
+        : { tagIn: [hookType.tag], chainNotIn: ["SEPOLIA" as GqlChain] },
   });
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
