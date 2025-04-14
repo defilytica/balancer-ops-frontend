@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -50,6 +50,7 @@ import { NetworkSelector } from "@/components/NetworkSelector";
 import { PoolInfoCard } from "./PoolInfoCard";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
+import { useSearchParams } from "next/navigation";
 
 // Type guard for StableSurgeHookParams
 export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
@@ -74,6 +75,8 @@ export default function StableSurgeHookConfigurationModule({
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const searchParams = useSearchParams();
+  const initialNetworkSetRef = useRef(false);
 
   //Chain state switch
   const { switchChain } = useSwitchChain();
@@ -141,6 +144,37 @@ export default function StableSurgeHookConfigurationModule({
     );
   }, [addressBook]);
 
+  // Handle URL parameters for pre-selection
+  useEffect(() => {
+    const networkParam = searchParams.get("network");
+    const poolParam = searchParams.get("pool");
+
+    if (networkParam && !initialNetworkSetRef.current) {
+      // Find the network option that matches the network parameter
+      const networkOption = networkOptionsWithV3.find(
+        n => n.apiID.toLowerCase() === networkParam.toLowerCase(),
+      );
+
+      if (networkOption) {
+        setSelectedNetwork(networkOption.apiID);
+        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        initialNetworkSetRef.current = true;
+      }
+    }
+  }, [searchParams, networkOptionsWithV3, getMultisigForNetwork]);
+
+  // Separate effect to handle pool selection when data is loaded
+  useEffect(() => {
+    const poolParam = searchParams.get("pool");
+
+    if (poolParam && data?.poolGetPools && selectedNetwork) {
+      const pool = data.poolGetPools.find(p => p.address.toLowerCase() === poolParam.toLowerCase());
+      if (pool) {
+        setSelectedPool(pool as unknown as Pool);
+      }
+    }
+  }, [searchParams, data?.poolGetPools, selectedNetwork]);
+
   const handleNetworkChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
@@ -167,7 +201,7 @@ export default function StableSurgeHookConfigurationModule({
         }
       }
     },
-    [getMultisigForNetwork, switchChain, toast],
+    [getMultisigForNetwork, networkOptionsWithV3, switchChain, toast],
   );
 
   // Check manager status when pool is selected

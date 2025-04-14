@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -40,7 +40,7 @@ import { AddressBook, Pool, MevTaxHookParams, HookParams } from "@/types/interfa
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -53,6 +53,7 @@ import { PoolInfoCard } from "./PoolInfoCard";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { formatGwei, parseEther } from "viem";
+import { useSearchParams } from "next/navigation";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -82,6 +83,8 @@ export default function MevCaptureHookConfigurationModule({
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const searchParams = useSearchParams();
+  const initialNetworkSetRef = useRef(false);
 
   //Chain state switch
   const { switchChain } = useSwitchChain();
@@ -141,6 +144,37 @@ export default function MevCaptureHookConfigurationModule({
     const allowedNetworks = ["base", "optimism"];
     return NETWORK_OPTIONS.filter(network => allowedNetworks.includes(network.apiID.toLowerCase()));
   }, [addressBook]);
+
+  // Handle URL parameters for pre-selection
+  useEffect(() => {
+    const networkParam = searchParams.get("network");
+    const poolParam = searchParams.get("pool");
+
+    if (networkParam && !initialNetworkSetRef.current) {
+      // Find the network option that matches the network parameter
+      const networkOption = networkOptions.find(
+        n => n.apiID.toLowerCase() === networkParam.toLowerCase(),
+      );
+
+      if (networkOption) {
+        setSelectedNetwork(networkOption.apiID);
+        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        initialNetworkSetRef.current = true;
+      }
+    }
+  }, [searchParams, networkOptions, getMultisigForNetwork]);
+
+  // Separate effect to handle pool selection when data is loaded
+  useEffect(() => {
+    const poolParam = searchParams.get("pool");
+
+    if (poolParam && data?.poolGetPools && selectedNetwork) {
+      const pool = data.poolGetPools.find(p => p.address.toLowerCase() === poolParam.toLowerCase());
+      if (pool) {
+        setSelectedPool(pool as unknown as Pool);
+      }
+    }
+  }, [searchParams, data?.poolGetPools, selectedNetwork]);
 
   const handleNetworkChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
