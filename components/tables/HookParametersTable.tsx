@@ -76,15 +76,14 @@ export const HookParametersTable = ({
 
       // For other networks, check addressBook
       const multisigs = getCategoryData(addressBook, network, "multisigs");
-      const multisigAddress = multisigs?.["maxi_omni"];
-      const multisigValue =
-        typeof multisigAddress === "string"
-          ? multisigAddress
-          : multisigAddress?.[Object.keys(multisigAddress)[0]];
-
-      return multisigValue && pool.swapFeeManager.toLowerCase() === multisigValue.toLowerCase()
-        ? "DAO"
-        : "EOA";
+      if (multisigs && multisigs["maxi_omni"]) {
+        const lm = multisigs["maxi_omni"];
+        const multisigValue = typeof lm === "string" ? lm : Object.values(lm)[0];
+        if (pool.swapFeeManager.toLowerCase() === multisigValue.toLowerCase()) {
+          return "DAO";
+        }
+      }
+      return "EOA";
     },
     [addressBook],
   );
