@@ -13,17 +13,20 @@ import {
   TableContainer,
   Avatar,
   Tooltip,
+  Button,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { Pool } from "@/types/interfaces";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
-import { Globe } from "react-feather";
+import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { useFormattedHookAttributes } from "@/lib/data/useFormattedHookAttributes";
 import { formatHookAttributes } from "@/lib/data/useFormattedHookAttributes";
 import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
 import { useMemo } from "react";
+import Link from "next/link";
 
 type HookType = "STABLE_SURGE" | "MEV_TAX";
 
@@ -49,6 +52,9 @@ export const HookParametersTable = ({
   pools,
   selectedHookType = "STABLE_SURGE",
 }: HookTableProps) => {
+  const configButtonColor = useColorModeValue("gray.500", "gray.400");
+  const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
+
   // Filter pools based on selected hook type
   const filteredPools = useMemo(() => {
     return pools.filter(pool => isValidHookParams(pool, selectedHookType));
@@ -61,6 +67,15 @@ export const HookParametersTable = ({
     const hookAttributes = formatHookAttributes(firstPool, false);
     return hookAttributes.map(attr => attr.title);
   }, [filteredPools]);
+
+  // Get the configuration route based on hook type
+  const getConfigRoute = (pool: Pool) => {
+    const network = pool.chain.toLowerCase();
+    const route =
+      selectedHookType === "STABLE_SURGE" ? "/hooks/stable-surge" : "/hooks/mev-capture";
+
+    return `${route}?network=${network}&pool=${pool.address}`;
+  };
 
   return (
     <TableContainer
@@ -84,6 +99,7 @@ export const HookParametersTable = ({
                 {paramName}
               </Th>
             ))}
+            <Th>Configure</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -148,6 +164,23 @@ export const HookParametersTable = ({
                     <Text>{param.value}</Text>
                   </Td>
                 ))}
+                <Td>
+                  <Link href={getConfigRoute(pool)}>
+                    <Button
+                      size="sm"
+                      leftIcon={<Icon as={Settings} boxSize="4" />}
+                      variant="outline"
+                      borderColor={configButtonColor}
+                      color={configButtonColor}
+                      _hover={{
+                        color: configButtonHoverColor,
+                        borderColor: configButtonHoverColor,
+                      }}
+                    >
+                      Configure
+                    </Button>
+                  </Link>
+                </Td>
               </Tr>
             );
           })}
