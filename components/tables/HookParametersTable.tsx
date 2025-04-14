@@ -15,9 +15,10 @@ import {
   Tooltip,
   Button,
   useColorModeValue,
+  Badge,
 } from "@chakra-ui/react";
-import { Pool } from "@/types/interfaces";
-import { networks } from "@/constants/constants";
+import { Pool, AddressBook } from "@/types/interfaces";
+import { networks, NETWORK_OPTIONS } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
@@ -25,39 +26,79 @@ import { useFormattedHookAttributes } from "@/lib/data/useFormattedHookAttribute
 import { formatHookAttributes } from "@/lib/data/useFormattedHookAttributes";
 import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
-
-type HookType = "STABLE_SURGE" | "MEV_TAX";
+import { isZeroAddress } from "@ethereumjs/util";
+import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import { HookType } from "@/components/HookParametersDashboardModule";
 
 interface HookTableProps {
   pools: Pool[];
   selectedHookType?: HookType;
+  addressBook: AddressBook;
 }
-
-const isValidHookParams = (pool: Pool, hookType: HookType): boolean => {
-  if (!pool.hook?.params || pool.hook.type !== hookType) return false;
-
-  switch (hookType) {
-    case "STABLE_SURGE":
-      return isStableSurgeHookParams(pool.hook.params);
-    case "MEV_TAX":
-      return isMevTaxHookParams(pool.hook.params);
-    default:
-      return false;
-  }
-};
 
 export const HookParametersTable = ({
   pools,
   selectedHookType = "STABLE_SURGE",
+  addressBook,
 }: HookTableProps) => {
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
 
+  const getConfigRoute = useCallback(
+    (pool: Pool) => {
+      const network = pool.chain.toLowerCase();
+      const route =
+        selectedHookType === "STABLE_SURGE" ? "/hooks/stable-surge" : "/hooks/mev-capture";
+      return `${route}?network=${network}&pool=${pool.address}`;
+    },
+    [selectedHookType],
+  );
+
+  const getOwnerType = useCallback(
+    (pool: Pool) => {
+      const network = pool.chain.toLowerCase();
+
+      // Early return for zero address
+      if (isZeroAddress(pool.swapFeeManager)) {
+        return "DAO";
+      }
+
+      // For SONIC, use predefined constant
+      if (network === "sonic") {
+        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
+        if (sonic?.maxiSafe && pool.swapFeeManager.toLowerCase() === sonic.maxiSafe.toLowerCase()) {
+          return "DAO";
+        }
+        return "EOA";
+      }
+
+      // For other networks, check addressBook
+      const multisigs = getCategoryData(addressBook, network, "multisigs");
+      const multisigAddress = multisigs?.["maxi_omni"];
+      const multisigValue =
+        typeof multisigAddress === "string"
+          ? multisigAddress
+          : multisigAddress?.[Object.keys(multisigAddress)[0]];
+
+      return multisigValue && pool.swapFeeManager.toLowerCase() === multisigValue.toLowerCase()
+        ? "DAO"
+        : "EOA";
+    },
+    [addressBook],
+  );
+
   // Filter pools based on selected hook type
   const filteredPools = useMemo(() => {
-    return pools.filter(pool => isValidHookParams(pool, selectedHookType));
+    return pools.filter(pool => {
+      if (selectedHookType === "STABLE_SURGE") {
+        return isStableSurgeHookParams(pool.hook?.params);
+      } else if (selectedHookType === "MEV_TAX") {
+        return isMevTaxHookParams(pool.hook?.params);
+      }
+      return false;
+    });
   }, [pools, selectedHookType]);
 
   // Get parameter names from the first pool with the selected hook type
@@ -67,15 +108,6 @@ export const HookParametersTable = ({
     const hookAttributes = formatHookAttributes(firstPool, false);
     return hookAttributes.map(attr => attr.title);
   }, [filteredPools]);
-
-  // Get the configuration route based on hook type
-  const getConfigRoute = (pool: Pool) => {
-    const network = pool.chain.toLowerCase();
-    const route =
-      selectedHookType === "STABLE_SURGE" ? "/hooks/stable-surge" : "/hooks/mev-capture";
-
-    return `${route}?network=${network}&pool=${pool.address}`;
-  };
 
   return (
     <TableContainer
@@ -99,6 +131,7 @@ export const HookParametersTable = ({
                 {paramName}
               </Th>
             ))}
+            <Th>Owner</Th>
             <Th>Configure</Th>
           </Tr>
         </Thead>
@@ -164,6 +197,18 @@ export const HookParametersTable = ({
                     <Text>{param.value}</Text>
                   </Td>
                 ))}
+                <Td>
+                  <Badge
+                    colorScheme="purple"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    px={1}
+                    py={1}
+                  >
+                    {getOwnerType(pool)}
+                  </Badge>
+                </Td>
                 <Td>
                   <Link href={getConfigRoute(pool)}>
                     <Button

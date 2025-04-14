@@ -193,7 +193,7 @@ export const PAYLOAD_OPTIONS = [
     label: "Configure MEV Capture hook",
     button_label: "Configure MEV Capture",
     description:
-      "Configure MevCapture hook on a pool deployed on Balancer v3, both for EOAs and under DAO management",
+      "Configure MEV Capture hook on a pool deployed on Balancer v3, both for EOAs and under DAO management",
     icon: TbSettingsDollar,
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/mevcapture-config",
