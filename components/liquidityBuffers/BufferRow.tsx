@@ -33,6 +33,7 @@ interface BufferRowProps {
   buffer?: {
     underlyingBalance: bigint;
     wrappedBalance: bigint;
+    isInitialized: boolean;
     state: {
       isLoading: boolean;
       isError: boolean;
@@ -110,7 +111,21 @@ export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
       );
     }
 
-    // Case 5: Empty buffer
+    // Case 5: Buffer is not initialized
+    if (!buffer?.isInitialized) {
+      return (
+        <Center h="full" bg="whiteAlpha.50" rounded="md">
+          <HStack>
+            <Icon as={BiErrorCircle} boxSize={4} />
+            <Text fontSize="sm" color={textColor}>
+              The buffer has not been initialized!
+            </Text>
+          </HStack>
+        </Center>
+      );
+    }
+
+    // Case 6: Empty buffer
     if (isEmptyBuffer) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">

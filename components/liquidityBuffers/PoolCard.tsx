@@ -21,10 +21,10 @@ import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferRow } from "./BufferRow";
 import { networks } from "@/constants/constants";
 import { getLendingProtocolFromTags } from "@/lib/utils/getLendingProtocolFromTags";
-import { PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
+import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
 
 interface PoolCardProps {
-  pool: PoolWithBufferBalances;
+  pool: PoolWithBufferData;
 }
 
 export const PoolCard = ({ pool }: PoolCardProps) => {

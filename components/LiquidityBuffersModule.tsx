@@ -33,7 +33,7 @@ import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
-import { useBufferBalances, PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
+import { useBufferData, PoolWithBufferData } from "@/lib/hooks/useBufferData";
 import GlobeLogo from "@/public/imgs/globe.svg";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
@@ -57,14 +57,12 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     },
   });
 
-  const poolsWithBufferBalances = useBufferBalances(
-    (data?.poolGetPools || []) as unknown as Pool[],
-  );
+  const poolsWithBufferBalances = useBufferData((data?.poolGetPools || []) as unknown as Pool[]);
 
   const filteredPools = useMemo(() => {
     if (!showOnlyEmptyBuffers) return poolsWithBufferBalances;
 
-    return poolsWithBufferBalances.filter((pool: PoolWithBufferBalances) => {
+    return poolsWithBufferBalances.filter((pool: PoolWithBufferData) => {
       // Show pool if a "real" ERC4626 token has empty buffer
       return pool.poolTokens.some(token => {
         if (!isRealErc4626Token(token)) return false;
