@@ -26,94 +26,56 @@ query GetPools($chainIn: [GqlChain!]){
     }
 }
 
-query GetBoostedPools($chainIn: [GqlChain!]) {
+query GetV3Pools($chainIn: [GqlChain!], $tagIn: [String!]) {
   poolGetPools(
     where: {
-      protocolVersionIn: [3]
-      tagIn: ["BOOSTED"]
       chainIn: $chainIn
+      protocolVersionIn: [3]
+      tagIn: $tagIn
     }
     orderBy: totalLiquidity
     orderDirection: desc
   ) {
     chain
+    protocolVersion
     address
     name
-    protocolVersion
+    swapFeeManager
+    createTime
+    tags
     hasErc4626
     hasAnyAllowedBuffer
     dynamicData {
-        totalLiquidity
-        volume24h
+      swapFee
+      totalLiquidity
+      volume24h
     }
-    tags
     poolTokens {
-        chain
+      chain
+      chainId
+      address
+      weight
+      symbol
+      name
+      decimals
+      isErc4626
+      logoURI
+      useUnderlyingForAddRemove
+      underlyingToken {
         chainId
         address
-        symbol
         name
+        symbol
         decimals
         isErc4626
-        logoURI
-        useUnderlyingForAddRemove
-        underlyingToken {
-            chainId
-            address
-            name
-            symbol
-            decimals
-            isErc4626
-        }
-        scalingFactor
-        priceRate
+      }
+      scalingFactor
+      priceRate
+      isBufferAllowed
     }
   }
 }
 
-query GetV3Pools($chainIn: [GqlChain!]) {
-    poolGetPools(
-        where: {
-            chainIn:$chainIn
-            protocolVersionIn: [3]
-        }
-        orderBy: totalLiquidity
-        orderDirection: desc
-    ) {
-        chain
-        protocolVersion
-        address
-        name
-        swapFeeManager
-        createTime
-        tags
-        dynamicData{
-            swapFee
-        }
-        poolTokens {
-            chain
-            chainId
-            address
-            weight
-            symbol
-            name
-            decimals
-            isErc4626
-            underlyingToken {
-                chainId
-                address
-                name
-                symbol
-                decimals
-                isErc4626
-            }
-            scalingFactor
-            priceRate
-            isBufferAllowed
-
-        }
-    }
-}
 
 query GetV3PoolsWithHooks($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [String!]) {
   poolGetPools(

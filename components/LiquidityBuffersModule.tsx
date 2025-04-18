@@ -1,10 +1,7 @@
 "use client";
 
 import { useQuery } from "@apollo/client";
-import {
-  GetBoostedPoolsDocument,
-  GetBoostedPoolsQuery,
-} from "@/lib/services/apollo/generated/graphql";
+import { GetV3PoolsDocument, GetV3PoolsQuery } from "@/lib/services/apollo/generated/graphql";
 import {
   Box,
   Center,
@@ -47,8 +44,11 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const [isFiltering, setIsFiltering] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARD);
 
-  const { loading, error, data } = useQuery<GetBoostedPoolsQuery>(GetBoostedPoolsDocument, {
-    variables: selectedNetwork !== "ALL" ? { chainIn: [selectedNetwork] } : {},
+  const { loading, error, data } = useQuery<GetV3PoolsQuery>(GetV3PoolsDocument, {
+    variables: {
+      chainIn: selectedNetwork !== "ALL" ? [selectedNetwork] : undefined,
+      tagIn: ["BOOSTED"],
+    },
     context: {
       uri:
         selectedNetwork === "SEPOLIA"
