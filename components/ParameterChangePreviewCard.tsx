@@ -41,7 +41,7 @@ export function ParameterChangePreviewCard({
             const formatValue = param.formatValue ?? defaultFormatValue;
 
             // Determine if there's a change by checking if difference is not empty
-            const hasChange = param.difference !== "" && param.difference !== "0";
+            const hasChange = param.difference !== "" && parseFloat(param.difference) !== 0;
 
             // Determine if positive by parsing the numeric value
             const isPositive = hasChange && parseFloat(param.difference) > 0;
