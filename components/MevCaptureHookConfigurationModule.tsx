@@ -159,7 +159,6 @@ export default function MevCaptureHookConfigurationModule({
   // Handle URL parameters for pre-selection
   useEffect(() => {
     const networkParam = searchParams.get("network");
-    const poolParam = searchParams.get("pool");
 
     if (networkParam && !initialNetworkSetRef.current) {
       // Find the network option that matches the network parameter

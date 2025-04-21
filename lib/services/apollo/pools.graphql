@@ -80,7 +80,11 @@ query GetV3Pools($chainIn: [GqlChain!]) {
         orderBy: totalLiquidity
         orderDirection: desc
     ) {
+        id
+        symbol
+        version
         chain
+        type
         protocolVersion
         address
         name
@@ -88,7 +92,13 @@ query GetV3Pools($chainIn: [GqlChain!]) {
         createTime
         tags
         dynamicData{
-            swapFee
+          swapFee
+          poolId
+        }
+        staking {
+          gauge {
+            id
+          }
         }
         poolTokens {
             chain
