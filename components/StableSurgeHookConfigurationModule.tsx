@@ -40,7 +40,7 @@ import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/in
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -58,6 +58,7 @@ import {
   useValidateStableSurge,
   STABLE_SURGE_PARAMS,
 } from "@/lib/hooks/validation/useValidateStableSurge";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 // Type guard for StableSurgeHookParams
 export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
@@ -135,24 +136,8 @@ export default function StableSurgeHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === "sonic") {
-        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic ? sonic?.maxiSafe : "";
-      }
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -176,11 +161,11 @@ export default function StableSurgeHookConfigurationModule({
 
       if (networkOption) {
         setSelectedNetwork(networkOption.apiID);
-        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        setSelectedMultisig(resolveMultisig(networkOption.apiID));
         initialNetworkSetRef.current = true;
       }
     }
-  }, [searchParams, networkOptionsWithV3, getMultisigForNetwork]);
+  }, [searchParams, networkOptionsWithV3, resolveMultisig]);
 
   // Separate effect to handle pool selection when data is loaded
   useEffect(() => {
@@ -198,7 +183,7 @@ export default function StableSurgeHookConfigurationModule({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setNewMaxSurgeFeePercentage("");

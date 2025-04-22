@@ -60,6 +60,7 @@ import {
   getSwapFeeRange,
 } from "@/lib/hooks/validation/useValidateSwapFee";
 import { useDebounce } from "use-debounce";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -111,24 +112,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     },
   );
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === "sonic") {
-        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic ? sonic?.maxiSafe : "";
-      }
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -143,7 +128,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setNewSwapFee("");
@@ -164,7 +149,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         }
       }
     },
-    [getMultisigForNetwork, switchChain, toast],
+    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
   );
 
   // Check manager status when pool is selected

@@ -59,6 +59,7 @@ import {
   MEV_CAPTURE_PARAMS,
 } from "@/lib/hooks/validation/useValidateMevCapture";
 import { useDebounce } from "use-debounce";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -135,19 +136,8 @@ export default function MevCaptureHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -159,6 +149,7 @@ export default function MevCaptureHookConfigurationModule({
   // Handle URL parameters for pre-selection
   useEffect(() => {
     const networkParam = searchParams.get("network");
+    const poolParam = searchParams.get("pool");
 
     if (networkParam && !initialNetworkSetRef.current) {
       // Find the network option that matches the network parameter
@@ -168,11 +159,11 @@ export default function MevCaptureHookConfigurationModule({
 
       if (networkOption) {
         setSelectedNetwork(networkOption.apiID);
-        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        setSelectedMultisig(resolveMultisig(networkOption.apiID));
         initialNetworkSetRef.current = true;
       }
     }
-  }, [searchParams, networkOptions, getMultisigForNetwork]);
+  }, [searchParams, networkOptions, resolveMultisig]);
 
   // Separate effect to handle pool selection when data is loaded
   useEffect(() => {
@@ -190,7 +181,7 @@ export default function MevCaptureHookConfigurationModule({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setNewMevTaxThreshold("");
@@ -212,7 +203,7 @@ export default function MevCaptureHookConfigurationModule({
         }
       }
     },
-    [getMultisigForNetwork, switchChain, toast],
+    [resolveMultisig, networkOptions, switchChain, toast],
   );
 
   const handlePoolSelect = (pool: Pool) => {
