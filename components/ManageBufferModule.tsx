@@ -11,6 +11,7 @@ import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
+import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
 import { fetchBufferOwnerShares } from "@/lib/services/fetchBufferOwnerShares";
 import { fetchBufferTotalShares } from "@/lib/services/fetchBufferTotalShares";
 import { formatValue } from "@/lib/utils/formatValue";
@@ -145,14 +146,34 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       isAddress(ownerSafe),
   });
 
+  // Fetch buffer initialization status
+  const {
+    data: isInitialized,
+    isLoading: isLoadingInitialized,
+    isError: isInitializedError,
+  } = useTanStackQuery({
+    queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
+    queryFn: () =>
+      fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
+    enabled: !!selectedToken && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
+  });
+
   const isGenerateButtonDisabled = useMemo(() => {
     return (
       !selectedNetwork ||
       !selectedToken ||
       !sharesAmount ||
-      (!underlyingTokenAmount && !wrappedTokenAmount)
+      (!underlyingTokenAmount && !wrappedTokenAmount) ||
+      !isInitialized
     );
-  }, [selectedNetwork, selectedToken, sharesAmount, underlyingTokenAmount, wrappedTokenAmount]);
+  }, [
+    selectedNetwork,
+    selectedToken,
+    sharesAmount,
+    underlyingTokenAmount,
+    wrappedTokenAmount,
+    isInitialized,
+  ]);
 
   const calculateTokenAmounts = (newSharesAmount: string) => {
     if (bufferShares?.shares && bufferBalance && newSharesAmount) {
@@ -691,12 +712,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             </Alert>
           )}
 
-        {selectedToken && bufferShares?.shares === BigInt(0) && (
+        {selectedToken && !isInitialized && (
           <Alert status="error" alignItems="center">
             <AlertIcon />
             <Text>
-              <b>This buffer is empty.</b> Make sure the buffer exists - you may need to initialize
-              it first.
+              <b>This buffer is not initialized.</b> You need to initialize the buffer before you
+              can manage it.
             </Text>
           </Alert>
         )}

@@ -40,6 +40,8 @@ import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
+import { useQuery as useTanStackQuery } from "@tanstack/react-query";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -127,12 +129,36 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     setUnderlyingTokenAddress(token.underlyingTokenAddress ?? "");
   };
 
+  // Fetch buffer initialization status
+  const {
+    data: isInitialized,
+    isLoading: isLoadingInitialized,
+    isError: isInitializedError,
+  } = useTanStackQuery({
+    queryKey: ["bufferInitialized", wrappedTokenAddress, selectedNetwork],
+    queryFn: () =>
+      fetchBufferInitializationStatus(wrappedTokenAddress, selectedNetwork.toLowerCase()),
+    enabled:
+      !!wrappedTokenAddress && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
+  });
+
   const handleGenerateClick = useCallback(() => {
     if (!selectedNetwork || !wrappedTokenAddress || !minIssuedShares) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
         status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (isInitialized) {
+      toast({
+        title: "Buffer already initialized",
+        description: "This buffer is already initialized. You cannot initialize it again.",
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -244,6 +270,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     seedingSafe,
     toast,
     addressBook,
+    isInitialized,
   ]);
 
   return (
@@ -268,6 +295,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             </Text>
           </Flex>
         </Alert>
+
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
           <Box flex="2">
             <NetworkSelector
@@ -399,6 +427,16 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             </Checkbox>
           </Box>
         </Flex>
+
+        {/* Display error if buffer is already initialized */}
+        {wrappedTokenAddress && selectedNetwork && isInitialized && (
+          <Alert status="error" alignItems="center">
+            <AlertIcon />
+            <Text>
+              <b>This buffer is already initialized.</b> You cannot initialize it again.
+            </Text>
+          </Alert>
+        )}
 
         <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2">
           <Button

@@ -12,7 +12,7 @@ import {
   Icon,
   Avatar,
 } from "@chakra-ui/react";
-import { PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
+import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
 import { formatUnits } from "viem";
 import { calculateRatios } from "@/lib/utils/calculateRatios";
 import { formatValue } from "@/lib/utils/formatValue";
@@ -21,7 +21,7 @@ import { useMemo } from "react";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 
 interface BufferTableTooltipProps {
-  pool: PoolWithBufferBalances;
+  pool: PoolWithBufferData;
 }
 
 export const BufferTableTooltip = ({ pool }: BufferTableTooltipProps) => {
