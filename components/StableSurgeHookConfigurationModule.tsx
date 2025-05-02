@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -18,9 +17,10 @@ import {
   GridItem,
   Heading,
   Input,
-  Spinner,
   useDisclosure,
   useToast,
+  FormHelperText,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
@@ -28,7 +28,7 @@ import {
   handleDownloadClick,
   StableSurgeParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, STABLE_SURGE_PARAMS } from "@/constants/constants";
 import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
@@ -38,7 +38,7 @@ import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/in
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -51,6 +51,9 @@ import { PoolInfoCard } from "./PoolInfoCard";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { useSearchParams } from "next/navigation";
+import { useDebounce } from "use-debounce";
+import { useValidateStableSurge } from "@/lib/hooks/validation/useValidateStableSurge";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 // Type guard for StableSurgeHookParams
 export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
@@ -73,6 +76,18 @@ export default function StableSurgeHookConfigurationModule({
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
+
+  // Create debounced versions of the state values
+  const [debouncedMaxSurgeFeePercentage] = useDebounce(newMaxSurgeFeePercentage, 300);
+  const [debouncedSurgeThresholdPercentage] = useDebounce(newSurgeThresholdPercentage, 300);
+
+  // Use the validation hook with debounced values
+  const { maxSurgeFeePercentageError, surgeThresholdPercentageError, isValid } =
+    useValidateStableSurge({
+      maxSurgeFeePercentage: debouncedMaxSurgeFeePercentage,
+      surgeThresholdPercentage: debouncedSurgeThresholdPercentage,
+    });
+
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const searchParams = useSearchParams();
@@ -116,24 +131,8 @@ export default function StableSurgeHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === "sonic") {
-        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic ? sonic?.maxiSafe : "";
-      }
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -157,11 +156,11 @@ export default function StableSurgeHookConfigurationModule({
 
       if (networkOption) {
         setSelectedNetwork(networkOption.apiID);
-        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        setSelectedMultisig(resolveMultisig(networkOption.apiID));
         initialNetworkSetRef.current = true;
       }
     }
-  }, [searchParams, networkOptionsWithV3, getMultisigForNetwork]);
+  }, [searchParams, networkOptionsWithV3, resolveMultisig]);
 
   // Separate effect to handle pool selection when data is loaded
   useEffect(() => {
@@ -179,7 +178,7 @@ export default function StableSurgeHookConfigurationModule({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setNewMaxSurgeFeePercentage("");
@@ -233,13 +232,25 @@ export default function StableSurgeHookConfigurationModule({
   const handleGenerateClick = async () => {
     if (
       !selectedPool ||
-      (!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage) ||
+      (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) ||
       !selectedNetwork
     ) {
       toast({
         title: "Missing information",
         description: "Please select a network, pool, and enter at least one parameter to change",
         status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Use isValid from the hook
+    if (!isValid) {
+      toast({
+        title: "Invalid input values",
+        description: "Please correct the input errors before generating the payload",
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -275,8 +286,8 @@ export default function StableSurgeHookConfigurationModule({
 
       const input: StableSurgeParamsInput = {
         poolAddress: selectedPool.address,
-        newMaxSurgeFeePercentage: newMaxSurgeFeePercentage || undefined,
-        newSurgeThresholdPercentage: newSurgeThresholdPercentage || undefined,
+        newMaxSurgeFeePercentage: debouncedMaxSurgeFeePercentage || undefined,
+        newSurgeThresholdPercentage: debouncedSurgeThresholdPercentage || undefined,
       };
 
       const payload = generateStableSurgeParamsPayload(
@@ -302,9 +313,9 @@ export default function StableSurgeHookConfigurationModule({
         );
 
         // Update max surge fee if provided
-        if (newMaxSurgeFeePercentage) {
+        if (debouncedMaxSurgeFeePercentage) {
           const txMaxSurgeFeePercentage = BigInt(
-            parseFloat(newMaxSurgeFeePercentage) * 1e16,
+            parseFloat(debouncedMaxSurgeFeePercentage) * 1e16,
           ).toString();
           const tx1 = await hookContract.setMaxSurgeFeePercentage(
             selectedPool.address,
@@ -315,7 +326,7 @@ export default function StableSurgeHookConfigurationModule({
           toast.promise(tx1.wait(), {
             success: {
               title: "Success",
-              description: `The max surge fee percentage has been updated to ${newMaxSurgeFeePercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The max surge fee percentage has been updated to ${debouncedMaxSurgeFeePercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
@@ -333,9 +344,9 @@ export default function StableSurgeHookConfigurationModule({
         }
 
         // Update surge threshold if provided
-        if (newSurgeThresholdPercentage) {
+        if (debouncedSurgeThresholdPercentage) {
           const txSurgeThresholdPercentage = BigInt(
-            parseFloat(newSurgeThresholdPercentage) * 1e16,
+            parseFloat(debouncedSurgeThresholdPercentage) * 1e16,
           ).toString();
           const tx2 = await hookContract.setSurgeThresholdPercentage(
             selectedPool.address,
@@ -346,7 +357,7 @@ export default function StableSurgeHookConfigurationModule({
           toast.promise(tx2.wait(), {
             success: {
               title: "Success",
-              description: `The surge threshold percentage has been updated to ${newSurgeThresholdPercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The surge threshold percentage has been updated to ${debouncedSurgeThresholdPercentage}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
@@ -430,132 +441,142 @@ export default function StableSurgeHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
           )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-              >
-                <FormLabel>New Max Surge Fee Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newMaxSurgeFeePercentage}
-                  onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
-                  placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                />
-              </FormControl>
-            </GridItem>
-
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-              >
-                <FormLabel>New Surge Threshold Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newSurgeThresholdPercentage}
-                  onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
-                  placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                />
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
+        </Box>
       )}
 
-      {selectedPool && (newMaxSurgeFeePercentage || newSurgeThresholdPercentage) && (
-        <ParameterChangePreviewCard
-          title="Hook Parameters Change Preview"
-          icon={<DollarSign size={24} />}
-          parameters={[
-            ...(newMaxSurgeFeePercentage
-              ? [
-                  {
-                    name: "Max Surge Fee",
-                    currentValue: currentMaxSurgeFee.toFixed(2),
-                    newValue: Number(newMaxSurgeFeePercentage).toFixed(2),
-                    difference: (Number(newMaxSurgeFeePercentage) - currentMaxSurgeFee).toFixed(2),
-                    formatValue: (value: string) => `${value}%`,
-                  },
-                ]
-              : []),
-            ...(newSurgeThresholdPercentage
-              ? [
-                  {
-                    name: "Surge Threshold",
-                    currentValue: currentSurgeThreshold.toFixed(2),
-                    newValue: Number(newSurgeThresholdPercentage).toFixed(2),
-                    difference: (
-                      Number(newSurgeThresholdPercentage) - currentSurgeThreshold
-                    ).toFixed(2),
-                    formatValue: (value: string) => `${value}%`,
-                  },
-                ]
-              : []),
-          ]}
-        />
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
       )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!maxSurgeFeePercentageError}
+          >
+            <FormLabel>New Max Surge Fee Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newMaxSurgeFeePercentage}
+              onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
+              placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN}
+              max={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN} and{" "}
+              {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}%
+            </FormHelperText>
+            {maxSurgeFeePercentageError && (
+              <FormErrorMessage>{maxSurgeFeePercentageError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </GridItem>
+
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!surgeThresholdPercentageError}
+          >
+            <FormLabel>New Surge Threshold Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newSurgeThresholdPercentage}
+              onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
+              placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN}
+              max={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN} and{" "}
+              {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}%
+            </FormHelperText>
+            {surgeThresholdPercentageError && (
+              <FormErrorMessage>{surgeThresholdPercentageError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </GridItem>
+      </Grid>
+
+      {selectedPool &&
+        ((debouncedMaxSurgeFeePercentage && !maxSurgeFeePercentageError) ||
+          (debouncedSurgeThresholdPercentage && !surgeThresholdPercentageError)) && (
+          <ParameterChangePreviewCard
+            title="Hook Parameters Change Preview"
+            icon={<DollarSign size={24} />}
+            parameters={[
+              ...(debouncedMaxSurgeFeePercentage && !maxSurgeFeePercentageError
+                ? [
+                    {
+                      name: "Max Surge Fee",
+                      currentValue: currentMaxSurgeFee.toFixed(2),
+                      newValue: Number(debouncedMaxSurgeFeePercentage).toFixed(2),
+                      difference: (
+                        Number(debouncedMaxSurgeFeePercentage) - currentMaxSurgeFee
+                      ).toFixed(2),
+                      formatValue: (value: string) => `${value}%`,
+                    },
+                  ]
+                : []),
+              ...(debouncedSurgeThresholdPercentage && !surgeThresholdPercentageError
+                ? [
+                    {
+                      name: "Surge Threshold",
+                      currentValue: currentSurgeThreshold.toFixed(2),
+                      newValue: Number(debouncedSurgeThresholdPercentage).toFixed(2),
+                      difference: (
+                        Number(debouncedSurgeThresholdPercentage) - currentSurgeThreshold
+                      ).toFixed(2),
+                      formatValue: (value: string) => `${value}%`,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         {!selectedPool ? (
           <Button variant="primary" isDisabled={true}>
@@ -565,7 +586,9 @@ export default function StableSurgeHookConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+            isDisabled={
+              (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
+            }
           >
             Execute Parameter Change
           </Button>
@@ -573,7 +596,9 @@ export default function StableSurgeHookConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={!newMaxSurgeFeePercentage && !newSurgeThresholdPercentage}
+            isDisabled={
+              (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
+            }
           >
             Generate Payload
           </Button>

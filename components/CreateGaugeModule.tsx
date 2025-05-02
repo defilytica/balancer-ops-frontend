@@ -733,6 +733,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
               selectedPool={selectedPool}
               onPoolSelect={pool => handlePoolSelect(pool as Pool)}
               onClearSelection={clearPoolSelection}
+              showGauges={true}
             />
           )}
 

@@ -511,3 +511,39 @@ export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
   fraxtal: "Fraxtal",
   mode: "Mode",
 };
+
+// Validation params for payload builders
+export const STABLE_SURGE_PARAMS = {
+  MAX_SURGE_FEE: {
+    MIN: 0,
+    MAX: 100,
+  },
+  SURGE_THRESHOLD: {
+    MIN: 0,
+    MAX: 100,
+  },
+};
+
+export const MEV_CAPTURE_PARAMS = {
+  THRESHOLD: {
+    MIN: 0.001,
+    MAX: 1.0,
+  },
+  MULTIPLIER: {
+    MIN: 2,
+    MAX: 1000,
+  },
+};
+
+export const SWAP_FEE_PARAMS = {
+  // For Weighted and Stable pools
+  STANDARD: {
+    MIN: 0.001, // 0.001%
+    MAX: 10, // 10%
+  },
+  // For all other pool types
+  OTHER: {
+    MIN: 0, // 0%
+    MAX: 100, // 100%
+  },
+};

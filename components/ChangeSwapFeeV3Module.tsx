@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -14,17 +13,12 @@ import {
   Flex,
   FormControl,
   FormLabel,
+  FormErrorMessage,
+  FormHelperText,
   Grid,
   GridItem,
   Heading,
   Input,
-  List,
-  ListItem,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
-  Spinner,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -39,13 +33,14 @@ import {
   GetV3PoolsDocument,
   GetV3PoolsQuery,
   GetV3PoolsQueryVariables,
+  GqlPoolType,
 } from "@/lib/services/apollo/generated/graphql";
 import { AddressBook, Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -56,17 +51,26 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
+import PoolSelector from "./PoolSelector";
+import {
+  useValidateSwapFee,
+  isStandardRangePool,
+  getSwapFeeRange,
+} from "@/lib/hooks/validation/useValidateSwapFee";
+import { useDebounce } from "use-debounce";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [newSwapFee, setNewSwapFee] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const [debouncedSwapFee] = useDebounce(newSwapFee, 300);
 
   //Chain state switch
   const { switchChain } = useSwitchChain();
@@ -106,24 +110,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     },
   );
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      // For SONIC, we fetch predefined constants
-      if (network.toLowerCase() === "sonic") {
-        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        return sonic ? sonic?.maxiSafe : "";
-      }
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -138,10 +126,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
-      setSearchTerm("");
       setNewSwapFee("");
       setIsCurrentWalletManager(false);
 
@@ -160,13 +147,20 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         }
       }
     },
-    [getMultisigForNetwork, switchChain, toast],
+    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
   );
 
   // Check manager status when pool is selected
   const handlePoolSelection = useCallback(async (pool: Pool) => {
     setSelectedPool(pool); // Set pool immediately for UI update
   }, []);
+
+  const clearPoolSelection = () => {
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewSwapFee("");
+    setIsCurrentWalletManager(false);
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -182,8 +176,15 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     }
   };
 
+  // Add validation for swap fee
+  const poolType = (selectedPool?.type as GqlPoolType) || GqlPoolType.Weighted;
+  const { isValid: isSwapFeeValid, swapFeePercentageError: swapFeeError } = useValidateSwapFee({
+    swapFeePercentage: debouncedSwapFee,
+    poolType,
+  });
+
   const handleGenerateClick = async () => {
-    if (!selectedPool || !newSwapFee || !selectedNetwork) {
+    if (!selectedPool || !debouncedSwapFee || !selectedNetwork || !isSwapFeeValid) {
       toast({
         title: "Missing information",
         description: "Please select a network, pool, and enter a new swap fee",
@@ -210,7 +211,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
       const input: SwapFeeChangeInput = {
         poolAddress: selectedPool.address,
-        newSwapFeePercentage: newSwapFee,
+        newSwapFeePercentage: debouncedSwapFee,
         poolName: selectedPool.name,
       };
 
@@ -227,7 +228,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
         const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
 
-        const swapFeePercentage = ((parseFloat(newSwapFee) / 100) * 1e18).toString();
+        const swapFeePercentage = ((parseFloat(debouncedSwapFee) / 100) * 1e18).toString();
 
         const tx = await contract.setStaticSwapFeePercentage(
           selectedPool.address.toLowerCase(),
@@ -238,7 +239,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         toast.promise(tx.wait(), {
           success: {
             title: "Success",
-            description: `The swap fee has been updated to ${newSwapFee}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+            description: `The swap fee has been updated to ${debouncedSwapFee}%. Changes will appear in the UI in the next few minutes after the block is indexed.`,
             duration: 5000,
             isClosable: true,
           },
@@ -266,17 +267,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     }
   };
 
-  const filteredPools = useMemo(() => {
-    if (!data?.poolGetPools) return [];
-    return data.poolGetPools.filter(
-      pool =>
-        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [data?.poolGetPools, searchTerm]);
-
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
-  const newFee = newSwapFee ? parseFloat(newSwapFee) : currentFee;
+  const newFee = debouncedSwapFee ? parseFloat(debouncedSwapFee) : currentFee;
 
   // Check if the pool is authorized for DAO governance (zero address or matches the multisig)
   const isAuthorizedPool = useMemo(() => {
@@ -289,7 +281,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
   const getPrefillValues = () => {
     // Make sure we have a selected pool and new swap fee
-    if (!selectedPool || !newSwapFee) return {};
+    if (!selectedPool || !debouncedSwapFee) return {};
 
     // Generate a unique ID for the branch and file
     const uniqueId = generateUniqueId();
@@ -302,7 +294,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
     // Create fee change description
     const currentFee = parseFloat(selectedPool.dynamicData.swapFee) * 100;
-    const newFee = parseFloat(newSwapFee);
+    const newFee = parseFloat(debouncedSwapFee);
     const feeChangeDirection = newFee > currentFee ? "increase" : "decrease";
 
     // Find the network name from the selected network
@@ -338,126 +330,92 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </GridItem>
 
         <GridItem colSpan={{ base: 12, md: 8 }}>
-          <FormControl isDisabled={!selectedNetwork}>
-            <FormLabel>Select Pool</FormLabel>
-            <Popover>
-              <PopoverTrigger>
-                <Input
-                  value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
-                  placeholder="Search and select a pool"
-                  readOnly
-                />
-              </PopoverTrigger>
-              <PopoverContent width="100%">
-                <PopoverBody>
-                  <Input
-                    placeholder="Search pools..."
-                    mb={2}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                  <List maxH="200px" overflowY="auto">
-                    {filteredPools.map(pool => (
-                      <ListItem
-                        key={pool.address}
-                        onClick={() => {
-                          handlePoolSelection(pool as unknown as Pool);
-                          onClose();
-                        }}
-                        cursor="pointer"
-                        _hover={{ bg: "gray.100" }}
-                        p={2}
-                      >
-                        {pool.name} - {pool.address.slice(0, 6)}...
-                        {pool.address.slice(-4)}
-                      </ListItem>
-                    ))}
-                  </List>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
+          {selectedNetwork && (
+            <PoolSelector
+              pools={data?.poolGetPools}
+              loading={loading}
+              error={error}
+              selectedPool={selectedPool}
+              onPoolSelect={pool => handlePoolSelection(pool as Pool)}
+              onClearSelection={clearPoolSelection}
+            />
+          )}
+        </GridItem>
+      </Grid>
+
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={debouncedSwapFee !== "" && !isSwapFeeValid}
+          >
+            <FormLabel>New Swap Fee Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newSwapFee}
+              onChange={e => setNewSwapFee(e.target.value)}
+              placeholder={`Current: ${currentFee.toFixed(4)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+            />
+            {selectedPool && isStandardRangePool(poolType) && (
+              <FormHelperText>
+                Valid range: {getSwapFeeRange(poolType).MIN}% to {getSwapFeeRange(poolType).MAX}%
+              </FormHelperText>
+            )}
+            {debouncedSwapFee !== "" && !isSwapFeeValid && (
+              <FormErrorMessage>{swapFeeError}</FormErrorMessage>
+            )}
           </FormControl>
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-              >
-                <FormLabel>New Swap Fee Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newSwapFee}
-                  onChange={e => setNewSwapFee(e.target.value)}
-                  placeholder={`Current: ${currentFee.toFixed(4)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                />
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
-      )}
-
-      {selectedPool && newSwapFee && (
+      {selectedPool && debouncedSwapFee && isSwapFeeValid && (
         <ParameterChangePreviewCard
           title="Swap Fee Change Preview"
           icon={<DollarSign size={24} />}
@@ -479,11 +437,19 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             Select a Pool
           </Button>
         ) : isCurrentWalletManager ? (
-          <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!debouncedSwapFee || !isSwapFeeValid}
+          >
             Execute Fee Change
           </Button>
         ) : isAuthorizedPool ? (
-          <Button variant="primary" onClick={handleGenerateClick} isDisabled={!newSwapFee}>
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!debouncedSwapFee || !isSwapFeeValid}
+          >
             Generate Payload
           </Button>
         ) : (

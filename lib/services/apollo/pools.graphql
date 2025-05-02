@@ -36,17 +36,22 @@ query GetV3Pools($chainIn: [GqlChain!], $tagIn: [String!]) {
     orderBy: totalLiquidity
     orderDirection: desc
   ) {
+    id
     chain
     protocolVersion
     address
     name
-    swapFeeManager
+    symbol
+    type
+    version
     createTime
+    swapFeeManager
     tags
     hasErc4626
     hasAnyAllowedBuffer
     dynamicData {
       swapFee
+      poolId
       totalLiquidity
       volume24h
     }
@@ -71,7 +76,6 @@ query GetV3Pools($chainIn: [GqlChain!], $tagIn: [String!]) {
       }
       scalingFactor
       priceRate
-      isBufferAllowed
     }
   }
 }

@@ -55,12 +55,12 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { AddressBook } from "@/types/interfaces";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -112,19 +112,8 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     };
   };
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["lm"]) {
-        const lm = multisigs["lm"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network, "lm"),
     [addressBook],
   );
 
@@ -149,13 +138,13 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setSearchTerm("");
       setNewSwapFee("");
     },
-    [getMultisigForNetwork],
+    [resolveMultisig],
   );
 
   const handleOpenPRModal = () => {

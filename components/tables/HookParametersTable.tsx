@@ -29,8 +29,8 @@ import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModu
 import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { isZeroAddress } from "@ethereumjs/util";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { HookType } from "@/components/HookParametersDashboardModule";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 interface HookTableProps {
   pools: Pool[];
@@ -59,30 +59,17 @@ export const HookParametersTable = ({
   const getOwnerType = useCallback(
     (pool: Pool) => {
       const network = pool.chain.toLowerCase();
+      const multisig = getMultisigForNetwork(addressBook, network);
 
       // Early return for zero address
       if (isZeroAddress(pool.swapFeeManager)) {
         return "DAO";
       }
 
-      // For SONIC, use predefined constant
-      if (network === "sonic") {
-        const sonic = NETWORK_OPTIONS.find(el => el.apiID === "SONIC");
-        if (sonic?.maxiSafe && pool.swapFeeManager.toLowerCase() === sonic.maxiSafe.toLowerCase()) {
-          return "DAO";
-        }
-        return "EOA";
+      if (multisig && pool.swapFeeManager.toLowerCase() === multisig.toLowerCase()) {
+        return "DAO";
       }
 
-      // For other networks, check addressBook
-      const multisigs = getCategoryData(addressBook, network, "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        const multisigValue = typeof lm === "string" ? lm : Object.values(lm)[0];
-        if (pool.swapFeeManager.toLowerCase() === multisigValue.toLowerCase()) {
-          return "DAO";
-        }
-      }
       return "EOA";
     },
     [addressBook],

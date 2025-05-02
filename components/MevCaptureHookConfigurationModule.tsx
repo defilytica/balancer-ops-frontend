@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -20,7 +19,6 @@ import {
   GridItem,
   Heading,
   Input,
-  Spinner,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -30,7 +28,7 @@ import {
   handleDownloadClick,
   MevCaptureParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { MEV_CAPTURE_PARAMS, NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
@@ -40,7 +38,6 @@ import { AddressBook, Pool, MevTaxHookParams, HookParams } from "@/types/interfa
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -54,6 +51,9 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { formatGwei, parseEther } from "viem";
 import { useSearchParams } from "next/navigation";
+import { useValidateMevCapture } from "@/lib/hooks/validation/useValidateMevCapture";
+import { useDebounce } from "use-debounce";
+import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -77,9 +77,15 @@ export default function MevCaptureHookConfigurationModule({
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
 
-  // Input validation states
-  const [mevTaxThresholdError, setMevTaxThresholdError] = useState<string>("");
-  const [mevTaxMultiplierError, setMevTaxMultiplierError] = useState<string>("");
+  // Create debounced versions of the state values
+  const [debouncedMevTaxThreshold] = useDebounce(newMevTaxThreshold, 300);
+  const [debouncedMevTaxMultiplier] = useDebounce(newMevTaxMultiplier, 300);
+
+  // Use the validation hook with debounced values
+  const { mevTaxThresholdError, mevTaxMultiplierError, isValid } = useValidateMevCapture({
+    mevTaxThreshold: debouncedMevTaxThreshold,
+    mevTaxMultiplier: debouncedMevTaxMultiplier,
+  });
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -124,19 +130,8 @@ export default function MevCaptureHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const getMultisigForNetwork = useCallback(
-    (network: string) => {
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["maxi_omni"]) {
-        const lm = multisigs["maxi_omni"];
-        if (typeof lm === "string") {
-          return lm;
-        } else if (typeof lm === "object") {
-          return Object.values(lm)[0];
-        }
-      }
-      return "";
-    },
+  const resolveMultisig = useCallback(
+    (network: string) => getMultisigForNetwork(addressBook, network),
     [addressBook],
   );
 
@@ -158,11 +153,11 @@ export default function MevCaptureHookConfigurationModule({
 
       if (networkOption) {
         setSelectedNetwork(networkOption.apiID);
-        setSelectedMultisig(getMultisigForNetwork(networkOption.apiID));
+        setSelectedMultisig(resolveMultisig(networkOption.apiID));
         initialNetworkSetRef.current = true;
       }
     }
-  }, [searchParams, networkOptions, getMultisigForNetwork]);
+  }, [searchParams, networkOptions, resolveMultisig]);
 
   // Separate effect to handle pool selection when data is loaded
   useEffect(() => {
@@ -180,7 +175,7 @@ export default function MevCaptureHookConfigurationModule({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
-      setSelectedMultisig(getMultisigForNetwork(newNetwork));
+      setSelectedMultisig(resolveMultisig(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
       setNewMevTaxThreshold("");
@@ -202,7 +197,7 @@ export default function MevCaptureHookConfigurationModule({
         }
       }
     },
-    [getMultisigForNetwork, switchChain, toast],
+    [resolveMultisig, networkOptions, switchChain, toast],
   );
 
   const handlePoolSelect = (pool: Pool) => {
@@ -230,86 +225,22 @@ export default function MevCaptureHookConfigurationModule({
     }
   };
 
-  // Constants for input validation
-  const MIN_THRESHOLD_GWEI = 0.001;
-  const MAX_THRESHOLD_GWEI = 1.0;
-  const MIN_MULTIPLIER = 2;
-  const MAX_MULTIPLIER = 1000;
-
-  const validateMevTaxThreshold = (value: string): boolean => {
-    if (!value) {
-      setMevTaxThresholdError("");
-      return true;
-    }
-
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      setMevTaxThresholdError("Please enter a valid number");
-      return false;
-    }
-
-    if (numValue < MIN_THRESHOLD_GWEI) {
-      setMevTaxThresholdError(`Value must be at least ${MIN_THRESHOLD_GWEI} Gwei`);
-      return false;
-    }
-
-    if (numValue > MAX_THRESHOLD_GWEI) {
-      setMevTaxThresholdError(`Value must not exceed ${MAX_THRESHOLD_GWEI} Gwei`);
-      return false;
-    }
-
-    setMevTaxThresholdError("");
-    return true;
-  };
-
-  const validateMevTaxMultiplier = (value: string): boolean => {
-    if (!value) {
-      setMevTaxMultiplierError("");
-      return true;
-    }
-
-    const numValue = Number(value);
-    if (isNaN(numValue)) {
-      setMevTaxMultiplierError("Please enter a valid number");
-      return false;
-    }
-
-    // Check if it's a whole number
-    if (!Number.isInteger(numValue)) {
-      setMevTaxMultiplierError("Please enter a whole number (no decimals)");
-      return false;
-    }
-
-    if (numValue < MIN_MULTIPLIER) {
-      setMevTaxMultiplierError(`Value must be at least ${MIN_MULTIPLIER}`);
-      return false;
-    }
-
-    if (numValue > MAX_MULTIPLIER) {
-      setMevTaxMultiplierError(`Value must not exceed ${MAX_MULTIPLIER}`);
-      return false;
-    }
-
-    setMevTaxMultiplierError("");
-    return true;
-  };
-
-  // Handle threshold input change with validation
   const handleThresholdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewMevTaxThreshold(value);
-    validateMevTaxThreshold(value);
   };
 
-  // Handle multiplier input change with validation
   const handleMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewMevTaxMultiplier(value);
-    validateMevTaxMultiplier(value);
   };
 
   const handleGenerateClick = async () => {
-    if (!selectedPool || (!newMevTaxThreshold && !newMevTaxMultiplier) || !selectedNetwork) {
+    if (
+      !selectedPool ||
+      (!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) ||
+      !selectedNetwork
+    ) {
       toast({
         title: "Missing information",
         description: "Please select a network, pool, and enter at least one parameter to change",
@@ -320,11 +251,8 @@ export default function MevCaptureHookConfigurationModule({
       return;
     }
 
-    // Validate inputs before proceeding
-    const isThresholdValid = !newMevTaxThreshold || validateMevTaxThreshold(newMevTaxThreshold);
-    const isMultiplierValid = !newMevTaxMultiplier || validateMevTaxMultiplier(newMevTaxMultiplier);
-
-    if (!isThresholdValid || !isMultiplierValid) {
+    // Use isValid from the hook
+    if (!isValid) {
       toast({
         title: "Invalid input values",
         description: "Please correct the input errors before generating the payload",
@@ -364,8 +292,8 @@ export default function MevCaptureHookConfigurationModule({
 
       const input: MevCaptureParamsInput = {
         poolAddress: selectedPool.address,
-        newMevTaxThreshold: newMevTaxThreshold,
-        newMevTaxMultiplier: newMevTaxMultiplier,
+        newMevTaxThreshold: debouncedMevTaxThreshold,
+        newMevTaxMultiplier: debouncedMevTaxMultiplier,
       };
 
       const payload = generateMevCaptureParamsPayload(
@@ -389,8 +317,8 @@ export default function MevCaptureHookConfigurationModule({
         );
 
         // Update MEV tax threshold if provided (convert from Gwei to Wei)
-        if (newMevTaxThreshold) {
-          const txMevTaxThreshold = parseUnits(newMevTaxThreshold, "gwei");
+        if (debouncedMevTaxThreshold) {
+          const txMevTaxThreshold = parseUnits(debouncedMevTaxThreshold, "gwei");
 
           const tx1 = await hookContract.setPoolMevTaxThreshold(
             selectedPool.address,
@@ -400,7 +328,7 @@ export default function MevCaptureHookConfigurationModule({
           toast.promise(tx1.wait(), {
             success: {
               title: "Success",
-              description: `The MEV tax threshold has been updated to ${newMevTaxThreshold} Gwei. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The MEV tax threshold has been updated to ${debouncedMevTaxThreshold} Gwei. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
@@ -418,9 +346,9 @@ export default function MevCaptureHookConfigurationModule({
         }
 
         // Update MEV tax multiplier if provided
-        if (newMevTaxMultiplier) {
+        if (debouncedMevTaxMultiplier) {
           // Convert multiplier from MEther to Wei for tx payload
-          const txMevTaxMultiplier = parseUnits(newMevTaxMultiplier, 24);
+          const txMevTaxMultiplier = parseUnits(debouncedMevTaxMultiplier, 24);
           const tx2 = await hookContract.setPoolMevTaxMultiplier(
             selectedPool.address,
             txMevTaxMultiplier.toString(),
@@ -429,7 +357,7 @@ export default function MevCaptureHookConfigurationModule({
           toast.promise(tx2.wait(), {
             success: {
               title: "Success",
-              description: `The MEV tax multiplier has been updated to ${newMevTaxMultiplier}. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+              description: `The MEV tax multiplier has been updated to ${debouncedMevTaxMultiplier}. Changes will appear in the UI in the next few minutes after the block is indexed.`,
               duration: 5000,
               isClosable: true,
             },
@@ -524,147 +452,132 @@ export default function MevCaptureHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
           )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!mevTaxThresholdError}
-              >
-                <FormLabel>New MEV Tax Threshold (Gwei)</FormLabel>
-                <Input
-                  type="number"
-                  value={newMevTaxThreshold}
-                  onChange={handleThresholdChange}
-                  placeholder={`Current: ${displayCurrentMevTaxThreshold}`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  step={0.001}
-                  min={MIN_THRESHOLD_GWEI}
-                  max={MAX_THRESHOLD_GWEI}
-                />
-                <FormHelperText>
-                  Enter a value between {MIN_THRESHOLD_GWEI} and {MAX_THRESHOLD_GWEI} Gwei
-                </FormHelperText>
-                {mevTaxThresholdError && (
-                  <FormErrorMessage>{mevTaxThresholdError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!mevTaxMultiplierError}
-              >
-                <FormLabel>New MEV Tax Multiplier</FormLabel>
-                <Input
-                  type="number"
-                  step="1"
-                  value={newMevTaxMultiplier}
-                  onChange={handleMultiplierChange}
-                  placeholder={`Current: ${displayCurrentMevTaxMultiplier}`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  min={MIN_MULTIPLIER}
-                  max={MAX_MULTIPLIER}
-                />
-                <FormHelperText>
-                  Enter a whole number between {MIN_MULTIPLIER} and {MAX_MULTIPLIER}
-                </FormHelperText>
-                {mevTaxMultiplierError && (
-                  <FormErrorMessage>{mevTaxMultiplierError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
+        </Box>
       )}
 
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!mevTaxThresholdError}
+          >
+            <FormLabel>New MEV Tax Threshold (Gwei)</FormLabel>
+            <Input
+              type="number"
+              value={newMevTaxThreshold}
+              onChange={handleThresholdChange}
+              placeholder={`Current: ${displayCurrentMevTaxThreshold}`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              step={0.001}
+              min={MEV_CAPTURE_PARAMS.THRESHOLD.MIN}
+              max={MEV_CAPTURE_PARAMS.THRESHOLD.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {MEV_CAPTURE_PARAMS.THRESHOLD.MIN} and{" "}
+              {MEV_CAPTURE_PARAMS.THRESHOLD.MAX} Gwei
+            </FormHelperText>
+            {mevTaxThresholdError && <FormErrorMessage>{mevTaxThresholdError}</FormErrorMessage>}
+          </FormControl>
+        </GridItem>
+
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!mevTaxMultiplierError}
+          >
+            <FormLabel>New MEV Tax Multiplier</FormLabel>
+            <Input
+              type="number"
+              step="1"
+              value={newMevTaxMultiplier}
+              onChange={handleMultiplierChange}
+              placeholder={`Current: ${displayCurrentMevTaxMultiplier}`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={MEV_CAPTURE_PARAMS.MULTIPLIER.MIN}
+              max={MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
+            />
+            <FormHelperText>
+              Enter a whole number between {MEV_CAPTURE_PARAMS.MULTIPLIER.MIN} and{" "}
+              {MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
+            </FormHelperText>
+            {mevTaxMultiplierError && <FormErrorMessage>{mevTaxMultiplierError}</FormErrorMessage>}
+          </FormControl>
+        </GridItem>
+      </Grid>
+
       {selectedPool &&
-        ((newMevTaxThreshold && !mevTaxThresholdError) ||
-          (newMevTaxMultiplier && !mevTaxMultiplierError)) && (
+        ((debouncedMevTaxThreshold && !mevTaxThresholdError) ||
+          (debouncedMevTaxMultiplier && !mevTaxMultiplierError)) && (
           <ParameterChangePreviewCard
             title="Hook Parameters Change Preview"
             icon={<DollarSign size={24} />}
             parameters={[
-              ...(newMevTaxThreshold && !mevTaxThresholdError
+              ...(debouncedMevTaxThreshold && !mevTaxThresholdError
                 ? [
                     {
                       name: "MEV Tax Threshold",
                       currentValue: `${displayCurrentMevTaxThreshold}`,
-                      newValue: `${newMevTaxThreshold}`,
+                      newValue: `${debouncedMevTaxThreshold}`,
                       difference: (
-                        (parseFloat(newMevTaxThreshold) * 1000 -
+                        (parseFloat(debouncedMevTaxThreshold) * 1000 -
                           parseFloat(displayCurrentMevTaxThreshold) * 1000) /
                         1000
                       ).toString(),
                     },
                   ]
                 : []),
-              ...(newMevTaxMultiplier && !mevTaxMultiplierError
+              ...(debouncedMevTaxMultiplier && !mevTaxMultiplierError
                 ? [
                     {
                       name: "MEV Tax Multiplier",
                       currentValue: displayCurrentMevTaxMultiplier,
-                      newValue: newMevTaxMultiplier,
+                      newValue: debouncedMevTaxMultiplier,
                       difference: (
-                        parseInt(newMevTaxMultiplier) - parseInt(displayCurrentMevTaxMultiplier)
+                        parseInt(debouncedMevTaxMultiplier) -
+                        parseInt(displayCurrentMevTaxMultiplier)
                       ).toString(),
                     },
                   ]
@@ -681,11 +594,7 @@ export default function MevCaptureHookConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={
-              (!newMevTaxThreshold && !newMevTaxMultiplier) ||
-              !!mevTaxThresholdError ||
-              !!mevTaxMultiplierError
-            }
+            isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
           >
             Execute Parameter Change
           </Button>
@@ -693,11 +602,7 @@ export default function MevCaptureHookConfigurationModule({
           <Button
             variant="primary"
             onClick={handleGenerateClick}
-            isDisabled={
-              (!newMevTaxThreshold && !newMevTaxMultiplier) ||
-              !!mevTaxThresholdError ||
-              !!mevTaxMultiplierError
-            }
+            isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
           >
             Generate Payload
           </Button>
