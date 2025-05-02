@@ -293,10 +293,14 @@ export type GqlPoolAggregator = {
   beta?: Maybe<Scalars['String']['output']>;
   /** Data specific to gyro pools */
   c?: Maybe<Scalars['String']['output']>;
+  /** ReClamm: The centeredness margin of the pool */
+  centerednessMargin?: Maybe<Scalars['BigDecimal']['output']>;
   /** The chain on which the pool is deployed */
   chain: GqlChain;
   /** The timestamp the pool was created. */
   createTime: Scalars['Int']['output'];
+  /** ReClamm: The current fourth root price ratio, an interpolation of the price ratio state */
+  currentFourthRootPriceRatio?: Maybe<Scalars['BigDecimal']['output']>;
   /** Data specific to gyro pools */
   dSq?: Maybe<Scalars['String']['output']>;
   /** The decimals of the BPT, usually 18 */
@@ -305,6 +309,8 @@ export type GqlPoolAggregator = {
   delta?: Maybe<Scalars['String']['output']>;
   /** Dynamic data such as token balances, swap fees or volume */
   dynamicData: GqlPoolDynamicData;
+  /** ReClamm: The fourth root price ratio at the end of an update */
+  endFourthRootPriceRatio?: Maybe<Scalars['BigDecimal']['output']>;
   /** Data specific to fx pools */
   epsilon?: Maybe<Scalars['String']['output']>;
   /** The factory contract address from which the pool was created. */
@@ -315,6 +321,10 @@ export type GqlPoolAggregator = {
   id: Scalars['ID']['output'];
   /** Data specific to gyro/fx pools */
   lambda?: Maybe<Scalars['String']['output']>;
+  /** The timestamp of the last user interaction */
+  lastTimestamp?: Maybe<Scalars['Int']['output']>;
+  /** ReClamm: The last virtual balances of the pool */
+  lastVirtualBalances?: Maybe<Array<Scalars['BigDecimal']['output']>>;
   /** Liquidity management settings for v3 pools. */
   liquidityManagement?: Maybe<LiquidityManagement>;
   /** The name of the pool as per contract */
@@ -330,6 +340,12 @@ export type GqlPoolAggregator = {
   poolCreator?: Maybe<Scalars['Bytes']['output']>;
   /** Returns all pool tokens, including BPTs and nested pools if there are any. Only one nested level deep. */
   poolTokens: Array<GqlPoolTokenDetail>;
+  /** ReClamm: The timestamp when the update ends */
+  priceRatioUpdateEndTime?: Maybe<Scalars['Int']['output']>;
+  /** ReClamm: The timestamp when the update begins */
+  priceRatioUpdateStartTime?: Maybe<Scalars['Int']['output']>;
+  /** ReClamm: Represents how fast the pool can move the virtual balances per day */
+  priceShiftRatePerSecond?: Maybe<Scalars['BigDecimal']['output']>;
   /** The protocol version on which the pool is deployed, 1, 2 or 3 */
   protocolVersion: Scalars['Int']['output'];
   /** QuantAmmWeighted specific fields */
@@ -342,6 +358,8 @@ export type GqlPoolAggregator = {
   sqrtAlpha?: Maybe<Scalars['String']['output']>;
   /** Data specific to gyro pools */
   sqrtBeta?: Maybe<Scalars['String']['output']>;
+  /** ReClamm: The fourth root price ratio at the start of an update */
+  startFourthRootPriceRatio?: Maybe<Scalars['BigDecimal']['output']>;
   /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
   swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
   /** The token symbol of the pool as per contract */
@@ -414,6 +432,8 @@ export enum GqlPoolAprItemType {
   Merkl = 'MERKL',
   /** Represents if the APR items comes from a nested pool. */
   Nested = 'NESTED',
+  /** APR calculated for QUANT-AMM pools based on performance measurements over a month */
+  QuantAmmUplift = 'QUANT_AMM_UPLIFT',
   /** Staking reward APR in a pool from a reward token. */
   Staking = 'STAKING',
   /** APR boost that can be earned, i.e. via veBAL or maBEETS. */
@@ -1349,6 +1369,78 @@ export type GqlPoolQuantAmmWeighted = GqlPoolBase & {
   withdrawConfig: GqlPoolWithdrawConfig;
 };
 
+export type GqlPoolReClamm = GqlPoolBase & {
+  __typename: 'GqlPoolReClamm';
+  address: Scalars['Bytes']['output'];
+  /** @deprecated Use poolTokens instead */
+  allTokens: Array<GqlPoolTokenExpanded>;
+  categories?: Maybe<Array<Maybe<GqlPoolFilterCategory>>>;
+  /** The centeredness margin of the pool */
+  centerednessMargin: Scalars['BigDecimal']['output'];
+  chain: GqlChain;
+  createTime: Scalars['Int']['output'];
+  /** The current fourth root price ratio, an interpolation of the price ratio state */
+  currentFourthRootPriceRatio: Scalars['BigDecimal']['output'];
+  decimals: Scalars['Int']['output'];
+  /** @deprecated Use poolTokens instead */
+  displayTokens: Array<GqlPoolTokenDisplay>;
+  dynamicData: GqlPoolDynamicData;
+  /** The fourth root price ratio at the end of an update */
+  endFourthRootPriceRatio: Scalars['BigDecimal']['output'];
+  factory?: Maybe<Scalars['Bytes']['output']>;
+  hasAnyAllowedBuffer: Scalars['Boolean']['output'];
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<GqlHook>;
+  id: Scalars['ID']['output'];
+  /** @deprecated Removed without replacement */
+  investConfig: GqlPoolInvestConfig;
+  /** The timestamp of the last user interaction */
+  lastTimestamp: Scalars['Int']['output'];
+  /** The last virtual balances of the pool */
+  lastVirtualBalances: Array<Scalars['BigDecimal']['output']>;
+  liquidityManagement?: Maybe<LiquidityManagement>;
+  name: Scalars['String']['output'];
+  /** @deprecated Removed without replacement */
+  nestingType: GqlPoolNestingType;
+  /**
+   * The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
+   * @deprecated Use swapFeeManager instead
+   */
+  owner?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to pause/unpause the pool (or 0 to delegate to governance) */
+  pauseManager?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to set the pool creator fee percentage */
+  poolCreator?: Maybe<Scalars['Bytes']['output']>;
+  poolTokens: Array<GqlPoolTokenDetail>;
+  /** The timestamp when the update ends */
+  priceRatioUpdateEndTime: Scalars['Int']['output'];
+  /** The timestamp when the update begins */
+  priceRatioUpdateStartTime: Scalars['Int']['output'];
+  /** Represents how fast the pool can move the virtual balances per day */
+  priceShiftRatePerSecond: Scalars['BigDecimal']['output'];
+  protocolVersion: Scalars['Int']['output'];
+  staking?: Maybe<GqlPoolStaking>;
+  /** The fourth root price ratio at the start of an update */
+  startFourthRootPriceRatio: Scalars['BigDecimal']['output'];
+  /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
+  swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
+  symbol: Scalars['String']['output'];
+  tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  /**
+   * All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
+   * @deprecated Use poolTokens instead
+   */
+  tokens: Array<GqlPoolTokenUnion>;
+  type: GqlPoolType;
+  userBalance?: Maybe<GqlPoolUserBalance>;
+  /** @deprecated use protocolVersion instead */
+  vaultVersion: Scalars['Int']['output'];
+  version: Scalars['Int']['output'];
+  /** @deprecated Removed without replacement */
+  withdrawConfig: GqlPoolWithdrawConfig;
+};
+
 export type GqlPoolSnapshot = {
   __typename: 'GqlPoolSnapshot';
   amounts: Array<Scalars['String']['output']>;
@@ -1793,12 +1885,13 @@ export enum GqlPoolType {
   MetaStable = 'META_STABLE',
   PhantomStable = 'PHANTOM_STABLE',
   QuantAmmWeighted = 'QUANT_AMM_WEIGHTED',
+  Reclamm = 'RECLAMM',
   Stable = 'STABLE',
   Unknown = 'UNKNOWN',
   Weighted = 'WEIGHTED'
 }
 
-export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolStable | GqlPoolWeighted;
+export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted;
 
 /** If a user address was provided in the query, the user balance is populated here */
 export type GqlPoolUserBalance = {
@@ -1933,6 +2026,7 @@ export type GqlProtocolMetricsAggregated = {
   chains: Array<GqlProtocolMetricsChain>;
   numLiquidityProviders: Scalars['BigInt']['output'];
   poolCount: Scalars['BigInt']['output'];
+  surplus24h: Scalars['BigDecimal']['output'];
   swapFee24h: Scalars['BigDecimal']['output'];
   swapVolume24h: Scalars['BigDecimal']['output'];
   totalLiquidity: Scalars['BigDecimal']['output'];
@@ -1948,6 +2042,7 @@ export type GqlProtocolMetricsChain = {
   chainId: Scalars['String']['output'];
   numLiquidityProviders: Scalars['BigInt']['output'];
   poolCount: Scalars['BigInt']['output'];
+  surplus24h: Scalars['BigDecimal']['output'];
   swapFee24h: Scalars['BigDecimal']['output'];
   swapVolume24h: Scalars['BigDecimal']['output'];
   totalLiquidity: Scalars['BigDecimal']['output'];
@@ -3177,19 +3272,13 @@ export type GetPoolsQueryVariables = Exact<{
 
 export type GetPoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, protocolVersion: number, address: string, id: string, name: string, symbol: string, type: GqlPoolType, version: number, createTime: number, swapFeeManager?: string | null, staking?: { __typename: 'GqlPoolStaking', gauge?: { __typename: 'GqlPoolStakingGauge', id: string } | null } | null, dynamicData: { __typename: 'GqlPoolDynamicData', swapFee: string, poolId: string } }> };
 
-export type GetBoostedPoolsQueryVariables = Exact<{
-  chainIn?: InputMaybe<Array<GqlChain> | GqlChain>;
-}>;
-
-
-export type GetBoostedPoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, address: string, name: string, protocolVersion: number, hasErc4626: boolean, hasAnyAllowedBuffer: boolean, tags?: Array<string | null> | null, dynamicData: { __typename: 'GqlPoolDynamicData', totalLiquidity: string, volume24h: string }, poolTokens: Array<{ __typename: 'GqlPoolTokenDetail', chain?: GqlChain | null, chainId?: number | null, address: string, symbol: string, name: string, decimals: number, isErc4626: boolean, logoURI?: string | null, useUnderlyingForAddRemove?: boolean | null, scalingFactor?: string | null, priceRate: string, underlyingToken?: { __typename: 'GqlToken', chainId: number, address: string, name: string, symbol: string, decimals: number, isErc4626: boolean } | null }> }> };
-
 export type GetV3PoolsQueryVariables = Exact<{
   chainIn?: InputMaybe<Array<GqlChain> | GqlChain>;
+  tagIn?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
 
 
-export type GetV3PoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, protocolVersion: number, address: string, name: string, swapFeeManager?: string | null, createTime: number, tags?: Array<string | null> | null, dynamicData: { __typename: 'GqlPoolDynamicData', swapFee: string }, poolTokens: Array<{ __typename: 'GqlPoolTokenDetail', chain?: GqlChain | null, chainId?: number | null, address: string, weight?: string | null, symbol: string, name: string, decimals: number, isErc4626: boolean, scalingFactor?: string | null, priceRate: string, isBufferAllowed: boolean, underlyingToken?: { __typename: 'GqlToken', chainId: number, address: string, name: string, symbol: string, decimals: number, isErc4626: boolean } | null }> }> };
+export type GetV3PoolsQuery = { __typename: 'Query', poolGetPools: Array<{ __typename: 'GqlPoolMinimal', chain: GqlChain, protocolVersion: number, address: string, name: string, swapFeeManager?: string | null, createTime: number, tags?: Array<string | null> | null, hasErc4626: boolean, hasAnyAllowedBuffer: boolean, dynamicData: { __typename: 'GqlPoolDynamicData', swapFee: string, totalLiquidity: string, volume24h: string }, poolTokens: Array<{ __typename: 'GqlPoolTokenDetail', chain?: GqlChain | null, chainId?: number | null, address: string, weight?: string | null, symbol: string, name: string, decimals: number, isErc4626: boolean, logoURI?: string | null, useUnderlyingForAddRemove?: boolean | null, scalingFactor?: string | null, priceRate: string, isBufferAllowed: boolean, underlyingToken?: { __typename: 'GqlToken', chainId: number, address: string, name: string, symbol: string, decimals: number, isErc4626: boolean } | null }> }> };
 
 export type GetV3PoolsWithHooksQueryVariables = Exact<{
   chainIn?: InputMaybe<Array<GqlChain> | GqlChain>;
@@ -3216,8 +3305,7 @@ export type VeBalGetVotingGaugesQuery = { __typename: 'Query', veBalGetVotingLis
 
 export const CurrentTokenPricesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CurrentTokenPrices"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chains"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tokenGetCurrentPrices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"chains"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chains"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"chain"}}]}}]}}]} as unknown as DocumentNode<CurrentTokenPricesQuery, CurrentTokenPricesQueryVariables>;
 export const GetPoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"swapFeeManager"}},{"kind":"Field","name":{"kind":"Name","value":"staking"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"gauge"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"swapFee"}},{"kind":"Field","name":{"kind":"Name","value":"poolId"}}]}}]}}]}}]} as unknown as DocumentNode<GetPoolsQuery, GetPoolsQueryVariables>;
-export const GetBoostedPoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBoostedPools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"protocolVersionIn"},"value":{"kind":"ListValue","values":[{"kind":"IntValue","value":"3"}]}},{"kind":"ObjectField","name":{"kind":"Name","value":"tagIn"},"value":{"kind":"ListValue","values":[{"kind":"StringValue","value":"BOOSTED","block":false}]}},{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"hasErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnyAllowedBuffer"}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalLiquidity"}},{"kind":"Field","name":{"kind":"Name","value":"volume24h"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"poolTokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}},{"kind":"Field","name":{"kind":"Name","value":"useUnderlyingForAddRemove"}},{"kind":"Field","name":{"kind":"Name","value":"underlyingToken"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}}]}},{"kind":"Field","name":{"kind":"Name","value":"scalingFactor"}},{"kind":"Field","name":{"kind":"Name","value":"priceRate"}}]}}]}}]}}]} as unknown as DocumentNode<GetBoostedPoolsQuery, GetBoostedPoolsQueryVariables>;
-export const GetV3PoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetV3Pools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"protocolVersionIn"},"value":{"kind":"ListValue","values":[{"kind":"IntValue","value":"3"}]}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"swapFeeManager"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"swapFee"}}]}},{"kind":"Field","name":{"kind":"Name","value":"poolTokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"underlyingToken"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}}]}},{"kind":"Field","name":{"kind":"Name","value":"scalingFactor"}},{"kind":"Field","name":{"kind":"Name","value":"priceRate"}},{"kind":"Field","name":{"kind":"Name","value":"isBufferAllowed"}}]}}]}}]}}]} as unknown as DocumentNode<GetV3PoolsQuery, GetV3PoolsQueryVariables>;
+export const GetV3PoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetV3Pools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tagIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"protocolVersionIn"},"value":{"kind":"ListValue","values":[{"kind":"IntValue","value":"3"}]}},{"kind":"ObjectField","name":{"kind":"Name","value":"tagIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tagIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"swapFeeManager"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"hasErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnyAllowedBuffer"}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"swapFee"}},{"kind":"Field","name":{"kind":"Name","value":"totalLiquidity"}},{"kind":"Field","name":{"kind":"Name","value":"volume24h"}}]}},{"kind":"Field","name":{"kind":"Name","value":"poolTokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}},{"kind":"Field","name":{"kind":"Name","value":"useUnderlyingForAddRemove"}},{"kind":"Field","name":{"kind":"Name","value":"underlyingToken"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}}]}},{"kind":"Field","name":{"kind":"Name","value":"scalingFactor"}},{"kind":"Field","name":{"kind":"Name","value":"priceRate"}},{"kind":"Field","name":{"kind":"Name","value":"isBufferAllowed"}}]}}]}}]}}]} as unknown as DocumentNode<GetV3PoolsQuery, GetV3PoolsQueryVariables>;
 export const GetV3PoolsWithHooksDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetV3PoolsWithHooks"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainNotIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tagIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"poolGetPools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"chainIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"chainNotIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainNotIn"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"protocolVersionIn"},"value":{"kind":"ListValue","values":[{"kind":"IntValue","value":"3"}]}},{"kind":"ObjectField","name":{"kind":"Name","value":"tagIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tagIn"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"EnumValue","value":"totalLiquidity"}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"EnumValue","value":"desc"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"protocolVersion"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"createTime"}},{"kind":"Field","name":{"kind":"Name","value":"swapFeeManager"}},{"kind":"Field","name":{"kind":"Name","value":"poolTokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dynamicData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalLiquidity"}},{"kind":"Field","name":{"kind":"Name","value":"poolId"}},{"kind":"Field","name":{"kind":"Name","value":"swapFee"}}]}},{"kind":"Field","name":{"kind":"Name","value":"hook"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"params"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"StableSurgeHookParams"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxSurgeFeePercentage"}},{"kind":"Field","name":{"kind":"Name","value":"surgeThresholdPercentage"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"MevTaxHookParams"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxMevSwapFeePercentage"}},{"kind":"Field","name":{"kind":"Name","value":"mevTaxMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"mevTaxThreshold"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetV3PoolsWithHooksQuery, GetV3PoolsWithHooksQueryVariables>;
 export const GetTokensDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTokens"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GqlChain"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tokensIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tokenGetTokens"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"chains"},"value":{"kind":"Variable","name":{"kind":"Name","value":"chainIn"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"tokensIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tokensIn"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"decimals"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}},{"kind":"Field","name":{"kind":"Name","value":"isErc4626"}},{"kind":"Field","name":{"kind":"Name","value":"isBufferAllowed"}},{"kind":"Field","name":{"kind":"Name","value":"underlyingTokenAddress"}}]}}]}}]} as unknown as DocumentNode<GetTokensQuery, GetTokensQueryVariables>;
 export const VeBalGetVotingGaugesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"VeBalGetVotingGauges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"veBalGetVotingList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"chain"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"gauge"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"childGaugeAddress"}},{"kind":"Field","name":{"kind":"Name","value":"isKilled"}},{"kind":"Field","name":{"kind":"Name","value":"relativeWeightCap"}},{"kind":"Field","name":{"kind":"Name","value":"addedTimestamp"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tokens"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"logoURI"}},{"kind":"Field","name":{"kind":"Name","value":"symbol"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}}]}}]}}]}}]} as unknown as DocumentNode<VeBalGetVotingGaugesQuery, VeBalGetVotingGaugesQueryVariables>;

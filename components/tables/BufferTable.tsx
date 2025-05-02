@@ -14,7 +14,7 @@ import {
   Avatar,
   Tooltip,
 } from "@chakra-ui/react";
-import { PoolWithBufferBalances } from "@/lib/hooks/useBufferBalances";
+import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferTableTooltip } from "../liquidityBuffers/BufferTableTooltip";
@@ -23,7 +23,7 @@ import { FaCircle } from "react-icons/fa";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 
 interface BufferTableProps {
-  pools: PoolWithBufferBalances[];
+  pools: PoolWithBufferData[];
 }
 
 export const BufferTable = ({ pools }: BufferTableProps) => {
