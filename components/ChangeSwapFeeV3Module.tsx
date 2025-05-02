@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -20,7 +19,6 @@ import {
   GridItem,
   Heading,
   Input,
-  Spinner,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -42,7 +40,7 @@ import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -345,92 +343,77 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
           )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={debouncedSwapFee !== "" && !isSwapFeeValid}
-              >
-                <FormLabel>New Swap Fee Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newSwapFee}
-                  onChange={e => setNewSwapFee(e.target.value)}
-                  placeholder={`Current: ${currentFee.toFixed(4)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                />
-                {selectedPool && isStandardRangePool(poolType) && (
-                  <FormHelperText>
-                    Valid range: {getSwapFeeRange(poolType).MIN}% to {getSwapFeeRange(poolType).MAX}
-                    %
-                  </FormHelperText>
-                )}
-                {debouncedSwapFee !== "" && !isSwapFeeValid && (
-                  <FormErrorMessage>{swapFeeError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
+        </Box>
       )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={debouncedSwapFee !== "" && !isSwapFeeValid}
+          >
+            <FormLabel>New Swap Fee Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newSwapFee}
+              onChange={e => setNewSwapFee(e.target.value)}
+              placeholder={`Current: ${currentFee.toFixed(4)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+            />
+            {selectedPool && isStandardRangePool(poolType) && (
+              <FormHelperText>
+                Valid range: {getSwapFeeRange(poolType).MIN}% to {getSwapFeeRange(poolType).MAX}%
+              </FormHelperText>
+            )}
+            {debouncedSwapFee !== "" && !isSwapFeeValid && (
+              <FormErrorMessage>{swapFeeError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </GridItem>
+      </Grid>
 
       {selectedPool && debouncedSwapFee && isSwapFeeValid && (
         <ParameterChangePreviewCard

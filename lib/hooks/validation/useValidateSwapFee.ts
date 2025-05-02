@@ -1,19 +1,6 @@
 import { useMemo } from "react";
 import { GqlPoolType } from "@/lib/services/apollo/generated/graphql";
-
-// Constants for swap fee validation
-export const SWAP_FEE_PARAMS = {
-  // For Weighted and Stable pools
-  STANDARD: {
-    MIN: 0.001, // 0.001%
-    MAX: 10, // 10%
-  },
-  // For all other pool types
-  OTHER: {
-    MIN: 0, // 0%
-    MAX: 100, // 100%
-  },
-};
+import { SWAP_FEE_PARAMS } from "@/constants/constants";
 
 export function isStandardRangePool(poolType: GqlPoolType): boolean {
   return poolType === GqlPoolType.Weighted || poolType === GqlPoolType.Stable;

@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -18,7 +17,6 @@ import {
   GridItem,
   Heading,
   Input,
-  Spinner,
   useDisclosure,
   useToast,
   FormHelperText,
@@ -30,7 +28,7 @@ import {
   handleDownloadClick,
   StableSurgeParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, STABLE_SURGE_PARAMS } from "@/constants/constants";
 import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
@@ -54,10 +52,7 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
-import {
-  useValidateStableSurge,
-  STABLE_SURGE_PARAMS,
-} from "@/lib/hooks/validation/useValidateStableSurge";
+import { useValidateStableSurge } from "@/lib/hooks/validation/useValidateStableSurge";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
 // Type guard for StableSurgeHookParams
@@ -446,119 +441,105 @@ export default function StableSurgeHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
           )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!maxSurgeFeePercentageError}
-              >
-                <FormLabel>New Max Surge Fee Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newMaxSurgeFeePercentage}
-                  onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
-                  placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  min={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN}
-                  max={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}
-                />
-                <FormHelperText>
-                  Enter a value between {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN} and{" "}
-                  {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}%
-                </FormHelperText>
-                {maxSurgeFeePercentageError && (
-                  <FormErrorMessage>{maxSurgeFeePercentageError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!surgeThresholdPercentageError}
-              >
-                <FormLabel>New Surge Threshold Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newSurgeThresholdPercentage}
-                  onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
-                  placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  min={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN}
-                  max={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}
-                />
-                <FormHelperText>
-                  Enter a value between {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN} and{" "}
-                  {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}%
-                </FormHelperText>
-                {surgeThresholdPercentageError && (
-                  <FormErrorMessage>{surgeThresholdPercentageError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
+        </Box>
       )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!maxSurgeFeePercentageError}
+          >
+            <FormLabel>New Max Surge Fee Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newMaxSurgeFeePercentage}
+              onChange={e => setNewMaxSurgeFeePercentage(e.target.value)}
+              placeholder={`Current: ${currentMaxSurgeFee.toFixed(2)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN}
+              max={STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MIN} and{" "}
+              {STABLE_SURGE_PARAMS.MAX_SURGE_FEE.MAX}%
+            </FormHelperText>
+            {maxSurgeFeePercentageError && (
+              <FormErrorMessage>{maxSurgeFeePercentageError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </GridItem>
+
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!surgeThresholdPercentageError}
+          >
+            <FormLabel>New Surge Threshold Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newSurgeThresholdPercentage}
+              onChange={e => setNewSurgeThresholdPercentage(e.target.value)}
+              placeholder={`Current: ${currentSurgeThreshold.toFixed(2)}%`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN}
+              max={STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MIN} and{" "}
+              {STABLE_SURGE_PARAMS.SURGE_THRESHOLD.MAX}%
+            </FormHelperText>
+            {surgeThresholdPercentageError && (
+              <FormErrorMessage>{surgeThresholdPercentageError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </GridItem>
+      </Grid>
 
       {selectedPool &&
         ((debouncedMaxSurgeFeePercentage && !maxSurgeFeePercentageError) ||

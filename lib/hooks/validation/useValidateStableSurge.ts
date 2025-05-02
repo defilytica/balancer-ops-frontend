@@ -1,15 +1,5 @@
+import { STABLE_SURGE_PARAMS } from "@/constants/constants";
 import { useMemo } from "react";
-
-export const STABLE_SURGE_PARAMS = {
-  MAX_SURGE_FEE: {
-    MIN: 0,
-    MAX: 100,
-  },
-  SURGE_THRESHOLD: {
-    MIN: 0,
-    MAX: 100,
-  },
-};
 
 export function useValidateStableSurge(params: {
   maxSurgeFeePercentage: string;

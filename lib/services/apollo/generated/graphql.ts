@@ -183,9 +183,11 @@ export enum GqlHookType {
   DirectionalFee = 'DIRECTIONAL_FEE',
   ExitFee = 'EXIT_FEE',
   FeeTaking = 'FEE_TAKING',
+  Lbp = 'LBP',
   Lottery = 'LOTTERY',
   MevTax = 'MEV_TAX',
   NftliquidityPosition = 'NFTLIQUIDITY_POSITION',
+  Reclamm = 'RECLAMM',
   StableSurge = 'STABLE_SURGE',
   Unknown = 'UNKNOWN',
   VebalDiscount = 'VEBAL_DISCOUNT'
@@ -303,6 +305,8 @@ export type GqlPoolAggregator = {
   currentFourthRootPriceRatio?: Maybe<Scalars['BigDecimal']['output']>;
   /** Data specific to gyro pools */
   dSq?: Maybe<Scalars['String']['output']>;
+  /** ReClamm: Represents how fast the pool can move the virtual balances per day */
+  dailyPriceShiftBase?: Maybe<Scalars['BigDecimal']['output']>;
   /** The decimals of the BPT, usually 18 */
   decimals: Scalars['Int']['output'];
   /** Data specific to fx pools */
@@ -344,8 +348,6 @@ export type GqlPoolAggregator = {
   priceRatioUpdateEndTime?: Maybe<Scalars['Int']['output']>;
   /** ReClamm: The timestamp when the update begins */
   priceRatioUpdateStartTime?: Maybe<Scalars['Int']['output']>;
-  /** ReClamm: Represents how fast the pool can move the virtual balances per day */
-  priceShiftRatePerSecond?: Maybe<Scalars['BigDecimal']['output']>;
   /** The protocol version on which the pool is deployed, 1, 2 or 3 */
   protocolVersion: Scalars['Int']['output'];
   /** QuantAmmWeighted specific fields */
@@ -1381,6 +1383,8 @@ export type GqlPoolReClamm = GqlPoolBase & {
   createTime: Scalars['Int']['output'];
   /** The current fourth root price ratio, an interpolation of the price ratio state */
   currentFourthRootPriceRatio: Scalars['BigDecimal']['output'];
+  /** Represents how fast the pool can move the virtual balances per day */
+  dailyPriceShiftBase: Scalars['BigDecimal']['output'];
   decimals: Scalars['Int']['output'];
   /** @deprecated Use poolTokens instead */
   displayTokens: Array<GqlPoolTokenDisplay>;
@@ -1417,8 +1421,6 @@ export type GqlPoolReClamm = GqlPoolBase & {
   priceRatioUpdateEndTime: Scalars['Int']['output'];
   /** The timestamp when the update begins */
   priceRatioUpdateStartTime: Scalars['Int']['output'];
-  /** Represents how fast the pool can move the virtual balances per day */
-  priceShiftRatePerSecond: Scalars['BigDecimal']['output'];
   protocolVersion: Scalars['Int']['output'];
   staking?: Maybe<GqlPoolStaking>;
   /** The fourth root price ratio at the start of an update */
@@ -2656,9 +2658,13 @@ export type GqlVotingPool = {
   gauge: GqlVotingGauge;
   /** Pool ID */
   id: Scalars['ID']['output'];
+  /** Returns all pool tokens, including BPTs and nested pools if there are any. Only one nested level deep. */
+  poolTokens: Array<GqlPoolTokenDetail>;
   protocolVersion: Scalars['Int']['output'];
   /** The symbol of the pool. */
   symbol: Scalars['String']['output'];
+  /** List of tags assigned by the team based on external factors */
+  tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   /** The tokens inside the pool. */
   tokens: Array<GqlVotingGaugeToken>;
   /** The type of the pool. */

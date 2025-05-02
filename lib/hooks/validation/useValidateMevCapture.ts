@@ -1,15 +1,5 @@
+import { MEV_CAPTURE_PARAMS } from "@/constants/constants";
 import { useMemo } from "react";
-
-export const MEV_CAPTURE_PARAMS = {
-  THRESHOLD: {
-    MIN: 0.001,
-    MAX: 1.0,
-  },
-  MULTIPLIER: {
-    MIN: 2,
-    MAX: 1000,
-  },
-};
 
 export function useValidateMevCapture(params: {
   mevTaxThreshold: string;

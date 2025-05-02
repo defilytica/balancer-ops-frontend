@@ -24,7 +24,6 @@ import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
 import { Pool } from "@/types/interfaces";
 import { ApolloError } from "@apollo/client";
 import { GetPoolsQuery } from "@/lib/services/apollo/generated/graphql";
-import { colors } from "@/lib/services/chakra/themes/base/colors";
 
 interface PoolSelectorProps {
   pools: GetPoolsQuery["poolGetPools"] | undefined;
@@ -33,6 +32,7 @@ interface PoolSelectorProps {
   selectedPool: Pool | null;
   onPoolSelect: (pool: Pool) => void;
   onClearSelection: () => void;
+  showGauges?: boolean;
 }
 
 const PoolSelector = ({
@@ -42,6 +42,7 @@ const PoolSelector = ({
   selectedPool,
   onPoolSelect,
   onClearSelection,
+  showGauges = false,
 }: PoolSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -86,7 +87,7 @@ const PoolSelector = ({
           {pool.name}
         </Text>
         <HStack spacing={2}>
-          {hasGauge && (
+          {showGauges && hasGauge && (
             <Badge colorScheme="blue" fontSize="xs">
               Has Gauge
             </Badge>

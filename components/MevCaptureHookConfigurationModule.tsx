@@ -6,7 +6,6 @@ import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Container,
@@ -20,7 +19,6 @@ import {
   GridItem,
   Heading,
   Input,
-  Spinner,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -30,7 +28,7 @@ import {
   handleDownloadClick,
   MevCaptureParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { MEV_CAPTURE_PARAMS, NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
@@ -40,7 +38,6 @@ import { AddressBook, Pool, MevTaxHookParams, HookParams } from "@/types/interfa
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -54,10 +51,7 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { formatGwei, parseEther } from "viem";
 import { useSearchParams } from "next/navigation";
-import {
-  useValidateMevCapture,
-  MEV_CAPTURE_PARAMS,
-} from "@/lib/hooks/validation/useValidateMevCapture";
+import { useValidateMevCapture } from "@/lib/hooks/validation/useValidateMevCapture";
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 
@@ -458,119 +452,101 @@ export default function MevCaptureHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {isCurrentWalletManager && (
-                <Alert status="info" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is owned by the authorized delegate address that is currently
-                    connected. It can now be modified. Change swap fee settings and execute through
-                    your connected EOA.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
+      {selectedPool && isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {isCurrentWalletManager && (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                It can now be modified. Change swap fee settings and execute through your connected
+                EOA.
+              </AlertDescription>
+            </Alert>
           )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} showHook={true} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {selectedPool && !isCurrentWalletManager && (
-            <Box mb={6}>
-              <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  {isAuthorizedPool
-                    ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                    : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-                </AlertDescription>
-              </Alert>
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!mevTaxThresholdError}
-              >
-                <FormLabel>New MEV Tax Threshold (Gwei)</FormLabel>
-                <Input
-                  type="number"
-                  value={newMevTaxThreshold}
-                  onChange={handleThresholdChange}
-                  placeholder={`Current: ${displayCurrentMevTaxThreshold}`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  step={0.001}
-                  min={MEV_CAPTURE_PARAMS.THRESHOLD.MIN}
-                  max={MEV_CAPTURE_PARAMS.THRESHOLD.MAX}
-                />
-                <FormHelperText>
-                  Enter a value between {MEV_CAPTURE_PARAMS.THRESHOLD.MIN} and{" "}
-                  {MEV_CAPTURE_PARAMS.THRESHOLD.MAX} Gwei
-                </FormHelperText>
-                {mevTaxThresholdError && (
-                  <FormErrorMessage>{mevTaxThresholdError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <FormControl
-                isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
-                mb={4}
-                isInvalid={!!mevTaxMultiplierError}
-              >
-                <FormLabel>New MEV Tax Multiplier</FormLabel>
-                <Input
-                  type="number"
-                  step="1"
-                  value={newMevTaxMultiplier}
-                  onChange={handleMultiplierChange}
-                  placeholder={`Current: ${displayCurrentMevTaxMultiplier}`}
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                  min={MEV_CAPTURE_PARAMS.MULTIPLIER.MIN}
-                  max={MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
-                />
-                <FormHelperText>
-                  Enter a whole number between {MEV_CAPTURE_PARAMS.MULTIPLIER.MIN} and{" "}
-                  {MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
-                </FormHelperText>
-                {mevTaxMultiplierError && (
-                  <FormErrorMessage>{mevTaxMultiplierError}</FormErrorMessage>
-                )}
-              </FormControl>
-            </GridItem>
-          </Grid>
-        </>
+        </Box>
       )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} showHook={true} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {selectedPool && !isCurrentWalletManager && (
+        <Box mb={6}>
+          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {isAuthorizedPool
+                ? "This pool is DAO-governed. Changes must be executed through the multisig."
+                : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!mevTaxThresholdError}
+          >
+            <FormLabel>New MEV Tax Threshold (Gwei)</FormLabel>
+            <Input
+              type="number"
+              value={newMevTaxThreshold}
+              onChange={handleThresholdChange}
+              placeholder={`Current: ${displayCurrentMevTaxThreshold}`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              step={0.001}
+              min={MEV_CAPTURE_PARAMS.THRESHOLD.MIN}
+              max={MEV_CAPTURE_PARAMS.THRESHOLD.MAX}
+            />
+            <FormHelperText>
+              Enter a value between {MEV_CAPTURE_PARAMS.THRESHOLD.MIN} and{" "}
+              {MEV_CAPTURE_PARAMS.THRESHOLD.MAX} Gwei
+            </FormHelperText>
+            {mevTaxThresholdError && <FormErrorMessage>{mevTaxThresholdError}</FormErrorMessage>}
+          </FormControl>
+        </GridItem>
+
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            mb={4}
+            isInvalid={!!mevTaxMultiplierError}
+          >
+            <FormLabel>New MEV Tax Multiplier</FormLabel>
+            <Input
+              type="number"
+              step="1"
+              value={newMevTaxMultiplier}
+              onChange={handleMultiplierChange}
+              placeholder={`Current: ${displayCurrentMevTaxMultiplier}`}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+              min={MEV_CAPTURE_PARAMS.MULTIPLIER.MIN}
+              max={MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
+            />
+            <FormHelperText>
+              Enter a whole number between {MEV_CAPTURE_PARAMS.MULTIPLIER.MIN} and{" "}
+              {MEV_CAPTURE_PARAMS.MULTIPLIER.MAX}
+            </FormHelperText>
+            {mevTaxMultiplierError && <FormErrorMessage>{mevTaxMultiplierError}</FormErrorMessage>}
+          </FormControl>
+        </GridItem>
+      </Grid>
 
       {selectedPool &&
         ((debouncedMevTaxThreshold && !mevTaxThresholdError) ||
