@@ -1292,3 +1292,69 @@ export function generateMevCaptureParamsPayload(
     transactions,
   };
 }
+
+// --- PERMISSIONS PAYLOAD BUILDER ---
+
+// Permission input interface
+export interface PermissionInput {
+  actionIds: string[];
+  granteeAddress: string;
+  granterAddress: string;
+  authorizerAddress: string;
+  network: string;
+  chainId: string;
+}
+
+export function generatePermissionsPayload(input: PermissionInput): string {
+
+  // Create transactions payload
+  const payload = {
+    version: "1.0",
+    chainId: input.chainId,
+    createdAt: Math.floor(Date.now() / 1000),
+    meta: {
+      name: "Transactions Batch",
+      description: "Grant permissions to wallet",
+      txBuilderVersion: "1.18.0",
+      createdFromSafeAddress: input.granterAddress,
+      createdFromOwnerAddress: "",
+    },
+    transactions: [
+      {
+        to: input.authorizerAddress,
+        value: "0",
+        data: null,
+        contractMethod: {
+          inputs: [
+            { internalType: "bytes32[]", name: "roles", type: "bytes32[]" },
+            { internalType: "address", name: "account", type: "address" },
+          ],
+          name: "grantRoles",
+          payable: false,
+        },
+        contractInputsValues: {
+          roles: `[${input.actionIds.map(id => `${id}`).join(", ")}]`,
+          account: input.granteeAddress,
+        },
+      },
+    ],
+  };
+
+  return JSON.stringify(payload, null, 4);
+}
+
+export function generateHumanReadablePermissions(
+  actionIds: string[],
+  descriptions: { [actionId: string]: string },
+  granteeAddress: string,
+  granteeName: string,
+): string {
+  const permissionsText = actionIds
+    .map(id => {
+      const description = descriptions[id] || id;
+      return `- ${description} (${id})`;
+    })
+    .join("\n");
+
+  return `The authorizer will grant the following permissions to ${granteeName} (${granteeAddress}):\n\n${permissionsText}`;
+}
