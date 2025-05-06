@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useReducer, useRef } from "react";
 import {
   Box,
   Button,
@@ -9,7 +9,6 @@ import {
   FormControl,
   FormLabel,
   Heading,
-  Select,
   SimpleGrid,
   Text,
   Card,
@@ -23,21 +22,22 @@ import {
   Stack,
   Checkbox,
   Spinner,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverArrow,
 } from "@chakra-ui/react";
 import { CopyIcon, DownloadIcon, SearchIcon } from "@chakra-ui/icons";
+import { FixedSizeList as List } from "react-window"; // You'll need to install this package
 import { AddressBook } from "@/types/interfaces";
 import { networks } from "@/constants/constants";
 import { getCategoryData, getAddress } from "@/lib/data/maxis/addressBook";
-import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import SearchableAddressInput from "@/components/SearchableAddressInput";
+import PermissionsTable from "@/components/tables/PermissionsTable";
 import {
   copyJsonToClipboard,
   handleDownloadClick,
@@ -47,25 +47,22 @@ import {
   PermissionInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 
-interface PermissionsPayloadBuilderProps {
-  addressBook: AddressBook;
-}
-
-interface Permission {
+export interface Permission {
   actionId: string;
   description: string;
+  deployment: string;
   selected: boolean;
 }
 
-interface Permissions {
+export interface Permissions {
   [actionId: string]: string[] | { [address: string]: boolean };
 }
 
-interface ReverseAddressBook {
+export interface ReverseAddressBook {
   [address: string]: string;
 }
 
-interface ActionIdsData {
+export interface ActionIdsData {
   [deployment: string]: {
     [contract: string]: {
       useAdaptor: boolean;
@@ -76,50 +73,326 @@ interface ActionIdsData {
   };
 }
 
-export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPayloadBuilderProps) {
+export interface NetworkOption {
+  label: string;
+  apiID: string;
+  chainId: string;
+}
+
+export interface PermissionsPayloadBuilderProps {
+  addressBook: AddressBook;
+}
+
+// State interfaces
+interface PermissionsState {
+  allPermissions: Permission[];
+  filteredPermissions: Permission[];
+  selectedPermissions: string[];
+  currentPermissions: string[];
+  actionIdDescriptions: Record<string, string>;
+  loading: boolean;
+  permissionsLoading: boolean;
+  currentPage: number;
+  permissionsPerPage: number;
+}
+
+// Action interfaces for reducer
+type PermissionsAction =
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_PERMISSIONS_LOADING"; payload: boolean }
+  | {
+      type: "SET_ALL_PERMISSIONS";
+      payload: { permissions: Permission[]; descriptions: Record<string, string> };
+    }
+  | { type: "SET_CURRENT_PERMISSIONS"; payload: string[] }
+  | { type: "SET_FILTERED_PERMISSIONS"; payload: Permission[] }
+  | { type: "TOGGLE_PERMISSION"; payload: string }
+  | { type: "REMOVE_PERMISSION"; payload: string }
+  | { type: "CLEAR_SELECTED_PERMISSIONS" }
+  | { type: "SET_PAGE"; payload: number }
+  | { type: "SET_PER_PAGE"; payload: number }
+  | { type: "RESET_PERMISSIONS" };
+
+// Component prop interfaces
+interface PermissionTagProps {
+  permission: string;
+  description: string;
+  deployment?: string;
+  onRemove: (actionId: string) => void;
+}
+
+interface VirtualizedPermissionsListProps {
+  permissions: Permission[];
+  selectedPermissions: string[];
+  onToggle: (actionId: string) => void;
+  loading: boolean;
+}
+
+interface PermissionRowProps {
+  index: number;
+  style: React.CSSProperties;
+}
+
+// Initial state for permissions reducer
+const initialPermissionsState: PermissionsState = {
+  allPermissions: [],
+  filteredPermissions: [],
+  selectedPermissions: [],
+  currentPermissions: [],
+  actionIdDescriptions: {},
+  loading: false,
+  permissionsLoading: false,
+  currentPage: 1,
+  permissionsPerPage: 10,
+};
+
+// Custom hook types
+interface FetchResult<T> {
+  data: T | null;
+  loading: boolean;
+  error: Error | null;
+}
+
+// Reducer for handling permissions-related state
+function permissionsReducer(state: PermissionsState, action: PermissionsAction): PermissionsState {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    case "SET_PERMISSIONS_LOADING":
+      return { ...state, permissionsLoading: action.payload };
+    case "SET_ALL_PERMISSIONS":
+      return {
+        ...state,
+        allPermissions: action.payload.permissions,
+        actionIdDescriptions: action.payload.descriptions,
+        filteredPermissions: action.payload.permissions,
+        loading: false,
+      };
+    case "SET_CURRENT_PERMISSIONS":
+      return {
+        ...state,
+        currentPermissions: action.payload,
+        permissionsLoading: false,
+        currentPage: 1,
+      };
+    case "SET_FILTERED_PERMISSIONS":
+      return { ...state, filteredPermissions: action.payload };
+    case "TOGGLE_PERMISSION":
+      return {
+        ...state,
+        selectedPermissions: state.selectedPermissions.includes(action.payload)
+          ? state.selectedPermissions.filter(id => id !== action.payload)
+          : [...state.selectedPermissions, action.payload],
+      };
+    case "REMOVE_PERMISSION":
+      return {
+        ...state,
+        selectedPermissions: state.selectedPermissions.filter(id => id !== action.payload),
+      };
+    case "CLEAR_SELECTED_PERMISSIONS":
+      return { ...state, selectedPermissions: [] };
+    case "SET_PAGE":
+      return { ...state, currentPage: action.payload };
+    case "SET_PER_PAGE":
+      return { ...state, permissionsPerPage: action.payload, currentPage: 1 };
+    case "RESET_PERMISSIONS":
+      return {
+        ...state,
+        selectedPermissions: [],
+        currentPermissions: [],
+        currentPage: 1,
+      };
+    default:
+      return state;
+  }
+}
+
+// Custom hook for API data fetching with caching
+function useFetchWithCache<T>(url: string, dependencies: any[] = []): FetchResult<T> {
+  const cache = useRef<Record<string, T>>({});
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const fetchData = async (): Promise<void> => {
+      if (cache.current[url]) {
+        setData(cache.current[url]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
+        const result = await response.json();
+        cache.current[url] = result;
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("An unknown error occurred"));
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url, ...dependencies]);
+
+  return { data, loading, error };
+}
+
+// Custom hook for debouncing values
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// Memoized permission tag component
+const PermissionTag: React.FC<PermissionTagProps> = React.memo(
+  ({ permission, description, deployment, onRemove }) => {
+    return (
+      <Popover trigger="hover" placement="top">
+        <PopoverTrigger>
+          <Tag colorScheme="green" size="md" borderRadius="full" mb={1}>
+            <TagLabel>
+              {deployment && (
+                <Text as="span" fontSize="xs" color="gray.500" mr={1}>
+                  {deployment}:
+                </Text>
+              )}
+              {description}
+            </TagLabel>
+            <TagCloseButton onClick={() => onRemove(permission)} />
+          </Tag>
+        </PopoverTrigger>
+        <PopoverContent width="auto" maxW="600px">
+          <PopoverArrow />
+          <PopoverBody>
+            <Text fontSize="xs" fontFamily="monospace" wordBreak="break-all">
+              {permission}
+            </Text>
+          </PopoverBody>
+        </PopoverContent>
+      </Popover>
+    );
+  },
+);
+
+PermissionTag.displayName = "PermissionTag";
+
+// Memoized permissions list component with virtualization
+const VirtualizedPermissionsList: React.FC<VirtualizedPermissionsListProps> = React.memo(
+  ({ permissions, selectedPermissions, onToggle, loading }) => {
+    if (loading) {
+      return (
+        <Flex justify="center" align="center" p={4}>
+          <Spinner />
+        </Flex>
+      );
+    }
+
+    if (!permissions.length) {
+      return <Text>No matching permissions found</Text>;
+    }
+
+    const PermissionRow = ({ index, style }: PermissionRowProps) => {
+      const permission = permissions[index];
+      return (
+        <div style={style}>
+          <Checkbox
+            isChecked={selectedPermissions.includes(permission.actionId)}
+            onChange={() => onToggle(permission.actionId)}
+            colorScheme="green"
+          >
+            <Flex direction="column">
+              <Text fontSize="sm">{permission.description}</Text>
+              <Text color="gray.500" fontSize="xs" fontFamily="monospace">
+                {permission.actionId}
+              </Text>
+            </Flex>
+          </Checkbox>
+        </div>
+      );
+    };
+
+    return (
+      <List
+        height={300}
+        itemCount={permissions.length}
+        itemSize={50}
+        width="100%"
+        overscanCount={5}
+      >
+        {PermissionRow}
+      </List>
+    );
+  },
+);
+
+VirtualizedPermissionsList.displayName = "VirtualizedPermissionsList";
+
+const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ addressBook }) => {
+  const toast = useToast();
+
+  // Network related state
   const [selectedNetwork, setSelectedNetwork] = useState<string>("mainnet");
-  const [availableNetworks, setAvailableNetworks] = useState<string[]>([]);
-  const [networkOptions, setNetworkOptions] = useState<
-    Array<{ label: string; apiID: string; chainId: string }>
-  >([]);
-  const [availableWallets, setAvailableWallets] = useState<{ [key: string]: string }>({});
+  const [networkOptions, setNetworkOptions] = useState<NetworkOption[]>([]);
+
+  // Wallet related state
+  const [availableWallets, setAvailableWallets] = useState<Record<string, string>>({});
   const [selectedWallet, setSelectedWallet] = useState<string>("");
+  const [customWalletInput, setCustomWalletInput] = useState<string>("");
   const [daoAddress, setDAOAddress] = useState<string>("");
   const [authorizerAdaptor, setAuthorizerAdaptor] = useState<string>("");
-  const [currentPermissions, setCurrentPermissions] = useState<string[]>([]);
-  const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
-  const [filteredPermissions, setFilteredPermissions] = useState<Permission[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [permissionsLoading, setPermissionsLoading] = useState<boolean>(false);
+
+  // Reverse lookup state
   const [reverseAddressBook, setReverseAddressBook] = useState<ReverseAddressBook>({});
-  const [actionIdDescriptions, setActionIdDescriptions] = useState<{ [actionId: string]: string }>(
-    {},
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const debouncedSearchTerm = useDebounce<string>(searchTerm, 300);
+
+  // Payload state
+  // Change this line
+  const [generatedPayload, setGeneratedPayload] = useState<string | BatchFile | null>(null);
+  const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
+
+  // Use reducer for permissions-related state
+  const [permissionsState, dispatchPermissions] = useReducer(
+    permissionsReducer,
+    initialPermissionsState,
   );
-  const toast = useToast();
 
   // Initialize networks
   useEffect(() => {
     const availableNetworks = Object.keys(networks).filter(net => net !== "sonic" && net !== "bsc");
-    setAvailableNetworks(availableNetworks);
 
-    const options = availableNetworks.map(network => {
-      return {
-        label: network.charAt(0).toUpperCase() + network.slice(1),
-        apiID: network,
-        chainId: networks[network]?.chainId || "0",
-      };
-    });
+    const options: NetworkOption[] = availableNetworks.map(network => ({
+      label: network.charAt(0).toUpperCase() + network.slice(1),
+      apiID: network,
+      chainId: networks[network]?.chainId || "0",
+    }));
 
     setNetworkOptions(options);
 
     if (availableNetworks.length > 0) {
       setSelectedNetwork(availableNetworks[0]);
     }
-  }, [addressBook]);
+  }, []);
 
   // Load wallets when network changes
   useEffect(() => {
@@ -128,10 +401,10 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
 
   // Load action IDs and reverse lookup on network change
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchData = async (): Promise<void> => {
+      dispatchPermissions({ type: "SET_LOADING", payload: true });
       await Promise.all([loadActionIds(), loadReverseLookup()]);
-      setLoading(false);
+      dispatchPermissions({ type: "SET_LOADING", payload: false });
     };
 
     fetchData();
@@ -144,29 +417,47 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
     }
   }, [selectedWallet, selectedNetwork]);
 
-  // Filter permissions based on search term - using useCallback to prevent excessive rerenders
-  const filterPermissions = useCallback(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredPermissions(allPermissions);
+  // Filter permissions based on search term
+  useEffect(() => {
+    if (debouncedSearchTerm.trim() === "") {
+      dispatchPermissions({
+        type: "SET_FILTERED_PERMISSIONS",
+        payload: permissionsState.allPermissions,
+      });
     } else {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
-      const filtered = allPermissions.filter(
+      const lowercasedSearchTerm = debouncedSearchTerm.toLowerCase();
+      const filtered = permissionsState.allPermissions.filter(
         permission =>
           permission.actionId.toLowerCase().includes(lowercasedSearchTerm) ||
           permission.description.toLowerCase().includes(lowercasedSearchTerm),
       );
-      setFilteredPermissions(filtered);
+      dispatchPermissions({ type: "SET_FILTERED_PERMISSIONS", payload: filtered });
     }
-  }, [searchTerm, allPermissions]);
+  }, [debouncedSearchTerm, permissionsState.allPermissions]);
 
-  // Apply the filter when search term or permissions change
-  useEffect(() => {
-    filterPermissions();
-  }, [filterPermissions]);
+  // Memoized sorted and paginated permissions
+  const sortedCurrentPermissions = useMemo((): string[] => {
+    return [...permissionsState.currentPermissions].sort((a, b) => {
+      const descA = permissionsState.actionIdDescriptions[a] || a;
+      const descB = permissionsState.actionIdDescriptions[b] || b;
+      return descA.toLowerCase().localeCompare(descB.toLowerCase());
+    });
+  }, [permissionsState.currentPermissions, permissionsState.actionIdDescriptions]);
 
-  const loadWallets = () => {
+  const paginatedPermissions = useMemo((): string[] => {
+    const startIndex = (permissionsState.currentPage - 1) * permissionsState.permissionsPerPage;
+    const endIndex = startIndex + permissionsState.permissionsPerPage;
+    return sortedCurrentPermissions.slice(startIndex, endIndex);
+  }, [sortedCurrentPermissions, permissionsState.currentPage, permissionsState.permissionsPerPage]);
+
+  const totalPages = useMemo((): number => {
+    return Math.ceil(sortedCurrentPermissions.length / permissionsState.permissionsPerPage);
+  }, [sortedCurrentPermissions, permissionsState.permissionsPerPage]);
+
+  // Load wallets for the selected network
+  const loadWallets = useCallback((): void => {
     const multisigs = getCategoryData(addressBook, selectedNetwork, "multisigs");
-    const formattedAddresses: { [key: string]: string } = {};
+    const formattedAddresses: Record<string, string> = {};
 
     if (multisigs && typeof multisigs === "object") {
       Object.entries(multisigs).forEach(([key, value]) => {
@@ -174,26 +465,37 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
           formattedAddresses[`multisig.${key}`] = value;
         } else if (typeof value === "object" && value !== null) {
           Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-            formattedAddresses[`multisig.${key}.${nestedKey}`] = nestedValue;
+            if (typeof nestedValue === "string") {
+              formattedAddresses[`multisig.${key}.${nestedKey}`] = nestedValue;
+            }
           });
         }
       });
     }
+
     const authorizer = getAddress(
       addressBook,
       selectedNetwork,
       "20210418-authorizer",
       "Authorizer",
     );
+
     const daoWallet = getAddress(addressBook, selectedNetwork, "multisigs", "dao");
 
-    setAuthorizerAdaptor(authorizer ? authorizer : "");
-    setDAOAddress(daoWallet ? daoWallet : "");
+    setAuthorizerAdaptor(authorizer || "");
+    setDAOAddress(daoWallet || "");
     setAvailableWallets(formattedAddresses);
     setSelectedWallet("");
-  };
+    setCustomWalletInput("");
 
-  const loadReverseLookup = async () => {
+    // Reset permissions state when network changes
+    dispatchPermissions({ type: "RESET_PERMISSIONS" });
+    setGeneratedPayload(null);
+    setHumanReadableText(null);
+  }, [selectedNetwork, addressBook]);
+
+  // Load reverse lookup data
+  const loadReverseLookup = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(
         `https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/${selectedNetwork}_reverse.json`,
@@ -203,7 +505,7 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
         throw new Error(`Failed to fetch reverse lookup data: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as ReverseAddressBook;
       setReverseAddressBook(data);
       return true;
     } catch (error) {
@@ -216,9 +518,10 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
       });
       return false;
     }
-  };
+  }, [selectedNetwork, toast]);
 
-  const loadActionIds = async () => {
+  // Load action IDs
+  const loadActionIds = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(
         `https://raw.githubusercontent.com/balancer/balancer-deployments/master/action-ids/${selectedNetwork}/action-ids.json`,
@@ -232,7 +535,7 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
 
       // Transform the data
       const permissionsArray: Permission[] = [];
-      const descriptionsMap: { [actionId: string]: string } = {};
+      const descriptionsMap: Record<string, string> = {};
 
       for (const [deployment, contracts] of Object.entries(data)) {
         for (const [contract, contractData] of Object.entries(contracts)) {
@@ -243,19 +546,25 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
                 permissionsArray.push({
                   actionId,
                   description: `${contract}.${functionName}`,
+                  deployment,
                   selected: false,
                 });
 
-                descriptionsMap[actionId] = `${contract}.${functionName}`;
+                descriptionsMap[actionId] = `${deployment}/${contract}.${functionName}`;
               }
             }
           }
         }
       }
 
-      setAllPermissions(permissionsArray);
-      setFilteredPermissions(permissionsArray);
-      setActionIdDescriptions(descriptionsMap);
+      dispatchPermissions({
+        type: "SET_ALL_PERMISSIONS",
+        payload: {
+          permissions: permissionsArray,
+          descriptions: descriptionsMap,
+        },
+      });
+
       return true;
     } catch (error) {
       console.error("Error loading action IDs:", error);
@@ -265,13 +574,16 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
         duration: 3000,
         isClosable: true,
       });
+      dispatchPermissions({ type: "SET_LOADING", payload: false });
       return false;
     }
-  };
+  }, [selectedNetwork, toast]);
 
-  const loadWalletPermissions = async () => {
+  // Load wallet permissions
+  const loadWalletPermissions = useCallback(async (): Promise<void> => {
     try {
-      setPermissionsLoading(true);
+      dispatchPermissions({ type: "SET_PERMISSIONS_LOADING", payload: true });
+
       const response = await fetch(
         `https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/permissions/active/${selectedNetwork}.json`,
       );
@@ -303,7 +615,10 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
         }
       }
 
-      setCurrentPermissions(walletPermissions);
+      dispatchPermissions({
+        type: "SET_CURRENT_PERMISSIONS",
+        payload: walletPermissions,
+      });
     } catch (error) {
       console.error("Error loading wallet permissions:", error);
       toast({
@@ -312,47 +627,69 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
         duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setPermissionsLoading(false);
+      dispatchPermissions({ type: "SET_PERMISSIONS_LOADING", payload: false });
     }
-  };
+  }, [selectedNetwork, selectedWallet, toast]);
 
-  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedNetwork(e.target.value);
+  // Handle network change
+  const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
     setSelectedWallet("");
-    setCurrentPermissions([]);
-    setSelectedPermissions([]);
+    setCustomWalletInput("");
+    dispatchPermissions({ type: "RESET_PERMISSIONS" });
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  };
+  }, []);
 
-  const handleWalletChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedWallet(e.target.value);
-    setSelectedPermissions([]);
+  // Handle wallet selection
+  const handleWalletSelect = useCallback((address: string): void => {
+    setSelectedWallet(address);
+    setCustomWalletInput("");
+    dispatchPermissions({ type: "CLEAR_SELECTED_PERMISSIONS" });
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  };
+  }, []);
 
-  const handlePermissionToggle = (actionId: string) => {
-    setSelectedPermissions(prev => {
-      if (prev.includes(actionId)) {
-        return prev.filter(id => id !== actionId);
-      } else {
-        return [...prev, actionId];
-      }
-    });
-  };
+  // Toggle permission selection
+  const handlePermissionToggle = useCallback((actionId: string): void => {
+    dispatchPermissions({ type: "TOGGLE_PERMISSION", payload: actionId });
+  }, []);
 
-  const removeSelectedPermission = (actionId: string) => {
-    setSelectedPermissions(prev => prev.filter(id => id !== actionId));
-  };
+  // Remove selected permission
+  const removeSelectedPermission = useCallback((actionId: string): void => {
+    dispatchPermissions({ type: "REMOVE_PERMISSION", payload: actionId });
+  }, []);
 
-  const getPermissionDescription = (actionId: string) => {
-    return actionIdDescriptions[actionId] || actionId;
-  };
+  // Handle pagination
+  const handlePageChange = useCallback((newPage: number): void => {
+    dispatchPermissions({ type: "SET_PAGE", payload: newPage });
+  }, []);
 
-  const generatePayload = () => {
-    if (selectedPermissions.length === 0) {
+  // Handle permissions per page change
+  const handlePermissionsPerPageChange = useCallback((value: number): void => {
+    dispatchPermissions({ type: "SET_PER_PAGE", payload: value });
+  }, []);
+
+  // Copy to clipboard utility
+  const copyToClipboard = useCallback(
+    (text: string): void => {
+      navigator.clipboard.writeText(text).catch(err => {
+        console.error("Failed to copy to clipboard:", err);
+      });
+      toast({
+        title: "Copied to clipboard!",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    },
+    [toast],
+  );
+
+  // Generate payload
+  const generatePayload = useCallback((): void => {
+    if (permissionsState.selectedPermissions.length === 0) {
       toast({
         title: "No permissions selected",
         description: "Please select at least one permission to generate a payload",
@@ -368,7 +705,7 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
 
     // Prepare input for payload generator
     const permissionInput: PermissionInput = {
-      actionIds: selectedPermissions,
+      actionIds: permissionsState.selectedPermissions,
       granteeAddress: selectedWallet,
       granterAddress: daoAddress,
       authorizerAddress: authorizerAdaptor,
@@ -387,24 +724,37 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
     const readableWalletName = transformToHumanReadable(walletName);
 
     const humanReadable = generateHumanReadablePermissions(
-      selectedPermissions,
-      actionIdDescriptions,
+      permissionsState.selectedPermissions,
+      permissionsState.actionIdDescriptions,
       selectedWallet,
       readableWalletName,
     );
 
     setHumanReadableText(humanReadable);
-  };
+  }, [
+    permissionsState.selectedPermissions,
+    permissionsState.actionIdDescriptions,
+    selectedWallet,
+    selectedNetwork,
+    networkOptions,
+    daoAddress,
+    authorizerAdaptor,
+    availableWallets,
+    toast,
+  ]);
 
   // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchTerm(e.target.value);
-  };
+  }, []);
 
-  // Function to truncate Ethereum addresses
-  const truncateAddress = (address: string): string => {
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
+  // Get permission description helper
+  const getPermissionDescription = useCallback(
+    (actionId: string): string => {
+      return permissionsState.actionIdDescriptions[actionId] || actionId;
+    },
+    [permissionsState.actionIdDescriptions],
+  );
 
   return (
     <Container maxW="container.lg">
@@ -427,80 +777,19 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
                 handleNetworkChange={handleNetworkChange}
               />
             </FormControl>
-
-            <FormControl maxWidth="sm">
+          </SimpleGrid>
+          <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4}>
+            {/* Wallet Selection */}
+            <FormControl>
               <FormLabel>Select Wallet</FormLabel>
-              <Select
+              <SearchableAddressInput
                 value={selectedWallet}
-                onChange={handleWalletChange}
-                placeholder="Select wallet"
-                isDisabled={loading}
-              >
-                {Object.entries(availableWallets).map(([name, address]) => (
-                  <option key={`${name}-${address}`} value={address}>
-                    {`${transformToHumanReadable(name)} (${truncateAddress(address)})`}
-                  </option>
-                ))}
-              </Select>
+                onChange={handleWalletSelect}
+                addresses={availableWallets}
+              />
             </FormControl>
           </SimpleGrid>
         </Box>
-
-        {selectedWallet && (
-          <Card p={4} mb={4} overflowX="auto">
-            <Heading as="h3" size="md" mb={4}>
-              Current Permissions
-            </Heading>
-            {permissionsLoading ? (
-              <Flex justify="center" align="center" p={4}>
-                <Spinner />
-              </Flex>
-            ) : (
-              <TableContainer>
-                <Table variant="simple" size="sm">
-                  <Thead>
-                    <Tr>
-                      <Th>Permission</Th>
-                      <Th>Action ID</Th>
-                      <Th>Actions</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {currentPermissions.length > 0 ? (
-                      currentPermissions.map((permission, index) => (
-                        <Tr key={`current-${index}-${permission.substring(0, 8)}`}>
-                          <Td>{getPermissionDescription(permission)}</Td>
-                          <Td>
-                            <Text as="span" fontSize="xs" fontFamily="monospace">
-                              {permission.substring(0, 18)}...
-                            </Text>
-                          </Td>
-                          <Td>
-                            {!selectedPermissions.includes(permission) && (
-                              <Button
-                                size="xs"
-                                colorScheme="green"
-                                onClick={() => handlePermissionToggle(permission)}
-                              >
-                                Add
-                              </Button>
-                            )}
-                          </Td>
-                        </Tr>
-                      ))
-                    ) : (
-                      <Tr>
-                        <Td colSpan={3} textAlign="center">
-                          No permissions found for this wallet
-                        </Td>
-                      </Tr>
-                    )}
-                  </Tbody>
-                </Table>
-              </TableContainer>
-            )}
-          </Card>
-        )}
 
         {selectedWallet && (
           <Card p={4} mb={4}>
@@ -508,20 +797,23 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
               Selected Permissions
             </Heading>
             <Box mb={4}>
-              {selectedPermissions.length > 0 ? (
+              {permissionsState.selectedPermissions.length > 0 ? (
                 <Flex flexWrap="wrap" gap={2}>
-                  {selectedPermissions.map((permission, index) => (
-                    <Tag
-                      key={`selected-${index}-${permission.substring(0, 8)}`}
-                      colorScheme="green"
-                      size="md"
-                      borderRadius="full"
-                      mb={1}
-                    >
-                      <TagLabel title={permission}>{getPermissionDescription(permission)}</TagLabel>
-                      <TagCloseButton onClick={() => removeSelectedPermission(permission)} />
-                    </Tag>
-                  ))}
+                  {permissionsState.selectedPermissions.map(permission => {
+                    // Find the full permission object to get deployment info
+                    const permObj = permissionsState.allPermissions.find(
+                      p => p.actionId === permission,
+                    );
+                    return (
+                      <PermissionTag
+                        key={`selected-${permission.substring(0, 8)}`}
+                        permission={permission}
+                        description={getPermissionDescription(permission)}
+                        deployment={permObj?.deployment}
+                        onRemove={removeSelectedPermission}
+                      />
+                    );
+                  })}
                 </Flex>
               ) : (
                 <Text>No permissions selected yet. Search and select permissions below.</Text>
@@ -543,32 +835,33 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
                 </InputGroup>
               </FormControl>
 
-              <Box maxH="300px" overflowY="auto">
-                {loading ? (
-                  <Flex justify="center" align="center" p={4}>
-                    <Spinner />
-                  </Flex>
-                ) : (
-                  <Stack spacing={2}>
-                    {filteredPermissions.map((permission, index) => (
-                      <Checkbox
-                        key={`filter-${index}-${permission.actionId.substring(0, 8)}`}
-                        isChecked={selectedPermissions.includes(permission.actionId)}
-                        onChange={() => handlePermissionToggle(permission.actionId)}
-                        colorScheme="green"
-                      >
-                        <Text fontSize="sm">
-                          {permission.description}
-                          <Text as="span" color="gray.500" ml={1} fontSize="xs">
-                            ({permission.actionId.substring(0, 10)}...)
-                          </Text>
-                        </Text>
-                      </Checkbox>
-                    ))}
-                  </Stack>
-                )}
+              <Box height="300px">
+                <VirtualizedPermissionsList
+                  permissions={permissionsState.filteredPermissions}
+                  selectedPermissions={permissionsState.selectedPermissions}
+                  onToggle={handlePermissionToggle}
+                  loading={permissionsState.loading}
+                />
               </Box>
             </Box>
+          </Card>
+        )}
+
+        {selectedWallet && (
+          <Card p={4} mb={4} overflowX="auto">
+            {/* Using the refactored PermissionsTable component */}
+            <PermissionsTable
+              loading={permissionsState.permissionsLoading}
+              permissions={paginatedPermissions}
+              getPermissionDescription={getPermissionDescription}
+              currentPage={permissionsState.currentPage}
+              totalPages={totalPages}
+              handlePageChange={handlePageChange}
+              permissionsPerPage={permissionsState.permissionsPerPage}
+              handlePermissionsPerPageChange={handlePermissionsPerPageChange}
+              copyToClipboard={copyToClipboard}
+              totalPermissionsCount={permissionsState.currentPermissions.length}
+            />
           </Card>
         )}
       </Box>
@@ -578,12 +871,20 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
           <Button
             variant="primary"
             onClick={generatePayload}
-            isDisabled={loading || selectedPermissions.length === 0}
+            isDisabled={
+              permissionsState.loading || permissionsState.selectedPermissions.length === 0
+            }
           >
             Generate Payload
           </Button>
           {generatedPayload && (
-            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+            <SimulateTransactionButton
+              batchFile={
+                typeof generatedPayload === "string"
+                  ? JSON.parse(generatedPayload)
+                  : generatedPayload
+              }
+            />
           )}
         </Flex>
       )}
@@ -594,7 +895,7 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
         <>
           <JsonViewerEditor
             jsonData={generatedPayload}
-            onJsonChange={newJson => setGeneratedPayload(newJson)}
+            onJsonChange={(newJson: string | BatchFile) => setGeneratedPayload(newJson)}
           />
 
           <Box display="flex" alignItems="center" mt="20px">
@@ -652,4 +953,6 @@ export default function PermissionsPayloadBuilder({ addressBook }: PermissionsPa
       <Box mt={8} />
     </Container>
   );
-}
+};
+
+export default PermissionsPayloadBuilder;
