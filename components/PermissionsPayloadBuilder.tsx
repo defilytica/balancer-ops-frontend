@@ -27,17 +27,26 @@ import {
   PopoverContent,
   PopoverBody,
   PopoverArrow,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Switch,
+  HStack,
+  IconButton,
 } from "@chakra-ui/react";
-import { CopyIcon, DownloadIcon, SearchIcon } from "@chakra-ui/icons";
-import { FixedSizeList as List } from "react-window"; // You'll need to install this package
+import { CopyIcon, DownloadIcon, SearchIcon, ViewIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { FixedSizeList as List } from "react-window";
 import { AddressBook } from "@/types/interfaces";
-import { networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getCategoryData, getAddress } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
 import PermissionsTable from "@/components/tables/PermissionsTable";
+import GroupedPermissionsList from "./GroupedPermissionsList";
 import {
   copyJsonToClipboard,
   handleDownloadClick,
@@ -71,12 +80,6 @@ export interface ActionIdsData {
       };
     };
   };
-}
-
-export interface NetworkOption {
-  label: string;
-  apiID: string;
-  chainId: string;
 }
 
 export interface PermissionsPayloadBuilderProps {
@@ -151,6 +154,12 @@ interface FetchResult<T> {
   data: T | null;
   loading: boolean;
   error: Error | null;
+}
+
+// View type enum
+enum PermissionViewType {
+  LIST = "list",
+  GROUPED = "grouped",
 }
 
 // Reducer for handling permissions-related state
@@ -350,7 +359,6 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
   // Network related state
   const [selectedNetwork, setSelectedNetwork] = useState<string>("mainnet");
-  const [networkOptions, setNetworkOptions] = useState<NetworkOption[]>([]);
 
   // Wallet related state
   const [availableWallets, setAvailableWallets] = useState<Record<string, string>>({});
@@ -366,8 +374,12 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   const [searchTerm, setSearchTerm] = useState<string>("");
   const debouncedSearchTerm = useDebounce<string>(searchTerm, 300);
 
+  // View state
+  const [permissionViewType, setPermissionViewType] = useState<PermissionViewType>(
+    PermissionViewType.GROUPED,
+  );
+
   // Payload state
-  // Change this line
   const [generatedPayload, setGeneratedPayload] = useState<string | BatchFile | null>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
 
@@ -377,22 +389,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     initialPermissionsState,
   );
 
-  // Initialize networks
-  useEffect(() => {
-    const availableNetworks = Object.keys(networks).filter(net => net !== "sonic" && net !== "bsc");
-
-    const options: NetworkOption[] = availableNetworks.map(network => ({
-      label: network.charAt(0).toUpperCase() + network.slice(1),
-      apiID: network,
-      chainId: networks[network]?.chainId || "0",
-    }));
-
-    setNetworkOptions(options);
-
-    if (availableNetworks.length > 0) {
-      setSelectedNetwork(availableNetworks[0]);
-    }
-  }, []);
+  // Filter networks
+  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
   // Load wallets when network changes
   useEffect(() => {
@@ -429,7 +427,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       const filtered = permissionsState.allPermissions.filter(
         permission =>
           permission.actionId.toLowerCase().includes(lowercasedSearchTerm) ||
-          permission.description.toLowerCase().includes(lowercasedSearchTerm),
+          permission.description.toLowerCase().includes(lowercasedSearchTerm) ||
+          permission.deployment.toLowerCase().includes(lowercasedSearchTerm),
       );
       dispatchPermissions({ type: "SET_FILTERED_PERMISSIONS", payload: filtered });
     }
@@ -633,8 +632,11 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
   // Handle network change
   const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
-    const newNetwork = e.target.value;
-    setSelectedNetwork(newNetwork);
+    const selectedApiID = e.target.value;
+
+    // First find the network option by apiID
+    const selectedOption = NETWORK_OPTIONS.find(option => option.apiID === selectedApiID);
+    setSelectedNetwork(selectedOption ? selectedOption?.apiID.toLowerCase() : "mainnet");
     setSelectedWallet("");
     setCustomWalletInput("");
     dispatchPermissions({ type: "RESET_PERMISSIONS" });
@@ -671,6 +673,13 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     dispatchPermissions({ type: "SET_PER_PAGE", payload: value });
   }, []);
 
+  // Toggle view type
+  const toggleViewType = useCallback((): void => {
+    setPermissionViewType(prevType =>
+      prevType === PermissionViewType.LIST ? PermissionViewType.GROUPED : PermissionViewType.LIST,
+    );
+  }, []);
+
   // Copy to clipboard utility
   const copyToClipboard = useCallback(
     (text: string): void => {
@@ -701,7 +710,9 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     }
 
     // Get chain ID for the selected network
-    const chainId = networkOptions.find(opt => opt.apiID === selectedNetwork)?.chainId || "1";
+    const chainId =
+      filteredNetworkOptions.find(opt => opt.apiID === selectedNetwork.toUpperCase())?.chainId ||
+      "1";
 
     // Prepare input for payload generator
     const permissionInput: PermissionInput = {
@@ -736,7 +747,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     permissionsState.actionIdDescriptions,
     selectedWallet,
     selectedNetwork,
-    networkOptions,
+    filteredNetworkOptions,
     daoAddress,
     authorizerAdaptor,
     availableWallets,
@@ -772,8 +783,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
               <FormLabel>Select Network</FormLabel>
               <NetworkSelector
                 networks={networks}
-                networkOptions={networkOptions}
-                selectedNetwork={selectedNetwork}
+                networkOptions={filteredNetworkOptions}
+                selectedNetwork={selectedNetwork.toUpperCase()}
                 handleNetworkChange={handleNetworkChange}
               />
             </FormControl>
@@ -793,11 +804,59 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
         {selectedWallet && (
           <Card p={4} mb={4}>
-            <Heading as="h3" size="md" mb={2}>
-              Selected Permissions
-            </Heading>
-            <Box mb={4}>
-              {permissionsState.selectedPermissions.length > 0 ? (
+            <Flex justify="space-between" align="center" mb={3}>
+              <Heading as="h3" size="md">
+                Available Permissions
+              </Heading>
+              <HStack>
+                <Text fontSize="sm" fontWeight="medium">
+                  {permissionViewType === PermissionViewType.GROUPED ? "Grouped" : "List"} View
+                </Text>
+                <IconButton
+                  aria-label="Toggle view"
+                  icon={
+                    permissionViewType === PermissionViewType.GROUPED ? (
+                      <HamburgerIcon />
+                    ) : (
+                      <ViewIcon />
+                    )
+                  }
+                  size="sm"
+                  onClick={toggleViewType}
+                  variant="outline"
+                />
+              </HStack>
+            </Flex>
+
+            <FormControl mb={4}>
+              <FormLabel>Search Permissions</FormLabel>
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <SearchIcon color="gray.300" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Search by contract, function name, or action ID"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                />
+              </InputGroup>
+            </FormControl>
+
+            {permissionsState.selectedPermissions.length > 0 && (
+              <Box mb={4} p={3} borderWidth="1px" borderRadius="md">
+                <Flex justifyContent="space-between" alignItems="center" mb={2}>
+                  <Heading as="h4" size="sm">
+                    Selected Permissions ({permissionsState.selectedPermissions.length})
+                  </Heading>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="red"
+                    onClick={() => dispatchPermissions({ type: "CLEAR_SELECTED_PERMISSIONS" })}
+                  >
+                    Clear All
+                  </Button>
+                </Flex>
                 <Flex flexWrap="wrap" gap={2}>
                   {permissionsState.selectedPermissions.map(permission => {
                     // Find the full permission object to get deployment info
@@ -815,34 +874,26 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
                     );
                   })}
                 </Flex>
+              </Box>
+            )}
+
+            <Box height="300px">
+              {permissionViewType === PermissionViewType.GROUPED ? (
+                <GroupedPermissionsList
+                  permissions={permissionsState.filteredPermissions}
+                  selectedPermissions={permissionsState.selectedPermissions}
+                  onToggle={handlePermissionToggle}
+                  loading={permissionsState.loading}
+                  searchTerm={searchTerm}
+                />
               ) : (
-                <Text>No permissions selected yet. Search and select permissions below.</Text>
-              )}
-            </Box>
-
-            <Box>
-              <FormControl mb={4}>
-                <FormLabel>Search Permissions</FormLabel>
-                <InputGroup>
-                  <InputLeftElement pointerEvents="none">
-                    <SearchIcon color="gray.300" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Search by name or action ID"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                  />
-                </InputGroup>
-              </FormControl>
-
-              <Box height="300px">
                 <VirtualizedPermissionsList
                   permissions={permissionsState.filteredPermissions}
                   selectedPermissions={permissionsState.selectedPermissions}
                   onToggle={handlePermissionToggle}
                   loading={permissionsState.loading}
                 />
-              </Box>
+              )}
             </Box>
           </Card>
         )}
@@ -903,14 +954,30 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
               variant="secondary"
               mr="10px"
               leftIcon={<DownloadIcon />}
-              onClick={() => handleDownloadClick(generatedPayload)}
+              onClick={() => {
+                if (generatedPayload) {
+                  const jsonStr =
+                    typeof generatedPayload === "string"
+                      ? generatedPayload
+                      : JSON.stringify(generatedPayload, null, 2);
+                  handleDownloadClick(jsonStr);
+                }
+              }}
             >
               Download Payload
             </Button>
             <Button
               variant="secondary"
               leftIcon={<CopyIcon />}
-              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+              onClick={() => {
+                if (generatedPayload) {
+                  const jsonForClipboard =
+                    typeof generatedPayload === "string"
+                      ? generatedPayload
+                      : JSON.stringify(generatedPayload, null, 2);
+                  copyJsonToClipboard(jsonForClipboard, toast);
+                }
+              }}
             >
               Copy Payload to Clipboard
             </Button>
