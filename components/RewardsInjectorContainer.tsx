@@ -74,38 +74,42 @@ export default function RewardsInjectorContainer({
             const response = await fetch(`/api/injector/v2/factory`);
             const data = await response.json();
 
+            console.time("fetchInjectorDataV2"); // Start timing
             if (Array.isArray(data)) {
+              const allPromises = [];
               for (const item of data) {
                 const network = item.network;
-                // Fetch token info for each injector
+                // Create promises for each injector
                 for (const address of item.deployedInjectors) {
-                  try {
-                    const tokenResponse = await fetch(
-                      `/api/injector/v2/single?address=${address}&network=${network}`,
-                    );
-                    const tokenData = await tokenResponse.json();
-                    allAddressesWithOptions.push({
-                      network: network,
-                      address: address,
-                      token: tokenData.tokenInfo.symbol || "",
-                      tokenAddress: tokenData.tokenInfo.address || "",
-                      // Add a unique identifier
-                      id: `${network}-${address}`,
-                    });
-                  } catch (error) {
-                    console.error(`Error fetching token info for ${address}:`, error);
-                    allAddressesWithOptions.push({
-                      network: network,
-                      address: address,
-                      token: "",
-                      tokenAddress: "",
-                      // Add a unique identifier
-                      id: `${network}-${address}`,
-                    });
-                  }
+                  allPromises.push(
+                    fetch(`/api/injector/v2/single?address=${address}&network=${network}`)
+                      .then(response => response.json())
+                      .then(tokenData => ({
+                        network: network,
+                        address: address,
+                        token: tokenData.tokenInfo.symbol || "",
+                        tokenAddress: tokenData.tokenInfo.address || "",
+                        id: `${network}-${address}`,
+                      }))
+                      .catch(error => {
+                        console.error(`Error fetching token info for ${address}:`, error);
+                        return {
+                          network: network,
+                          address: address,
+                          token: "",
+                          tokenAddress: "",
+                          id: `${network}-${address}`,
+                        };
+                      }),
+                  );
                 }
               }
+
+              // Wait for all promises to resolve
+              const results = await Promise.all(allPromises);
+              allAddressesWithOptions.push(...results);
             }
+            console.timeEnd("fetchInjectorDataV2"); // End timing
           }
         } else {
           // V1 injectors loading logic

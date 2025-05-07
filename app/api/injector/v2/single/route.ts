@@ -49,21 +49,19 @@ export async function GET(request: NextRequest) {
       gaugeInfo.map(async gauge => {
         const gaugeContract = new Contract(gauge.gaugeAddress, gaugeABI, provider);
 
-        // Check if reward token is properly set up
-        const rewardData = await gaugeContract.reward_data(injectTokenAddress).catch(() => null);
+        // Fetch rewardData and lpToken in parallel
+        const [rewardData, lpToken] = await Promise.all([
+          gaugeContract.reward_data(injectTokenAddress).catch(() => null),
+          gaugeContract.lp_token().catch(() => null),
+        ]);
+
+        // Fetch poolName in parallel if lpToken exists
+        const poolName = lpToken
+          ? await fetchPoolName(lpToken, provider).catch(() => gauge.gaugeAddress)
+          : gauge.gaugeAddress;
 
         const isRewardTokenSetup =
           network === "mainnet" || (rewardData !== null && rewardData[0] === address);
-
-        // Get pool name from LP token
-        let poolName;
-        try {
-          const lpToken = await gaugeContract.lp_token();
-          poolName = await fetchPoolName(lpToken, provider);
-        } catch (error) {
-          console.error(`Error fetching pool name for gauge ${gauge.gaugeAddress}:`, error);
-          poolName = gauge.gaugeAddress;
-        }
 
         return {
           ...gauge,
@@ -73,21 +71,19 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    const contractBalance = await getInjectTokenBalanceForAddress(
-      injectTokenAddress,
-      address,
-      provider,
-      tokenInfo.decimals,
-    );
-
-    // V2-specific contract data
-    const [maxInjectionAmount, minWaitPeriodSeconds, maxGlobalAmountPerPeriod, maxTotalDue] =
-      await Promise.all([
+    // Parallelize contractBalance and V2-specific contract data
+    const [
+      contractBalance,
+      [maxInjectionAmount, minWaitPeriodSeconds, maxGlobalAmountPerPeriod, maxTotalDue],
+    ] = await Promise.all([
+      getInjectTokenBalanceForAddress(injectTokenAddress, address, provider, tokenInfo.decimals),
+      Promise.all([
         contract.MaxInjectionAmount(),
         contract.MinWaitPeriodSeconds(),
         contract.MaxGlobalAmountPerPeriod(),
         contract.MaxTotalDue(),
-      ]);
+      ]),
+    ]);
 
     return NextResponse.json({
       tokenInfo,
