@@ -21,30 +21,33 @@ export async function GET(request: NextRequest) {
     const addressBook = await fetchAddressBook();
     const networks = getNetworks(addressBook);
 
-    let allInjectors = [];
-    let hasRealData = false;
+    // Collect all factory promises
+    const factoryPromises = [];
 
     for (const network of networks) {
       const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
       if (maxiKeepers && maxiKeepers.injectorV2) {
-        hasRealData = true;
         const factories = maxiKeepers.injectorV2;
 
         for (const [token, factoryAddress] of Object.entries(factories)) {
           if (token === "factory") {
             console.log(`Fetching data for factory ${factoryAddress} on ${network}...`);
-            const deployedInjectors = await fetchDeployedInjectors(factoryAddress, network);
-
-            allInjectors.push({
-              factory: factoryAddress,
-              network,
-              token,
-              deployedInjectors,
-            });
+            factoryPromises.push(
+              fetchDeployedInjectors(factoryAddress, network).then(deployedInjectors => ({
+                factory: factoryAddress,
+                network,
+                token,
+                deployedInjectors,
+              })),
+            );
           }
         }
       }
     }
+
+    // Wait for all factory queries to complete
+    const allInjectors = await Promise.all(factoryPromises);
+
     // Create the response with cache headers
     const response = NextResponse.json(allInjectors);
     // Set cache control headers

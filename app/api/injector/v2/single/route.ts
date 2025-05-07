@@ -25,10 +25,23 @@ export async function GET(request: NextRequest) {
   const contract = new ethers.Contract(address, InjectorABIV2, provider);
 
   try {
-    const [activeGaugeList, injectTokenAddress, owner] = await Promise.all([
+    // Batch all initial contract calls together
+    const [
+      activeGaugeList,
+      injectTokenAddress,
+      owner,
+      maxInjectionAmount,
+      minWaitPeriodSeconds,
+      maxGlobalAmountPerPeriod,
+      maxTotalDue,
+    ] = await Promise.all([
       contract.getActiveGaugeList(),
       contract.InjectTokenAddress(),
       contract.owner(),
+      contract.MaxInjectionAmount(),
+      contract.MinWaitPeriodSeconds(),
+      contract.MaxGlobalAmountPerPeriod(),
+      contract.MaxTotalDue(),
     ]);
 
     const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
@@ -71,19 +84,13 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    // Parallelize contractBalance and V2-specific contract data
-    const [
-      contractBalance,
-      [maxInjectionAmount, minWaitPeriodSeconds, maxGlobalAmountPerPeriod, maxTotalDue],
-    ] = await Promise.all([
-      getInjectTokenBalanceForAddress(injectTokenAddress, address, provider, tokenInfo.decimals),
-      Promise.all([
-        contract.MaxInjectionAmount(),
-        contract.MinWaitPeriodSeconds(),
-        contract.MaxGlobalAmountPerPeriod(),
-        contract.MaxTotalDue(),
-      ]),
-    ]);
+    // Get contract balance
+    const contractBalance = await getInjectTokenBalanceForAddress(
+      injectTokenAddress,
+      address,
+      provider,
+      tokenInfo.decimals,
+    );
 
     return NextResponse.json({
       tokenInfo,

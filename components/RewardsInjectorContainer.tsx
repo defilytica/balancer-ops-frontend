@@ -74,7 +74,6 @@ export default function RewardsInjectorContainer({
             const response = await fetch(`/api/injector/v2/factory`);
             const data = await response.json();
 
-            console.time("fetchInjectorDataV2"); // Start timing
             if (Array.isArray(data)) {
               const allPromises = [];
               for (const item of data) {
@@ -109,7 +108,6 @@ export default function RewardsInjectorContainer({
               const results = await Promise.all(allPromises);
               allAddressesWithOptions.push(...results);
             }
-            console.timeEnd("fetchInjectorDataV2"); // End timing
           }
         } else {
           // V1 injectors loading logic
