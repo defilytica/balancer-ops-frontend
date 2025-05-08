@@ -258,9 +258,7 @@ const groupPermissionsByDeployment = (permissions: Permission[]): GroupedPermiss
   return grouped;
 };
 
-/**
- * Optimized GroupedPermissionsList component
- */
+
 const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
   permissions,
   selectedPermissions,
@@ -330,7 +328,7 @@ const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
   }
 
   return (
-    <Box overflowY="auto" height="300px" pr={2}>
+    <Box overflowY="auto" height="500px" pr={2}>
       <Accordion allowMultiple defaultIndex={defaultIndex}>
         {Object.entries(groupedPermissionsData.grouped).map(([deployment, contracts], index) => {
           const counts = groupedPermissionsData.counts[deployment];
