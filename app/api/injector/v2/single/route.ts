@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
           gaugeContract.lp_token().catch(() => null),
         ]);
 
-        // Fetch poolName in parallel if lpToken exists
         const poolName = lpToken
           ? await fetchPoolName(lpToken, provider).catch(() => gauge.gaugeAddress)
           : gauge.gaugeAddress;

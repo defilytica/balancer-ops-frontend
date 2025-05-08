@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -37,16 +37,6 @@ import {
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
 import { AddressOption } from "@/types/interfaces";
-import { formatTokenName } from "@/lib/utils/formatTokenName";
-
-type Recipient = {
-  gaugeAddress: string;
-  poolName?: string;
-  amountPerPeriod?: string;
-  maxPeriods: string;
-  periodNumber: string;
-  lastInjectionTimeStamp: string;
-};
 
 type RewardsInjectorProps = {
   addresses: AddressOption[];

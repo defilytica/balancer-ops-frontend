@@ -75,12 +75,12 @@ export default function RewardsInjectorContainer({
             const data = await response.json();
 
             if (Array.isArray(data)) {
-              const allPromises = [];
+              const injectorPromises = [];
               for (const item of data) {
                 const network = item.network;
                 // Create promises for each injector
                 for (const address of item.deployedInjectors) {
-                  allPromises.push(
+                  injectorPromises.push(
                     fetch(`/api/injector/v2/single?address=${address}&network=${network}`)
                       .then(response => response.json())
                       .then(tokenData => ({
@@ -105,7 +105,7 @@ export default function RewardsInjectorContainer({
               }
 
               // Wait for all promises to resolve
-              const results = await Promise.all(allPromises);
+              const results = await Promise.all(injectorPromises);
               allAddressesWithOptions.push(...results);
             }
           }
