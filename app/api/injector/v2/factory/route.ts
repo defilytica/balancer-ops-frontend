@@ -6,6 +6,9 @@ import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis
 // 5 min caching for factory
 const CACHE_DURATION = 300;
 
+// Configure route segment caching
+export const revalidate = 300;
+
 const FACTORY_ABI = [
   {
     inputs: [],

@@ -11,6 +11,11 @@ import {
 import { Contract } from "ethers";
 import { gaugeABI } from "@/abi/gauge";
 
+const CACHE_DURATION = 300;
+
+// Configure route segment caching
+export const revalidate = 300;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get("address");
@@ -92,7 +97,7 @@ export async function GET(request: NextRequest) {
       tokenInfo.decimals,
     );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       tokenInfo,
       gauges,
       contractBalance,
@@ -102,6 +107,8 @@ export async function GET(request: NextRequest) {
       maxGlobalAmountPerPeriod: maxGlobalAmountPerPeriod.toString(),
       maxTotalDue: maxTotalDue.toString(),
     });
+    response.headers.set("Cache-Control", `s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
+    return response;
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
