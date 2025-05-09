@@ -36,6 +36,7 @@ interface GroupedPermissions {
 interface FormattedDeployment {
   name: string;
   date: string;
+  version: string;
 }
 
 // Memoized helper component for the permission row
@@ -62,11 +63,7 @@ const PermissionRow = React.memo(
         borderBottom="1px solid"
         borderColor="gray.100"
       >
-        <Checkbox
-          isChecked={isSelected}
-          onChange={() => onToggle(permission.actionId)}
-          mr={2}
-        />
+        <Checkbox isChecked={isSelected} onChange={() => onToggle(permission.actionId)} mr={2} />
         <Box flex="1" onClick={() => onToggle(permission.actionId)} cursor="pointer">
           <Text fontSize="sm" isTruncated>
             {functionName}
@@ -188,35 +185,56 @@ const ContractSection = React.memo(
 
 /**
  * Formats a deployment string to be more readable
- * e.g., "20231004-mainnet-protocol-fee-controller" -> "ProtocolFeeController (2023-10-04)"
+ * e.g., "20231004-mainnet-protocol-fee-controller" -> "Protocol Fee Controller (2023-10-04)"
+ * or "20250307-v3-liquidity-bootstrapping-pool" -> "Liquidity Bootstrapping Pool (2025-03-07)"
  */
 const formatDeploymentName = (deployment: string): FormattedDeployment => {
   try {
-    // Match patterns like: 20231004-mainnet-protocol-fee-controller
-    const match = deployment.match(/^(\d{8})-([a-z]+)-(.+)$/);
+    // Extract date from the beginning (8 digits)
+    const dateMatch = deployment.match(/^(\d{8})/);
+    let formattedDate = "";
 
-    if (match) {
-      const [_, dateStr, network, contractName] = match;
-
-      // Format date: 20231004 -> 2023-10-04
+    if (dateMatch) {
+      const dateStr = dateMatch[1];
       const year = dateStr.substring(0, 4);
       const month = dateStr.substring(4, 6);
       const day = dateStr.substring(6, 8);
-      const formattedDate = `${year}-${month}-${day}`;
-
-      // Format contract name: protocol-fee-controller -> ProtocolFeeController
-      const formattedName = contractName
-        .split("-")
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join("");
-
-      return { name: formattedName, date: formattedDate };
+      formattedDate = `${year}-${month}-${day}`;
     }
 
-    // If the pattern doesn't match, return the original string
-    return { name: deployment, date: "" };
+    // Check if it's a v3 deployment
+    const isV3 = deployment.includes("-v3-");
+    const version = isV3 ? "v3" : "v2";
+
+    // Extract the readable name part
+    let name = "";
+    if (isV3) {
+      // For v3: format is YYYYMMDD-v3-name
+      const nameMatch = deployment.match(/^\d{8}-v3-(.+)$/);
+      if (nameMatch) {
+        name = nameMatch[1];
+      }
+    } else {
+      // For v2: format is YYYYMMDD-name
+      const nameMatch = deployment.match(/^\d{8}-(.+)$/);
+      if (nameMatch) {
+        name = nameMatch[1];
+      }
+    }
+
+    // Format the name with spaces and proper capitalization
+    const formattedName = name
+      .split("-")
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
+    return {
+      name: formattedName,
+      date: formattedDate,
+      version,
+    };
   } catch (e) {
-    return { name: deployment, date: "" };
+    return { name: deployment, date: "", version: "v2" }; // Default to v2 if parsing fails
   }
 };
 
@@ -257,7 +275,6 @@ const groupPermissionsByDeployment = (permissions: Permission[]): GroupedPermiss
 
   return grouped;
 };
-
 
 const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
   permissions,
@@ -309,7 +326,6 @@ const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
 
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const headerBg = useColorModeValue("gray.50", "gray.700");
-  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   if (loading) {
     return (
@@ -330,7 +346,7 @@ const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
   return (
     <Box overflowY="auto" height="500px" pr={2}>
       <Accordion allowMultiple defaultIndex={defaultIndex}>
-        {Object.entries(groupedPermissionsData.grouped).map(([deployment, contracts], index) => {
+        {Object.entries(groupedPermissionsData.grouped).map(([deployment, contracts]) => {
           const counts = groupedPermissionsData.counts[deployment];
           const formattedDeployment = formattedDeployments[deployment];
 
@@ -348,8 +364,16 @@ const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
                   <HStack justifyContent="space-between">
                     <Text fontWeight="bold">{formattedDeployment.name}</Text>
                     <HStack spacing={2}>
+                      {formattedDeployment.version && (
+                        <Badge
+                          variant="solid"
+                          colorScheme={formattedDeployment.version === "v3" ? "purple" : "blue"}
+                        >
+                          {formattedDeployment.version}
+                        </Badge>
+                      )}
                       {formattedDeployment.date && (
-                        <Badge variant="subtle" colorScheme="blue">
+                        <Badge variant="subtle" colorScheme="gray">
                           {formattedDeployment.date}
                         </Badge>
                       )}

@@ -1,46 +1,40 @@
 "use client";
-import React, { useEffect, useState, useCallback, useMemo, useReducer, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import {
+  Badge,
   Box,
   Button,
+  Card,
+  Checkbox,
   Container,
   Divider,
   Flex,
   FormControl,
   FormLabel,
   Heading,
-  SimpleGrid,
-  Text,
-  Card,
-  useToast,
-  Tag,
-  TagLabel,
-  TagCloseButton,
+  HStack,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
-  Stack,
-  Checkbox,
-  Spinner,
   Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
   PopoverArrow,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Switch,
-  HStack,
-  IconButton,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
+  SimpleGrid,
+  Spinner,
+  Tag,
+  TagCloseButton,
+  Text,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
-import { CopyIcon, DownloadIcon, SearchIcon, ViewIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { CopyIcon, DownloadIcon, HamburgerIcon, SearchIcon, ViewIcon } from "@chakra-ui/icons";
 import { FixedSizeList as List } from "react-window";
 import { AddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { getCategoryData, getAddress } from "@/lib/data/maxis/addressBook";
+import { getAddress, getCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -49,12 +43,14 @@ import PermissionsTable from "@/components/tables/PermissionsTable";
 import GroupedPermissionsList from "./GroupedPermissionsList";
 import {
   copyJsonToClipboard,
-  handleDownloadClick,
-  generatePermissionsPayload,
   generateHumanReadablePermissions,
-  transformToHumanReadable,
+  handleDownloadClick,
   PermissionInput,
+  transformToHumanReadable,
 } from "@/app/payload-builder/payloadHelperFunctions";
+import OpenPRButton from "@/components/btns/OpenPRButton";
+import { PRCreationModal } from "@/components/modal/PRModal";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 export interface Permission {
   actionId: string;
@@ -216,43 +212,6 @@ function permissionsReducer(state: PermissionsState, action: PermissionsAction):
   }
 }
 
-// Custom hook for API data fetching with caching
-function useFetchWithCache<T>(url: string, dependencies: any[] = []): FetchResult<T> {
-  const cache = useRef<Record<string, T>>({});
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!url) return;
-
-    const fetchData = async (): Promise<void> => {
-      if (cache.current[url]) {
-        setData(cache.current[url]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
-        const result = await response.json();
-        cache.current[url] = result;
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("An unknown error occurred"));
-        console.error("Fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [url, ...dependencies]);
-
-  return { data, loading, error };
-}
-
 // Custom hook for debouncing values
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -273,27 +232,124 @@ function useDebounce<T>(value: T, delay: number): T {
 // Memoized permission tag component
 const PermissionTag: React.FC<PermissionTagProps> = React.memo(
   ({ permission, description, deployment, onRemove }) => {
+    // Format deployment info for better readability
+    const formattedDeployment = useMemo(() => {
+      if (!deployment) return null;
+
+      try {
+        // Extract date and version information
+        const isV3 = deployment.includes("-v3-");
+        const version = isV3 ? "v3" : "v2";
+
+        const dateMatch = deployment.match(/^(\d{8})/);
+        let formattedDate = "";
+
+        if (dateMatch) {
+          const dateStr = dateMatch[1];
+          const year = dateStr.substring(0, 4);
+          const month = dateStr.substring(4, 6);
+          const day = dateStr.substring(6, 8);
+          formattedDate = `${year}-${month}-${day}`;
+        }
+
+        return { date: formattedDate, version };
+      } catch {
+        return { date: "", version: "v2" };
+      }
+    }, [deployment]);
+
+    // Extract contract and function name from description
+    const [contract, funcName] = description.split(".");
+
     return (
-      <Popover trigger="hover" placement="top">
+      <Popover trigger="hover" placement="top-start" closeDelay={200}>
         <PopoverTrigger>
-          <Tag colorScheme="green" size="md" borderRadius="full" mb={1}>
-            <TagLabel>
-              {deployment && (
-                <Text as="span" fontSize="xs" color="gray.500" mr={1}>
-                  {deployment}:
+          <Tag
+            colorScheme="green"
+            size="md"
+            borderRadius="md"
+            mb={1}
+            p={2}
+            height="auto"
+            maxW="100%"
+          >
+            <Box>
+              <Flex alignItems="center" mb={1}>
+                <Text as="span" fontWeight="bold" fontSize="sm">
+                  {contract}
                 </Text>
-              )}
-              {description}
-            </TagLabel>
-            <TagCloseButton onClick={() => onRemove(permission)} />
+                <Text as="span" fontSize="sm" ml={1}>
+                  .{funcName}
+                </Text>
+                {formattedDeployment && (
+                  <HStack spacing={1} ml={2}>
+                    <Badge colorScheme={formattedDeployment.version === "v3" ? "purple" : "blue"}>
+                      {formattedDeployment.version}
+                    </Badge>
+                    {formattedDeployment.date && (
+                      <Badge variant="outline" colorScheme="gray">
+                        {formattedDeployment.date}
+                      </Badge>
+                    )}
+                  </HStack>
+                )}
+              </Flex>
+              <Text as="span" fontSize="xs" color="gray.500" fontFamily="monospace" noOfLines={1}>
+                {permission.substring(0, 26)}...
+              </Text>
+            </Box>
+            <TagCloseButton onClick={() => onRemove(permission)} ml={2} />
           </Tag>
         </PopoverTrigger>
-        <PopoverContent width="auto" maxW="600px">
+        <PopoverContent width="400px" maxW="90vw" p={0}>
           <PopoverArrow />
-          <PopoverBody>
-            <Text fontSize="xs" fontFamily="monospace" wordBreak="break-all">
-              {permission}
-            </Text>
+          <PopoverBody p={3}>
+            <Box>
+              <Flex justifyContent="space-between" alignItems="center" mb={2}>
+                <Text fontSize="sm" fontWeight="bold">
+                  Permission Details
+                </Text>
+                {formattedDeployment && (
+                  <HStack>
+                    <Badge colorScheme={formattedDeployment.version === "v3" ? "purple" : "blue"}>
+                      {formattedDeployment.version}
+                    </Badge>
+                    {formattedDeployment.date && (
+                      <Badge variant="outline" colorScheme="gray">
+                        {formattedDeployment.date}
+                      </Badge>
+                    )}
+                  </HStack>
+                )}
+              </Flex>
+
+              <Box p={2} borderRadius="md" mb={2}>
+                <Text fontWeight="medium" fontSize="sm">
+                  Deployment:
+                </Text>
+                <Text fontSize="sm" mb={2}>
+                  {deployment}
+                </Text>
+
+                <Text fontWeight="medium" fontSize="sm">
+                  Function:
+                </Text>
+                <Text fontSize="sm" mb={2}>
+                  {description}
+                </Text>
+
+                <Text fontWeight="medium" fontSize="sm">
+                  Action ID:
+                </Text>
+                <Text fontSize="xs" fontFamily="monospace" wordBreak="break-all">
+                  {permission}
+                </Text>
+              </Box>
+
+              <Button size="xs" colorScheme="red" onClick={() => onRemove(permission)} width="full">
+                Remove Permission
+              </Button>
+            </Box>
           </PopoverBody>
         </PopoverContent>
       </Popover>
@@ -340,7 +396,7 @@ const VirtualizedPermissionsList: React.FC<VirtualizedPermissionsListProps> = Re
 
     return (
       <List
-        height={300}
+        height={500}
         itemCount={permissions.length}
         itemSize={50}
         width="100%"
@@ -366,6 +422,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   const [customWalletInput, setCustomWalletInput] = useState<string>("");
   const [daoAddress, setDAOAddress] = useState<string>("");
   const [authorizerAdaptor, setAuthorizerAdaptor] = useState<string>("");
+  const [versionFilter, setVersionFilter] = useState<string>("all");
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Reverse lookup state
   const [reverseAddressBook, setReverseAddressBook] = useState<ReverseAddressBook>({});
@@ -407,6 +465,55 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
     fetchData();
   }, [selectedNetwork]);
+
+  // Version Filter
+  useEffect(() => {
+    if (versionFilter === "all") {
+      // Keep all permissions but apply search filter if present
+      dispatchPermissions({
+        type: "SET_FILTERED_PERMISSIONS",
+        payload: permissionsState.allPermissions.filter(p =>
+          debouncedSearchTerm
+            ? p.actionId.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+              p.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+              p.deployment.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+            : true,
+        ),
+      });
+    } else if (versionFilter === "v3") {
+      // Filter for V3: deployment contains '-v3-'
+      const filtered = permissionsState.allPermissions.filter(p => {
+        const isV3 = p.deployment.includes("-v3-");
+
+        // Apply search filter if present
+        const matchesSearch = debouncedSearchTerm
+          ? p.actionId.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            p.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            p.deployment.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+          : true;
+
+        return isV3 && matchesSearch;
+      });
+
+      dispatchPermissions({ type: "SET_FILTERED_PERMISSIONS", payload: filtered });
+    } else if (versionFilter === "v2") {
+      // Filter for V2: deployment does NOT contain '-v3-'
+      const filtered = permissionsState.allPermissions.filter(p => {
+        const isV2 = !p.deployment.includes("-v3-");
+
+        // Apply search filter if present
+        const matchesSearch = debouncedSearchTerm
+          ? p.actionId.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            p.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            p.deployment.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+          : true;
+
+        return isV2 && matchesSearch;
+      });
+
+      dispatchPermissions({ type: "SET_FILTERED_PERMISSIONS", payload: filtered });
+    }
+  }, [versionFilter, debouncedSearchTerm, permissionsState.allPermissions]);
 
   // Load permissions when wallet changes
   useEffect(() => {
@@ -673,10 +780,93 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     dispatchPermissions({ type: "SET_PER_PAGE", payload: value });
   }, []);
 
+  const handleOpenPRModal = () => {
+    if (generatedPayload) {
+      onOpen();
+    } else {
+      toast({
+        title: "No payload generated",
+        description: "Please generate a payload first",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const getPrefillValues = () => {
+    // Make sure we have a selected wallet and permissions to grant or revoke
+    if (
+      !selectedWallet ||
+      (permissionsState.selectedPermissions.length === 0 && permissionsToRevoke.length === 0)
+    ) {
+      return {};
+    }
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get wallet name for PR description
+    const walletName =
+      Object.entries(availableWallets).find(([_, address]) => address === selectedWallet)?.[0] ||
+      selectedWallet.substring(0, 10);
+
+    const readableWalletName = transformToHumanReadable(walletName);
+    const shortWalletAddress = selectedWallet.substring(0, 8);
+
+    // Count permissions changes
+    const grantCount = permissionsState.selectedPermissions.length;
+    const revokeCount = permissionsToRevoke.length;
+
+    // Get network name
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork.toUpperCase());
+    const networkName = networkOption?.label || selectedNetwork;
+
+    // Create descriptive action text
+    let actionText = "";
+    if (grantCount > 0 && revokeCount > 0) {
+      actionText = `Grant ${grantCount} and Revoke ${revokeCount} Permissions`;
+    } else if (grantCount > 0) {
+      actionText = `Grant ${grantCount} Permissions`;
+    } else if (revokeCount > 0) {
+      actionText = `Revoke ${revokeCount} Permissions`;
+    }
+
+    // Create basic description text
+    let descriptionText = `This PR manages permissions for ${readableWalletName} (${shortWalletAddress}) on ${networkName}.\n\n`;
+
+    // Add details about permissions if needed
+    if (grantCount > 0) {
+      descriptionText += `Granting ${grantCount} permissions.\n`;
+    }
+    if (revokeCount > 0) {
+      descriptionText += `Revoking ${revokeCount} permissions.\n`;
+    }
+
+    // Create just the filename - path will come from the config
+    const filename = `permissions-${shortWalletAddress}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/permissions-${shortWalletAddress}-${uniqueId}`,
+      prefillPrName: `${actionText} for ${readableWalletName} on ${networkName}`,
+      prefillDescription: descriptionText,
+      prefillFilename: filename,
+    };
+  };
+
   // Toggle view type
   const toggleViewType = useCallback((): void => {
     setPermissionViewType(prevType =>
       prevType === PermissionViewType.LIST ? PermissionViewType.GROUPED : PermissionViewType.LIST,
+    );
+  }, []);
+
+  const [permissionsToRevoke, setPermissionsToRevoke] = useState<string[]>([]);
+
+  // Add function to toggle permission revocation
+  const togglePermissionRevocation = useCallback((actionId: string): void => {
+    setPermissionsToRevoke(prev =>
+      prev.includes(actionId) ? prev.filter(id => id !== actionId) : [...prev, actionId],
     );
   }, []);
 
@@ -698,10 +888,10 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
   // Generate payload
   const generatePayload = useCallback((): void => {
-    if (permissionsState.selectedPermissions.length === 0) {
+    if (permissionsState.selectedPermissions.length === 0 && permissionsToRevoke.length === 0) {
       toast({
         title: "No permissions selected",
-        description: "Please select at least one permission to generate a payload",
+        description: "Please select at least one permission to grant or revoke",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -714,18 +904,76 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       filteredNetworkOptions.find(opt => opt.apiID === selectedNetwork.toUpperCase())?.chainId ||
       "1";
 
-    // Prepare input for payload generator
-    const permissionInput: PermissionInput = {
-      actionIds: permissionsState.selectedPermissions,
-      granteeAddress: selectedWallet,
-      granterAddress: daoAddress,
-      authorizerAddress: authorizerAdaptor,
-      network: selectedNetwork,
+    // Build transactions array
+    const transactions = [];
+
+    // Add grant transaction if there are permissions to grant
+    if (permissionsState.selectedPermissions.length > 0) {
+      const grantInput: PermissionInput = {
+        actionIds: permissionsState.selectedPermissions,
+        granteeAddress: selectedWallet,
+        granterAddress: daoAddress,
+        authorizerAddress: authorizerAdaptor,
+        network: selectedNetwork,
+        chainId: chainId,
+      };
+
+      // Add grant transaction
+      transactions.push({
+        to: authorizerAdaptor,
+        value: "0",
+        data: null,
+        contractMethod: {
+          inputs: [
+            { internalType: "bytes32[]", name: "roles", type: "bytes32[]" },
+            { internalType: "address", name: "account", type: "address" },
+          ],
+          name: "grantRoles",
+          payable: false,
+        },
+        contractInputsValues: {
+          roles: `[${grantInput.actionIds.map(id => `${id}`).join(", ")}]`,
+          account: grantInput.granteeAddress,
+        },
+      });
+    }
+
+    // Add revoke transaction if there are permissions to revoke
+    if (permissionsToRevoke.length > 0) {
+      transactions.push({
+        to: authorizerAdaptor,
+        value: "0",
+        data: null,
+        contractMethod: {
+          inputs: [
+            { internalType: "bytes32[]", name: "roles", type: "bytes32[]" },
+            { internalType: "address", name: "account", type: "address" },
+          ],
+          name: "revokeRoles",
+          payable: false,
+        },
+        contractInputsValues: {
+          roles: `[${permissionsToRevoke.map(id => `${id}`).join(", ")}]`,
+          account: selectedWallet,
+        },
+      });
+    }
+
+    // Create final payload
+    const payload = {
+      version: "1.0",
       chainId: chainId,
+      createdAt: Math.floor(Date.now() / 1000),
+      meta: {
+        name: "Transactions Batch",
+        description: "Manage permissions for wallet",
+        txBuilderVersion: "1.18.0",
+        createdFromSafeAddress: daoAddress,
+        createdFromOwnerAddress: "",
+      },
+      transactions: transactions,
     };
 
-    // Generate payload using helper function
-    const payload = generatePermissionsPayload(permissionInput);
     setGeneratedPayload(payload);
 
     // Generate human readable text
@@ -734,17 +982,34 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       selectedWallet;
     const readableWalletName = transformToHumanReadable(walletName);
 
-    const humanReadable = generateHumanReadablePermissions(
-      permissionsState.selectedPermissions,
-      permissionsState.actionIdDescriptions,
-      selectedWallet,
-      readableWalletName,
-    );
+    let humanReadable = "";
+
+    if (permissionsState.selectedPermissions.length > 0) {
+      humanReadable += generateHumanReadablePermissions(
+        permissionsState.selectedPermissions,
+        permissionsState.actionIdDescriptions,
+        selectedWallet,
+        readableWalletName,
+        "grant",
+      );
+    }
+
+    if (permissionsToRevoke.length > 0) {
+      if (humanReadable) humanReadable += "\n\n";
+      humanReadable += generateHumanReadablePermissions(
+        permissionsToRevoke,
+        permissionsState.actionIdDescriptions,
+        selectedWallet,
+        readableWalletName,
+        "revoke",
+      );
+    }
 
     setHumanReadableText(humanReadable);
   }, [
     permissionsState.selectedPermissions,
     permissionsState.actionIdDescriptions,
+    permissionsToRevoke,
     selectedWallet,
     selectedNetwork,
     filteredNetworkOptions,
@@ -768,7 +1033,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   );
 
   return (
-    <Container maxW="container.lg">
+    <Container maxW="container.xl">
       <Box mb="10px">
         <Heading as="h2" size="lg" variant="special">
           Create Permissions Payload
@@ -827,6 +1092,32 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
                 />
               </HStack>
             </Flex>
+            <FormControl mb={4}>
+              <FormLabel>Filter by Protocol Version</FormLabel>
+              <HStack>
+                <Button
+                  size="sm"
+                  colorScheme={versionFilter === "all" ? "blue" : "gray"}
+                  onClick={() => setVersionFilter("all")}
+                >
+                  All
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme={versionFilter === "v2" ? "blue" : "gray"}
+                  onClick={() => setVersionFilter("v2")}
+                >
+                  V2
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme={versionFilter === "v3" ? "purple" : "gray"}
+                  onClick={() => setVersionFilter("v3")}
+                >
+                  V3
+                </Button>
+              </HStack>
+            </FormControl>
 
             <FormControl mb={4}>
               <FormLabel>Search Permissions</FormLabel>
@@ -900,7 +1191,6 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
         {selectedWallet && (
           <Card p={4} mb={4} overflowX="auto">
-            {/* Using the refactored PermissionsTable component */}
             <PermissionsTable
               loading={permissionsState.permissionsLoading}
               permissions={paginatedPermissions}
@@ -912,6 +1202,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
               handlePermissionsPerPageChange={handlePermissionsPerPageChange}
               copyToClipboard={copyToClipboard}
               totalPermissionsCount={permissionsState.currentPermissions.length}
+              permissionsToRevoke={permissionsToRevoke}
+              togglePermissionRevocation={togglePermissionRevocation}
             />
           </Card>
         )}
@@ -923,7 +1215,9 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
             variant="primary"
             onClick={generatePayload}
             isDisabled={
-              permissionsState.loading || permissionsState.selectedPermissions.length === 0
+              permissionsState.loading ||
+              (permissionsState.selectedPermissions.length === 0 &&
+                permissionsToRevoke.length === 0)
             }
           >
             Generate Payload
@@ -968,6 +1262,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
             </Button>
             <Button
               variant="secondary"
+              mr="10px"
               leftIcon={<CopyIcon />}
               onClick={() => {
                 if (generatedPayload) {
@@ -981,6 +1276,15 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
             >
               Copy Payload to Clipboard
             </Button>
+            <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
+            <Box mt={8} />
+            <PRCreationModal
+              type={"permissions"}
+              isOpen={isOpen}
+              onClose={onClose}
+              payload={generatedPayload ? JSON.stringify(generatedPayload) : null}
+              {...getPrefillValues()}
+            />
           </Box>
 
           {humanReadableText && (
@@ -1016,7 +1320,6 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
           )}
         </>
       )}
-
       <Box mt={8} />
     </Container>
   );

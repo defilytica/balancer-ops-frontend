@@ -29,6 +29,8 @@ interface PermissionsTableProps {
   permissionsPerPage: number;
   handlePermissionsPerPageChange: (value: number) => void;
   copyToClipboard: (text: string) => void;
+  permissionsToRevoke: string[];
+  togglePermissionRevocation: (actionId: string) => void;
 }
 
 export const PermissionsTable: React.FC<PermissionsTableProps> = ({
@@ -42,6 +44,8 @@ export const PermissionsTable: React.FC<PermissionsTableProps> = ({
   permissionsPerPage,
   handlePermissionsPerPageChange,
   copyToClipboard,
+  permissionsToRevoke,
+  togglePermissionRevocation,
 }) => {
   // Pagination controls component
   const PaginationControls = () => {
@@ -111,12 +115,31 @@ export const PermissionsTable: React.FC<PermissionsTableProps> = ({
             borderWidth="1px"
             shadow="md"
             p={2}
+            sx={{
+              // Custom scrollbar styling
+              "&::-webkit-scrollbar": {
+                height: "8px",
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                borderRadius: "4px",
+                "&:hover": {
+                  background: "rgba(0, 0, 0, 0.3)",
+                },
+              },
+              // Ensure Firefox has similar styling
+              scrollbarWidth: "thin",
+            }}
           >
             <Table variant="simple" size="sm">
               <Thead>
                 <Tr>
                   <Th>Permission</Th>
                   <Th>Action ID</Th>
+                  <Th>Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -125,6 +148,7 @@ export const PermissionsTable: React.FC<PermissionsTableProps> = ({
                     <Tr
                       key={`current-${index}-${permission.substring(0, 8)}`}
                       _hover={{ bg: "whiteAlpha.50" }}
+                      bg={permissionsToRevoke.includes(permission) ? "red.50" : undefined}
                     >
                       <Td>
                         <Flex>{getPermissionDescription(permission)}</Flex>
@@ -137,16 +161,29 @@ export const PermissionsTable: React.FC<PermissionsTableProps> = ({
                             fontFamily="monospace"
                             cursor="pointer"
                             onClick={() => copyToClipboard(permission)}
+                            textDecoration={
+                              permissionsToRevoke.includes(permission) ? "line-through" : undefined
+                            }
+                            color={permissionsToRevoke.includes(permission) ? "red.500" : undefined}
                           >
                             {permission}
                           </Text>
                         </Tooltip>
                       </Td>
+                      <Td>
+                        <Button
+                          size="xs"
+                          colorScheme={permissionsToRevoke.includes(permission) ? "green" : "red"}
+                          onClick={() => togglePermissionRevocation(permission)}
+                        >
+                          {permissionsToRevoke.includes(permission) ? "Keep" : "Revoke"}
+                        </Button>
+                      </Td>
                     </Tr>
                   ))
                 ) : (
                   <Tr>
-                    <Td colSpan={2} textAlign="center">
+                    <Td colSpan={3} textAlign="center">
                       No permissions found for this wallet
                     </Td>
                   </Tr>

@@ -1306,7 +1306,6 @@ export interface PermissionInput {
 }
 
 export function generatePermissionsPayload(input: PermissionInput): string {
-
   // Create transactions payload
   const payload = {
     version: "1.0",
@@ -1348,6 +1347,7 @@ export function generateHumanReadablePermissions(
   descriptions: { [actionId: string]: string },
   granteeAddress: string,
   granteeName: string,
+  operation: "grant" | "revoke" = "grant",
 ): string {
   const permissionsText = actionIds
     .map(id => {
@@ -1356,5 +1356,10 @@ export function generateHumanReadablePermissions(
     })
     .join("\n");
 
-  return `The authorizer will grant the following permissions to ${granteeName} (${granteeAddress}):\n\n${permissionsText}`;
+  const actionText =
+    operation === "grant"
+      ? "grant the following permissions to"
+      : "revoke the following permissions from";
+
+  return `The authorizer will ${actionText} ${granteeName} (${granteeAddress}):\n\n${permissionsText}`;
 }
