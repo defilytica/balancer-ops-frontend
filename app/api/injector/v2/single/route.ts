@@ -11,6 +11,11 @@ import {
 import { Contract } from "ethers";
 import { gaugeABI } from "@/abi/gauge";
 
+const CACHE_DURATION = 300;
+
+// Configure route segment caching
+export const revalidate = 300;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get("address");
@@ -25,10 +30,23 @@ export async function GET(request: NextRequest) {
   const contract = new ethers.Contract(address, InjectorABIV2, provider);
 
   try {
-    const [activeGaugeList, injectTokenAddress, owner] = await Promise.all([
+    // Batch all initial contract calls together
+    const [
+      activeGaugeList,
+      injectTokenAddress,
+      owner,
+      maxInjectionAmount,
+      minWaitPeriodSeconds,
+      maxGlobalAmountPerPeriod,
+      maxTotalDue,
+    ] = await Promise.all([
       contract.getActiveGaugeList(),
       contract.InjectTokenAddress(),
       contract.owner(),
+      contract.MaxInjectionAmount(),
+      contract.MinWaitPeriodSeconds(),
+      contract.MaxGlobalAmountPerPeriod(),
+      contract.MaxTotalDue(),
     ]);
 
     const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
@@ -49,21 +67,18 @@ export async function GET(request: NextRequest) {
       gaugeInfo.map(async gauge => {
         const gaugeContract = new Contract(gauge.gaugeAddress, gaugeABI, provider);
 
-        // Check if reward token is properly set up
-        const rewardData = await gaugeContract.reward_data(injectTokenAddress).catch(() => null);
+        // Fetch rewardData and lpToken in parallel
+        const [rewardData, lpToken] = await Promise.all([
+          gaugeContract.reward_data(injectTokenAddress).catch(() => null),
+          gaugeContract.lp_token().catch(() => null),
+        ]);
+
+        const poolName = lpToken
+          ? await fetchPoolName(lpToken, provider).catch(() => gauge.gaugeAddress)
+          : gauge.gaugeAddress;
 
         const isRewardTokenSetup =
           network === "mainnet" || (rewardData !== null && rewardData[0] === address);
-
-        // Get pool name from LP token
-        let poolName;
-        try {
-          const lpToken = await gaugeContract.lp_token();
-          poolName = await fetchPoolName(lpToken, provider);
-        } catch (error) {
-          console.error(`Error fetching pool name for gauge ${gauge.gaugeAddress}:`, error);
-          poolName = gauge.gaugeAddress;
-        }
 
         return {
           ...gauge,
@@ -73,6 +88,7 @@ export async function GET(request: NextRequest) {
       }),
     );
 
+    // Get contract balance
     const contractBalance = await getInjectTokenBalanceForAddress(
       injectTokenAddress,
       address,
@@ -80,16 +96,7 @@ export async function GET(request: NextRequest) {
       tokenInfo.decimals,
     );
 
-    // V2-specific contract data
-    const [maxInjectionAmount, minWaitPeriodSeconds, maxGlobalAmountPerPeriod, maxTotalDue] =
-      await Promise.all([
-        contract.MaxInjectionAmount(),
-        contract.MinWaitPeriodSeconds(),
-        contract.MaxGlobalAmountPerPeriod(),
-        contract.MaxTotalDue(),
-      ]);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       tokenInfo,
       gauges,
       contractBalance,
@@ -99,6 +106,8 @@ export async function GET(request: NextRequest) {
       maxGlobalAmountPerPeriod: maxGlobalAmountPerPeriod.toString(),
       maxTotalDue: maxTotalDue.toString(),
     });
+    response.headers.set("Cache-Control", `s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
+    return response;
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
