@@ -321,7 +321,7 @@ const GroupedPermissionsList: React.FC<GroupedPermissionsListProps> = ({
       return Array.from(Array(Object.keys(groupedPermissionsData.grouped).length).keys());
     }
     // Only expand first section by default
-    return [0];
+    return [];
   }, [searchTerm, groupedPermissionsData.grouped]);
 
   const borderColor = useColorModeValue("gray.200", "gray.600");
