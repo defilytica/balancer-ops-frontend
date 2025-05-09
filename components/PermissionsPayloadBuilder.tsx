@@ -877,7 +877,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
               </Box>
             )}
 
-            <Box height="300px">
+            <Box height="500px">
               {permissionViewType === PermissionViewType.GROUPED ? (
                 <GroupedPermissionsList
                   permissions={permissionsState.filteredPermissions}
