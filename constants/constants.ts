@@ -1,6 +1,7 @@
 import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from "react-icons/fa";
 import { FaRegChartBar } from "react-icons/fa6";
 import { FaBridgeCircleCheck } from "react-icons/fa6";
+import { FaUnlockAlt } from "react-icons/fa";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
 import OptimismLogo from "@/public/imgs/optimism.svg";
@@ -173,6 +174,19 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "",
     prNamePlaceholder: "",
     prTypePath: "",
+  },
+  {
+    href: "/payload-builder/permissions",
+    key: "permissions",
+    label: "Configure Multi-sig Permissions",
+    button_label: "Configure Permissions",
+    description:
+      "Configure what permissions a given multi-sig wallet is granted via the DAO so it can execute permissioned functions within the Balancer protocol",
+    icon: FaUnlockAlt,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/add-permissions",
+    prNamePlaceholder: "Add permissions to multi-sig",
+    prTypePath: "BIPs/YYYY-WXX/",
   },
   {
     href: "/hooks/stable-surge",

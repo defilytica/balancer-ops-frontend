@@ -13,6 +13,7 @@ const CATEGORIZED_PAYLOADS = {
   "Pool Management (v3)": ["initialize-buffer", "manage-buffer", "fee-setter-v3"],
   "Financial Operations": ["create-payment", "cctp-bridge"],
   "Pool Management (v2)": ["fee-setter"],
+  "Permissions and Operations": ["permissions"],
 };
 
 const PayloadBuilder = () => {
