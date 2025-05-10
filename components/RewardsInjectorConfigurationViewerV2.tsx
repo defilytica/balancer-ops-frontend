@@ -152,7 +152,10 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                       borderWidth="1px"
                       borderColor={borderColor}
                     >
-                      <Text fontFamily="mono">{formatTimestamp(gauge.lastInjectionTimeStamp)}</Text>
+                      <Text fontFamily="mono">
+                        {formatTimestamp(gauge.lastInjectionTimeStamp)} -{" "}
+                        {gauge.lastInjectionTimeStamp}
+                      </Text>
                     </Box>
                   </Box>
                 </VStack>

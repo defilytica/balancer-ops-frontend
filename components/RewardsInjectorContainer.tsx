@@ -86,8 +86,8 @@ export default function RewardsInjectorContainer({
                       .then(tokenData => ({
                         network: network,
                         address: address,
-                        token: tokenData.tokenInfo.symbol || "",
-                        tokenAddress: tokenData.tokenInfo.address || "",
+                        token: tokenData.tokenInfo?.symbol || "",
+                        tokenAddress: tokenData.tokenInfo?.address || "",
                         id: `${network}-${address}`,
                       }))
                       .catch(error => {

@@ -11,11 +11,11 @@ import {
   Tooltip,
   Flex,
   Card,
-  Box,
   Text,
-  VStack,
+  Box,
   HStack,
   useMediaQuery,
+  Badge,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from "@chakra-ui/icons";
 import { networks } from "@/constants/constants";
@@ -67,26 +67,23 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     return 0;
   });
 
-  const formatDate = (timestamp: string) => {
+  // Unified date formatter for table view
+  const formatTimestamp = (timestamp: string) => {
     const date = new Date(Number(timestamp) * 1000);
-
-    // Check if the date is January 1, 1970 (Unix epoch start)
-    if (date.getTime() === 0) {
-      return "-";
-    }
-
-    return date.toLocaleDateString();
+    return date.getTime() === 0
+      ? "-"
+      : date.toLocaleString([], {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
   };
 
-  const formatDatetime = (timestamp: string) => {
-    const date = new Date(Number(timestamp) * 1000);
-    if (date.getTime() === 0) return "-";
-    return date.toLocaleString([], {
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-    });
+  // Format address to show first and last few characters
+  const formatAddress = (address: string) => {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
   const SortableHeader: React.FC<{
@@ -94,14 +91,17 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     label: string;
   }> = ({ column, label }) => (
     <Flex alignItems="center" cursor="pointer" onClick={() => handleSort(column)}>
-      <Text fontWeight="bold">{label}</Text>
-      {sortColumn === column &&
-        (sortDirection === "asc" ? <TriangleUpIcon ml={1} /> : <TriangleDownIcon ml={1} />)}
+      <Text fontWeight="bold" fontSize="sm">
+        {label}
+      </Text>
+      {sortColumn === column && (
+        <Icon as={sortDirection === "asc" ? TriangleUpIcon : TriangleDownIcon} ml={1} boxSize={3} />
+      )}
     </Flex>
   );
 
   const AddressLink: React.FC<{ address: string }> = ({ address }) => (
-    <Tooltip label="View on Explorer">
+    <Tooltip label={address}>
       <Link
         href={`${explorerUrl}address/${address}`}
         isExternal
@@ -109,73 +109,35 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
         _hover={{ textDecoration: "underline" }}
       >
         <Flex alignItems="center">
-          <Text isTruncated maxWidth="180px">
-            {address}
-          </Text>
+          <Text>{formatAddress(address)}</Text>
           <Icon as={ExternalLinkIcon} ml={1} boxSize={3} />
         </Flex>
       </Link>
     </Tooltip>
   );
 
-  if (isMobile) {
-    return (
-      <VStack spacing={4} align="stretch">
-        {sortedData.map((row, index) => (
-          <Card key={index} p={4}>
-            <VStack align="stretch" spacing={2}>
-              <Text fontWeight="bold">{row.poolName}</Text>
-              <AddressLink address={row.gaugeAddress} />
-              <HStack justify="space-between">
-                <Text>Amount Per Period:</Text>
-                <Text>{`${row.rawAmountPerPeriod} ${tokenSymbol}`}</Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text>Period:</Text>
-                <Text>{`${row.periodNumber} / ${row.maxPeriods}`}</Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text>Last Injection:</Text>
-                <Text>{formatDate(row.lastInjectionTimeStamp)}</Text>
-              </HStack>
-              {isV2 && row.doNotStartBeforeTimestamp && (
-                <HStack justify="space-between">
-                  <Text>Starts At:</Text>
-                  <Text>{formatDatetime(row.doNotStartBeforeTimestamp)}</Text>
-                </HStack>
-              )}
-            </VStack>
-          </Card>
-        ))}
-      </VStack>
-    );
-  }
-  console.log(sortedData);
-  return sortedData.length > 0 ? (
-    <Card overflowX="auto">
-      <Table variant="simple" size="sm">
+  const compactLayout = (
+    <Box overflowX="auto" width="100%">
+      <Table variant="simple" size="sm" width="100%">
         <Thead>
           <Tr>
-            <Th width="25%">
+            <Th>
+              <SortableHeader column="poolName" label="Pool" />
+            </Th>
+            <Th>
               <SortableHeader column="gaugeAddress" label="Address" />
             </Th>
-            <Th width="20%">
-              <SortableHeader column="poolName" label="Name" />
+            <Th isNumeric>
+              <SortableHeader column="amountPerPeriod" label={`Amount/${tokenSymbol}`} />
             </Th>
-            <Th width="20%">
-              <SortableHeader column="amountPerPeriod" label="Amount Per Period" />
+            <Th isNumeric>
+              <SortableHeader column="periodNumber" label="Period" />
             </Th>
-            <Th width="8%">
-              <SortableHeader column="periodNumber" label="Period Number" />
-            </Th>
-            <Th width="8%">
-              <SortableHeader column="maxPeriods" label="Max Periods" />
-            </Th>
-            <Th width="15%">
+            <Th>
               <SortableHeader column="lastInjectionTimeStamp" label="Last Injection" />
             </Th>
             {isV2 && (
-              <Th width="24%">
+              <Th>
                 <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
               </Th>
             )}
@@ -184,21 +146,74 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
         <Tbody>
           {sortedData.map((row, index) => (
             <Tr key={index}>
+              <Td fontWeight="medium">{row.poolName}</Td>
               <Td>
                 <AddressLink address={row.gaugeAddress} />
               </Td>
-              <Td>{row.poolName}</Td>
-              <Td isNumeric>{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Td>
-              <Td isNumeric>{row.periodNumber}</Td>
-              <Td isNumeric>{row.maxPeriods}</Td>
-              <Td>{formatDate(row.lastInjectionTimeStamp)}</Td>
-              {isV2 && row.doNotStartBeforeTimestamp && (
-                <Td>{formatDatetime(row.doNotStartBeforeTimestamp)}</Td>
+              <Td isNumeric>{Number(row.amountPerPeriod).toFixed(2)}</Td>
+              <Td isNumeric>
+                <Badge colorScheme="blue">
+                  {row.periodNumber}/{row.maxPeriods}
+                </Badge>
+              </Td>
+              <Td fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Td>
+              {isV2 && (
+                <Td fontSize="sm">
+                  {row.doNotStartBeforeTimestamp
+                    ? formatTimestamp(row.doNotStartBeforeTimestamp)
+                    : "-"}
+                </Td>
               )}
             </Tr>
           ))}
         </Tbody>
       </Table>
+    </Box>
+  );
+
+  const mobileLayout = (
+    <Box width="100%">
+      {sortedData.map((row, index) => (
+        <Card key={index} p={3} mb={3} borderLeft="4px solid" borderLeftColor="blue.400">
+          <Flex direction="column" gap={2}>
+            <Flex justify="space-between" align="center">
+              <Text fontWeight="bold">{row.poolName}</Text>
+              <Badge colorScheme="blue">
+                {row.periodNumber}/{row.maxPeriods}
+              </Badge>
+            </Flex>
+
+            <AddressLink address={row.gaugeAddress} />
+
+            <HStack justify="space-between">
+              <Text fontSize="sm">Amount:</Text>
+              <Text fontWeight="medium">{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Text>
+            </HStack>
+
+            <HStack justify="space-between">
+              <Text fontSize="sm">Last Injection:</Text>
+              <Text fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Text>
+            </HStack>
+
+            {isV2 && row.doNotStartBeforeTimestamp && (
+              <HStack justify="space-between">
+                <Text fontSize="sm">Starts At:</Text>
+                <Text fontSize="sm">{formatTimestamp(row.doNotStartBeforeTimestamp)}</Text>
+              </HStack>
+            )}
+          </Flex>
+        </Card>
+      ))}
+    </Box>
+  );
+
+  if (sortedData.length === 0) return null;
+
+  return isMobile ? (
+    mobileLayout
+  ) : (
+    <Card p={0} shadow="md" borderRadius="md" overflow="hidden">
+      {compactLayout}
     </Card>
-  ) : null;
+  );
 };
