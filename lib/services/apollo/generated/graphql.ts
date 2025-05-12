@@ -180,6 +180,7 @@ export type GqlHookReviewData = {
 };
 
 export enum GqlHookType {
+  Akron = 'AKRON',
   DirectionalFee = 'DIRECTIONAL_FEE',
   ExitFee = 'EXIT_FEE',
   FeeTaking = 'FEE_TAKING',

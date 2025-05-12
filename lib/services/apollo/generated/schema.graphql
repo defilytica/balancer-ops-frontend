@@ -159,6 +159,7 @@ type GqlHookReviewData {
 }
 
 enum GqlHookType {
+  AKRON
   DIRECTIONAL_FEE
   EXIT_FEE
   FEE_TAKING
