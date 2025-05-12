@@ -1,5 +1,5 @@
 import { GAUGE_WEIGHT_CAPS } from "@/constants/constants";
-import { GaugeData } from "@/types/interfaces";
+import { GaugeData, Permission } from "@/types/interfaces";
 
 export type NetworkInfo = {
   logo: string;
@@ -29,3 +29,20 @@ export type GaugeNetworkId =
   | "gnosis"
   | "fraxtal"
   | "mode";
+
+// Permissions types for action interfaces for reducer
+export type PermissionsAction =
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_PERMISSIONS_LOADING"; payload: boolean }
+  | {
+      type: "SET_ALL_PERMISSIONS";
+      payload: { permissions: Permission[]; descriptions: Record<string, string> };
+    }
+  | { type: "SET_CURRENT_PERMISSIONS"; payload: string[] }
+  | { type: "SET_FILTERED_PERMISSIONS"; payload: Permission[] }
+  | { type: "TOGGLE_PERMISSION"; payload: string }
+  | { type: "REMOVE_PERMISSION"; payload: string }
+  | { type: "CLEAR_SELECTED_PERMISSIONS" }
+  | { type: "SET_PAGE"; payload: number }
+  | { type: "SET_PER_PAGE"; payload: number }
+  | { type: "RESET_PERMISSIONS" };

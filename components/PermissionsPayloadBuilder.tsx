@@ -32,7 +32,7 @@ import {
 } from "@chakra-ui/react";
 import { CopyIcon, DownloadIcon, HamburgerIcon, SearchIcon, ViewIcon } from "@chakra-ui/icons";
 import { FixedSizeList as List } from "react-window";
-import { AddressBook } from "@/types/interfaces";
+import { ActionIdsData, AddressBook, Permission, ReverseAddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getAddress, getCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
@@ -51,32 +51,7 @@ import {
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
-
-export interface Permission {
-  actionId: string;
-  description: string;
-  deployment: string;
-  selected: boolean;
-}
-
-export interface Permissions {
-  [actionId: string]: string[] | { [address: string]: boolean };
-}
-
-export interface ReverseAddressBook {
-  [address: string]: string;
-}
-
-export interface ActionIdsData {
-  [deployment: string]: {
-    [contract: string]: {
-      useAdaptor: boolean;
-      actionIds: {
-        [functionName: string]: string;
-      };
-    };
-  };
-}
+import { PermissionsAction } from "@/types/types";
 
 export interface PermissionsPayloadBuilderProps {
   addressBook: AddressBook;
@@ -94,23 +69,6 @@ interface PermissionsState {
   currentPage: number;
   permissionsPerPage: number;
 }
-
-// Action interfaces for reducer
-type PermissionsAction =
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_PERMISSIONS_LOADING"; payload: boolean }
-  | {
-      type: "SET_ALL_PERMISSIONS";
-      payload: { permissions: Permission[]; descriptions: Record<string, string> };
-    }
-  | { type: "SET_CURRENT_PERMISSIONS"; payload: string[] }
-  | { type: "SET_FILTERED_PERMISSIONS"; payload: Permission[] }
-  | { type: "TOGGLE_PERMISSION"; payload: string }
-  | { type: "REMOVE_PERMISSION"; payload: string }
-  | { type: "CLEAR_SELECTED_PERMISSIONS" }
-  | { type: "SET_PAGE"; payload: number }
-  | { type: "SET_PER_PAGE"; payload: number }
-  | { type: "RESET_PERMISSIONS" };
 
 // Component prop interfaces
 interface PermissionTagProps {
