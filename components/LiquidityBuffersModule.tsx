@@ -8,10 +8,8 @@ import {
   Icon,
   Text,
   VStack,
-  SimpleGrid,
   Spinner,
   Heading,
-  GridItem,
   Flex,
   HStack,
   Switch,
@@ -22,8 +20,8 @@ import {
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
 import { MdFilterListAlt } from "react-icons/md";
-import { PoolCard } from "@/components/liquidityBuffers/PoolCard";
 import { BufferTable } from "@/components/tables/BufferTable";
+import { BufferGrid } from "@/components/tables/BufferGrid";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { ViewSwitcher, ViewMode } from "@/components/liquidityBuffers/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
@@ -41,10 +39,15 @@ interface LiquidityBuffersModuleProps {
 export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffersModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("ALL");
   const [showOnlyEmptyBuffers, setShowOnlyEmptyBuffers] = useState(false);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARD);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.TABLE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const { loading, error, data } = useQuery<GetV3PoolsQuery>(GetV3PoolsDocument, {
+  const {
+    loading: loadingPools,
+    error,
+    data,
+  } = useQuery<GetV3PoolsQuery>(GetV3PoolsDocument, {
     variables: {
       chainIn: selectedNetwork !== "ALL" ? [selectedNetwork] : undefined,
       tagIn: ["BOOSTED"],
@@ -57,7 +60,18 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     },
   });
 
-  const poolsWithBufferBalances = useBufferData((data?.poolGetPools || []) as unknown as Pool[]);
+  const allPools = (data?.poolGetPools || []) as unknown as Pool[];
+
+  // Calculate pagination indices
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedPools = allPools.slice(startIndex, endIndex);
+
+  // Only fetch buffer data for paginated pools when filter is off
+  // When empty buffers filter is on, we need all pools' buffer data
+  const { pools: poolsWithBufferBalances, loading: loadingBuffers } = useBufferData(
+    showOnlyEmptyBuffers ? allPools : paginatedPools,
+  );
 
   const filteredPools = useMemo(() => {
     if (!showOnlyEmptyBuffers) return poolsWithBufferBalances;
@@ -73,6 +87,28 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       });
     });
   }, [poolsWithBufferBalances, showOnlyEmptyBuffers]);
+
+  // When empty buffersfilter is on, we need to paginate the filtered results
+  const displayedPools = useMemo(() => {
+    if (!showOnlyEmptyBuffers) return filteredPools;
+    return filteredPools.slice(startIndex, endIndex);
+  }, [filteredPools, showOnlyEmptyBuffers, startIndex, endIndex]);
+
+  const totalPages = useMemo(() => {
+    if (showOnlyEmptyBuffers) {
+      return Math.ceil(filteredPools.length / pageSize);
+    }
+    return Math.ceil(allPools.length / pageSize);
+  }, [allPools.length, filteredPools.length, showOnlyEmptyBuffers, pageSize]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   const networkOptionsV3WithAll = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
@@ -101,9 +137,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   };
 
   const handleFilterToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsFiltering(true);
     setShowOnlyEmptyBuffers(e.target.checked);
-    setTimeout(() => setIsFiltering(false), 250);
   };
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -111,14 +145,28 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   };
 
   const renderContent = () => {
-    if (loading || isFiltering) {
+    if (loadingPools) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="whiteAlpha.50">
             <Spinner size="lg" color="gray.400" />
           </Box>
           <Text fontSize="m" color="gray.500">
-            {isFiltering ? "Filtering pools..." : "Loading pools..."}
+            Loading pools...
+          </Text>
+        </Center>
+      );
+    }
+
+    // Special loading state for empty buffers filter as it needs to load all buffers for all pools
+    if (showOnlyEmptyBuffers && loadingBuffers) {
+      return (
+        <Center h="50vh" flexDir="column" gap={4} w="full">
+          <Box p={4} w="16" h="16" rounded="full" bg="whiteAlpha.50">
+            <Spinner size="lg" color="gray.400" />
+          </Box>
+          <Text fontSize="m" color="gray.500">
+            Looking for empty buffers...
           </Text>
         </Center>
       );
@@ -142,7 +190,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       );
     }
 
-    if (filteredPools.length === 0) {
+    if (displayedPools.length === 0) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="gray.400" opacity={0.2}>
@@ -160,16 +208,31 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       );
     }
 
-    return viewMode === ViewMode.CARD ? (
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-        {filteredPools.map(pool => (
-          <GridItem key={pool.address} rowSpan={pool.poolTokens.length + 1}>
-            <PoolCard pool={pool} />
-          </GridItem>
-        ))}
-      </SimpleGrid>
-    ) : (
-      <BufferTable pools={filteredPools} />
+    return (
+      <VStack spacing={6} align="stretch">
+        {viewMode === ViewMode.CARD ? (
+          <BufferGrid
+            items={displayedPools}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadingLength={pageSize}
+            loading={loadingBuffers}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        ) : (
+          <BufferTable
+            pools={displayedPools}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loading={loadingBuffers}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
+      </VStack>
     );
   };
 

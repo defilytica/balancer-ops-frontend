@@ -16,7 +16,7 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { InfoOutlineIcon } from "@chakra-ui/icons";
-import { type Pool, PoolToken } from "@/types/interfaces";
+import { PoolToken } from "@/types/interfaces";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferRow } from "./BufferRow";
 import { networks } from "@/constants/constants";
