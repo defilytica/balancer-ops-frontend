@@ -1,7 +1,11 @@
 "use client";
 
 import { useQuery } from "@apollo/client";
-import { GetV3PoolsDocument, GetV3PoolsQuery } from "@/lib/services/apollo/generated/graphql";
+import {
+  GetV3PoolsDocument,
+  GetV3PoolsQuery,
+  GqlChain,
+} from "@/lib/services/apollo/generated/graphql";
 import {
   Box,
   Center,
@@ -50,13 +54,8 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   } = useQuery<GetV3PoolsQuery>(GetV3PoolsDocument, {
     variables: {
       chainIn: selectedNetwork !== "ALL" ? [selectedNetwork] : undefined,
+      chainNotIn: ["SEPOLIA" as GqlChain],
       tagIn: ["BOOSTED"],
-    },
-    context: {
-      uri:
-        selectedNetwork === "SEPOLIA"
-          ? "https://test-api-v3.balancer.fi/"
-          : "https://api-v3.balancer.fi/",
     },
   });
 
@@ -142,6 +141,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedNetwork(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing network
   };
 
   const renderContent = () => {
