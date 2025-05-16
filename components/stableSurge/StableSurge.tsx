@@ -16,6 +16,13 @@ import {
   Heading,
   FormLabel,
   FormControl,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderMark,
+  SliderMarkProps,
+  Tooltip,
 } from "@chakra-ui/react";
 import { stableInvariant } from "../../app/stablesurge/stable-pool/StableMath";
 import { getTokenBalanceGivenInvariantAndAllOtherBalances } from "../../app/stablesurge/stable-pool/StableMath";
@@ -23,7 +30,7 @@ import { calculateImbalance, getSurgeFeePercentage } from "./StableSurgeHook";
 import { StableSurgeChart } from "./StableSurgeChart";
 
 export default function StableSurge() {
-  const [inputBalances, setInputBalances] = useState<number[]>([1000, 1000]);
+  const [inputBalances, setInputBalances] = useState<number[]>([1000000, 1000000]);
   const [initialBalances, setInitialBalances] = useState<number[]>([
     1000, 1000,
   ]);
@@ -31,11 +38,20 @@ export default function StableSurge() {
     1000, 1000,
   ]);
   const [totalFees, setTotalFees] = useState<number[]>([0, 0]);
-  const [tokenNames, setTokenNames] = useState<string[]>(["", "", "", ""]);
+  const [tokenNames, setTokenNames] = useState<string[]>(["GHO", "USDC", "USDT", "GYD"]);
 
   const [inputTokenCount, setInputTokenCount] = useState<number>(2);
   const [tokenCount, setTokenCount] = useState<number>(2);
-  const [inputAmplification, setInputAmplification] = useState<number>(100);
+  const [inputAmplification, setInputAmplification] = useState(1);
+  const [showAmplificationTooltip, setShowAmplificationTooltip] = useState(false);
+  
+  // Define your mark values
+  const markValues = [1, 10000, 25000, 50000];
+  
+  // Function to handle mark clicks
+  const handleMarkClick = (value:number) => {
+    setInputAmplification(value);
+  };
   const [inputSwapFee, setInputSwapFee] = useState<number>(1);
   const [inputMaxSurgeFee, setInputMaxSurgeFee] = useState<number>(10);
   const [inputSurgeThreshold, setInputSurgeThreshold] = useState<number>(20);
@@ -379,7 +395,7 @@ export default function StableSurge() {
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    <Heading size="md">Initialize Pool</Heading>
+                    <Heading size="md">Configure Pool</Heading>
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
@@ -394,7 +410,8 @@ export default function StableSurge() {
                   <option value={3}>3 Tokens</option>
                   <option value={4}>4 Tokens</option>
                 </Select>
-
+                <FormControl variant="floating">
+                  <FormLabel>Initial Balance A</FormLabel>
                 <Input
                   placeholder={`Initial Balance ${tokenNames[0]}`}
                   type="number"
@@ -408,7 +425,9 @@ export default function StableSurge() {
                     })
                   }
                 />
-                
+                </FormControl>
+                <FormControl variant="floating">
+                <FormLabel>Initial Balance B</FormLabel>
                 <Input
                   placeholder={`Initial Balance ${tokenNames[1]}`}
                   type="number"
@@ -422,8 +441,11 @@ export default function StableSurge() {
                     })
                   }
                 />
-                
+                </FormControl>    
+
                 {inputTokenCount >= 3 && (
+                <FormControl variant="floating">
+                 <FormLabel>Initial Balance C</FormLabel>  
                   <Input
                     placeholder={`Initial Balance ${tokenNames[2]}`}
                     type="number"
@@ -437,9 +459,12 @@ export default function StableSurge() {
                       })
                     }
                   />
+                  </FormControl>
                 )}
                 
                 {inputTokenCount >= 4 && (
+                <FormControl variant="floating">
+                <FormLabel>Initial Balance D</FormLabel>                  
                   <Input
                     placeholder={`Initial Balance ${tokenNames[3]}`}
                     type="number"
@@ -453,16 +478,70 @@ export default function StableSurge() {
                       })
                     }
                   />
+                  </FormControl>
                 )}
+              <FormControl variant="floating" mb={6} maxW="400px">
+                <FormLabel>Amplification Parameter: {inputAmplification}</FormLabel>
+                <Box pt={6} pb={2}>
+                  <Slider maxWidth={350}
+                    id="amplification-slider"
+                    value={inputAmplification}
+                    min={1}
+                    max={50000}
+                    step={250}
+                    onChange={(val) => setInputAmplification(val)}
+                    onMouseEnter={() => setShowAmplificationTooltip(true)}
+                    onMouseLeave={() => setShowAmplificationTooltip(false)}
+                  >
+                    {/* Create clickable marks */}
+                    {markValues.map((value) => (
+                      <Box 
+                        key={value}
+                        position="absolute"
+                        left={`${(value / 50000) * 100}%`}
+                        transform="translateX(-50%)"
+                        mt="-10px"
+                      >
+                        <Box
+                          as="button"
+                          fontSize="sm"
+                          cursor="pointer"
+                          onClick={() => handleMarkClick(value)}
+                          _hover={{ color: 'blue.500' }}
+                          mt="20px"
+                        >
+                          {value.toLocaleString()}
+                        </Box>
+                        <Box
+                          position="absolute"
+                          top="0"
+                          left="50%"
+                          transform="translateX(-50%)"
+                          w="2px"
+                          h="10px"
+                          bg="gray.300"
+                        />
+                      </Box>
+                    ))}
+                    <SliderTrack>
+                      <SliderFilledTrack />
+                    </SliderTrack>
+                    <Tooltip
+                      hasArrow
+                      bg="blue.500"
+                      color="white"
+                      placement="top"
+                      isOpen={showAmplificationTooltip}
+                      label={inputAmplification.toLocaleString()}
+                    >
+                      <SliderThumb />
+                    </Tooltip>
+                  </Slider>
+                </Box>
+              </FormControl>
                 
-                <Input
-                  placeholder="Amplification Parameter"
-                  type="number"
-                  mb={4}
-                  value={inputAmplification}
-                  onChange={(e) => setInputAmplification(Number(e.target.value))}
-                />
-                
+                <FormControl variant="floating">
+                <FormLabel>Static Swap Fee (%)</FormLabel>
                 <Input
                   placeholder="Static Swap Fee (%)"
                   type="number"
@@ -473,7 +552,8 @@ export default function StableSurge() {
                   max="100"
                   step="0.1"
                 />
-                
+
+                <FormLabel>Max Surge Fee (%)</FormLabel>
                 <Input
                   placeholder="Max Surge Fee (%)"
                   type="number"
@@ -485,6 +565,7 @@ export default function StableSurge() {
                   step="0.1"
                 />
                 
+                <FormLabel>Surge Threshold (%)</FormLabel>
                 <Input
                   placeholder="Surge Threshold (%)"
                   type="number"
@@ -495,6 +576,7 @@ export default function StableSurge() {
                   max="100"
                   step="0.1"
                 />
+                </FormControl>
                 
                 <Button colorScheme="blue" width="full" onClick={handleUpdate} mt={2}>
                   Initialize Pool
@@ -512,6 +594,8 @@ export default function StableSurge() {
                 </AccordionButton>
               </h2>
               <AccordionPanel pb={4}>
+                <FormControl variant="floating">
+                  <FormLabel> Sell Token</FormLabel>
                 <Select
                   value={swapTokenInIndex}
                   onChange={(e) => setSwapTokenInIndex(Number(e.target.value))}
@@ -522,7 +606,8 @@ export default function StableSurge() {
                   {tokenCount >= 3 && <option value={2}>{tokenNames[2]}</option>}
                   {tokenCount >= 4 && <option value={3}>{tokenNames[3]}</option>}
                 </Select>
-                
+
+                <FormLabel> Buy Token</FormLabel>
                 <Select
                   value={swapTokenOutIndex}
                   onChange={(e) => setSwapTokenOutIndex(Number(e.target.value))}
@@ -546,6 +631,7 @@ export default function StableSurge() {
                   )}
                 </Select>
                 
+                <FormLabel> Sell Token Amount</FormLabel>
                 <Input
                   placeholder="Amount In"
                   type="number"
@@ -573,6 +659,7 @@ export default function StableSurge() {
                 <Button colorScheme="green" width="full" onClick={handleSwap} mt={2}>
                   Swap
                 </Button>
+                </FormControl>
               </AccordionPanel>
             </AccordionItem>
 
@@ -586,6 +673,8 @@ export default function StableSurge() {
                 </AccordionButton>
               </h2>
               <AccordionPanel pb={4}>
+                <FormControl variant="floating">
+                  <FormLabel>Token 1</FormLabel>
                   <Input
                     placeholder="Token A Name"
                     mb={4}
@@ -599,6 +688,7 @@ export default function StableSurge() {
                     }
                   />
 
+                <FormLabel>Token 2</FormLabel>
                 <Input
                   placeholder="Token B Name"
                   mb={4}
@@ -613,6 +703,8 @@ export default function StableSurge() {
                 />
                 
                 {tokenCount >= 3 && (
+                  <FormControl variant="floating">
+                   <FormLabel>Token 3</FormLabel>
                   <Input
                     placeholder="Token C Name"
                     mb={4}
@@ -625,9 +717,12 @@ export default function StableSurge() {
                       })
                     }
                   />
+                  </FormControl>
                 )}
                 
                 {tokenCount >= 4 && (
+                  <FormControl variant="floating">
+                  <FormLabel>Token 4</FormLabel>
                   <Input
                     placeholder="Token D Name"
                     mb={4}
@@ -640,7 +735,10 @@ export default function StableSurge() {
                       })
                     }
                   />
+                  </FormControl>
                 )}
+
+                </FormControl>
               </AccordionPanel>
             </AccordionItem>
           </Accordion>
