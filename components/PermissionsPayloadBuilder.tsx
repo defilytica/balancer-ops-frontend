@@ -10,7 +10,7 @@ import {
   Divider,
   Flex,
   FormControl,
-  FormLabel,
+  FormLabel, Grid, GridItem,
   Heading,
   HStack,
   IconButton,
@@ -1000,20 +1000,18 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       </Box>
 
       <Box>
-        <Box mb={2} mt={2}>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-            <FormControl maxWidth="sm">
-              <FormLabel>Select Network</FormLabel>
-              <NetworkSelector
-                networks={networks}
-                networkOptions={filteredNetworkOptions}
-                selectedNetwork={selectedNetwork.toUpperCase()}
-                handleNetworkChange={handleNetworkChange}
-              />
-            </FormControl>
-          </SimpleGrid>
-          <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4}>
-            {/* Wallet Selection */}
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mt={2} mb={6}>
+          <GridItem colSpan={{ base: 12, md: 4 }}>
+            <FormLabel>Select Network</FormLabel>
+            <NetworkSelector
+              networks={networks}
+              networkOptions={filteredNetworkOptions}
+              selectedNetwork={selectedNetwork.toUpperCase()}
+              handleNetworkChange={handleNetworkChange}
+            />
+          </GridItem>
+
+          <GridItem colSpan={{ base: 12, md: 8 }}>
             <FormControl>
               <FormLabel>Select Wallet</FormLabel>
               <SearchableAddressInput
@@ -1022,8 +1020,8 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
                 addresses={availableWallets}
               />
             </FormControl>
-          </SimpleGrid>
-        </Box>
+          </GridItem>
+        </Grid>
 
         {selectedWallet && (
           <Card p={4} mb={4}>
