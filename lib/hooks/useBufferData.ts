@@ -19,7 +19,12 @@ export interface PoolWithBufferData extends Pool {
   };
 }
 
-export function useBufferData(pools: Pool[] = []) {
+export interface BufferDataResult {
+  pools: PoolWithBufferData[];
+  loading: boolean;
+}
+
+export function useBufferData(pools: Pool[] = []): BufferDataResult {
   // Query for buffer balances
   const bufferBalanceQueries = useQueries({
     queries: pools.flatMap(pool =>
@@ -56,9 +61,14 @@ export function useBufferData(pools: Pool[] = []) {
     ),
   });
 
+  // Check if any query is still loading
+  const isLoading =
+    bufferBalanceQueries.some(query => query.isLoading) ||
+    bufferInitializationStatusQueries.some(query => query.isLoading);
+
   let queryIndex = 0;
 
-  return pools.map(pool => {
+  const poolsWithBuffers = pools.map(pool => {
     const buffers: { [key: string]: any } = {};
 
     filterRealErc4626Tokens(pool.poolTokens).forEach(token => {
@@ -87,4 +97,9 @@ export function useBufferData(pools: Pool[] = []) {
       buffers,
     };
   });
+
+  return {
+    pools: poolsWithBuffers,
+    loading: isLoading,
+  };
 }

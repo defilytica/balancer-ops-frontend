@@ -39,10 +39,13 @@ export async function GET(request: NextRequest) {
 
     const bufferBalance = await contract.getBufferBalance(wrappedToken);
 
-    return NextResponse.json({
-      underlyingBalance: bufferBalance[0].toString(),
-      wrappedBalance: bufferBalance[1].toString(),
-    });
+    return NextResponse.json(
+      {
+        underlyingBalance: bufferBalance[0].toString(),
+        wrappedBalance: bufferBalance[1].toString(),
+      },
+      { headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate" } },
+    );
   } catch (error) {
     console.error("Error fetching buffer balance:", error);
     return NextResponse.json({ error: "Failed to fetch buffer balance" }, { status: 500 });

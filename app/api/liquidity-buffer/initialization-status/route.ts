@@ -39,9 +39,10 @@ export async function GET(request: NextRequest) {
 
     const isInitialized = await contract.isERC4626BufferInitialized(wrappedToken);
 
-    return NextResponse.json({
-      isInitialized: isInitialized,
-    });
+    return NextResponse.json(
+      { isInitialized: isInitialized },
+      { headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate" } },
+    );
   } catch (error) {
     console.error("Error checking buffer initialization status:", error);
     return NextResponse.json(

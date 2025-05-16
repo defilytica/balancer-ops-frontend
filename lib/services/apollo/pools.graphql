@@ -26,10 +26,11 @@ query GetPools($chainIn: [GqlChain!]){
     }
 }
 
-query GetV3Pools($chainIn: [GqlChain!], $tagIn: [String!]) {
+query GetV3Pools($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [String!]) {
   poolGetPools(
     where: {
       chainIn: $chainIn
+      chainNotIn: $chainNotIn
       protocolVersionIn: [3]
       tagIn: $tagIn
     }
