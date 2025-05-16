@@ -245,3 +245,36 @@ export interface GaugeRecipientData {
   isKilled: boolean;
   relativeWeightCap: number;
 }
+
+// Permissions Builder
+export interface Permission {
+  actionId: string;
+  description: string;
+  deployment: string;
+  selected: boolean;
+}
+
+export interface Permissions {
+  [actionId: string]: string[] | { [address: string]: boolean };
+}
+
+export interface ReverseAddressBook {
+  [address: string]: string;
+}
+
+export interface ActionIdsData {
+  [deployment: string]: {
+    [contract: string]: {
+      useAdaptor: boolean;
+      actionIds: {
+        [functionName: string]: string;
+      };
+    };
+  };
+}
+
+export interface FormattedDeployment {
+  name: string;
+  date: string;
+  version: string;
+}
