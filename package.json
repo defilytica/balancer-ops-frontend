@@ -67,7 +67,7 @@
     "tinycolor2": "^1.6.0",
     "use-debounce": "^10.0.4",
     "viem": "^2.24.2",
-    "wagmi": "^2.14.15"
+    "wagmi": "^2.14.16"
   },
   "devDependencies": {
     "@types/node": "^20",
