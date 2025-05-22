@@ -142,9 +142,9 @@ export function getWagmiConfig(): Config {
         customChains.sonic,
       ],
       transports: {
-        [mainnet.id]: http("https://eth.llamarpc.com"),
-        [arbitrum.id]: http("https://arbitrum.llamarpc.com"),
-        [base.id]: http("https://base.llamarpc.com"),
+        [mainnet.id]: http("https://eth.drpc.org"),
+        [arbitrum.id]: http("https://arbitrum.drpc.org"),
+        [base.id]: http("https://base.drpc.org"),
         [avalanche.id]: http("https://avalanche.drpc.org"),
         [gnosis.id]: http("https://gnosis.drpc.org"),
         [optimism.id]: http("https://optimism.drpc.org"),

@@ -212,7 +212,7 @@ export const PAYLOAD_OPTIONS = [
     repos: ["BalancerMaxis/multisig-ops"],
     branchNamePlaceholder: "feature/mevcapture-config",
     prNamePlaceholder: "Configure MEV Capture on Pool XYZ",
-    prTypePath: "MaxiOps/PoolParameterChanges/PoolMevCaptureParams/",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolMevHookParams/",
   },
 ];
 

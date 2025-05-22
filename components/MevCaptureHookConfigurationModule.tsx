@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -12,9 +12,9 @@ import {
   Divider,
   Flex,
   FormControl,
-  FormLabel,
-  FormHelperText,
   FormErrorMessage,
+  FormHelperText,
+  FormLabel,
   Grid,
   GridItem,
   Heading,
@@ -30,11 +30,11 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { MEV_CAPTURE_PARAMS, NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
+  GetV3PoolsWithHooksDocument,
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
-  GetV3PoolsWithHooksDocument,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool, MevTaxHookParams, HookParams } from "@/types/interfaces";
+import { AddressBook, HookParams, MevTaxHookParams, Pool } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -54,6 +54,7 @@ import { useSearchParams } from "next/navigation";
 import { useValidateMevCapture } from "@/lib/hooks/validation/useValidateMevCapture";
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -199,6 +200,55 @@ export default function MevCaptureHookConfigurationModule({
     },
     [resolveMultisig, networkOptions, switchChain, toast],
   );
+
+  const getPrefillValues = useCallback(() => {
+    // Make sure we have a selected pool and at least one parameter changed
+    if (!selectedPool || (!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier)) return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Create a truncated version of the pool address for the branch name
+    const shortPoolId = selectedPool.address.substring(0, 8);
+
+    // Get pool name for the description
+    const poolName = selectedPool.name;
+
+    // Create parameter change descriptions
+    const changes = [];
+    if (debouncedMevTaxThreshold) {
+      const newThreshold = parseFloat(debouncedMevTaxThreshold);
+      const thresholdChangeDirection =
+        newThreshold > parseFloat(displayCurrentMevTaxThreshold) ? "increase" : "decrease";
+      changes.push(
+        `${thresholdChangeDirection}s the MEV tax threshold from ${displayCurrentMevTaxThreshold} to ${debouncedMevTaxThreshold} Gwei`,
+      );
+    }
+
+    if (debouncedMevTaxMultiplier) {
+      const newMultiplier = parseInt(debouncedMevTaxMultiplier);
+      const multiplierChangeDirection =
+        newMultiplier > parseInt(displayCurrentMevTaxMultiplier) ? "increase" : "decrease";
+      changes.push(
+        `${multiplierChangeDirection}s the MEV tax multiplier from ${displayCurrentMevTaxMultiplier} to ${debouncedMevTaxMultiplier}`,
+      );
+    }
+
+    // Find the network name from the selected network
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+    const networkName = networkOption?.label || selectedNetwork;
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
+
+    // Create the filename with network included
+    const filename = networkPath + `/mev-capture-params-${shortPoolId}-${uniqueId}.json`;
+
+    return {
+      prefillBranchName: `feature/mev-capture-params-${shortPoolId}-${uniqueId}`,
+      prefillPrName: `Update MEV Capture Hook Parameters for ${poolName} on ${networkName}`,
+      prefillDescription: `This PR ${changes.join(" and ")} for ${poolName} (${shortPoolId}) on ${networkName}.`,
+      prefillFilename: filename,
+    };
+  }, [selectedNetwork, debouncedMevTaxThreshold, debouncedMevTaxMultiplier]);
 
   const handlePoolSelect = (pool: Pool) => {
     setSelectedPool(pool);
@@ -649,7 +699,9 @@ export default function MevCaptureHookConfigurationModule({
             type={"hook-mev-capture"}
             isOpen={isOpen}
             onClose={onClose}
+            network={selectedNetwork}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            {...getPrefillValues()}
           />
         </Box>
       )}

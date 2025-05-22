@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -13,29 +13,29 @@ import {
   CardBody,
   CardHeader,
   Container,
+  Divider,
   Flex,
   FormControl,
   FormLabel,
+  Grid,
+  GridItem,
   Heading,
   Input,
   List,
   ListItem,
-  Spinner,
-  useToast,
-  useDisclosure,
   Popover,
-  PopoverTrigger,
-  PopoverContent,
   PopoverBody,
-  Grid,
-  GridItem,
+  PopoverContent,
+  PopoverTrigger,
+  Spinner,
   Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
   StatArrow,
   StatGroup,
-  Divider,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
@@ -49,12 +49,11 @@ import {
   GetPoolsQuery,
   GetPoolsQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
-import { Pool } from "@/types/interfaces";
+import { AddressBook, Pool } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { AddressBook } from "@/types/interfaces";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -75,13 +74,20 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
+
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
-  const getPrefillValues = () => {
+  const getPrefillValues = useCallback(() => {
     // Make sure we have a selected pool and new swap fee
-    if (!selectedPool || !newSwapFee) return {};
+    if (!selectedPool || !newSwapFee)
+      return {
+        prefillBranchName: "",
+        prefillPrName: "",
+        prefillDescription: "",
+        prefillFilename: "",
+      };
 
     // Generate a unique ID for the branch and file
     const uniqueId = generateUniqueId();
@@ -100,17 +106,18 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     // Find the network name from the selected network
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     const networkName = networkOption?.label || selectedNetwork;
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
     // Create just the filename - the path will come from the config
-    const filename = `set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
+    const filename = networkPath + `/set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
 
     return {
       prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
       prefillPrName: `Change Swap Fee for ${poolName} on ${networkName}`,
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
-      prefillFilename: filename, // Using the new naming convention without path prefix
+      prefillFilename: filename,
     };
-  };
+  }, [selectedPool, newSwapFee, selectedNetwork]);
 
   const resolveMultisig = useCallback(
     (network: string) => getMultisigForNetwork(addressBook, network, "lm"),
@@ -387,12 +394,13 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
           >
             Copy Payload to Clipboard
           </Button>
-          <OpenPRButton onClick={handleOpenPRModal} />
+          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
           <Box mt={8} />
           <PRCreationModal
             type={"fee-setter"}
             isOpen={isOpen}
             onClose={onClose}
+            network={selectedNetwork}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
             {...getPrefillValues()}
           />
