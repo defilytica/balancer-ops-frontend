@@ -60,7 +60,26 @@ const RewardsInjectorStatusPage = () => {
     );
 
     // Calculate if the injector is stale (all gauges haven't fired for more than 3 weeks)
-    const twoWeeksAgo = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60; // 2 weeks in seconds
+    const now = Math.floor(Date.now() / 1000);
+    const oneDayInSeconds = 24 * 60 * 60; // 1 day in seconds
+    const twoWeeksAgo = now - 14 * oneDayInSeconds;
+
+    // Calculate if the injector has any gauges that haven't fired for more than 2 weeks
+    const hasExpiredGauges = injector.gauges.some((gauge: any) => {
+      const timestamp = parseInt(gauge.lastInjectionTimeStamp, 10);
+      return timestamp > 0 && timestamp < twoWeeksAgo;
+    });
+
+    // Check if any gauge is approaching the 7-day mark (within 48h of reaching 7 days)
+    const hasGaugesNearExpiration = injector.gauges.some((gauge: any) => {
+      const timestamp = parseInt(gauge.lastInjectionTimeStamp, 10);
+      if (timestamp === 0 || timestamp === null) return false;
+      const expiryTime = timestamp + 7 * oneDayInSeconds;
+      const timeUntilExpiry = expiryTime - now;
+      return timeUntilExpiry > 0 && timeUntilExpiry <= 2 * oneDayInSeconds;
+    });
+
+    // Calculate if the injector is stale (all gauges haven't fired for more than 2 weeks)
     const isStale =
       injector.gauges.length > 0 &&
       injector.gauges.every((gauge: any) => {
@@ -81,6 +100,8 @@ const RewardsInjectorStatusPage = () => {
       incorrectlySetupGauges,
       isCompleted: (distributed === total && total > 0) || injector.gauges.length == 0,
       isStale,
+      hasGaugesNearExpiration,
+      hasExpiredGauges,
       processedGauges,
     };
   };
