@@ -77,6 +77,7 @@ export default function StableSurgeHookConfigurationModule({
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
+  const [prefillValues, setPrefillValues] = useState<Record<string, string>>({});
 
   // Create debounced versions of the state values
   const [debouncedMaxSurgeFeePercentage] = useDebounce(newMaxSurgeFeePercentage, 300);
@@ -132,9 +133,10 @@ export default function StableSurgeHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const getPrefillValues = () => {
+  const getPrefillValues = useCallback(() => {
     // Make sure we have a selected pool and at least one parameter changed
-    if (!selectedPool || (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage)) return {};
+    if (!selectedPool || (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage))
+      return {};
 
     // Generate a unique ID for the branch and file
     const uniqueId = generateUniqueId();
@@ -157,7 +159,8 @@ export default function StableSurgeHookConfigurationModule({
 
     if (debouncedSurgeThresholdPercentage) {
       const newThreshold = parseFloat(debouncedSurgeThresholdPercentage);
-      const thresholdChangeDirection = newThreshold > currentSurgeThreshold ? "increase" : "decrease";
+      const thresholdChangeDirection =
+        newThreshold > currentSurgeThreshold ? "increase" : "decrease";
       changes.push(
         `${thresholdChangeDirection}s the surge threshold from ${currentSurgeThreshold.toFixed(2)}% to ${newThreshold.toFixed(2)}%`,
       );
@@ -166,9 +169,10 @@ export default function StableSurgeHookConfigurationModule({
     // Find the network option for the chain ID
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     const networkName = networkOption?.label || selectedNetwork;
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
     // Create the filename with network included
-    const filename = networkName + `/stable-surge-params-${selectedPool.address}-${uniqueId}.json`;
+    const filename = networkPath + `/stable-surge-params-${selectedPool.address}-${uniqueId}.json`;
 
     // Add the network to the OpenPRButton
     // This ensures the network is passed to the PR modal
@@ -179,7 +183,7 @@ export default function StableSurgeHookConfigurationModule({
       prefillFilename: filename,
       prefillNetwork: selectedNetwork,
     };
-  };
+  }, [selectedNetwork, debouncedMaxSurgeFeePercentage, debouncedSurgeThresholdPercentage]);
 
   const resolveMultisig = useCallback(
     (network: string) => getMultisigForNetwork(addressBook, network),
@@ -696,6 +700,7 @@ export default function StableSurgeHookConfigurationModule({
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            network={selectedNetwork}
             {...getPrefillValues()}
           />
         </Box>

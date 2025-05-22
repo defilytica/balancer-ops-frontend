@@ -12,9 +12,9 @@ import {
   Divider,
   Flex,
   FormControl,
-  FormLabel,
   FormErrorMessage,
   FormHelperText,
+  FormLabel,
   Grid,
   GridItem,
   Heading,
@@ -53,9 +53,9 @@ import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import {
-  useValidateSwapFee,
-  isStandardRangePool,
   getSwapFeeRange,
+  isStandardRangePool,
+  useValidateSwapFee,
 } from "@/lib/hooks/validation/useValidateSwapFee";
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
@@ -279,9 +279,15 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     );
   }, [selectedPool, selectedMultisig]);
 
-  const getPrefillValues = () => {
+  const getPrefillValues = useCallback(() => {
     // Make sure we have a selected pool and new swap fee
-    if (!selectedPool || !debouncedSwapFee) return {};
+    if (!selectedPool || !debouncedSwapFee)
+      return {
+        prefillBranchName: "",
+        prefillPrName: "",
+        prefillDescription: "",
+        prefillFilename: "",
+      };
 
     // Generate a unique ID for the branch and file
     const uniqueId = generateUniqueId();
@@ -300,9 +306,10 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     // Find the network name from the selected network
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     const networkName = networkOption?.label || selectedNetwork;
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
-    // Create just the filename - path will come from the config
-    const filename = `set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
+    // Create the filename with network path included
+    const filename = networkPath + `/set-swap-fee-${selectedPool.address}-${uniqueId}.json`;
 
     return {
       prefillBranchName: `feature/swap-fee-${shortPoolId}-${uniqueId}`,
@@ -310,7 +317,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
       prefillFilename: filename,
     };
-  };
+  }, [selectedPool, debouncedSwapFee, selectedNetwork]);
 
   return (
     <Container maxW="container.lg">
@@ -495,6 +502,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             type={"fee-setter-v3"}
             isOpen={isOpen}
             onClose={onClose}
+            network={selectedNetwork}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
             {...getPrefillValues()}
           />

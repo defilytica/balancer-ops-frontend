@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -119,6 +119,12 @@ function RewardsInjectorConfiguratorV2({
     },
   ]);
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
+  const [prefillValues, setPrefillValues] = useState<{
+    prefillBranchName?: string;
+    prefillPrName?: string;
+    prefillDescription?: string;
+    prefillFilename?: string;
+  }>({});
 
   // Define Transaction type to fix TypeScript errors
   // Removed custom Transaction type in favor of imported one
@@ -454,9 +460,15 @@ function RewardsInjectorConfiguratorV2({
     }
   };
 
-  const getPrefillValues = () => {
+  const getPrefillValues = useCallback(() => {
     // Make sure we have a selected injector and an operation type
-    if (!selectedAddress || !operation || !generatedPayload) return {};
+    if (!selectedAddress || !operation)
+      return {
+        prefillBranchName: "",
+        prefillPrName: "",
+        prefillDescription: "",
+        prefillFilename: "",
+      };
 
     // Generate a unique ID for the branch and file
     const uniqueId = generateUniqueId();
@@ -464,9 +476,6 @@ function RewardsInjectorConfiguratorV2({
     // Get injector details for the filename and description
     const shortInjectorId = selectedAddress.address.substring(0, 8);
     const networkName = selectedAddress.network;
-
-    // Get operation-specific details
-    const configs = operation === "add" ? addConfigs : removeConfigs;
 
     // Count total recipients and calculate total allocation
     let totalValidRecipients = 0;
@@ -505,7 +514,7 @@ function RewardsInjectorConfiguratorV2({
       prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} by ${summaryInfo} on ${networkName}.`,
       prefillFilename: filename,
     };
-  };
+  }, [selectedAddress, operation, addConfigs, removeConfigs, tokenSymbol, formatAmount]);
 
   return (
     <Container maxW="container.xl">
