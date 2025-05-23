@@ -4,7 +4,7 @@ import {
   Grid,
   GridItem,
   Box,
-  Text,
+  Heading,
   Container,
   Button,
   Accordion,
@@ -12,33 +12,12 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
-  Flex,
+  Text,
   Select,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  FormHelperText,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  Divider,
-  Badge,
-  HStack,
-  VStack,
-  Icon,
-  Tooltip,
-  Progress,
-  ButtonGroup,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-  Alert,
-  AlertIcon,
+  Flex
 } from "@chakra-ui/react";
-import { ChevronDownIcon, TriangleDownIcon, InfoIcon } from "@chakra-ui/icons";
-import { FaPlay, FaPause, FaFastForward, FaStepForward, FaRedo } from "react-icons/fa";
+import { ChevronDownIcon } from "@chakra-ui/icons";
+import { FaPlay, FaPause } from "react-icons/fa";
 import { ReClammChart } from "./ReClammChart";
 import {
   calculateLowerMargin,
@@ -113,29 +92,42 @@ export default function ReClamm() {
   const [lastRangeCheckTime, setLastRangeCheckTime] = useState(0);
 
   // Initial Variables
-  const [initialBalanceA, setInitialBalanceA] = useState(defaultInitialBalanceA);
-  const [initialBalanceB, setInitialBalanceB] = useState(defaultInitialBalanceB);
+  const [initialBalanceA, setInitialBalanceA] = useState(
+    defaultInitialBalanceA
+  );
+  const [initialBalanceB, setInitialBalanceB] = useState(
+    defaultInitialBalanceB
+  );
   const [initialInvariant, setInitialInvariant] = useState(0);
   const [minPrice, setMinPrice] = useState(defaultMinPrice);
   const [maxPrice, setMaxPrice] = useState(defaultMaxPrice);
   const [targetPrice, setTargetPrice] = useState(defaultTargetPrice);
 
   // Pool Variables
-  const [priceRatio, setPriceRatio] = useState(defaultMaxPrice / defaultMinPrice);
+  const [priceRatio, setPriceRatio] = useState(
+    defaultMaxPrice / defaultMinPrice
+  );
   const [margin, setMargin] = useState(defaultMargin);
-  const [priceShiftDailyRate, setPriceShiftDailyRate] = useState(defaultPriceShiftDailyRate);
+  const [priceShiftDailyRate, setPriceShiftDailyRate] = useState(
+    defaultPriceShiftDailyRate
+  );
 
   // Input Variables
-  const [inputBalanceA, setInputBalanceA] = useState(defaultInitialBalanceA);
+  const [inputBalanceA, setInputBalanceA] = useState(
+    defaultInitialBalanceA
+  );
   const [inputMargin, setInputMargin] = useState(defaultMargin);
   const [inputMinPrice, setInputMinPrice] = useState(defaultMinPrice);
   const [inputMaxPrice, setInputMaxPrice] = useState(defaultMaxPrice);
   const [inputTargetPrice, setInputTargetPrice] = useState(defaultTargetPrice);
-
   const [inputTargetPriceRatio, setInputTargetPriceRatio] = useState(defaultTargetPrice);
 
-  const [realTimeBalanceA, setRealTimeBalanceA] = useState(defaultInitialBalanceA);
-  const [realTimeBalanceB, setRealTimeBalanceB] = useState(defaultInitialBalanceB);
+  const [realTimeBalanceA, setRealTimeBalanceA] = useState(
+    defaultInitialBalanceA
+  );
+  const [realTimeBalanceB, setRealTimeBalanceB] = useState(
+    defaultInitialBalanceB
+  );
   const [realTimeVirtualBalances, setRealTimeVirtualBalances] = useState({
     virtualBalanceA: 0,
     virtualBalanceB: 0,
@@ -146,11 +138,14 @@ export default function ReClamm() {
   const [swapAmountIn, setSwapAmountIn] = useState(defaultSwapAmountIn);
 
   // Price Ratio Variables
-  const [startPriceRatio, setStartPriceRatio] = useState(defaultMaxPrice / defaultMinPrice);
-  const [targetPriceRatio, setTargetPriceRatio] = useState(defaultMaxPrice / defaultMinPrice);
+  const [startPriceRatio, setStartPriceRatio] = useState(
+    defaultMaxPrice / defaultMinPrice
+  );
+  const [targetPriceRatio, setTargetPriceRatio] = useState(
+    defaultMaxPrice / defaultMinPrice
+  );
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
-
   const [inputEndTime, setInputEndTime] = useState(0);
 
   // Add new state variables for inputs
@@ -162,8 +157,12 @@ export default function ReClamm() {
   // Add new state for error message
   const [endTimeError, setEndTimeError] = useState("");
 
-  const [currentBalanceA, setCurrentBalanceA] = useState(defaultInitialBalanceA);
-  const [currentBalanceB, setCurrentBalanceB] = useState(defaultInitialBalanceB);
+  const [currentBalanceA, setCurrentBalanceA] = useState(
+    defaultInitialBalanceA
+  );
+  const [currentBalanceB, setCurrentBalanceB] = useState(
+    defaultInitialBalanceB
+  );
   const [currentVirtualBalances, setCurrentVirtualBalances] = useState({
     virtualBalanceA: 0,
     virtualBalanceB: 0,
@@ -174,7 +173,9 @@ export default function ReClamm() {
   const [targetPriceRatioError, setTargetPriceRatioError] = useState("");
 
   const [network, setNetwork] = useState("base-mainnet");
-  const [address, setAddress] = useState("0x7dc81fb7e93cdde7754bff7f55428226bd9cef7b");
+  const [address, setAddress] = useState(
+    "0x7dc81fb7e93cdde7754bff7f55428226bd9cef7b"
+  );
 
   // Add new state for LP fee percentage
   const [lpFeePercent, setLpFeePercent] = useState(1);
@@ -314,7 +315,7 @@ export default function ReClamm() {
   }, []);
 
   useEffect(() => {
-    let intervalId;
+    let intervalId:any;
 
     if (isPlaying) {
       intervalId = setInterval(() => {
@@ -443,10 +444,10 @@ export default function ReClamm() {
   };
 
   const initializeInvariants = (
-    balanceA,
-    balanceB,
-    virtualBalanceA,
-    virtualBalanceB
+    balanceA:number,
+    balanceB:number,
+    virtualBalanceA:number,
+    virtualBalanceB:number
   ) => {
     console.log(
       "initializeInvariants",
@@ -686,152 +687,363 @@ export default function ReClamm() {
     setBlockNumber(0);
   };
 
-  // These are reusable components for property display
-  const PropertyRow = ({ label, value, color }) => (
-    <Flex justify="space-between">
-      <Text color={color}>{label}</Text>
-      <Text color={color}>{value}</Text>
-    </Flex>
-  );
-
-  const resetSimulation = () => {
-    setIsPlaying(false);
-    setSimulationSeconds(0);
-    setBlockNumber(0);
-    setRealTimeBalanceA(initialBalanceA);
-    setRealTimeBalanceB(initialBalanceB);
-    setCurrentBalanceA(initialBalanceA);
-    setCurrentBalanceB(initialBalanceB);
-    setOutOfRangeTime(0);
-    setLastRangeCheckTime(0);
-    
-    const resetVirtualBalances = {
-      virtualBalanceA: inputVirtualBalanceA,
-      virtualBalanceB: inputVirtualBalanceB
-    };
-    
-    setRealTimeVirtualBalances(resetVirtualBalances);
-    setCurrentVirtualBalances(resetVirtualBalances);
-  };
-
   return (
     <Container maxW="container.xl">
-      <Box my={5}>
-        <Text fontSize="2xl" fontWeight="bold" textAlign="center">ReClamm Pool Simulator</Text>
-        <Text fontSize="md" textAlign="center" color="gray.600">
-          Simulate and analyze the behavior of ReClamm automated liquidity pools
-        </Text>
-      </Box>
-      
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         {/* Left Column - Controls */}
-        <GridItem colSpan={{ base: 12, md: 3 }}>
-          <Accordion allowToggle defaultIndex={[0]}>
-            {/* Load Real Pool Section */}
+        <GridItem colSpan={3}>
+          {/* Load Real Pool Section */}
+          <Accordion allowToggle>
             <AccordionItem>
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    <Text fontSize="lg" fontWeight="bold">Load Real Pool</Text>
+                    <Heading size="md">Load Real Pool</Heading>
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
               </h2>
-              <AccordionPanel pb={4}>
-                <FormControl mb={4}>
-                  <FormLabel>Network</FormLabel>
-                  <Select
-                    value={network}
-                    onChange={(e) => setNetwork(e.target.value)}
-                  >
-                    {NETWORKS.sort((a, b) => a.name.localeCompare(b.name)).map(
-                      (n) => (
-                        <option key={n.network} value={n.network}>
-                          {n.name}
-                        </option>
-                      )
-                    )}
-                  </Select>
-                </FormControl>
-                <FormControl mb={4}>
-                  <FormLabel>Address</FormLabel>
-                  <Input
-                    placeholder="Pool address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </FormControl>
-                <Button colorScheme="blue" width="full" onClick={handleLoadPool}>
+              <AccordionPanel>
+                <Select
+                  placeholder="Network"
+                  value={network}
+                  onChange={(e) => setNetwork(e.target.value)}
+                  mb={4}
+                >
+                  {NETWORKS.sort((a, b) => a.name.localeCompare(b.name)).map(
+                    (n) => (
+                      <option key={n.network} value={n.network}>
+                        {n.name}
+                      </option>
+                    )
+                  )}
+                </Select>
+                <Input
+                  placeholder="Address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  mb={4}
+                />
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleLoadPool}
+                  mt={2}
+                >
                   Load Pool
                 </Button>
               </AccordionPanel>
             </AccordionItem>
+          </Accordion>
 
-            {/* Create and Initialize */}
+          <Accordion allowToggle mt={4}>
             <AccordionItem>
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    <Text fontSize="lg" fontWeight="bold">Create and Initialize</Text>
+                    <Heading size="md">Create and Initialize</Heading>
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
               </h2>
-              <AccordionPanel pb={4}>
-                <Text fontWeight="bold" mb={2}>Create Parameters</Text>
+              <AccordionPanel>
+                <Text fontWeight="bold" mb={2}>
+                  Create Parameters
+                </Text>
                 <Grid templateColumns="repeat(2, 1fr)" gap={3}>
                   <GridItem>
-                    <FormControl mb={3}>
-                      <FormLabel>Minimum Price</FormLabel>
-                      <Input
-                        type="number"
-                        value={inputMinPrice}
-                        onChange={(e) => setInputMinPrice(Number(e.target.value))}
-                      />
-                    </FormControl>
+                    <Input
+                      placeholder="Minimum Price"
+                      type="number"
+                      value={inputMinPrice}
+                      onChange={(e) => setInputMinPrice(Number(e.target.value))}
+                      mb={2}
+                    />
                   </GridItem>
                   <GridItem>
-                    <FormControl mb={3}>
-                      <FormLabel>Maximum Price</FormLabel>
-                      <Input
-                        type="number"
-                        value={inputMaxPrice}
-                        onChange={(e) => setInputMaxPrice(Number(e.target.value))}
-                      />
-                    </FormControl>
+                    <Input
+                      placeholder="Maximum Price"
+                      type="number"
+                      value={inputMaxPrice}
+                      onChange={(e) => setInputMaxPrice(Number(e.target.value))}
+                      mb={2}
+                    />
                   </GridItem>
                   <GridItem>
-                    <FormControl mb={3}>
-                      <FormLabel>Target Price</FormLabel>
-                      <Input
-                        type="number"
-                        value={inputTargetPrice}
-                        onChange={(e) => setInputTargetPrice(Number(e.target.value))}
-                      />
-                    </FormControl>
+                    <Input
+                      placeholder="Target Price"
+                      type="number"
+                      value={inputTargetPrice}
+                      onChange={(e) => setInputTargetPrice(Number(e.target.value))}
+                      mb={2}
+                    />
                   </GridItem>
                   <GridItem>
-                    <FormControl mb={3}>
-                      <FormLabel>Margin (%)</FormLabel>
-                      <Input
-                        type="number"
-                        value={inputMargin}
-                        onChange={(e) => setInputMargin(Number(e.target.value))}
-                      />
-                    </FormControl>
+                    <Input
+                      placeholder="Margin (%)"
+                      type="number"
+                      value={inputMargin}
+                      onChange={(e) => setInputMargin(Number(e.target.value))}
+                      mb={2}
+                    />
                   </GridItem>
                 </Grid>
-                <FormControl mb={3}></FormControl>
-                <FormLabel>Price Shift Daily Rate %</FormLabel>
                 <Input
+                  placeholder="Price Shift Daily Rate (%)"
                   type="number"
-                  value={defaultPriceShiftDailyRate}
-                  onChange={(e) => (Number(e.target.value))}
+                  value={priceShiftDailyRate}
+                  onChange={(e) => setPriceShiftDailyRate(Number(e.target.value))}
+                  mb={4}
                 />
-                </AccordionPanel>
-                </AccordionItem>
-                </Accordion>
-                </GridItem>
-                </Grid>
-                </Container>
-  )}
+
+                <Text fontWeight="bold" mb={2}>
+                  Initial Balances
+                </Text>
+                <Input
+                  placeholder="Initial Balance A"
+                  type="number"
+                  value={inputBalanceA}
+                  onChange={(e) => setInputBalanceA(Number(e.target.value))}
+                  mb={4}
+                />
+
+                <Flex justify="space-between" mb={1}>
+                  <Text>Ideal Proportion:</Text>
+                  <Text>{toFixedDecimals(idealBalanceB / idealBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Initial Balance B:</Text>
+                  <Text>{toFixedDecimals(inputBalanceB)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Virtual Balance A:</Text>
+                  <Text>{toFixedDecimals(inputVirtualBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Virtual Balance B:</Text>
+                  <Text>{toFixedDecimals(inputVirtualBalanceB)}</Text>
+                </Flex>
+                
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleInitialization}
+                  isDisabled={
+                    Math.abs(
+                      inputBalanceB /
+                        inputBalanceA /
+                        (idealBalanceB / idealBalanceA) -
+                        1
+                    ) >= 0.01
+                  }
+                  mt={3}
+                >
+                  Create and Initialize
+                </Button>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Swap Exact In</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Select 
+                  value={swapTokenIn}
+                  onChange={(e) => setSwapTokenIn(e.target.value)}
+                  mb={4}
+                >
+                  <option value="Token A">Token A</option>
+                  <option value="Token B">Token B</option>
+                </Select>
+                <Input
+                  placeholder="Amount In"
+                  type="number"
+                  value={swapAmountIn}
+                  onChange={(e) => setSwapAmountIn(Number(e.target.value))}
+                  mb={4}
+                />
+                <Input
+                  placeholder="LP Fee %"
+                  type="number"
+                  value={lpFeePercent}
+                  onChange={(e) => setLpFeePercent(Number(e.target.value))}
+                  mb={4}
+                />
+
+                <Text
+                  mb={3}
+                  color={calculatedSwapAmountOut.exceedsBalance ? "red.500" : "inherit"}
+                >
+                  Amount Out {swapTokenIn === "Token A" ? "B" : "A"}:{" "}
+                  {calculatedSwapAmountOut.amount > 0
+                    ? toFixedDecimals(calculatedSwapAmountOut.amount)
+                    : "0"}
+                  {calculatedSwapAmountOut.exceedsBalance && (
+                    <Text fontSize="sm" mt={1}>
+                      Token {swapTokenIn === "Token A" ? "B" : "A"} Amount in the
+                      pool must be at least {MIN_SWAP}.
+                    </Text>
+                  )}
+                </Text>
+                
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleSwap}
+                  isDisabled={calculatedSwapAmountOut.exceedsBalance}
+                >
+                  Swap
+                </Button>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Update Price Ratio</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Input
+                  placeholder="Target Price Ratio"
+                  type="number"
+                  value={inputTargetPriceRatio}
+                  onChange={(e) => setInputTargetPriceRatio(Number(e.target.value))}
+                  isInvalid={!!targetPriceRatioError}
+                  mb={targetPriceRatioError ? 1 : 4}
+                />
+                {targetPriceRatioError && (
+                  <Text color="red.500" fontSize="sm" mb={3}>
+                    {targetPriceRatioError}
+                  </Text>
+                )}
+
+                <Text mb={2}>
+                  Current Time: {simulationSeconds.toFixed(0)}
+                </Text>
+                
+                <Input
+                  placeholder="End Time (in seconds)"
+                  type="number"
+                  value={inputEndTime}
+                  onChange={(e) => setInputEndTime(Number(e.target.value))}
+                  isInvalid={!!endTimeError}
+                  mb={endTimeError ? 1 : 4}
+                />
+                {endTimeError && (
+                  <Text color="red.500" fontSize="sm" mb={3}>
+                    {endTimeError}
+                  </Text>
+                )}
+                
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleUpdatePriceRatio}
+                >
+                  Update Price Ratio
+                </Button>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Simulation Parameters</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Input
+                  placeholder="Seconds Per Block"
+                  type="number"
+                  value={inputSecondsPerBlock}
+                  onChange={(e) => setInputSecondsPerBlock(Number(e.target.value))}
+                  mb={4}
+                />
+                
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleSaveSimulationConfig}
+                >
+                  Save Config
+                </Button>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        </GridItem>
+
+        {/* Middle Column - Chart */}
+        <GridItem colSpan={6}>
+          <Box bg="white" p={4} borderRadius="md" boxShadow="md" textAlign="center">
+            <Box width="100%" height="600px">
+              <ReClammChart
+                realTimeBalanceA={realTimeBalanceA}
+                realTimeBalanceB={realTimeBalanceB}
+                realTimeVirtualBalances={realTimeVirtualBalances}
+                realTimeInvariant={realTimeInvariant}
+                initialInvariant={initialInvariant}
+                margin={margin}
+                currentBalanceA={currentBalanceA}
+                currentBalanceB={currentBalanceB}
+                currentVirtualBalances={currentVirtualBalances}
+                currentInvariant={currentInvariant}
+              />
+            </Box>
+          </Box>
+          
+          <Box bg="white" p={4} borderRadius="md" boxShadow="md" mt={4}>
+            <Flex align="center" gap={4} mb={4}>
+              <Button
+                colorScheme={isPlaying ? "red" : "green"}
+                onClick={() => setIsPlaying(!isPlaying)}
+                leftIcon={isPlaying ? <FaPause /> : <FaPlay />}
+              >
+                {isPlaying ? "Pause" : "Play"}
+              </Button>
+              <Text
+                fontWeight="bold"
+                color={isPlaying ? "green.500" : "red.500"}
+              >
+                {isPlaying ? "Running" : "Paused"} - Simulation time:{" "}
+                {formatTime(simulationSeconds)} - Block: {blockNumber}
+              </Text>
+            </Flex>
+            
+            <Flex gap={2} wrap="wrap">
+              {[1, 10, 100, 1000].map((speed) => (
+                <Button
+                  key={speed}
+                  variant={speedMultiplier === speed ? "solid" : "outline"}
+                  colorScheme="blue"
+                  onClick={() => setSpeedMultiplier(speed)}
+                  flex="1"
+                >
+                  {speed}x
+                </Button>
+              ))}
+            </Flex>
+          </Box>
+        </GridItem>
+        </Grid>
+    </Container>
+  );
+}
