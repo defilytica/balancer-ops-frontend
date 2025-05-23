@@ -22,6 +22,7 @@ import {
 } from "react-icons/tb";
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
+import { PiLightning } from "react-icons/pi"
 import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import NextLink from "next/link";
@@ -95,6 +96,12 @@ const LinkItems = [
     icon: TbFishHook,
     target: "/hooks",
     description: "View and configure hooks",
+  },
+  {
+    name: "StableSurge Simulator",
+    icon: PiLightning,
+    target: "/stablesurge",
+    description: "Configure StableSurge hook for pool and trade simulations.",
   },
 ];
 
