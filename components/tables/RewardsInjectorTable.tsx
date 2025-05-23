@@ -108,9 +108,9 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
   const getStatusColor = (status: GaugeStatus) => {
     switch (status) {
       case GaugeStatus.COMPLETED:
-        return { bg: "red.500", hoverBg: "red.400" };
+        return { bg: "red.700", hoverBg: "red.500" };
       case GaugeStatus.WARNING:
-        return { bg: "yellow.600", hoverBg: "yellow.400" };
+        return { bg: "yellow.600", hoverBg: "yellow.500" };
       case GaugeStatus.OK:
       default:
         return { bg: "green.700", hoverBg: "green.600" };

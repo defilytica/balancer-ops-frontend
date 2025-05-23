@@ -128,7 +128,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
             {hasExpiredGauges && (
               <Tooltip label="Some gauges are expired and are no longer distributing rewards">
                 <Box
-                  bg="red.500"
+                  bg="red.700"
                   color="white"
                   px={2}
                   py={0.5}
@@ -137,7 +137,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
                   display="flex"
                   alignItems="center"
                   gap={1}
-                  _hover={{ bg: "red.400" }}
+                  _hover={{ bg: "red.500" }}
                 >
                   <BiTimeFive size={14} />
                   <Text fontSize="xs" fontWeight="medium">
@@ -158,7 +158,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
                   display="flex"
                   alignItems="center"
                   gap={1}
-                  _hover={{ bg: "yellow.400" }}
+                  _hover={{ bg: "yellow.500" }}
                 >
                   <WarningIcon boxSize={3} />
                   <Text fontSize="xs" fontWeight="medium">

@@ -17,6 +17,7 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import RewardsInjectorCard from "@/components/RewardsInjectorCard";
 import { networks } from "@/constants/constants";
@@ -189,7 +190,68 @@ const RewardsInjectorStatusPage = () => {
   }
 
   if (isLoading) {
-    return <Skeleton height="400px" />;
+    // Skeleton card visually matching RewardsInjectorCard
+    const RewardsInjectorCardSkeleton = () => (
+      <Box
+        borderRadius="lg"
+        boxShadow="md"
+        p={{ base: 2, md: 4 }}
+        minH="320px"
+        display="flex"
+        flexDirection="column"
+        justifyContent="space-between"
+      >
+        <HStack align="center" mb={4}>
+          <Skeleton boxSize={8} borderRadius="full" flexShrink={0} />
+          <VStack align="start" spacing={1} flex={1}>
+            <Skeleton h={4} w="60%" />
+            <Skeleton h={3} w="40%" />
+          </VStack>
+          <Skeleton h={6} w={"48px"} borderRadius="md" flexShrink={0} />
+        </HStack>
+        <VStack align="stretch" spacing={3} flex={1}>
+          <HStack justify="space-between">
+            <Skeleton h={4} w="40%" />
+            <Skeleton h={4} w="20%" />
+          </HStack>
+          <HStack justify="space-between">
+            <Skeleton h={4} w="40%" />
+            <Skeleton h={4} w="20%" />
+          </HStack>
+          <Skeleton h={2} w="full" borderRadius="full" />
+          <HStack justify="space-between">
+            <Skeleton h={4} w="40%" />
+            <Skeleton h={4} w="20%" />
+          </HStack>
+        </VStack>
+        <Skeleton h={9} w="full" mt={4} borderRadius="md" />
+      </Box>
+    );
+
+    return (
+      <Container maxW="container.lg" justifyContent="center" alignItems="center">
+        <VStack spacing={4} align="stretch">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Skeleton h={8} w="40%" />
+            <Skeleton h={8} w="10%" />
+          </HStack>
+          <Skeleton h={10} w="full" />
+          <HStack justifyContent="space-between" alignItems="center" spacing={1}>
+            <Skeleton h={6} w="30%" />
+            <HStack spacing={2} w="60%">
+              <Skeleton h={8} w="30%" />
+              <Skeleton h={8} w="30%" />
+              <Skeleton h={8} w="20%" />
+            </HStack>
+          </HStack>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+            {[...Array(6)].map((_, i) => (
+              <RewardsInjectorCardSkeleton key={i} />
+            ))}
+          </SimpleGrid>
+        </VStack>
+      </Container>
+    );
   }
 
   return (
