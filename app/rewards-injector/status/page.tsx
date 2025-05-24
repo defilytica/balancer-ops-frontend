@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   SimpleGrid,
   Box,
@@ -235,6 +235,7 @@ const RewardsInjectorStatusPage = () => {
             <Skeleton h={8} w="40%" />
             <Skeleton h={8} w="10%" />
           </HStack>
+          <Skeleton h={20} w="full" />
           <Skeleton h={10} w="full" />
           <HStack justifyContent="space-between" alignItems="center" spacing={1}>
             <Skeleton h={6} w="30%" />
@@ -254,6 +255,19 @@ const RewardsInjectorStatusPage = () => {
     );
   }
 
+  // Calculate stats for display
+  const stats = {
+    total: injectorsData.length,
+    expired: injectorsData.filter((injector: any) => injector.hasExpiredGauges).length,
+    needsAttention: injectorsData.filter((injector: any) => injector.hasGaugesNearExpiration)
+      .length,
+    stale: injectorsData.filter((injector: any) => injector.isStale).length,
+  };
+
+  const statsHeaderTextColor = useColorModeValue("gray.600", "gray.400");
+  const statsBgColor = useColorModeValue("gray.50", "background.level2");
+  const statsBorderColor = useColorModeValue("gray.100", "whiteAlpha.100");
+
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
       <VStack spacing={4} align="stretch">
@@ -270,6 +284,60 @@ const RewardsInjectorStatusPage = () => {
             />
           </Tooltip>
         </HStack>
+        {/* Compact Stats Overview */}
+        <SimpleGrid
+          columns={4}
+          spacing={4}
+          p={4}
+          bg={statsBgColor}
+          borderRadius="lg"
+          boxShadow="md"
+          borderWidth={1}
+          borderColor={statsBorderColor}
+          mb={1}
+        >
+          <VStack spacing={1}>
+            <Text fontSize="xs" color={statsHeaderTextColor} textAlign="center">
+              Total injectors
+            </Text>
+            <Text fontSize="xl" fontWeight="semibold">
+              {stats.total}
+            </Text>
+          </VStack>
+          <Tooltip label="Some gauges are about to expire" hasArrow>
+            <VStack spacing={1} cursor="pointer">
+              <Text fontSize="xs" color={statsHeaderTextColor} textAlign="center">
+                Needs attention
+              </Text>
+              <Text fontSize="xl" fontWeight="semibold">
+                {stats.needsAttention}
+              </Text>
+            </VStack>
+          </Tooltip>
+          <Tooltip
+            label="Injectors have some gauges that are expired and are no longer distributing rewards"
+            hasArrow
+          >
+            <VStack spacing={1} cursor="pointer">
+              <Text fontSize="xs" color={statsHeaderTextColor} textAlign="center">
+                With expired gauges
+              </Text>
+              <Text fontSize="xl" fontWeight="semibold">
+                {stats.expired}
+              </Text>
+            </VStack>
+          </Tooltip>
+          <Tooltip label="All gauges haven't fired for more than 2 weeks" hasArrow>
+            <VStack spacing={1} cursor="pointer">
+              <Text fontSize="xs" color={statsHeaderTextColor} textAlign="center">
+                Stale
+              </Text>
+              <Text fontSize="xl" fontWeight="semibold">
+                {stats.stale}
+              </Text>
+            </VStack>
+          </Tooltip>
+        </SimpleGrid>
         <Alert status="warning" mr={4}>
           <AlertIcon />
           <Box>
