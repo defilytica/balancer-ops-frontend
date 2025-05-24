@@ -34,59 +34,51 @@ export async function GET(request: NextRequest) {
     const addressBook = await fetchAddressBook();
     const networks = getNetworks(addressBook);
 
-    let allInjectors = [];
-
-    for (const network of networks) {
+    // Process all injectors in parallel
+    const injectorPromises = networks.flatMap(network => {
       const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
-      if (maxiKeepers) {
-        const injectors = maxiKeepers.gaugeRewardsInjectors;
+      if (!maxiKeepers?.gaugeRewardsInjectors) return [];
 
-        if (injectors) {
-          for (const [token, address] of Object.entries(injectors)) {
-            // Check if we have cached data for this injector
-            // Skip the _deprecated field entirely
-            if (token === "_deprecated") continue;
-            const cachedInjector = await prisma.injector.findUnique({
-              where: {
-                network_address: {
-                  network,
-                  address,
-                },
+      return Object.entries(maxiKeepers.gaugeRewardsInjectors)
+        .filter(([token]) => token !== "_deprecated")
+        .map(async ([token, address]) => {
+          // Check if we have cached data for this injector
+          const cachedInjector = await prisma.injector.findUnique({
+            where: {
+              network_address: {
+                network,
+                address,
               },
-              include: { tokenInfo: true, gauges: true },
-            });
+            },
+            include: { tokenInfo: true, gauges: true },
+          });
 
-            const shouldFetchFreshData =
-              forceReload ||
-              !cachedInjector ||
-              Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
+          const shouldFetchFreshData =
+            forceReload ||
+            !cachedInjector ||
+            Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
 
-            let injectorData;
-
-            if (shouldFetchFreshData) {
-              console.log("Fetching fresh data...");
-              const freshData = await fetchFreshData(address, network);
-              // Update the database with fresh data
-              injectorData = await updateDatabase(address, network, freshData, token);
-            } else {
-              injectorData = cachedInjector;
+          if (shouldFetchFreshData) {
+            console.log(`Fetching fresh data for injector ${address} on ${network}...`);
+            const freshData = await fetchFreshData(address, network);
+            if (freshData) {
+              return await updateDatabase(address, network, freshData, token);
             }
-            allInjectors.push(injectorData);
           }
-        }
-      }
-    }
+          return cachedInjector;
+        });
+    });
 
+    const results = (await Promise.all(injectorPromises)).filter(Boolean);
+
+    // Remove duplicates using Map
     const uniqueInjectors = new Map();
-
-    allInjectors.forEach(injector => {
-      const key = `${injector.network}-${injector.address}`;
+    results.forEach(injector => {
+      const key = `${injector?.network}-${injector?.address}`;
       uniqueInjectors.set(key, injector);
     });
 
-    const result = Array.from(uniqueInjectors.values());
-
-    return NextResponse.json(result);
+    return NextResponse.json(Array.from(uniqueInjectors.values()));
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
@@ -98,28 +90,25 @@ async function fetchFreshData(address: string, network: string) {
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const contract = new ethers.Contract(address, InjectorABIV1, provider);
 
-  const [watchList, injectorTokenAddress] = await Promise.all([
-    contract.getWatchList(),
-    contract.getInjectTokenAddress(),
-  ]);
+  try {
+    const [watchList, injectorTokenAddress] = await Promise.all([
+      contract.getWatchList(),
+      contract.getInjectTokenAddress(),
+    ]);
 
-  const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
-  const gauges = await fetchGaugeInfo(
-    watchList,
-    contract,
-    provider,
-    injectorTokenAddress,
-    address,
-    network,
-  );
-  const contractBalance = await getInjectTokenBalanceForAddress(
-    injectorTokenAddress,
-    address,
-    provider,
-    tokenInfo.decimals,
-  );
+    const tokenInfo = await fetchTokenInfo(injectorTokenAddress, provider);
 
-  return { tokenInfo, gauges, contractBalance };
+    // Fetch gauge info and contract balance in parallel
+    const [gauges, contractBalance] = await Promise.all([
+      fetchGaugeInfo(watchList, contract, provider, injectorTokenAddress, address, network),
+      getInjectTokenBalanceForAddress(injectorTokenAddress, address, provider, tokenInfo.decimals),
+    ]);
+
+    return { tokenInfo, gauges, contractBalance };
+  } catch (error) {
+    console.error("Error:", error);
+    return null;
+  }
 }
 
 async function updateDatabase(address: string, network: string, freshData: any, token: string) {

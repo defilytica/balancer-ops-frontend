@@ -44,47 +44,44 @@ export async function GET(request: NextRequest) {
     const factoryData = await factoryResponse.json();
     console.log(factoryData);
 
-    let allInjectors = [];
+    // Process all injectors in parallel
+    const injectorPromises = factoryData.flatMap(
+      (networkData: { network: string; deployedInjectors: string[] }) => {
+        const { network, deployedInjectors } = networkData;
 
-    for (const networkData of factoryData) {
-      const { network, deployedInjectors } = networkData;
-
-      for (const injectorAddress of deployedInjectors) {
-        // Check if we have cached data for this injector
-        const cachedInjector = await prisma.injector.findUnique({
-          where: {
-            network_address: {
-              network,
-              address: injectorAddress,
+        return deployedInjectors.map(async (injectorAddress: string) => {
+          // Check if we have cached data for this injector
+          const cachedInjector = await prisma.injector.findUnique({
+            where: {
+              network_address: {
+                network,
+                address: injectorAddress,
+              },
             },
-          },
-          include: { tokenInfo: true, gauges: true },
-        });
+            include: { tokenInfo: true, gauges: true },
+          });
 
-        const shouldFetchFreshData =
-          forceReload ||
-          !cachedInjector ||
-          Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
+          const shouldFetchFreshData =
+            forceReload ||
+            !cachedInjector ||
+            Date.now() - cachedInjector.updatedAt.getTime() > CACHE_DURATION;
 
-        let injectorData;
-
-        if (shouldFetchFreshData) {
-          console.log(`Fetching fresh data for injector ${injectorAddress} on ${network}...`);
-          const freshData = await fetchFreshDataV2(injectorAddress, network);
-          // Update the database with fresh data
-          if (freshData) {
-            injectorData = await updateDatabaseV2(injectorAddress, network, freshData);
+          if (shouldFetchFreshData) {
+            console.log(`Fetching fresh data for injector ${injectorAddress} on ${network}...`);
+            const freshData = await fetchFreshDataV2(injectorAddress, network);
+            // Update the database with fresh data
+            if (freshData) {
+              return await updateDatabaseV2(injectorAddress, network, freshData);
+            }
           }
-        } else {
-          injectorData = cachedInjector;
-        }
-        if (injectorData) {
-          allInjectors.push(injectorData);
-        }
-      }
-    }
+          return cachedInjector;
+        });
+      },
+    );
 
-    return NextResponse.json(allInjectors);
+    // filter all null values
+    const results = (await Promise.all(injectorPromises)).filter(Boolean);
+    return NextResponse.json(results);
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: "An error occurred while fetching data" }, { status: 500 });
@@ -96,6 +93,7 @@ async function fetchFreshDataV2(address: string, network: string) {
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const contract = new ethers.Contract(address, InjectorABIV2, provider);
   try {
+    // Batch all contract calls into a single multicall
     const [
       activeGaugeList,
       injectTokenAddress,
@@ -114,22 +112,22 @@ async function fetchFreshDataV2(address: string, network: string) {
       contract.MaxTotalDue(),
     ]);
 
+    // First fetch token info since it's needed for gauge info
     const tokenInfo = await fetchTokenInfo(injectTokenAddress, provider);
-    const gauges = await fetchGaugeInfoV2(
-      activeGaugeList,
-      contract,
-      provider,
-      injectTokenAddress,
-      address,
-      network,
-      tokenInfo.decimals,
-    );
-    const contractBalance = await getInjectTokenBalanceForAddress(
-      injectTokenAddress,
-      address,
-      provider,
-      tokenInfo.decimals,
-    );
+
+    // Then fetch gauge info and contract balance in parallel
+    const [gauges, contractBalance] = await Promise.all([
+      fetchGaugeInfoV2(
+        activeGaugeList,
+        contract,
+        provider,
+        injectTokenAddress,
+        address,
+        network,
+        tokenInfo.decimals,
+      ),
+      getInjectTokenBalanceForAddress(injectTokenAddress, address, provider, tokenInfo.decimals),
+    ]);
 
     return {
       tokenInfo,
