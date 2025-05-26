@@ -30,7 +30,7 @@ const RewardsInjectorStatusPage = () => {
   const [error, setError] = useState(null);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [hideStale, setHideStale] = useState(false);
-  const [isV2, setIsV2] = useState(false);
+  const [isV2, setIsV2] = useState(true);
   const toast = useToast();
 
   const processInjectorData = (injector: any) => {
@@ -132,14 +132,31 @@ const RewardsInjectorStatusPage = () => {
         return processed;
       });
 
-      // Sort injectors with issues first
+      // Sort injectors with a multi-criteria approach:
+      // 1. Issues first
+      // 2. Most recent injection activity
       const sortedData = processedData.sort((a: any, b: any) => {
         const aHasIssues = a.additionalTokensRequired > 0 || a.incorrectlySetupGauges.length > 0;
         const bHasIssues = b.additionalTokensRequired > 0 || b.incorrectlySetupGauges.length > 0;
 
+        // First priority: injectors with issues
         if (aHasIssues && !bHasIssues) return -1;
         if (!aHasIssues && bHasIssues) return 1;
-        return 0;
+
+        // Second priority: sort by most recent injection activity
+        // Get the most recent injection timestamp from all gauges for each injector
+        const getMostRecentInjection = (injector: any) => {
+          if (!injector.gauges || injector.gauges.length === 0) return 0;
+          return Math.max(
+            ...injector.gauges.map((gauge: any) => parseInt(gauge.lastInjectionTimeStamp, 10) || 0),
+          );
+        };
+
+        const aMostRecent = getMostRecentInjection(a);
+        const bMostRecent = getMostRecentInjection(b);
+
+        // Sort by most recent injection timestamp (descending - most recent first)
+        return bMostRecent - aMostRecent;
       });
 
       setInjectorsData(sortedData);

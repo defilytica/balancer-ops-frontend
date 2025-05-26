@@ -703,9 +703,13 @@ export type GqlPoolDynamicData = {
   apr: GqlPoolApr;
   aprItems: Array<GqlPoolAprItem>;
   fees24h: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   fees24hAth: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   fees24hAthTimestamp: Scalars['Int']['output'];
+  /** @deprecated No longer supported */
   fees24hAtl: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   fees24hAtlTimestamp: Scalars['Int']['output'];
   fees48h: Scalars['BigDecimal']['output'];
   holdersCount: Scalars['BigInt']['output'];
@@ -719,9 +723,13 @@ export type GqlPoolDynamicData = {
   protocolFees48h: Scalars['BigDecimal']['output'];
   protocolYieldCapture24h: Scalars['BigDecimal']['output'];
   protocolYieldCapture48h: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   sharePriceAth: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   sharePriceAthTimestamp: Scalars['Int']['output'];
+  /** @deprecated No longer supported */
   sharePriceAtl: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   sharePriceAtlTimestamp: Scalars['Int']['output'];
   /** CowAmm specific, equivalent of swap fees */
   surplus24h: Scalars['BigDecimal']['output'];
@@ -733,17 +741,25 @@ export type GqlPoolDynamicData = {
   swapsCount: Scalars['BigInt']['output'];
   totalLiquidity: Scalars['BigDecimal']['output'];
   totalLiquidity24hAgo: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   totalLiquidityAth: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   totalLiquidityAthTimestamp: Scalars['Int']['output'];
+  /** @deprecated No longer supported */
   totalLiquidityAtl: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   totalLiquidityAtlTimestamp: Scalars['Int']['output'];
   totalShares: Scalars['BigDecimal']['output'];
   totalShares24hAgo: Scalars['BigDecimal']['output'];
   totalSupply: Scalars['BigDecimal']['output'];
   volume24h: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   volume24hAth: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   volume24hAthTimestamp: Scalars['Int']['output'];
+  /** @deprecated No longer supported */
   volume24hAtl: Scalars['BigDecimal']['output'];
+  /** @deprecated No longer supported */
   volume24hAtlTimestamp: Scalars['Int']['output'];
   volume48h: Scalars['BigDecimal']['output'];
   yieldCapture24h: Scalars['BigDecimal']['output'];
@@ -2722,7 +2738,6 @@ export type Mutation = {
   poolSyncAllCowSnapshots: Array<GqlPoolMutationResult>;
   poolSyncAllPoolsFromSubgraph: Array<Scalars['String']['output']>;
   poolSyncFxQuoteTokens: Array<GqlPoolMutationResult>;
-  poolUpdateLifetimeValuesForAllPools: Scalars['String']['output'];
   poolUpdateLiquidityValuesForAllPools: Scalars['String']['output'];
   protocolCacheMetrics: Scalars['String']['output'];
   sftmxSyncStakingData: Scalars['String']['output'];
@@ -2967,10 +2982,16 @@ export type Query = {
   tokenGetTokensDynamicData: Array<GqlTokenDynamicData>;
   userGetFbeetsBalance: GqlUserFbeetsBalance;
   userGetPoolBalances: Array<GqlUserPoolBalance>;
-  /** Will de deprecated in favor of poolGetEvents */
+  /**
+   * Will de deprecated in favor of poolGetEvents
+   * @deprecated Use poolEvents instead
+   */
   userGetPoolJoinExits: Array<GqlPoolJoinExit>;
   userGetStaking: Array<GqlPoolStaking>;
-  /** Will de deprecated in favor of poolGetEvents */
+  /**
+   * Will de deprecated in favor of poolGetEvents
+   * @deprecated Use poolEvents instead
+   */
   userGetSwaps: Array<GqlPoolSwap>;
   veBalGetTotalSupply: Scalars['AmountHumanReadable']['output'];
   veBalGetUser: GqlVeBalUserData;
