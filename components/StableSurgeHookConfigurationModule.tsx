@@ -77,7 +77,6 @@ export default function StableSurgeHookConfigurationModule({
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
-  const [prefillValues, setPrefillValues] = useState<Record<string, string>>({});
 
   // Create debounced versions of the state values
   const [debouncedMaxSurgeFeePercentage] = useDebounce(newMaxSurgeFeePercentage, 300);
@@ -181,7 +180,6 @@ export default function StableSurgeHookConfigurationModule({
       prefillPrName: `Update StableSurge Hook Parameters for ${poolName} on ${networkName}`,
       prefillDescription: `This PR ${changes.join(" and ")} for ${poolName} (${shortPoolId}) on ${networkName}.`,
       prefillFilename: filename,
-      prefillNetwork: selectedNetwork,
     };
   }, [selectedNetwork, debouncedMaxSurgeFeePercentage, debouncedSurgeThresholdPercentage]);
 

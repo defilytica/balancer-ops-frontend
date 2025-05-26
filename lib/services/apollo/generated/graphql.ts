@@ -2738,7 +2738,6 @@ export type Mutation = {
   poolSyncAllCowSnapshots: Array<GqlPoolMutationResult>;
   poolSyncAllPoolsFromSubgraph: Array<Scalars['String']['output']>;
   poolSyncFxQuoteTokens: Array<GqlPoolMutationResult>;
-  poolUpdateLifetimeValuesForAllPools: Scalars['String']['output'];
   poolUpdateLiquidityValuesForAllPools: Scalars['String']['output'];
   protocolCacheMetrics: Scalars['String']['output'];
   sftmxSyncStakingData: Scalars['String']['output'];
@@ -2983,10 +2982,16 @@ export type Query = {
   tokenGetTokensDynamicData: Array<GqlTokenDynamicData>;
   userGetFbeetsBalance: GqlUserFbeetsBalance;
   userGetPoolBalances: Array<GqlUserPoolBalance>;
-  /** Will de deprecated in favor of poolGetEvents */
+  /**
+   * Will de deprecated in favor of poolGetEvents
+   * @deprecated Use poolEvents instead
+   */
   userGetPoolJoinExits: Array<GqlPoolJoinExit>;
   userGetStaking: Array<GqlPoolStaking>;
-  /** Will de deprecated in favor of poolGetEvents */
+  /**
+   * Will de deprecated in favor of poolGetEvents
+   * @deprecated Use poolEvents instead
+   */
   userGetSwaps: Array<GqlPoolSwap>;
   veBalGetTotalSupply: Scalars['AmountHumanReadable']['output'];
   veBalGetUser: GqlVeBalUserData;

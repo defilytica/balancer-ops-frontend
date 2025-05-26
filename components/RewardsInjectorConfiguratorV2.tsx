@@ -119,12 +119,6 @@ function RewardsInjectorConfiguratorV2({
     },
   ]);
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
-  const [prefillValues, setPrefillValues] = useState<{
-    prefillBranchName?: string;
-    prefillPrName?: string;
-    prefillDescription?: string;
-    prefillFilename?: string;
-  }>({});
 
   // Define Transaction type to fix TypeScript errors
   // Removed custom Transaction type in favor of imported one
