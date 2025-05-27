@@ -54,6 +54,7 @@ import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
 import { useValidateStableSurge } from "@/lib/hooks/validation/useValidateStableSurge";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 // Type guard for StableSurgeHookParams
 export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
@@ -130,6 +131,57 @@ export default function StableSurgeHookConfigurationModule({
     variables: { chainIn: [selectedNetwork as any], tagIn: ["HOOKS_STABLESURGE"] },
     skip: !selectedNetwork,
   });
+
+  const getPrefillValues = useCallback(() => {
+    // Make sure we have a selected pool and at least one parameter changed
+    if (!selectedPool || (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage))
+      return {};
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Create a truncated version of the pool address for the branch name
+    const shortPoolId = selectedPool.address.substring(0, 8);
+
+    // Get pool name for the description
+    const poolName = selectedPool.name;
+
+    // Create parameter change descriptions
+    const changes = [];
+    if (debouncedMaxSurgeFeePercentage) {
+      const newMaxFee = parseFloat(debouncedMaxSurgeFeePercentage);
+      const maxFeeChangeDirection = newMaxFee > currentMaxSurgeFee ? "increase" : "decrease";
+      changes.push(
+        `${maxFeeChangeDirection}s the max surge fee from ${currentMaxSurgeFee.toFixed(2)}% to ${newMaxFee.toFixed(2)}%`,
+      );
+    }
+
+    if (debouncedSurgeThresholdPercentage) {
+      const newThreshold = parseFloat(debouncedSurgeThresholdPercentage);
+      const thresholdChangeDirection =
+        newThreshold > currentSurgeThreshold ? "increase" : "decrease";
+      changes.push(
+        `${thresholdChangeDirection}s the surge threshold from ${currentSurgeThreshold.toFixed(2)}% to ${newThreshold.toFixed(2)}%`,
+      );
+    }
+
+    // Find the network option for the chain ID
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+    const networkName = networkOption?.label || selectedNetwork;
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
+
+    // Create the filename with network included
+    const filename = networkPath + `/stable-surge-params-${selectedPool.address}-${uniqueId}.json`;
+
+    // Add the network to the OpenPRButton
+    // This ensures the network is passed to the PR modal
+    return {
+      prefillBranchName: `feature/stable-surge-params-${shortPoolId}-${uniqueId}`,
+      prefillPrName: `Update StableSurge Hook Parameters for ${poolName} on ${networkName}`,
+      prefillDescription: `This PR ${changes.join(" and ")} for ${poolName} (${shortPoolId}) on ${networkName}.`,
+      prefillFilename: filename,
+    };
+  }, [selectedNetwork, debouncedMaxSurgeFeePercentage, debouncedSurgeThresholdPercentage]);
 
   const resolveMultisig = useCallback(
     (network: string) => getMultisigForNetwork(addressBook, network),
@@ -646,6 +698,8 @@ export default function StableSurgeHookConfigurationModule({
             isOpen={isOpen}
             onClose={onClose}
             payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+            network={selectedNetwork}
+            {...getPrefillValues()}
           />
         </Box>
       )}
