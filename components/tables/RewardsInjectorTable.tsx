@@ -17,8 +17,21 @@ import {
   useMediaQuery,
   Badge,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon, TriangleDownIcon, TriangleUpIcon } from "@chakra-ui/icons";
+import {
+  ExternalLinkIcon,
+  TriangleDownIcon,
+  TriangleUpIcon,
+  WarningIcon,
+  CheckCircleIcon,
+} from "@chakra-ui/icons";
+import { BiTimeFive } from "react-icons/bi";
 import { networks } from "@/constants/constants";
+
+export enum GaugeStatus {
+  OK = "OK",
+  COMPLETED = "Completed",
+  WARNING = "Warning",
+}
 
 export interface RewardsInjectorData {
   gaugeAddress: string;
@@ -66,6 +79,43 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
     if (a[sortColumn] > b[sortColumn]) return sortDirection === "asc" ? 1 : -1;
     return 0;
   });
+
+  // Calculate gauge status
+  const getGaugeStatus = (gauge: RewardsInjectorData): GaugeStatus => {
+    const now = Math.floor(Date.now() / 1000);
+    const oneDayInSeconds = 24 * 60 * 60;
+    const twoWeeksAgo = now - 14 * oneDayInSeconds;
+
+    const timestamp = parseInt(gauge.lastInjectionTimeStamp, 10);
+    if (timestamp === 0 || timestamp === null) return GaugeStatus.OK;
+
+    // Check if gauge is expired (last injection was more than 2 weeks ago)
+    if (timestamp > 0 && timestamp < twoWeeksAgo) {
+      return GaugeStatus.COMPLETED;
+    }
+
+    // Check if gauge is approaching expiration (within 48h of reaching 7 days since last injection)
+    const expiryTime = timestamp + 7 * oneDayInSeconds;
+    const timeUntilExpiry = expiryTime - now;
+    if (timeUntilExpiry > 0 && timeUntilExpiry <= 2 * oneDayInSeconds) {
+      return GaugeStatus.WARNING;
+    }
+
+    return GaugeStatus.OK;
+  };
+
+  // Utility to get status colors
+  const getStatusColor = (status: GaugeStatus) => {
+    switch (status) {
+      case GaugeStatus.COMPLETED:
+        return { bg: "red.700", hoverBg: "red.500" };
+      case GaugeStatus.WARNING:
+        return { bg: "yellow.600", hoverBg: "yellow.500" };
+      case GaugeStatus.OK:
+      default:
+        return { bg: "green.700", hoverBg: "green.600" };
+    }
+  };
 
   // Unified date formatter for table view
   const formatTimestamp = (timestamp: string) => {
@@ -136,36 +186,90 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
             <Th>
               <SortableHeader column="lastInjectionTimeStamp" label="Last Injection" />
             </Th>
+
             {isV2 && (
               <Th>
                 <SortableHeader column="doNotStartBeforeTimestamp" label="Starts At" />
               </Th>
             )}
+            <Th>
+              <Text fontWeight="bold" fontSize="sm" textAlign="center">
+                Status
+              </Text>
+            </Th>
           </Tr>
         </Thead>
         <Tbody>
-          {sortedData.map((row, index) => (
-            <Tr key={index}>
-              <Td fontWeight="medium">{row.poolName}</Td>
-              <Td>
-                <AddressLink address={row.gaugeAddress} />
-              </Td>
-              <Td isNumeric>{Number(row.amountPerPeriod).toFixed(2)}</Td>
-              <Td isNumeric>
-                <Badge colorScheme="blue">
-                  {row.periodNumber}/{row.maxPeriods}
-                </Badge>
-              </Td>
-              <Td fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Td>
-              {isV2 && (
-                <Td fontSize="sm">
-                  {row.doNotStartBeforeTimestamp
-                    ? formatTimestamp(row.doNotStartBeforeTimestamp)
-                    : "-"}
+          {sortedData.map((row, index) => {
+            const status = getGaugeStatus(row);
+            return (
+              <Tr key={index}>
+                <Td fontWeight="medium">{row.poolName}</Td>
+                <Td>
+                  <AddressLink address={row.gaugeAddress} />
                 </Td>
-              )}
-            </Tr>
-          ))}
+                <Td isNumeric>{Number(row.amountPerPeriod).toFixed(2)}</Td>
+                <Td isNumeric>
+                  <Badge colorScheme="blue">
+                    {row.periodNumber}/{row.maxPeriods}
+                  </Badge>
+                </Td>
+                <Td fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Td>
+
+                {isV2 && (
+                  <Td fontSize="sm">
+                    {row.doNotStartBeforeTimestamp
+                      ? formatTimestamp(row.doNotStartBeforeTimestamp)
+                      : "-"}
+                  </Td>
+                )}
+                <Td>
+                  <Flex justify="center">
+                    <Tooltip
+                      label={
+                        status === GaugeStatus.COMPLETED
+                          ? "This gauge is completed and is no longer distributing rewards"
+                          : status === GaugeStatus.WARNING
+                            ? "This gauge is about to expire"
+                            : status === GaugeStatus.OK
+                              ? "This gauge is active and distributing rewards"
+                              : undefined
+                      }
+                    >
+                      {(() => {
+                        const { bg, hoverBg } = getStatusColor(status);
+                        return (
+                          <Box
+                            bg={bg}
+                            color="white"
+                            px={2}
+                            py={0.5}
+                            borderRadius="lg"
+                            cursor="pointer"
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                            _hover={{ bg: hoverBg }}
+                          >
+                            {status === GaugeStatus.COMPLETED ? (
+                              <BiTimeFive size={14} />
+                            ) : status === GaugeStatus.WARNING ? (
+                              <WarningIcon boxSize={3} />
+                            ) : status === GaugeStatus.OK ? (
+                              <CheckCircleIcon boxSize={3} />
+                            ) : null}
+                            <Text fontSize="xs" fontWeight="medium">
+                              {status}
+                            </Text>
+                          </Box>
+                        );
+                      })()}
+                    </Tooltip>
+                  </Flex>
+                </Td>
+              </Tr>
+            );
+          })}
         </Tbody>
       </Table>
     </Box>
@@ -173,37 +277,85 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
 
   const mobileLayout = (
     <Box width="100%">
-      {sortedData.map((row, index) => (
-        <Card key={index} p={3} mb={3} borderLeft="4px solid" borderLeftColor="blue.400">
-          <Flex direction="column" gap={2}>
-            <Flex justify="space-between" align="center">
-              <Text fontWeight="bold">{row.poolName}</Text>
-              <Badge colorScheme="blue">
-                {row.periodNumber}/{row.maxPeriods}
-              </Badge>
-            </Flex>
+      {sortedData.map((row, index) => {
+        const status = getGaugeStatus(row);
+        return (
+          <Card key={index} p={3} mb={3} borderLeft="4px solid" borderLeftColor="blue.400">
+            <Flex direction="column" gap={2}>
+              <Flex justify="space-between" align="center">
+                <Text fontWeight="bold">{row.poolName}</Text>
+                <Badge colorScheme="blue">
+                  {row.periodNumber}/{row.maxPeriods}
+                </Badge>
+              </Flex>
 
-            <AddressLink address={row.gaugeAddress} />
+              <AddressLink address={row.gaugeAddress} />
 
-            <HStack justify="space-between">
-              <Text fontSize="sm">Amount:</Text>
-              <Text fontWeight="medium">{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Text>
-            </HStack>
-
-            <HStack justify="space-between">
-              <Text fontSize="sm">Last Injection:</Text>
-              <Text fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Text>
-            </HStack>
-
-            {isV2 && row.doNotStartBeforeTimestamp && (
               <HStack justify="space-between">
-                <Text fontSize="sm">Starts At:</Text>
-                <Text fontSize="sm">{formatTimestamp(row.doNotStartBeforeTimestamp)}</Text>
+                <Text fontSize="sm">Amount:</Text>
+                <Text fontWeight="medium">{`${Number(row.amountPerPeriod).toFixed(2)} ${tokenSymbol}`}</Text>
               </HStack>
-            )}
-          </Flex>
-        </Card>
-      ))}
+
+              <HStack justify="space-between">
+                <Text fontSize="sm">Last Injection:</Text>
+                <Text fontSize="sm">{formatTimestamp(row.lastInjectionTimeStamp)}</Text>
+              </HStack>
+
+              {isV2 && row.doNotStartBeforeTimestamp && (
+                <HStack justify="space-between">
+                  <Text fontSize="sm">Starts At:</Text>
+                  <Text fontSize="sm">{formatTimestamp(row.doNotStartBeforeTimestamp)}</Text>
+                </HStack>
+              )}
+              <HStack justify="space-between">
+                <Text fontSize="sm">Status:</Text>
+                <Flex justify="center">
+                  <Tooltip
+                    label={
+                      status === GaugeStatus.COMPLETED
+                        ? "This gauge is completed and is no longer distributing rewards"
+                        : status === GaugeStatus.WARNING
+                          ? "This gauge is about to expire"
+                          : status === GaugeStatus.OK
+                            ? "This gauge is active and distributing rewards"
+                            : undefined
+                    }
+                  >
+                    {(() => {
+                      const { bg, hoverBg } = getStatusColor(status);
+                      return (
+                        <Box
+                          bg={bg}
+                          color="white"
+                          px={2}
+                          py={0.5}
+                          borderRadius="lg"
+                          cursor="pointer"
+                          display="flex"
+                          alignItems="center"
+                          gap={1}
+                          _hover={{ bg: hoverBg }}
+                        >
+                          {status === GaugeStatus.COMPLETED ? (
+                            <BiTimeFive size={14} />
+                          ) : status === GaugeStatus.WARNING ? (
+                            <WarningIcon boxSize={3} />
+                          ) : status === GaugeStatus.OK ? (
+                            <CheckCircleIcon boxSize={3} />
+                          ) : null}
+                          <Text fontSize="xs" fontWeight="medium">
+                            {status}
+                          </Text>
+                        </Box>
+                      );
+                    })()}
+                  </Tooltip>
+                </Flex>
+              </HStack>
+            </Flex>
+          </Card>
+        );
+      })}
     </Box>
   );
 

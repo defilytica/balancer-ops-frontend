@@ -2,7 +2,7 @@
 
 import React from "react";
 import {
-  Card as ChakraCard,
+  Card,
   CardHeader,
   CardBody,
   CardFooter,
@@ -10,21 +10,20 @@ import {
   VStack,
   HStack,
   Text,
-  Heading,
   Alert,
   AlertTitle,
   AlertDescription,
   useColorModeValue,
-  IconButton,
   Image,
   Progress,
   Button,
   Box,
+  Tooltip,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, WarningIcon } from "@chakra-ui/icons";
 import Link from "next/link";
-import { calculateDistributionAmounts, formatTokenName } from "@/lib/data/injector/helpers";
-import { colors } from "@/lib/services/chakra/themes/base/colors";
+import { formatTokenName } from "@/lib/data/injector/helpers";
+import { BiTimeFive } from "react-icons/bi";
 
 interface TokenInfo {
   symbol: string;
@@ -47,6 +46,8 @@ interface RewardsInjectorData {
   remaining: number;
   additionalTokensRequired: number;
   incorrectlySetupGauges: string[];
+  hasGaugesNearExpiration?: boolean;
+  hasExpiredGauges?: boolean;
 }
 
 interface RewardsInjectorCardProps {
@@ -67,6 +68,8 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
     remaining,
     additionalTokensRequired,
     incorrectlySetupGauges,
+    hasGaugesNearExpiration,
+    hasExpiredGauges,
   } = data;
 
   const formatAmount = (amount: number | string): string => {
@@ -74,43 +77,97 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
   };
 
   const distributedPercentage = total > 0 ? (distributed / total) * 100 : 0;
-  const remainingPercentage = (remaining / total) * 100;
 
   const explorerUrl = `${network}/${address}?version=${v2 ? "v2" : "v1"}`;
 
   return (
-    <ChakraCard align="center" boxShadow="md" borderRadius="md">
-      <CardHeader w="full">
+    <Card
+      align="center"
+      boxShadow="md"
+      borderRadius="lg"
+      p={{ base: 2, md: 4 }}
+      borderWidth={1}
+      transition="all 0.2s"
+      borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
+    >
+      <CardHeader w="full" pb={4}>
         <Flex align="center" justify="space-between" w="full">
-          <Flex align="center" gap={2} flex="1">
+          <HStack align="center">
             {networks[network] && (
               <Flex
-                w={10}
-                h={10}
+                w={8}
+                h={8}
                 align="center"
                 justify="center"
                 color="white"
                 rounded="full"
                 flexShrink={0}
+                bg={useColorModeValue("gray.200", "gray.700")}
               >
-                <Image src={networks[network].logo} alt={`${network} logo`} boxSize="18px" />
+                <Image src={networks[network].logo} alt={`${network} logo`} boxSize="24px" />
               </Flex>
             )}
-            <Text size="md" variant="secondary" isTruncated maxWidth="calc(100% - 30px)">
-              {formatTokenName(token)}
-            </Text>
-          </Flex>
-          <IconButton
-            aria-label="View on explorer"
-            as="a"
-            href={explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            size="sm"
-            icon={<ExternalLinkIcon />}
-            variant="ghost"
-            ml="auto"
-          />
+            <VStack align="start" spacing={0}>
+              <HStack spacing={2} align="center">
+                <Link href={`rewards-injector/${address}`} passHref legacyBehavior>
+                  <Text
+                    as="a"
+                    variant="secondary"
+                    fontWeight="bold"
+                    fontSize="lg"
+                    noOfLines={2}
+                    _hover={{ color: "gray.300", textDecoration: "none", cursor: "pointer" }}
+                  >
+                    {formatTokenName(token)}
+                  </Text>
+                </Link>
+              </HStack>
+            </VStack>
+          </HStack>
+          <VStack spacing={2} ml="auto">
+            {hasExpiredGauges && (
+              <Tooltip label="Some gauges are expired and are no longer distributing rewards">
+                <Box
+                  bg="red.700"
+                  color="white"
+                  px={2}
+                  py={0.5}
+                  borderRadius="lg"
+                  cursor="pointer"
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  _hover={{ bg: "red.500" }}
+                >
+                  <BiTimeFive size={14} />
+                  <Text fontSize="xs" fontWeight="medium">
+                    Expired
+                  </Text>
+                </Box>
+              </Tooltip>
+            )}
+            {hasGaugesNearExpiration && (
+              <Tooltip label="Some gauges are about to expire">
+                <Box
+                  bg="yellow.600"
+                  color="white"
+                  px={2}
+                  py={0.5}
+                  borderRadius="lg"
+                  cursor="pointer"
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  _hover={{ bg: "yellow.500" }}
+                >
+                  <WarningIcon boxSize={3} />
+                  <Text fontSize="xs" fontWeight="medium">
+                    Warning
+                  </Text>
+                </Box>
+              </Tooltip>
+            )}
+          </VStack>
         </Flex>
       </CardHeader>
 
@@ -121,17 +178,35 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
             <Text textAlign="right">{tokenInfo.symbol}</Text>
           </HStack>
 
-          <Box>
-            <Text fontWeight="bold" mb={2}>
-              Distribution Progress
-            </Text>
-            <Progress value={distributedPercentage} size="md" colorScheme="green" mb={2} />
-            <HStack justify="space-between">
-              <Text fontSize="sm">
-                {formatAmount(distributed)} / {formatAmount(total)} {tokenInfo.symbol}
-              </Text>
-              <Text fontSize="sm" fontWeight="medium">
-                {distributedPercentage.toFixed(1)}%
+          <Box w="full">
+            <HStack w="full" justify="space-between" mb={1}>
+              <VStack align="start" spacing={0} minW="80px">
+                <Text fontSize="xs" color="gray.400">
+                  Distributed
+                </Text>
+                <Text fontWeight="bold" fontSize="lg">
+                  {formatAmount(distributed)}
+                </Text>
+              </VStack>
+              <VStack align="end" spacing={0} minW="80px">
+                <Text fontSize="xs" color="gray.400">
+                  Remaining
+                </Text>
+                <Text fontWeight="bold" fontSize="lg">
+                  {formatAmount(remaining)}
+                </Text>
+              </VStack>
+            </HStack>
+            <Progress
+              value={distributedPercentage}
+              size="sm"
+              colorScheme="teal"
+              borderRadius="sm"
+              height="3"
+            />
+            <HStack justify="flex-end" w="full" mt={1}>
+              <Text fontSize="sm" color="gray.400">
+                {distributedPercentage.toFixed(1)}% distributed
               </Text>
             </HStack>
           </Box>
@@ -171,7 +246,22 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
       <CardFooter>
         {incorrectlySetupGauges.length > 0 ? (
           <Link href={`rewards-injector/${address}`} legacyBehavior>
-            <Button variant="secondary" rightIcon={<ExternalLinkIcon />}>
+            {/* Create a separate style if needed anywhere else */}
+            <Button
+              as="a"
+              variant="outline"
+              borderColor={useColorModeValue("gray.400", "brown.200")}
+              color={useColorModeValue("gray.700", "brown.100")}
+              rightIcon={<ExternalLinkIcon />}
+              target="_blank"
+              rel="noopener noreferrer"
+              _hover={{
+                bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
+                borderColor: useColorModeValue("gray.600", "brown.100"),
+                color: useColorModeValue("black", "brown.200"),
+              }}
+              size="md"
+            >
               More Information
             </Button>
           </Link>
@@ -179,17 +269,25 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
           <Link href={explorerUrl} passHref legacyBehavior>
             <Button
               as="a"
-              variant="secondary"
+              variant="outline"
+              borderColor={useColorModeValue("gray.400", "brown.200")}
+              color={useColorModeValue("gray.700", "brown.100")}
               rightIcon={<ExternalLinkIcon />}
               target="_blank"
               rel="noopener noreferrer"
+              _hover={{
+                bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
+                borderColor: useColorModeValue("gray.600", "brown.100"),
+                color: useColorModeValue("black", "brown.200"),
+              }}
+              size="md"
             >
               View Details
             </Button>
           </Link>
         )}
       </CardFooter>
-    </ChakraCard>
+    </Card>
   );
 };
 
