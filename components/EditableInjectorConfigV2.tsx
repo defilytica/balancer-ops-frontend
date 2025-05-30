@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   VStack,
@@ -52,6 +52,13 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
       rawAmountPerPeriod: "0",
     },
   );
+
+  // Update local state when initialData changes (for copy configuration functionality)
+  useEffect(() => {
+    if (initialData) {
+      setConfig(initialData);
+    }
+  }, [initialData]);
 
   const convertToRawAmount = (amount: string): string => {
     try {

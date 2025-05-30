@@ -16,8 +16,9 @@ import {
   Alert,
   AlertIcon,
   Divider,
+  IconButton,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon, CopyIcon } from "@chakra-ui/icons";
 
 interface RewardsInjectorData {
   gaugeAddress: string;
@@ -34,11 +35,19 @@ interface RewardsInjectorConfigurationViewerV2Props {
   data: RewardsInjectorData[];
   tokenSymbol: string;
   tokenDecimals: number;
+  onCopyConfiguration?: (config: {
+    gaugeAddress: string;
+    amountPerPeriod: string;
+    rawAmountPerPeriod: string;
+    maxPeriods: string;
+    doNotStartBeforeTimestamp: string;
+  }) => void;
+  showCopyButtons?: boolean;
 }
 
 export const RewardsInjectorConfigurationViewerV2: React.FC<
   RewardsInjectorConfigurationViewerV2Props
-> = ({ data, tokenSymbol, tokenDecimals }) => {
+> = ({ data, tokenSymbol, tokenDecimals, onCopyConfiguration, showCopyButtons = false }) => {
   const bgColor = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
@@ -57,13 +66,25 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
     }
   };
 
+  const handleCopyConfiguration = (gauge: RewardsInjectorData) => {
+    if (onCopyConfiguration) {
+      onCopyConfiguration({
+        gaugeAddress: gauge.gaugeAddress,
+        amountPerPeriod: gauge.amountPerPeriod,
+        rawAmountPerPeriod: gauge.rawAmountPerPeriod,
+        maxPeriods: gauge.maxPeriods,
+        doNotStartBeforeTimestamp: "0",
+      });
+    }
+  };
+
   return (
     <Card variant="outline" width="full">
       <CardHeader>
         <Heading size="md">Current Gauge Configurations</Heading>
       </CardHeader>
       <CardBody>
-        <VStack spacing={6} align="stretch">
+        <VStack align="stretch">
           {!data || data.length === 0 ? (
             <Alert status="info" borderRadius="md">
               <AlertIcon />
@@ -74,25 +95,44 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
               <Box key={gauge.gaugeAddress}>
                 {index > 0 && <Divider my={4} />}
                 <VStack spacing={4} align="stretch">
-                  <HStack
-                    bg={bgColor}
-                    p={4}
-                    borderRadius="md"
-                    justify="space-between"
-                    borderWidth="1px"
-                    borderColor={borderColor}
-                  >
-                    <VStack align="start" spacing={1}>
-                      <Text fontFamily="mono">{gauge.gaugeAddress}</Text>
-                      <Text fontSize="sm" color={mutedTextColor}>
-                        {gauge.poolName}
+                  <Box>
+                    <HStack justifyContent="space-between" alignItems="center" mb={2}>
+                      <Text fontWeight="medium" color={mutedTextColor}>
+                        Recipient
                       </Text>
-                    </VStack>
-                    <Badge colorScheme={gauge.isRewardTokenSetup ? "green" : "yellow"}>
-                      {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
-                    </Badge>
-                  </HStack>
+                      {showCopyButtons && onCopyConfiguration && (
+                        <Tooltip label="Copy configuration to empty group or create new group">
+                          <IconButton
+                            aria-label="Copy configuration"
+                            icon={<CopyIcon />}
+                            size="md"
+                            variant="ghost"
+                            // colorScheme="blue"
+                            onClick={() => handleCopyConfiguration(gauge)}
+                          />
+                        </Tooltip>
+                      )}
+                    </HStack>
+                    <HStack
+                      bg={bgColor}
+                      p={4}
+                      borderRadius="md"
+                      justify="space-between"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                    >
+                      <VStack align="start" spacing={1}>
+                        <Text fontFamily="mono">{gauge.gaugeAddress}</Text>
+                        <Text fontSize="sm" color={mutedTextColor}>
+                          {gauge.poolName}
+                        </Text>
+                      </VStack>
 
+                      <Badge colorScheme={gauge.isRewardTokenSetup ? "green" : "yellow"}>
+                        {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
+                      </Badge>
+                    </HStack>
+                  </Box>
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                     <Box>
                       <Text fontWeight="medium" mb={2} color={mutedTextColor}>

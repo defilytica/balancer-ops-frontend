@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -29,6 +29,9 @@ import {
   useDisclosure,
   useMediaQuery,
   useToast,
+  Badge,
+  HStack,
+  Tooltip,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -38,6 +41,8 @@ import {
   DownloadIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons";
+import { AiOutlineClear } from "react-icons/ai";
+
 import { AddressOption } from "@/types/interfaces";
 import SimulateTransactionButton, {
   BatchFile,
@@ -170,30 +175,47 @@ function RewardsInjectorConfiguratorV2({
   // Remove a config group
   const removeConfigGroup = (configId: string) => {
     if (operation === "add") {
-      if (addConfigs.length <= 1) {
-        toast({
-          title: "Cannot Remove",
-          description: "You must have at least one configuration.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
       setAddConfigs(prev => prev.filter(config => config.id !== configId));
     } else if (operation === "remove") {
-      if (removeConfigs.length <= 1) {
-        toast({
-          title: "Cannot Remove",
-          description: "You must have at least one configuration.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
       setRemoveConfigs(prev => prev.filter(config => config.id !== configId));
     }
+
+    toast({
+      title: "Configuration Deleted",
+      description: "Configuration group has been removed.",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  // Clear a config group (empty all fields but keep the group)
+  const clearConfigGroup = (configId: string) => {
+    const emptyData: EditableRecipientConfigData = {
+      recipients: [""],
+      amountPerPeriod: "",
+      maxPeriods: "",
+      doNotStartBeforeTimestamp: "0",
+      rawAmountPerPeriod: "0",
+    };
+
+    if (operation === "add") {
+      setAddConfigs(prev =>
+        prev.map(config => (config.id === configId ? { ...emptyData, id: configId } : config)),
+      );
+    } else if (operation === "remove") {
+      setRemoveConfigs(prev =>
+        prev.map(config => (config.id === configId ? { ...emptyData, id: configId } : config)),
+      );
+    }
+
+    toast({
+      title: "Configuration Cleared",
+      description: "All fields have been cleared for this configuration group.",
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
   const calculateCurrentDistribution = (gauges: RewardsInjectorData[]) => {
@@ -510,6 +532,124 @@ function RewardsInjectorConfiguratorV2({
     };
   }, [selectedAddress, operation, addConfigs, removeConfigs, tokenSymbol, formatAmount]);
 
+  // Handle copying configuration from existing gauge
+  const handleCopyConfiguration = (config: {
+    gaugeAddress: string;
+    amountPerPeriod: string;
+    rawAmountPerPeriod: string;
+    maxPeriods: string;
+    doNotStartBeforeTimestamp: string;
+  }) => {
+    if (operation !== "add") {
+      toast({
+        title: "Copy Not Available",
+        description: "Configuration copying is only available when adding recipients.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Find the first empty configuration group or create a new one
+    const emptyConfigIndex = addConfigs.findIndex(
+      configGroup =>
+        !configGroup.recipients.some(r => r.trim()) &&
+        !configGroup.amountPerPeriod &&
+        !configGroup.maxPeriods,
+    );
+
+    if (emptyConfigIndex !== -1) {
+      // Copy to the first empty configuration group
+      const updatedConfig = {
+        ...addConfigs[emptyConfigIndex],
+        recipients: [config.gaugeAddress],
+        amountPerPeriod: config.amountPerPeriod,
+        rawAmountPerPeriod: config.rawAmountPerPeriod,
+        maxPeriods: config.maxPeriods,
+        doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+      };
+
+      setAddConfigs(prev =>
+        prev.map((c, index) => (index === emptyConfigIndex ? updatedConfig : c)),
+      );
+
+      toast({
+        title: "Configuration Copied",
+        description: `Copied to Configuration Group ${emptyConfigIndex + 1}: ${config.gaugeAddress} with ${config.amountPerPeriod} ${tokenSymbol} per period for ${config.maxPeriods} periods.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } else {
+      // All groups have data, create a new configuration group
+      const newConfig = {
+        id: uuidv4(),
+        recipients: [config.gaugeAddress],
+        amountPerPeriod: config.amountPerPeriod,
+        rawAmountPerPeriod: config.rawAmountPerPeriod,
+        maxPeriods: config.maxPeriods,
+        doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+      };
+
+      setAddConfigs(prev => [...prev, newConfig]);
+
+      toast({
+        title: "Configuration Copied",
+        description: `Created new Configuration Group ${addConfigs.length + 1}: ${config.gaugeAddress} with ${config.amountPerPeriod} ${tokenSymbol} per period for ${config.maxPeriods} periods.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Handle copying all configurations at once
+  const handleCopyAllConfigurations = () => {
+    if (operation !== "add") {
+      toast({
+        title: "Copy Not Available",
+        description: "Configuration copying is only available when adding recipients.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!gauges || gauges.length === 0) {
+      toast({
+        title: "No Configurations to Copy",
+        description: "There are no existing gauge configurations to copy.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Clear existing configurations and create new ones for each gauge
+    const newConfigs: RecipientConfigData[] = gauges.map(gauge => ({
+      id: uuidv4(),
+      recipients: [gauge.gaugeAddress],
+      amountPerPeriod: gauge.amountPerPeriod,
+      rawAmountPerPeriod: gauge.rawAmountPerPeriod,
+      maxPeriods: gauge.maxPeriods,
+      // when copying all configurations, don't set the doNotStartBeforeTimestamp
+      doNotStartBeforeTimestamp: "",
+    }));
+
+    setAddConfigs(newConfigs);
+
+    toast({
+      title: "All Configurations Copied",
+      description: `Copied ${gauges.length} gauge configurations. Each gauge has been placed in its own configuration group.`,
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+  };
+
   return (
     <Container maxW="container.xl">
       <Box mb="10px">
@@ -677,13 +817,27 @@ function RewardsInjectorConfiguratorV2({
           )}
 
           <Box mt={6}>
-            <Heading as="h2" size="lg" mb={4}>
-              Current Configuration
-            </Heading>
+            <Flex justifyContent="space-between" alignItems="center" mb={4}>
+              <Heading as="h2" size="lg">
+                Current Configuration
+              </Heading>
+              {operation === "add" && gauges && gauges.length > 0 && (
+                <Button
+                  leftIcon={<CopyIcon />}
+                  onClick={handleCopyAllConfigurations}
+                  size="sm"
+                  variant="outline"
+                >
+                  Copy all
+                </Button>
+              )}
+            </Flex>
             <RewardsInjectorConfigurationViewerV2
               data={gauges}
               tokenSymbol={tokenSymbol}
               tokenDecimals={tokenDecimals}
+              onCopyConfiguration={handleCopyConfiguration}
+              showCopyButtons={operation === "add"}
             />
           </Box>
           <Box mt={6} gap={4}>
@@ -706,44 +860,80 @@ function RewardsInjectorConfiguratorV2({
               </Flex>
 
               {/* Map through the configurations array instead of rendering a single one */}
-              {(operation === "add" ? addConfigs : removeConfigs).map((config, index) => (
-                <Box
-                  key={config.id}
-                  p={4}
-                  mb={4}
-                  borderWidth="1px"
-                  borderRadius="md"
-                  position="relative"
-                >
-                  <Flex justifyContent="space-between" alignItems="center" mb={3}>
-                    <Heading as="h4" size="sm">
-                      Configuration Group {index + 1}
-                    </Heading>
-                    <IconButton
-                      aria-label="Delete configuration"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      onClick={() => removeConfigGroup(config.id)}
-                      colorScheme="red"
-                      variant="ghost"
-                    />
-                  </Flex>
+              {(operation === "add" ? addConfigs : removeConfigs).map((config, index) => {
+                // Check if this configuration group is empty
+                const isEmpty =
+                  operation === "add" &&
+                  !config.recipients.some(r => r.trim()) &&
+                  !config.amountPerPeriod &&
+                  !config.maxPeriods;
 
-                  <EditableInjectorConfigV2
-                    initialData={{
-                      recipients: config.recipients,
-                      amountPerPeriod: config.amountPerPeriod,
-                      maxPeriods: config.maxPeriods,
-                      doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
-                      rawAmountPerPeriod: config.rawAmountPerPeriod,
+                return (
+                  <Box
+                    key={config.id}
+                    p={4}
+                    mb={4}
+                    borderWidth="1px"
+                    borderRadius="md"
+                    position="relative"
+                    borderColor="gray.200"
+                    _dark={{
+                      borderColor: "gray.600",
                     }}
-                    tokenSymbol={tokenSymbol}
-                    tokenDecimals={tokenDecimals}
-                    operation={operation}
-                    onConfigChange={newConfig => handleConfigChange(newConfig, config.id)}
-                  />
-                </Box>
-              ))}
+                  >
+                    <Flex justifyContent="space-between" alignItems="center" mb={3}>
+                      <HStack spacing={2}>
+                        <Heading as="h4" size="sm">
+                          Configuration Group {index + 1}
+                        </Heading>
+                        {isEmpty && (
+                          <Badge colorScheme="gray" variant="subtle" size="sm">
+                            Empty
+                          </Badge>
+                        )}
+                      </HStack>
+                      <HStack spacing={2}>
+                        <Tooltip label="Clear all fields in this group">
+                          <IconButton
+                            aria-label="Clear configuration"
+                            icon={<AiOutlineClear />}
+                            size="md"
+                            onClick={() => clearConfigGroup(config.id)}
+                            colorScheme="gray"
+                            variant="ghost"
+                          />
+                        </Tooltip>
+                        {(operation === "add" ? addConfigs.length : removeConfigs.length) > 1 && (
+                          <Tooltip label="Delete this configuration group">
+                            <IconButton
+                              aria-label="Delete configuration"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              onClick={() => removeConfigGroup(config.id)}
+                              colorScheme="red"
+                              variant="ghost"
+                            />
+                          </Tooltip>
+                        )}
+                      </HStack>
+                    </Flex>
+
+                    <EditableInjectorConfigV2
+                      initialData={{
+                        recipients: config.recipients,
+                        amountPerPeriod: config.amountPerPeriod,
+                        maxPeriods: config.maxPeriods,
+                        doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+                        rawAmountPerPeriod: config.rawAmountPerPeriod,
+                      }}
+                      tokenSymbol={tokenSymbol}
+                      tokenDecimals={tokenDecimals}
+                      operation={operation}
+                      onConfigChange={newConfig => handleConfigChange(newConfig, config.id)}
+                    />
+                  </Box>
+                );
+              })}
             </Box>
           )}
         </>
