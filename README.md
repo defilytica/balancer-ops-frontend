@@ -2,6 +2,8 @@
 
 This is the Balancer Operations front-end that will fully integrate into the Balancer Maxis tooling repositories.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/defilytica/balancer-ops-frontend)
+
 ## Getting Started
 
 First, run the development server:
