@@ -2,6 +2,7 @@ import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from "react-icons/fa";
 import { FaRegChartBar } from "react-icons/fa6";
 import { FaBridgeCircleCheck } from "react-icons/fa6";
 import { FaUnlockAlt } from "react-icons/fa";
+import { GiAmplitude } from "react-icons/gi";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
 import OptimismLogo from "@/public/imgs/optimism.svg";
@@ -213,6 +214,32 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "feature/mevcapture-config",
     prNamePlaceholder: "Configure MEV Capture on Pool XYZ",
     prTypePath: "MaxiOps/PoolParameterChanges/PoolMevHookParams/",
+  },
+  {
+    href: "/payload-builder/amp-factor-update-v2",
+    key: "amp-factor-update-v2",
+    label: "Configure Amp Updates on v2 pools",
+    button_label: "Configure Amp Update",
+    description:
+      "Configure Amp factor changes for Stableswap v2 pools that are under DAO management",
+    icon: GiAmplitude,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/amp-factor-update",
+    prNamePlaceholder: "Configure Amp Update on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolAmpChanges/",
+  },
+  {
+    href: "/payload-builder/amp-factor-update-v3",
+    key: "amp-factor-update-v3",
+    label: "Configure Amp Updates on v3 pools",
+    button_label: "Configure Amp Update",
+    description:
+      "Configure Amp factor changes for Stableswap v3 pools that are under DAO management",
+    icon: GiAmplitude,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/amp-factor-update",
+    prNamePlaceholder: "Configure Amp Update on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/PoolAmpChanges/",
   },
 ];
 

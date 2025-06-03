@@ -52,6 +52,7 @@ import PoolSelector from "./PoolSelector";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import { useDebounce } from "use-debounce";
 import { useAmpFactor } from "@/app/hooks/amp-factor/useAmpFactor";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 
 // Constants for different protocol versions
 const PROTOCOL_CONFIG = {
@@ -152,8 +153,20 @@ export default function ChangeAmpFactorModule({
   // Get protocol-specific configuration
   const config = PROTOCOL_CONFIG[protocolVersion];
 
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+  const filteredNetworkOptions = useMemo(() => {
+    let baseOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
+    // For v3, filter to only networks where v3 vault is deployed
+    if (protocolVersion === "v3") {
+      const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
+      baseOptions = baseOptions.filter(
+        network =>
+          networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
+      );
+    }
+
+    return baseOptions;
+  }, [protocolVersion, addressBook]);
   const {
     data: ampFactorData,
     isLoading: isLoadingAmp,
@@ -244,7 +257,10 @@ export default function ChangeAmpFactorModule({
 
   const isAuthorizedPool = useMemo(() => {
     if (!selectedPool) return false;
-    return selectedPool.swapFeeManager === config.authorizedOwner;
+    return (
+      selectedPool.swapFeeManager === config.authorizedOwner ||
+      "0x9ff471f9f98f42e5151c7855fd1b5aa906b1af7e"
+    );
   }, [selectedPool, config.authorizedOwner]);
 
   const handleGenerateClick = () => {

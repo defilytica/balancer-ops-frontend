@@ -1123,7 +1123,8 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   /** @deprecated Use poolTokens instead */
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
-  endTime: Scalars['Int']['output'];
+  /** V3 Specific */
+  endTime?: Maybe<Scalars['Int']['output']>;
   factory?: Maybe<Scalars['Bytes']['output']>;
   farcaster?: Maybe<Scalars['String']['output']>;
   hasAnyAllowedBuffer: Scalars['Boolean']['output'];
@@ -1133,9 +1134,11 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
-  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
+  /** V3 Specific */
+  isProjectTokenSwapInBlocked?: Maybe<Scalars['Boolean']['output']>;
   lbpName?: Maybe<Scalars['String']['output']>;
-  lbpOwner: Scalars['String']['output'];
+  /** V3 Specific */
+  lbpOwner?: Maybe<Scalars['String']['output']>;
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
   /** @deprecated Removed without replacement */
@@ -1150,17 +1153,26 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   /** Account empowered to set the pool creator fee percentage */
   poolCreator?: Maybe<Scalars['Bytes']['output']>;
   poolTokens: Array<GqlPoolTokenDetail>;
-  projectToken: Scalars['String']['output'];
-  projectTokenEndWeight: Scalars['Float']['output'];
-  projectTokenIndex: Scalars['Int']['output'];
-  projectTokenStartWeight: Scalars['Float']['output'];
+  /** V3 Specific */
+  projectToken?: Maybe<Scalars['String']['output']>;
+  /** V3 Specific */
+  projectTokenEndWeight?: Maybe<Scalars['Float']['output']>;
+  /** V3 Specific */
+  projectTokenIndex?: Maybe<Scalars['Int']['output']>;
+  /** V3 Specific */
+  projectTokenStartWeight?: Maybe<Scalars['Float']['output']>;
   protocolVersion: Scalars['Int']['output'];
-  reserveToken: Scalars['String']['output'];
-  reserveTokenEndWeight: Scalars['Float']['output'];
-  reserveTokenIndex: Scalars['Int']['output'];
-  reserveTokenStartWeight: Scalars['Float']['output'];
+  /** V3 Specific */
+  reserveToken?: Maybe<Scalars['String']['output']>;
+  /** V3 Specific */
+  reserveTokenEndWeight?: Maybe<Scalars['Float']['output']>;
+  /** V3 Specific */
+  reserveTokenIndex?: Maybe<Scalars['Int']['output']>;
+  /** V3 Specific */
+  reserveTokenStartWeight?: Maybe<Scalars['Float']['output']>;
   staking?: Maybe<GqlPoolStaking>;
-  startTime: Scalars['Int']['output'];
+  /** V3 Specific */
+  startTime?: Maybe<Scalars['Int']['output']>;
   /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
   swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
   symbol: Scalars['String']['output'];
