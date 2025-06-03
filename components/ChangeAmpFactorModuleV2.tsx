@@ -396,7 +396,14 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
                 onChange={e => setEndDateTime(e.target.value)}
                 min={getMinDateTime()}
               />
-              <FormHelperText>Must be at least 24 hours from now</FormHelperText>
+              <FormHelperText>
+                Must be at least 24 hours from now
+                {endDateTime && !endTimeError && (
+                  <Text as="span" color="blue.600" ml={2}>
+                    (Unix: {Math.floor(new Date(endDateTime).getTime() / 1000)})
+                  </Text>
+                )}
+              </FormHelperText>
               {endTimeError && <FormErrorMessage>{endTimeError}</FormErrorMessage>}
             </FormControl>
           </GridItem>
