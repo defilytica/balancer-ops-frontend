@@ -53,20 +53,67 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import { useDebounce } from "use-debounce";
 import { useAmpFactor } from "@/app/hooks/amp-factor/useAmpFactor";
 
-const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
+// Constants for different protocol versions
+const PROTOCOL_CONFIG = {
+  v2: {
+    authorizedOwner: "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b",
+    multisigType: "lm" as const,
+    protocolVersion: 2,
+    title: "Balancer v2: Create Amplification Factor Update Payload",
+    prType: "amp-factor-update-v2" as const,
+  },
+  v3: {
+    authorizedOwner: "0x0000000000000000000000000000000000000000",
+    multisigType: "maxi_omni" as const,
+    protocolVersion: 3,
+    title: "Balancer v3: Create Amplification Factor Update Payload",
+    prType: "amp-factor-update-v3" as const,
+  },
+} as const;
+
+type ProtocolVersion = keyof typeof PROTOCOL_CONFIG;
 
 interface ChangeAmpFactorProps {
   addressBook: AddressBook;
+  protocolVersion: ProtocolVersion;
 }
 
-// Validation function for amp factor
-const validateAmpFactor = (value: string): string | null => {
+// Validation function for amp factor with rate limit checks
+const validateAmpFactor = (
+  value: string,
+  currentAmp: number,
+  endDateTime: string,
+): string | null => {
   if (!value || value.trim() === "") return null;
 
   const numValue = parseFloat(value);
   if (isNaN(numValue)) return "Must be a valid number";
   if (numValue < 1) return "Amplification factor must be at least 1";
   if (numValue > 10000) return "Amplification factor must not exceed 10,000";
+
+  // If we don't have current amp or end time, can't validate rate limits yet
+  if (!currentAmp || !endDateTime) return null;
+
+  const selectedTime = new Date(endDateTime);
+  const now = new Date();
+  const timeDiffHours = (selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  // Calculate maximum allowed change based on time duration
+  // Rule: Cannot change more than factor of 2 per day (24 hours)
+  const daysUntilEnd = Math.max(timeDiffHours / 24, 1); // Minimum 1 day
+  const maxChangeFactorPerDay = 2;
+  const maxChangeFactor = Math.pow(maxChangeFactorPerDay, daysUntilEnd);
+
+  const minAllowed = Math.max(1, currentAmp / maxChangeFactor);
+  const maxAllowed = Math.min(10000, currentAmp * maxChangeFactor);
+
+  if (numValue < minAllowed) {
+    return `Value too low. With current amp factor ${Math.round(currentAmp)} and ${daysUntilEnd.toFixed(1)} days, minimum allowed is ${Math.round(minAllowed)}`;
+  }
+
+  if (numValue > maxAllowed) {
+    return `Value too high. With current amp factor ${Math.round(currentAmp)} and ${daysUntilEnd.toFixed(1)} days, maximum allowed is ${Math.round(maxAllowed)}`;
+  }
 
   return null;
 };
@@ -85,7 +132,10 @@ const validateEndTime = (value: string): string | null => {
   return null;
 };
 
-export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactorProps) {
+export default function ChangeAmpFactorModule({
+  addressBook,
+  protocolVersion,
+}: ChangeAmpFactorProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [newAmpFactor, setNewAmpFactor] = useState<string>("");
@@ -98,10 +148,24 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Get protocol-specific configuration
+  const config = PROTOCOL_CONFIG[protocolVersion];
+
   const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
 
-  // Validation
-  const ampFactorError = validateAmpFactor(debouncedAmpFactor);
+  const {
+    data: ampFactorData,
+    isLoading: isLoadingAmp,
+    error: ampError,
+  } = useAmpFactor(selectedPool?.address, selectedNetwork.toLowerCase());
+
+  // Validation with rate limit checks (moved after ampFactorData declaration)
+  const ampFactorError = validateAmpFactor(
+    debouncedAmpFactor,
+    ampFactorData?.amplificationParameter || 0,
+    debouncedEndDateTime,
+  );
   const endTimeError = validateEndTime(debouncedEndDateTime);
   const isValid = !ampFactorError && !endTimeError && debouncedAmpFactor && debouncedEndDateTime;
 
@@ -115,7 +179,7 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
     },
   );
 
-  // Filter pools to only show v2 stable pools that support amplification factor
+  // Filter pools based on protocol version and pool types
   const filteredPools = useMemo(() => {
     if (!data?.poolGetPools) return [];
 
@@ -124,14 +188,17 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
       GqlPoolType.MetaStable,
       GqlPoolType.ComposableStable,
     ];
+
     return data.poolGetPools.filter(
-      pool => stablePoolTypes.includes(pool.type as GqlPoolType) && pool.protocolVersion === 2, // Only Balancer v2 pools
+      pool =>
+        stablePoolTypes.includes(pool.type as GqlPoolType) &&
+        pool.protocolVersion === config.protocolVersion,
     );
-  }, [data?.poolGetPools]);
+  }, [data?.poolGetPools, config.protocolVersion]);
 
   const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network, "lm"),
-    [addressBook],
+    (network: string) => getMultisigForNetwork(addressBook, network, config.multisigType),
+    [addressBook, config.multisigType],
   );
 
   const handleNetworkChange = useCallback(
@@ -177,10 +244,8 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
 
   const isAuthorizedPool = useMemo(() => {
     if (!selectedPool) return false;
-
-    // Check if the swapFeeManager is the authorized owner (same as swap fee module)
-    return selectedPool.swapFeeManager === AUTHORIZED_OWNER;
-  }, [selectedPool]);
+    return selectedPool.swapFeeManager === config.authorizedOwner;
+  }, [selectedPool, config.authorizedOwner]);
 
   const handleGenerateClick = () => {
     if (
@@ -238,12 +303,6 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
-  const {
-    data: ampFactorData,
-    isLoading: isLoadingAmp,
-    error: ampError,
-  } = useAmpFactor(selectedPool?.address, selectedNetwork.toLowerCase());
-
   const getPrefillValues = useCallback(() => {
     if (!selectedPool || !debouncedAmpFactor || !debouncedEndDateTime) return {};
 
@@ -276,6 +335,27 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
     ampFactorData?.amplificationParameter,
   ]);
 
+  // Calculate rate limit information for display
+  const getRateLimitInfo = (currentAmp: number, endDateTime: string) => {
+    if (!currentAmp || !endDateTime) return null;
+
+    const selectedTime = new Date(endDateTime);
+    const now = new Date();
+    const timeDiffHours = (selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const daysUntilEnd = Math.max(timeDiffHours / 24, 1);
+    const maxChangeFactor = Math.pow(2, daysUntilEnd);
+
+    const minAllowed = Math.max(1, Math.round(currentAmp / maxChangeFactor));
+    const maxAllowed = Math.min(10000, Math.round(currentAmp * maxChangeFactor));
+
+    return {
+      daysUntilEnd: daysUntilEnd.toFixed(1),
+      minAllowed,
+      maxAllowed,
+      maxChangeFactor: maxChangeFactor.toFixed(2),
+    };
+  };
+
   // Get minimum datetime (24 hours from now)
   const getMinDateTime = () => {
     const now = new Date();
@@ -285,6 +365,7 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
 
   const currentAmp = ampFactorData?.amplificationParameter || 0;
   const newAmp = debouncedAmpFactor ? parseInt(debouncedAmpFactor) : 0;
+  const rateLimitInfo = getRateLimitInfo(currentAmp, debouncedEndDateTime);
 
   // Determine if we should show the form fields
   const shouldShowFormFields = selectedPool && !isLoadingAmp && !ampError && ampFactorData;
@@ -292,7 +373,7 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
   return (
     <Container maxW="container.lg">
       <Heading as="h2" size="lg" variant="special" mb={6}>
-        Balancer v2: Create Amplification Factor Update Payload
+        {config.title}
       </Heading>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -369,45 +450,73 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
 
       {/* Form fields - only show when amp factor data is loaded */}
       {shouldShowFormFields && (
-        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-          <GridItem colSpan={{ base: 12, md: 6 }}>
-            <FormControl mb={4} isInvalid={!!ampFactorError}>
-              <FormLabel>New Amplification Factor</FormLabel>
-              <Input
-                type="number"
-                value={newAmpFactor}
-                onChange={e => setNewAmpFactor(e.target.value)}
-                placeholder={`Current: ${Math.round(currentAmp)}`}
-                onWheel={e => (e.target as HTMLInputElement).blur()}
-                min={1}
-                max={10000}
-              />
-              <FormHelperText>Enter a value between 1 and 10,000</FormHelperText>
-              {ampFactorError && <FormErrorMessage>{ampFactorError}</FormErrorMessage>}
-            </FormControl>
-          </GridItem>
+        <>
+          {/* Information alert about rate limits */}
+          <Alert status="info" mb={4}>
+            <AlertIcon />
+            <AlertDescription>
+              <strong>Amplification Factor Rate Limits:</strong> Changes are limited to prevent
+              price manipulation. The amplification factor cannot change more than a factor of 2 in
+              a single day. Current factor: <strong>{Math.round(currentAmp)}</strong>
+            </AlertDescription>
+          </Alert>
 
-          <GridItem colSpan={{ base: 12, md: 6 }}>
-            <FormControl mb={4} isInvalid={!!endTimeError}>
-              <FormLabel>Update End Time</FormLabel>
-              <Input
-                type="datetime-local"
-                value={endDateTime}
-                onChange={e => setEndDateTime(e.target.value)}
-                min={getMinDateTime()}
-              />
-              <FormHelperText>
-                Must be at least 24 hours from now
-                {endDateTime && !endTimeError && (
-                  <Text as="span" color="blue.600" ml={2}>
-                    (Unix: {Math.floor(new Date(endDateTime).getTime() / 1000)})
-                  </Text>
-                )}
-              </FormHelperText>
-              {endTimeError && <FormErrorMessage>{endTimeError}</FormErrorMessage>}
-            </FormControl>
-          </GridItem>
-        </Grid>
+          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+            <GridItem colSpan={{ base: 12, md: 6 }}>
+              <FormControl mb={4} isInvalid={!!ampFactorError}>
+                <FormLabel>New Amplification Factor</FormLabel>
+                <Input
+                  type="number"
+                  value={newAmpFactor}
+                  onChange={e => setNewAmpFactor(e.target.value)}
+                  placeholder={`Current: ${Math.round(currentAmp)}`}
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
+                  min={1}
+                  max={10000}
+                />
+                <FormHelperText>
+                  Enter a value between 1 and 5,000
+                  {rateLimitInfo && (
+                    <>
+                      <br />
+                      <Text as="span" color="blue.600">
+                        Allowed range for {rateLimitInfo.daysUntilEnd} days:{" "}
+                        {rateLimitInfo.minAllowed} - {rateLimitInfo.maxAllowed}
+                      </Text>
+                      <br />
+                      <Text as="span" color="gray.500" fontSize="xs">
+                        (Max change factor: {rateLimitInfo.maxChangeFactor}x over{" "}
+                        {rateLimitInfo.daysUntilEnd} days)
+                      </Text>
+                    </>
+                  )}
+                </FormHelperText>
+                {ampFactorError && <FormErrorMessage>{ampFactorError}</FormErrorMessage>}
+              </FormControl>
+            </GridItem>
+
+            <GridItem colSpan={{ base: 12, md: 6 }}>
+              <FormControl mb={4} isInvalid={!!endTimeError}>
+                <FormLabel>Update End Time</FormLabel>
+                <Input
+                  type="datetime-local"
+                  value={endDateTime}
+                  onChange={e => setEndDateTime(e.target.value)}
+                  min={getMinDateTime()}
+                />
+                <FormHelperText>
+                  Must be at least 24 hours from now
+                  {endDateTime && !endTimeError && (
+                    <Text as="span" color="blue.600" ml={2}>
+                      (Unix: {Math.floor(new Date(endDateTime).getTime() / 1000)})
+                    </Text>
+                  )}
+                </FormHelperText>
+                {endTimeError && <FormErrorMessage>{endTimeError}</FormErrorMessage>}
+              </FormControl>
+            </GridItem>
+          </Grid>
+        </>
       )}
 
       {/* Only show preview card if form fields are visible and amp factor is entered */}
@@ -466,7 +575,7 @@ export default function ChangeAmpFactorModuleV2({ addressBook }: ChangeAmpFactor
           <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
           <Box mt={8} />
           <PRCreationModal
-            type={"amp-factor-update-v2"}
+            type={config.prType}
             isOpen={isOpen}
             onClose={onClose}
             network={selectedNetwork}
