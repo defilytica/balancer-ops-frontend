@@ -14,7 +14,7 @@ const CATEGORIZED_PAYLOADS = {
     "initialize-buffer",
     "manage-buffer",
     "fee-setter-v3",
-    "amp-factor-update-v2",
+    "amp-factor-update-v3",
   ],
   "Financial Operations": ["create-payment", "cctp-bridge"],
   "Pool Management (v2)": ["fee-setter", "amp-factor-update-v2"],
