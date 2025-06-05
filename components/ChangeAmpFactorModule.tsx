@@ -53,6 +53,8 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import { useDebounce } from "use-debounce";
 import { useAmpFactor } from "@/app/hooks/amp-factor/useAmpFactor";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { useValidateAmpFactor } from "@/lib/hooks/validation/useValidateAmpFactor";
+import { useValidateEndTime } from "@/lib/hooks/validation/useValidateEndTime";
 
 // Constants for different protocol versions
 const PROTOCOL_CONFIG = {
@@ -78,60 +80,6 @@ interface ChangeAmpFactorProps {
   addressBook: AddressBook;
   protocolVersion: ProtocolVersion;
 }
-
-// Validation function for amp factor with rate limit checks
-const validateAmpFactor = (
-  value: string,
-  currentAmp: number,
-  endDateTime: string,
-): string | null => {
-  if (!value || value.trim() === "") return null;
-
-  const numValue = parseFloat(value);
-  if (isNaN(numValue)) return "Must be a valid number";
-  if (numValue < 1) return "Amplification factor must be at least 1";
-  if (numValue > 10000) return "Amplification factor must not exceed 10,000";
-
-  // If we don't have current amp or end time, can't validate rate limits yet
-  if (!currentAmp || !endDateTime) return null;
-
-  const selectedTime = new Date(endDateTime);
-  const now = new Date();
-  const timeDiffHours = (selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-  // Calculate maximum allowed change based on time duration
-  // Rule: Cannot change more than factor of 2 per day (24 hours)
-  const daysUntilEnd = Math.max(timeDiffHours / 24, 1); // Minimum 1 day
-  const maxChangeFactorPerDay = 2;
-  const maxChangeFactor = Math.pow(maxChangeFactorPerDay, daysUntilEnd);
-
-  const minAllowed = Math.max(1, currentAmp / maxChangeFactor);
-  const maxAllowed = Math.min(10000, currentAmp * maxChangeFactor);
-
-  if (numValue < minAllowed) {
-    return `Value too low. With current amp factor ${Math.round(currentAmp)} and ${daysUntilEnd.toFixed(1)} days, minimum allowed is ${Math.round(minAllowed)}`;
-  }
-
-  if (numValue > maxAllowed) {
-    return `Value too high. With current amp factor ${Math.round(currentAmp)} and ${daysUntilEnd.toFixed(1)} days, maximum allowed is ${Math.round(maxAllowed)}`;
-  }
-
-  return null;
-};
-
-// Validation function for end time
-const validateEndTime = (value: string): string | null => {
-  if (!value || value.trim() === "") return "End time is required";
-
-  const selectedTime = new Date(value);
-  const now = new Date();
-  const minTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-
-  if (selectedTime <= now) return "End time must be in the future";
-  if (selectedTime < minTime) return "End time must be at least 24 hours from now";
-
-  return null;
-};
 
 export default function ChangeAmpFactorModule({
   addressBook,
@@ -174,12 +122,20 @@ export default function ChangeAmpFactorModule({
   } = useAmpFactor(selectedPool?.address, selectedNetwork.toLowerCase());
 
   // Validation with rate limit checks (moved after ampFactorData declaration)
-  const ampFactorError = validateAmpFactor(
-    debouncedAmpFactor,
-    ampFactorData?.amplificationParameter || 0,
-    debouncedEndDateTime,
-  );
-  const endTimeError = validateEndTime(debouncedEndDateTime);
+  const { ampFactorError, isValid: isAmpFactorValid } = useValidateAmpFactor({
+    value: debouncedAmpFactor,
+    currentAmp: ampFactorData?.amplificationParameter || 0,
+    endDateTime: debouncedEndDateTime,
+  });
+
+  const {
+    endTimeError,
+    isValid: isEndTimeValid,
+    unixTimestamp,
+    timeInfo,
+  } = useValidateEndTime({
+    value: debouncedEndDateTime,
+  });
   const isValid = !ampFactorError && !endTimeError && debouncedAmpFactor && debouncedEndDateTime;
 
   const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(

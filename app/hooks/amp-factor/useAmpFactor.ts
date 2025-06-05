@@ -9,7 +9,7 @@ interface AmpFactorResponse {
 
 export const fetchAmpFactor = async (
   poolAddress: string,
-  network: string,
+  network: string | undefined,
 ): Promise<AmpFactorResponse> => {
   const response = await fetch(`/api/amp-factor?network=${network}&poolAddress=${poolAddress}`);
 
@@ -20,7 +20,7 @@ export const fetchAmpFactor = async (
   return response.json();
 };
 
-export const useAmpFactor = (poolAddress: string | undefined, network: string) => {
+export const useAmpFactor = (poolAddress: string | undefined, network: string | undefined) => {
   return useQuery({
     queryKey: ["ampFactor", poolAddress, network],
     queryFn: () => fetchAmpFactor(poolAddress!, network),

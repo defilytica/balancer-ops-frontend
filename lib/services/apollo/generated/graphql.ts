@@ -1118,15 +1118,10 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   chain: GqlChain;
   createTime: Scalars['Int']['output'];
   decimals: Scalars['Int']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  discord?: Maybe<Scalars['String']['output']>;
   /** @deprecated Use poolTokens instead */
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
-  /** V3 Specific */
-  endTime?: Maybe<Scalars['Int']['output']>;
   factory?: Maybe<Scalars['Bytes']['output']>;
-  farcaster?: Maybe<Scalars['String']['output']>;
   hasAnyAllowedBuffer: Scalars['Boolean']['output'];
   hasErc4626: Scalars['Boolean']['output'];
   hasNestedErc4626: Scalars['Boolean']['output'];
@@ -1134,11 +1129,6 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
-  /** V3 Specific */
-  isProjectTokenSwapInBlocked?: Maybe<Scalars['Boolean']['output']>;
-  lbpName?: Maybe<Scalars['String']['output']>;
-  /** V3 Specific */
-  lbpOwner?: Maybe<Scalars['String']['output']>;
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
   /** @deprecated Removed without replacement */
@@ -1153,36 +1143,82 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   /** Account empowered to set the pool creator fee percentage */
   poolCreator?: Maybe<Scalars['Bytes']['output']>;
   poolTokens: Array<GqlPoolTokenDetail>;
-  /** V3 Specific */
-  projectToken?: Maybe<Scalars['String']['output']>;
-  /** V3 Specific */
-  projectTokenEndWeight?: Maybe<Scalars['Float']['output']>;
-  /** V3 Specific */
-  projectTokenIndex?: Maybe<Scalars['Int']['output']>;
-  /** V3 Specific */
-  projectTokenStartWeight?: Maybe<Scalars['Float']['output']>;
   protocolVersion: Scalars['Int']['output'];
-  /** V3 Specific */
-  reserveToken?: Maybe<Scalars['String']['output']>;
-  /** V3 Specific */
-  reserveTokenEndWeight?: Maybe<Scalars['Float']['output']>;
-  /** V3 Specific */
-  reserveTokenIndex?: Maybe<Scalars['Int']['output']>;
-  /** V3 Specific */
-  reserveTokenStartWeight?: Maybe<Scalars['Float']['output']>;
   staking?: Maybe<GqlPoolStaking>;
-  /** V3 Specific */
-  startTime?: Maybe<Scalars['Int']['output']>;
   /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
   swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
   symbol: Scalars['String']['output'];
   tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  telegram?: Maybe<Scalars['String']['output']>;
   /**
    * All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
    * @deprecated Use poolTokens instead
    */
   tokens: Array<GqlPoolTokenUnion>;
+  type: GqlPoolType;
+  userBalance?: Maybe<GqlPoolUserBalance>;
+  /** @deprecated use protocolVersion instead */
+  vaultVersion: Scalars['Int']['output'];
+  version: Scalars['Int']['output'];
+  /** @deprecated Removed without replacement */
+  withdrawConfig: GqlPoolWithdrawConfig;
+};
+
+export type GqlPoolLiquidityBootstrappingV3 = GqlPoolBase & {
+  __typename: 'GqlPoolLiquidityBootstrappingV3';
+  address: Scalars['Bytes']['output'];
+  /** @deprecated Use poolTokens instead */
+  allTokens: Array<GqlPoolTokenExpanded>;
+  categories?: Maybe<Array<Maybe<GqlPoolFilterCategory>>>;
+  chain: GqlChain;
+  createTime: Scalars['Int']['output'];
+  decimals: Scalars['Int']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  discord?: Maybe<Scalars['String']['output']>;
+  /** @deprecated Use poolTokens instead */
+  displayTokens: Array<GqlPoolTokenDisplay>;
+  dynamicData: GqlPoolDynamicData;
+  endTime: Scalars['Int']['output'];
+  factory?: Maybe<Scalars['Bytes']['output']>;
+  farcaster?: Maybe<Scalars['String']['output']>;
+  hasAnyAllowedBuffer: Scalars['Boolean']['output'];
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<GqlHook>;
+  id: Scalars['ID']['output'];
+  /** @deprecated Removed without replacement */
+  investConfig: GqlPoolInvestConfig;
+  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
+  lbpName?: Maybe<Scalars['String']['output']>;
+  lbpOwner: Scalars['String']['output'];
+  liquidityManagement?: Maybe<LiquidityManagement>;
+  name: Scalars['String']['output'];
+  /**
+   * The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
+   * @deprecated Use swapFeeManager instead
+   */
+  owner?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to pause/unpause the pool (or 0 to delegate to governance) */
+  pauseManager?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to set the pool creator fee percentage */
+  poolCreator?: Maybe<Scalars['Bytes']['output']>;
+  poolTokens: Array<GqlPoolTokenDetail>;
+  projectToken: Scalars['String']['output'];
+  projectTokenEndWeight: Scalars['Float']['output'];
+  projectTokenIndex: Scalars['Int']['output'];
+  projectTokenStartWeight: Scalars['Float']['output'];
+  protocolVersion: Scalars['Int']['output'];
+  reserveToken: Scalars['String']['output'];
+  reserveTokenEndWeight: Scalars['Float']['output'];
+  reserveTokenIndex: Scalars['Int']['output'];
+  reserveTokenStartWeight: Scalars['Float']['output'];
+  /** All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again. */
+  staking?: Maybe<GqlPoolStaking>;
+  startTime: Scalars['Int']['output'];
+  /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
+  swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
+  symbol: Scalars['String']['output'];
+  tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  telegram?: Maybe<Scalars['String']['output']>;
   type: GqlPoolType;
   userBalance?: Maybe<GqlPoolUserBalance>;
   /** @deprecated use protocolVersion instead */
@@ -1934,7 +1970,7 @@ export enum GqlPoolType {
   Weighted = 'WEIGHTED'
 }
 
-export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted;
+export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolLiquidityBootstrappingV3 | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted;
 
 /** If a user address was provided in the query, the user balance is populated here */
 export type GqlPoolUserBalance = {
