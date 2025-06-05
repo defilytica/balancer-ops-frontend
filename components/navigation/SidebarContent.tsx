@@ -20,6 +20,7 @@ import {
   TbHeartRateMonitor,
   TbFishHook,
 } from "react-icons/tb";
+import { SiShell } from "react-icons/si"
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
 import { PiLightning } from "react-icons/pi"
@@ -102,6 +103,12 @@ const LinkItems = [
     icon: PiLightning,
     target: "/stablesurge",
     description: "Configure StableSurge hook for pool and trade simulations.",
+  },
+  {
+    name: "ReCLAMM Simulator",
+    icon: SiShell,
+    target: "/reclamm",
+    description: "Configure Readjusting concentrated liquidity pools for rebalancing and trade simulations.",
   },
 ];
 
