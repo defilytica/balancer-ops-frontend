@@ -14,7 +14,9 @@ import {
   AccordionIcon,
   Text,
   Select,
-  Flex
+  Flex,
+  FormControl,
+  FormLabel
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { FaPlay, FaPause } from "react-icons/fa";
@@ -178,7 +180,7 @@ export default function ReClamm() {
   );
 
   // Add new state for LP fee percentage
-  const [lpFeePercent, setLpFeePercent] = useState(1);
+  const [lpFeePercent, setLpFeePercent] = useState(0.25);
 
   const realTimeInvariant = useMemo(() => {
     return (
@@ -752,6 +754,8 @@ export default function ReClamm() {
                 </Text>
                 <Grid templateColumns="repeat(2, 1fr)" gap={3}>
                   <GridItem>
+                <FormControl variant="floating">
+                  <FormLabel>Minimum Price</FormLabel>                    
                     <Input
                       placeholder="Minimum Price"
                       type="number"
@@ -759,8 +763,11 @@ export default function ReClamm() {
                       onChange={(e) => setInputMinPrice(Number(e.target.value))}
                       mb={2}
                     />
+                  </FormControl>
                   </GridItem>
                   <GridItem>
+                  <FormControl variant="floating">
+                  <FormLabel>Maximum Price</FormLabel>                       
                     <Input
                       placeholder="Maximum Price"
                       type="number"
@@ -768,8 +775,11 @@ export default function ReClamm() {
                       onChange={(e) => setInputMaxPrice(Number(e.target.value))}
                       mb={2}
                     />
+                    </FormControl>
                   </GridItem>
                   <GridItem>
+                  <FormControl variant="floating">
+                  <FormLabel>Target Price</FormLabel>   
                     <Input
                       placeholder="Target Price"
                       type="number"
@@ -777,8 +787,11 @@ export default function ReClamm() {
                       onChange={(e) => setInputTargetPrice(Number(e.target.value))}
                       mb={2}
                     />
+                    </FormControl>
                   </GridItem>
                   <GridItem>
+                  <FormControl variant="floating">
+                  <FormLabel>Margin %</FormLabel>                       
                     <Input
                       placeholder="Margin (%)"
                       type="number"
@@ -786,8 +799,11 @@ export default function ReClamm() {
                       onChange={(e) => setInputMargin(Number(e.target.value))}
                       mb={2}
                     />
+                    </FormControl>
                   </GridItem>
                 </Grid>
+                <FormControl variant="floating">
+                <FormLabel>Price Shift Daily Rate %</FormLabel>   
                 <Input
                   placeholder="Price Shift Daily Rate (%)"
                   type="number"
@@ -795,9 +811,9 @@ export default function ReClamm() {
                   onChange={(e) => setPriceShiftDailyRate(Number(e.target.value))}
                   mb={4}
                 />
-
+                </FormControl>
                 <Text fontWeight="bold" mb={2}>
-                  Initial Balances
+                  Initial Balance A
                 </Text>
                 <Input
                   placeholder="Initial Balance A"
@@ -825,7 +841,6 @@ export default function ReClamm() {
                 </Flex>
                 
                 <Button
-                  colorScheme="blue"
                   width="full"
                   onClick={handleInitialization}
                   isDisabled={
@@ -863,6 +878,8 @@ export default function ReClamm() {
                   <option value="Token A">Token A</option>
                   <option value="Token B">Token B</option>
                 </Select>
+                <FormControl variant="floating">
+                  <FormLabel>Amount In</FormLabel> 
                 <Input
                   placeholder="Amount In"
                   type="number"
@@ -870,6 +887,9 @@ export default function ReClamm() {
                   onChange={(e) => setSwapAmountIn(Number(e.target.value))}
                   mb={4}
                 />
+                </FormControl>
+                <FormControl variant="floating">
+                  <FormLabel>LP Fee %</FormLabel>                 
                 <Input
                   placeholder="LP Fee %"
                   type="number"
@@ -877,10 +897,10 @@ export default function ReClamm() {
                   onChange={(e) => setLpFeePercent(Number(e.target.value))}
                   mb={4}
                 />
-
+                </FormControl>
                 <Text
                   mb={3}
-                  color={calculatedSwapAmountOut.exceedsBalance ? "red.500" : "inherit"}
+                  color={calculatedSwapAmountOut.exceedsBalance ? "#2dce89" : "inherit"}
                 >
                   Amount Out {swapTokenIn === "Token A" ? "B" : "A"}:{" "}
                   {calculatedSwapAmountOut.amount > 0
@@ -917,6 +937,8 @@ export default function ReClamm() {
                 </AccordionButton>
               </h2>
               <AccordionPanel>
+              <FormControl variant="floating">
+              <FormLabel>Target Price Ratio</FormLabel> 
                 <Input
                   placeholder="Target Price Ratio"
                   type="number"
@@ -925,8 +947,9 @@ export default function ReClamm() {
                   isInvalid={!!targetPriceRatioError}
                   mb={targetPriceRatioError ? 1 : 4}
                 />
+                </FormControl>
                 {targetPriceRatioError && (
-                  <Text color="red.500" fontSize="sm" mb={3}>
+                  <Text color="#2dce89" fontSize="sm" mb={3}>
                     {targetPriceRatioError}
                   </Text>
                 )}
@@ -934,7 +957,8 @@ export default function ReClamm() {
                 <Text mb={2}>
                   Current Time: {simulationSeconds.toFixed(0)}
                 </Text>
-                
+                <FormControl variant="floating">
+                  <FormLabel>End Time In Seconds</FormLabel>                 
                 <Input
                   placeholder="End Time (in seconds)"
                   type="number"
@@ -943,8 +967,9 @@ export default function ReClamm() {
                   isInvalid={!!endTimeError}
                   mb={endTimeError ? 1 : 4}
                 />
+                </FormControl>
                 {endTimeError && (
-                  <Text color="red.500" fontSize="sm" mb={3}>
+                  <Text color="#2dce89" fontSize="sm" mb={3}>
                     {endTimeError}
                   </Text>
                 )}
@@ -971,6 +996,8 @@ export default function ReClamm() {
                 </AccordionButton>
               </h2>
               <AccordionPanel>
+              <FormControl variant="floating">
+              <FormLabel>Seconds per Block</FormLabel> 
                 <Input
                   placeholder="Seconds Per Block"
                   type="number"
@@ -978,7 +1005,7 @@ export default function ReClamm() {
                   onChange={(e) => setInputSecondsPerBlock(Number(e.target.value))}
                   mb={4}
                 />
-                
+                </FormControl>
                 <Button
                   colorScheme="blue"
                   width="full"
@@ -993,7 +1020,7 @@ export default function ReClamm() {
 
         {/* Middle Column - Chart */}
         <GridItem colSpan={6}>
-          <Box bg="white" p={4} borderRadius="md" boxShadow="md" textAlign="center">
+          <Box p={4} borderRadius="md" boxShadow="md" textAlign="center">
             <Box width="100%" height="600px">
               <ReClammChart
                 realTimeBalanceA={realTimeBalanceA}
@@ -1010,10 +1037,10 @@ export default function ReClamm() {
             </Box>
           </Box>
           
-          <Box bg="white" p={4} borderRadius="md" boxShadow="md" mt={4}>
+          <Box p={4} borderRadius="md" boxShadow="md" mt={4}>
             <Flex align="center" gap={4} mb={4}>
               <Button
-                colorScheme={isPlaying ? "red" : "green"}
+                colorScheme={isPlaying ? "#2dce89" : "green"}
                 onClick={() => setIsPlaying(!isPlaying)}
                 leftIcon={isPlaying ? <FaPause /> : <FaPlay />}
               >
@@ -1021,7 +1048,7 @@ export default function ReClamm() {
               </Button>
               <Text
                 fontWeight="bold"
-                color={isPlaying ? "green.500" : "red.500"}
+                color={isPlaying ? "green.500" : "#2dce89"}
               >
                 {isPlaying ? "Running" : "Paused"} - Simulation time:{" "}
                 {formatTime(simulationSeconds)} - Block: {blockNumber}
@@ -1042,6 +1069,294 @@ export default function ReClamm() {
               ))}
             </Flex>
           </Box>
+        </GridItem>
+        {/* Right Column - Current Values */}
+        <GridItem colSpan={3}>
+          <Accordion allowToggle defaultIndex={[0, 1, 2, 3]}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Current Pool State</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Invariant:</Text>
+                  <Text>{toFixedDecimals(currentInvariant)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Current Balance A:</Text>
+                  <Text>{toFixedDecimals(currentBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Current Balance B:</Text>
+                  <Text>{toFixedDecimals(currentBalanceB)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Virtual Balance A:</Text>
+                  <Text>{toFixedDecimals(currentVirtualBalances.virtualBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={3}>
+                  <Text>Virtual Balance B:</Text>
+                  <Text>{toFixedDecimals(currentVirtualBalances.virtualBalanceB)}</Text>
+                </Flex>
+                
+                <Box mt={4}>
+                  <Flex justify="space-between" mb={1}>
+                    <Text>Rate Max/Min:</Text>
+                    <Text>
+                      {toFixedDecimals(
+                        Math.pow(currentInvariant, 2) /
+                          (Math.pow(currentVirtualBalances.virtualBalanceA, 2) *
+                            Math.pow(currentVirtualBalances.virtualBalanceB, 2))
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="red.500">Min Price A:</Text>
+                    <Text color="red.500">
+                      {toFixedDecimals(
+                        Math.pow(currentVirtualBalances.virtualBalanceB, 2) /
+                          currentInvariant
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="blue.500">Lower Margin Price A:</Text>
+                    <Text color="blue.500">
+                      {toFixedDecimals(
+                        currentInvariant / Math.pow(higherMargin, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="green.500">Current Price A:</Text>
+                    <Text color="green.500">
+                      {toFixedDecimals(
+                        (currentBalanceB + currentVirtualBalances.virtualBalanceB) /
+                          (currentBalanceA + currentVirtualBalances.virtualBalanceA)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="blue.500">Upper Margin Price A:</Text>
+                    <Text color="blue.500">
+                      {toFixedDecimals(
+                        currentInvariant / Math.pow(lowerMargin, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text color="red.500">Max Price A:</Text>
+                    <Text color="red.500">
+                      {toFixedDecimals(
+                        currentInvariant /
+                          Math.pow(currentVirtualBalances.virtualBalanceA, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                </Box>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle defaultIndex={[0]} mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Real-Time Pool State</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Invariant:</Text>
+                  <Text>{toFixedDecimals(realTimeInvariant)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Current Balance A:</Text>
+                  <Text>{toFixedDecimals(realTimeBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Current Balance B:</Text>
+                  <Text>{toFixedDecimals(realTimeBalanceB)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Virtual Balance A:</Text>
+                  <Text>{toFixedDecimals(realTimeVirtualBalances.virtualBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={3}>
+                  <Text>Virtual Balance B:</Text>
+                  <Text>{toFixedDecimals(realTimeVirtualBalances.virtualBalanceB)}</Text>
+                </Flex>
+                
+                <Box mt={4}>
+                  <Flex justify="space-between" mb={1}>
+                    <Text>Rate Max/Min:</Text>
+                    <Text>
+                      {toFixedDecimals(
+                        Math.pow(realTimeInvariant, 2) /
+                          (Math.pow(realTimeVirtualBalances.virtualBalanceA, 2) *
+                            Math.pow(realTimeVirtualBalances.virtualBalanceB, 2))
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="red.500">Min Price A:</Text>
+                    <Text color="red.500">
+                      {toFixedDecimals(
+                        Math.pow(realTimeVirtualBalances.virtualBalanceB, 2) /
+                          realTimeInvariant
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="blue.500">Lower Margin Price A:</Text>
+                    <Text color="blue.500">
+                      {toFixedDecimals(
+                        realTimeInvariant / Math.pow(higherMargin, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="green.500">Current Price A:</Text>
+                    <Text color="green.500">
+                      {toFixedDecimals(
+                        (realTimeBalanceB + realTimeVirtualBalances.virtualBalanceB) /
+                          (realTimeBalanceA + realTimeVirtualBalances.virtualBalanceA)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" mb={1}>
+                    <Text color="blue.500">Upper Margin Price A:</Text>
+                    <Text color="blue.500">
+                      {toFixedDecimals(
+                        realTimeInvariant / Math.pow(lowerMargin, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text color="red.500">Max Price A:</Text>
+                    <Text color="red.500">
+                      {toFixedDecimals(
+                        realTimeInvariant /
+                          Math.pow(realTimeVirtualBalances.virtualBalanceA, 2)
+                      )}
+                    </Text>
+                  </Flex>
+                </Box>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle defaultIndex={[0]} mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Price Ratio</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                {simulationSeconds < endTime ? (
+                  <>
+                    <Text color="green.500" fontWeight="bold" mb={2}>
+                      UPDATING RANGE
+                    </Text>
+                    <Flex justify="space-between" mb={1} ml={4}>
+                      <Text>Start Price Ratio:</Text>
+                      <Text>{toFixedDecimals(startPriceRatio)}</Text>
+                    </Flex>
+                    <Flex justify="space-between" mb={1} ml={4}>
+                      <Text>Current Price Ratio:</Text>
+                      <Text>{toFixedDecimals(priceRatio)}</Text>
+                    </Flex>
+                    <Flex justify="space-between" mb={1} ml={4}>
+                      <Text>Target Price Ratio:</Text>
+                      <Text>{toFixedDecimals(targetPriceRatio)}</Text>
+                    </Flex>
+                    <Flex justify="space-between" mb={3} ml={4}>
+                      <Text>End Time (s):</Text>
+                      <Text>{endTime}</Text>
+                    </Flex>
+                  </>
+                ) : (
+                  <Flex justify="space-between" mb={3}>
+                    <Text>Current Price Ratio:</Text>
+                    <Text>{toFixedDecimals(priceRatio)}</Text>
+                  </Flex>
+                )}
+                
+                <Flex justify="space-between" mb={1}>
+                  <Text>Pool Centeredness:</Text>
+                  <Text>{toFixedDecimals(poolCenteredness)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Status:</Text>
+                  <Text
+                    color={poolCenteredness > margin / 100 ? "green.500" : "red.500"}
+                    fontWeight="bold"
+                  >
+                    {poolCenteredness > margin / 100 ? "IN RANGE" : "OUT OF RANGE"}
+                  </Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text>Out of Range time:</Text>
+                  <Text>{formatTime(outOfRangeTime)}</Text>
+                </Flex>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+
+          <Accordion allowToggle defaultIndex={[0]} mt={4}>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    <Heading size="md">Initial Values</Heading>
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Initial Balance A:</Text>
+                  <Text>{toFixedDecimals(initialBalanceA)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Initial Balance B:</Text>
+                  <Text>{toFixedDecimals(initialBalanceB)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Min Price A:</Text>
+                  <Text>{toFixedDecimals(minPrice)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Target Price A:</Text>
+                  <Text>{toFixedDecimals(targetPrice)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Max Price A:</Text>
+                  <Text>{toFixedDecimals(maxPrice)}</Text>
+                </Flex>
+                <Flex justify="space-between" mb={1}>
+                  <Text>Price Ratio:</Text>
+                  <Text>{toFixedDecimals(priceRatio)}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text>Margin:</Text>
+                  <Text>{toFixedDecimals(margin)}%</Text>
+                </Flex>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
         </GridItem>
         </Grid>
     </Container>

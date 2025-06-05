@@ -1,5 +1,15 @@
-import React, { useRef, useEffect, useMemo } from "react";
-import * as d3 from "d3";
+import React, { useRef, useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Text,
+  Circle,
+  useTheme,
+  Checkbox,
+  VStack,
+  HStack,
+  Heading,
+  Tooltip,
+} from "@chakra-ui/react";
 import { calculateLowerMargin, calculateUpperMargin } from "./ReClammMath";
 
 interface ReClammChartProps {
@@ -22,7 +32,7 @@ interface ReClammChartProps {
 }
 
 const NUM_POINTS = 100;
-const MARGIN = 0.1;
+const MARGIN_FACTOR = 0.1;
 
 export const ReClammChart: React.FC<ReClammChartProps> = ({
   realTimeBalanceA,
@@ -36,62 +46,110 @@ export const ReClammChart: React.FC<ReClammChartProps> = ({
   currentVirtualBalances,
   currentInvariant,
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
+  const theme = useTheme();
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 200, height: 200 });
+
+  // State for visibility toggles
+  const [visibility, setVisibility] = useState({
+    realTimeInvariant: true,
+    currentInvariant: true,
+    initialInvariant: true,
+    balances: true,
+    minMaxPrices: true,
+    margins: true,
+  });
+
+  // Colors configuration - inherit from theme or use defaults
+  const colors = {
+    realTimeInvariant: theme?.colors?.green?.[400] || "#4CAF50",
+    currentInvariant: theme?.colors?.blue?.[400] || "#5e72e4",
+    initialInvariant: theme?.colors?.red?.[400] || "#ff6b6b",
+    balances: theme?.colors?.green?.[500] || "#2dce89",
+    minMaxPrices: theme?.colors?.red?.[400] || "#ff6b6b",
+    margins: theme?.colors?.blue?.[400] || "#5e72e4",
+    gridLine: theme?.colors?.gray?.[200] || "#E2E8F0",
+    text: theme?.colors?.gray?.[800] || theme?.colors?.black || "#2D3748",
+    axisText: theme?.colors?.gray?.[600] || "#718096",
+  };
+
+  // Legend items
+  const legendItems = [
+    { id: "realTimeInvariant", color: colors.realTimeInvariant, text: "Real Time Invariant" },
+    { id: "currentInvariant", color: colors.currentInvariant, text: "Current Invariant" },
+    { id: "initialInvariant", color: colors.initialInvariant, text: "Initial Invariant", isDashed: true },
+    { id: "balances", color: colors.balances, text: "Balances", isPoint: true },
+    { id: "minMaxPrices", color: colors.minMaxPrices, text: "Min/Max Prices", isPoint: true },
+    { id: "margins", color: colors.margins, text: "Margins", isPoint: true },
+  ];
+
+  // Resize observer effect
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    const updateSize = () => {
+      if (chartRef.current) {
+        const containerWidth = chartRef.current.offsetWidth;
+        const width = Math.max(containerWidth, 200);
+        const height = 600; // Fixed height like D3 version
+        setChartSize({ width, height });
+      }
+    };
+
+    updateSize();
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(chartRef.current);
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
 
   const realTimeChartData = useMemo(() => {
-    const xForPointB =
-      realTimeInvariant / realTimeVirtualBalances.virtualBalanceB;
+    const xForPointB = realTimeInvariant / realTimeVirtualBalances.virtualBalanceB;
 
-    // Create regular curve points
-    const curvePoints = Array.from({ length: NUM_POINTS }, (_, i) => {
+    return Array.from({ length: NUM_POINTS }, (_, i) => {
       const x =
-        (1 - MARGIN) * realTimeVirtualBalances.virtualBalanceA +
+        (1 - MARGIN_FACTOR) * realTimeVirtualBalances.virtualBalanceA +
         (i *
-          ((1 + MARGIN) * xForPointB -
-            (1 - MARGIN) * realTimeVirtualBalances.virtualBalanceA)) /
+          ((1 + MARGIN_FACTOR) * xForPointB -
+            (1 - MARGIN_FACTOR) * realTimeVirtualBalances.virtualBalanceA)) /
           NUM_POINTS;
       const y = realTimeInvariant / x;
-
       return { x, y };
     });
-
-    return curvePoints;
   }, [realTimeVirtualBalances, realTimeInvariant]);
 
   const chartInitialData = useMemo(() => {
-    const xForPointB =
-      initialInvariant / realTimeVirtualBalances.virtualBalanceB;
+    const xForPointB = initialInvariant / realTimeVirtualBalances.virtualBalanceB;
 
-    // Create regular curve points
-    const curvePoints = Array.from({ length: NUM_POINTS }, (_, i) => {
+    return Array.from({ length: NUM_POINTS }, (_, i) => {
       const x =
-        (1 - MARGIN) * realTimeVirtualBalances.virtualBalanceA +
+        (1 - MARGIN_FACTOR) * realTimeVirtualBalances.virtualBalanceA +
         (i *
-          ((1 + MARGIN) * xForPointB -
-            (1 - MARGIN) * realTimeVirtualBalances.virtualBalanceA)) /
-          100;
+          ((1 + MARGIN_FACTOR) * xForPointB -
+            (1 - MARGIN_FACTOR) * realTimeVirtualBalances.virtualBalanceA)) /
+          NUM_POINTS;
       const y = initialInvariant / x;
-
       return { x, y };
     });
-
-    return curvePoints;
   }, [initialInvariant, realTimeVirtualBalances]);
 
+  const currentChartData = useMemo(() => {
+    const xForPointB = currentInvariant / currentVirtualBalances.virtualBalanceB;
+
+    return Array.from({ length: NUM_POINTS }, (_, i) => {
+      const x =
+        0.7 * currentVirtualBalances.virtualBalanceA +
+        (i * (1.3 * xForPointB - 0.7 * currentVirtualBalances.virtualBalanceA)) / NUM_POINTS;
+      const y = currentInvariant / x;
+      return { x, y };
+    });
+  }, [currentVirtualBalances, currentInvariant]);
+
   const specialPoints = useMemo(() => {
-    // Real-time points
-    const realTimeMaxPrice = {
-      x: realTimeVirtualBalances.virtualBalanceA,
-      y: realTimeInvariant / realTimeVirtualBalances.virtualBalanceA,
-    };
-
-    const xForPointB =
-      realTimeInvariant / realTimeVirtualBalances.virtualBalanceB;
-    const realTimeMinPrice = {
-      x: xForPointB,
-      y: realTimeVirtualBalances.virtualBalanceB,
-    };
-
     const realTimeRealMargin = calculateLowerMargin({
       margin,
       invariant: realTimeInvariant,
@@ -105,37 +163,6 @@ export const ReClammChart: React.FC<ReClammChartProps> = ({
       virtualBalanceA: realTimeVirtualBalances.virtualBalanceA,
       virtualBalanceB: realTimeVirtualBalances.virtualBalanceB,
     });
-
-    const realTimeLowerMarginPoint = {
-      x: realTimeRealMargin,
-      y: realTimeInvariant / realTimeRealMargin,
-      pointType: "margin",
-    };
-
-    const realTimeUpperMarginPoint = {
-      x: realTimeUpperMargin,
-      y: realTimeInvariant / realTimeUpperMargin,
-      pointType: "margin",
-    };
-
-    const realTimeBalances = {
-      x: realTimeBalanceA + realTimeVirtualBalances.virtualBalanceA,
-      y: realTimeBalanceB + realTimeVirtualBalances.virtualBalanceB,
-      pointType: "current",
-    };
-
-    // Current points
-    const currentMaxPrice = {
-      x: currentVirtualBalances.virtualBalanceA,
-      y: currentInvariant / currentVirtualBalances.virtualBalanceA,
-    };
-
-    const currentXForPointB =
-      currentInvariant / currentVirtualBalances.virtualBalanceB;
-    const currentMinPrice = {
-      x: currentXForPointB,
-      y: currentVirtualBalances.virtualBalanceB,
-    };
 
     const currentLowerMargin = calculateLowerMargin({
       margin,
@@ -151,36 +178,30 @@ export const ReClammChart: React.FC<ReClammChartProps> = ({
       virtualBalanceB: currentVirtualBalances.virtualBalanceB,
     });
 
-    const currentLowerMarginPoint = {
-      x: currentLowerMargin,
-      y: currentInvariant / currentLowerMargin,
-      pointType: "margin",
+    return {
+      minMaxPrices: [
+        { x: realTimeVirtualBalances.virtualBalanceA, y: realTimeInvariant / realTimeVirtualBalances.virtualBalanceA },
+        { x: realTimeInvariant / realTimeVirtualBalances.virtualBalanceB, y: realTimeVirtualBalances.virtualBalanceB },
+        { x: currentVirtualBalances.virtualBalanceA, y: currentInvariant / currentVirtualBalances.virtualBalanceA },
+        { x: currentInvariant / currentVirtualBalances.virtualBalanceB, y: currentVirtualBalances.virtualBalanceB },
+      ],
+      balances: [
+        {
+          x: realTimeBalanceA + realTimeVirtualBalances.virtualBalanceA,
+          y: realTimeBalanceB + realTimeVirtualBalances.virtualBalanceB,
+        },
+        {
+          x: currentBalanceA + currentVirtualBalances.virtualBalanceA,
+          y: currentBalanceB + currentVirtualBalances.virtualBalanceB,
+        },
+      ],
+      margins: [
+        { x: realTimeRealMargin, y: realTimeInvariant / realTimeRealMargin },
+        { x: realTimeUpperMargin, y: realTimeInvariant / realTimeUpperMargin },
+        { x: currentLowerMargin, y: currentInvariant / currentLowerMargin },
+        { x: currentUpperMargin, y: currentInvariant / currentUpperMargin },
+      ],
     };
-
-    const currentUpperMarginPoint = {
-      x: currentUpperMargin,
-      y: currentInvariant / currentUpperMargin,
-      pointType: "margin",
-    };
-
-    const currentBalances = {
-      x: currentBalanceA + currentVirtualBalances.virtualBalanceA,
-      y: currentBalanceB + currentVirtualBalances.virtualBalanceB,
-      pointType: "current",
-    };
-
-    return [
-      realTimeMaxPrice,
-      realTimeMinPrice,
-      currentMaxPrice,
-      currentMinPrice,
-      realTimeBalances,
-      currentBalances,
-      realTimeLowerMarginPoint,
-      realTimeUpperMarginPoint,
-      currentLowerMarginPoint,
-      currentUpperMarginPoint,
-    ];
   }, [
     realTimeBalanceA,
     realTimeBalanceB,
@@ -193,343 +214,393 @@ export const ReClammChart: React.FC<ReClammChartProps> = ({
     currentInvariant,
   ]);
 
-  const currentChartData = useMemo(() => {
-    const xForPointB =
-      currentInvariant / currentVirtualBalances.virtualBalanceB;
+  // Calculate scales and domains for the chart - FIXED to match D3 behavior
+  const chartMargin = { top: 40, right: 40, bottom: 60, left: 60 };
+  const innerWidth = chartSize.width - chartMargin.left - chartMargin.right;
+  const innerHeight = chartSize.height - chartMargin.top - chartMargin.bottom;
 
-    // Create regular curve points
-    const curvePoints = Array.from({ length: 100 }, (_, i) => {
-      const x =
-        0.7 * currentVirtualBalances.virtualBalanceA +
-        (i *
-          (1.3 * xForPointB - 0.7 * currentVirtualBalances.virtualBalanceA)) /
-          100;
-      const y = currentInvariant / x;
+  // Use ONLY the realTimeChartData for domain calculation (like D3 version)
+  const xMin = Math.min(...realTimeChartData.map(d => d.x));
+  const xMax = Math.max(...realTimeChartData.map(d => d.x));
+  const yMin = Math.min(...realTimeChartData.map(d => d.y));
+  const yMax = Math.max(...realTimeChartData.map(d => d.y));
 
-      return { x, y };
-    });
+  const xDomain = [xMin, xMax];
+  const yDomain = [yMin, yMax];
 
-    return curvePoints;
-  }, [currentVirtualBalances, currentInvariant]);
+  // Functions to convert data coordinates to screen coordinates
+  const scaleX = (x: number): number => {
+    return ((x - xDomain[0]) / (xDomain[1] - xDomain[0])) * innerWidth;
+  };
 
-  useEffect(() => {
-    if (!svgRef.current || !realTimeChartData.length) return;
+  const scaleY = (y: number): number => {
+    return innerHeight - ((y - yDomain[0]) / (yDomain[1] - yDomain[0])) * innerHeight;
+  };
 
-    const renderChart = () => {
-      // Clear previous chart
-      d3.select(svgRef.current).selectAll("*").remove();
+  // Generate axis ticks using D3-like behavior
+  const generateTicks = (min: number, max: number, count = 5): number[] => {
+    const range = max - min;
+    const step = range / (count - 1);
+    return Array.from({ length: count }, (_, i) => min + i * step);
+  };
 
-      // Set up dimensions
-      const svgElement = svgRef.current;
-      const containerWidth = svgElement?.parentElement?.clientWidth ?? 800;
-      const width = containerWidth;
-      const height = 600;
-      const margin = { top: 40, right: 40, bottom: 60, left: 60 };
-      const innerWidth = width - margin.left - margin.right;
-      const innerHeight = height - margin.top - margin.bottom;
-
-      // Create scales
-      const xScale = d3
-        .scaleLinear()
-        .domain([
-          d3.min(realTimeChartData, (d) => d.x)!,
-          d3.max(realTimeChartData, (d) => d.x)!,
-        ])
-        .range([0, innerWidth]);
-
-      const yScale = d3
-        .scaleLinear()
-        .domain([
-          d3.min(realTimeChartData, (d) => d.y)!,
-          d3.max(realTimeChartData, (d) => d.y)!,
-        ])
-        .range([innerHeight, 0]);
-
-      // Create SVG
-      const svg = d3
-        .select(svgRef.current)
-        .attr("width", width)
-        .attr("height", height)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      // Add grid
-      svg
-        .append("g")
-        .attr("class", "grid")
-        .attr("opacity", 0.1)
-        .call(
-          d3
-            .axisBottom(xScale)
-            .tickSize(innerHeight)
-            .tickFormat(() => "")
-        )
-        .call((g) => g.select(".domain").remove());
-
-      svg
-        .append("g")
-        .attr("class", "grid")
-        .attr("opacity", 0.1)
-        .call(
-          d3
-            .axisLeft(yScale)
-            .tickSize(-innerWidth)
-            .tickFormat(() => "")
-        )
-        .call((g) => g.select(".domain").remove());
-
-      // Add axes
-      svg
-        .append("g")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(xScale));
-
-      svg.append("g").call(d3.axisLeft(yScale));
-
-      // Add reference lines
-      svg
-        .append("line")
-        .attr("x1", xScale(realTimeVirtualBalances.virtualBalanceA))
-        .attr("x2", xScale(realTimeVirtualBalances.virtualBalanceA))
-        .attr("y1", 0)
-        .attr("y2", innerHeight)
-        .attr("stroke", "#BBBBBB")
-        .attr("stroke-width", 2);
-
-      svg
-        .append("line")
-        .attr("x1", 0)
-        .attr("x2", innerWidth)
-        .attr("y1", yScale(realTimeVirtualBalances.virtualBalanceB))
-        .attr("y2", yScale(realTimeVirtualBalances.virtualBalanceB))
-        .attr("stroke", "#BBBBBB")
-        .attr("stroke-width", 2);
-
-      // Add initial price curve (before the regular curve)
-      const initialLine = d3
-        .line<any>()
-        .x((d) => xScale(d.x))
-        .y((d) => yScale(d.y));
-
-      svg
-        .append("path")
-        .datum(chartInitialData)
-        .attr("fill", "none")
-        .attr("stroke", "red")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "5,5")
-        .attr("d", initialLine);
-
-      // Add current price curve
-      const currentLine = d3
-        .line<any>()
-        .x((d) => xScale(d.x))
-        .y((d) => yScale(d.y));
-
-      svg
-        .append("path")
-        .datum(currentChartData)
-        .attr("fill", "none")
-        .attr("stroke", "blue")
-        .attr("stroke-width", 2)
-        .attr("d", currentLine);
-
-      // Add curve
-      const line = d3
-        .line<any>()
-        .x((d) => xScale(d.x))
-        .y((d) => yScale(d.y));
-
-      svg
-        .append("path")
-        .datum(realTimeChartData)
-        .attr("fill", "none")
-        .attr("stroke", "#4CAF50")
-        .attr("stroke-width", 2)
-        .attr("d", line);
-
-      // Add special points (min/max prices) for both real-time and current
-      svg
-        .selectAll(".point-price")
-        .data(specialPoints.slice(0, 4)) // Real-time and current min/max prices
-        .enter()
-        .append("circle")
-        .attr("class", "point-price")
-        .attr("cx", (d) => xScale(d.x))
-        .attr("cy", (d) => yScale(d.y))
-        .attr("r", 5)
-        .attr("fill", "red");
-
-      // Add tooltip div
-      const tooltip = d3
-        .select("body")
-        .append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0)
-        .style("position", "absolute")
-        .style("background-color", "white")
-        .style("border", "1px solid #ddd")
-        .style("border-radius", "4px")
-        .style("padding", "8px")
-        .style("pointer-events", "none")
-        .style("font-size", "12px");
-
-      // Modify the balance points section
-      svg
-        .selectAll(".point-balance")
-        .data(specialPoints.slice(4, 6)) // Real-time and current balances
-        .enter()
-        .append("circle")
-        .attr("class", "point-balance")
-        .attr("cx", (d) => xScale(d.x))
-        .attr("cy", (d) => yScale(d.y))
-        .attr("r", 5)
-        .attr("fill", "green")
-        .on("mouseover", (event, d) => {
-          tooltip
-            .style("opacity", 1)
-            .html(
-              `Real Balance A: ${realTimeBalanceA.toFixed(
-                2
-              )}<br/>Real Balance B: ${realTimeBalanceB.toFixed(2)}`
-            )
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY - 10 + "px");
-        })
-        .on("mouseout", () => {
-          tooltip.style("opacity", 0);
-        })
-        .on("mousemove", (event) => {
-          tooltip
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY - 10 + "px");
-        });
-
-      // Add margin points for both real-time and current
-      svg
-        .selectAll(".point-margin")
-        .data(specialPoints.slice(6)) // Real-time and current margins
-        .enter()
-        .append("circle")
-        .attr("class", "point-margin")
-        .attr("cx", (d) => xScale(d.x))
-        .attr("cy", (d) => yScale(d.y))
-        .attr("r", 5)
-        .attr("fill", "blue");
-
-      // Add axis labels
-      svg
-        .append("text")
-        .attr("x", innerWidth / 2)
-        .attr("y", innerHeight + 40)
-        .attr("text-anchor", "middle")
-        .text("Total Balance A");
-
-      svg
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -innerHeight / 2)
-        .attr("y", -40)
-        .attr("text-anchor", "middle")
-        .text("Total Balance B");
-
-      // Add legend
-      const legendData = [
-        { color: "#4CAF50", text: "Real Time Invariant", type: "line" },
-        { color: "blue", text: "Current Invariant", type: "line" },
-        { color: "red", text: "Initial Invariant", type: "dashed-line" },
-        { color: "green", text: "Balances", type: "circle" },
-        { color: "red", text: "Min/Max Prices", type: "circle" },
-        { color: "blue", text: "Margins", type: "circle" },
-      ];
-
-      const legend = svg
-        .append("g")
-        .attr("class", "legend")
-        .attr("transform", `translate(${innerWidth - 200}, 20)`);
-
-      // Add white background to legend
-      const legendPadding = 10;
-      const legendWidth = 180; // Adjust based on your text length
-      const legendHeight = legendData.length * 20 + legendPadding * 2;
-
-      legend
-        .append("rect")
-        .attr("x", -2 * legendPadding)
-        .attr("y", -2 * legendPadding)
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .attr("fill", "white")
-        .attr("stroke", "#ccc")
-        .attr("stroke-width", 1);
-
-      // Add legend items
-      const legendItems = legend
-        .selectAll(".legend-item")
-        .data(legendData)
-        .enter()
-        .append("g")
-        .attr("class", "legend-item")
-        .attr("transform", (d, i) => `translate(0, ${i * 20})`);
-
-      // Add symbols
-      legendItems.each(function (d) {
-        const item = d3.select(this);
-        if (d.type === "circle") {
-          item
-            .append("circle")
-            .attr("cx", 0)
-            .attr("cy", 0)
-            .attr("r", 5)
-            .attr("fill", d.color);
-        } else if (d.type === "line" || d.type === "dashed-line") {
-          item
-            .append("line")
-            .attr("x1", -10)
-            .attr("x2", 10)
-            .attr("y1", 0)
-            .attr("y2", 0)
-            .attr("stroke", d.color)
-            .attr("stroke-width", 2)
-            .attr(
-              "stroke-dasharray",
-              d.type === "dashed-line" ? "5,5" : "none"
-            );
-        }
-      });
-
-      // Add text labels
-      legendItems
-        .append("text")
-        .attr("x", 15)
-        .attr("y", 4)
-        .text((d) => d.text)
-        .style("font-size", "12px");
-    };
-
-    renderChart();
-
-    // Set up resize observer
-    const resizeObserver = new ResizeObserver(() => {
-      renderChart();
-    });
-
-    if (svgRef.current.parentElement) {
-      resizeObserver.observe(svgRef.current.parentElement);
+  // Format number for display
+  const formatNumber = (value: number): string => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    } else {
+      return value.toFixed(2);
     }
+  };
 
-    // Cleanup
-    return () => {
-      resizeObserver.disconnect();
-      d3.select("body").selectAll(".tooltip").remove();
-    };
-  }, [
-    realTimeChartData,
-    specialPoints,
-    realTimeVirtualBalances,
-    realTimeBalanceA,
-    realTimeBalanceB,
-  ]);
+  const xTicks = generateTicks(xDomain[0], xDomain[1], 5);
+  const yTicks = generateTicks(yDomain[0], yDomain[1], 5);
 
-  return <svg ref={svgRef}></svg>;
+  // Generate SVG path from points
+  const generatePath = (points: { x: number; y: number }[]): string => {
+    if (points.length < 2) return "";
+    
+    let path = `M ${scaleX(points[0].x)} ${scaleY(points[0].y)}`;
+    
+    for (let i = 1; i < points.length; i++) {
+      const x = scaleX(points[i].x);
+      const y = scaleY(points[i].y);
+      path += ` L ${x} ${y}`;
+    }
+    
+    return path;
+  };
+
+  return (
+    <Box width="100%" padding="20px" ref={chartRef}>
+      <Box
+        position="relative"
+        width={`${chartSize.width}px`}
+        height={`${chartSize.height}px`}
+        maxWidth="100%"
+        bg="transparent"
+      >
+        {/* Chart title */}
+        <Heading
+          size="md"
+          position="absolute"
+          top={`${chartMargin.top / 2 - 15}px`}
+          left="50%"
+          transform="translateX(-50%)"
+          textAlign="center"
+        >
+          ReCLAMM Chart
+        </Heading>
+
+        {/* Chart container */}
+        <Box
+          position="absolute"
+          top={`${chartMargin.top}px`}
+          left={`${chartMargin.left}px`}
+          width={`${innerWidth}px`}
+          height={`${innerHeight}px`}
+          borderRadius="md"
+          overflow="hidden"
+        >
+          {/* Grid lines */}
+          {xTicks.map((tick, i) => {
+            const xPos = scaleX(tick);
+            if (xPos >= 0 && xPos <= innerWidth) {
+              return (
+                <Box
+                  key={`x-grid-${i}`}
+                  position="absolute"
+                  top="0"
+                  left={`${xPos}px`}
+                  height="100%"
+                  borderLeft={`1px solid`}
+                  opacity={0.3}
+                />
+              );
+            }
+            return null;
+          })}
+          
+          {yTicks.map((tick, i) => {
+            const yPos = scaleY(tick);
+            if (yPos >= 0 && yPos <= innerHeight) {
+              return (
+                <Box
+                  key={`y-grid-${i}`}
+                  position="absolute"
+                  left="0"
+                  top={`${yPos}px`}
+                  width="100%"
+                  borderTop={`1px solid`}
+                  opacity={0.3}
+                />
+              );
+            }
+            return null;
+          })}
+
+          {/* Reference lines */}
+          {(() => {
+            const virtualBalanceAPos = scaleX(realTimeVirtualBalances.virtualBalanceA);
+            const virtualBalanceBPos = scaleY(realTimeVirtualBalances.virtualBalanceB);
+            return (
+              <>
+                {virtualBalanceAPos >= 0 && virtualBalanceAPos <= innerWidth && (
+                  <Box
+                    position="absolute"
+                    top="0"
+                    left={`${virtualBalanceAPos}px`}
+                    height="100%"
+                    borderLeft="2px solid #BBBBBB"
+                    opacity={0.8}
+                  />
+                )}
+                {virtualBalanceBPos >= 0 && virtualBalanceBPos <= innerHeight && (
+                  <Box
+                    position="absolute"
+                    left="0"
+                    top={`${virtualBalanceBPos}px`}
+                    width="100%"
+                    borderTop="2px solid #BBBBBB"
+                    opacity={0.8}
+                  />
+                )}
+              </>
+            );
+          })()}
+
+          {/* Initial invariant curve */}
+          {visibility.initialInvariant && (
+            <Box
+              as="svg"
+              position="absolute"
+              top="0"
+              left="0"
+              width="100%"
+              height="100%"
+              pointerEvents="none"
+            >
+              <path
+                d={generatePath(chartInitialData)}
+                fill="none"
+                stroke={colors.initialInvariant}
+                strokeWidth="2px"
+                strokeDasharray="5,5"
+              />
+            </Box>
+          )}
+
+          {/* Current invariant curve */}
+          {visibility.currentInvariant && (
+            <Box
+              as="svg"
+              position="absolute"
+              top="0"
+              left="0"
+              width="100%"
+              height="100%"
+              pointerEvents="none"
+            >
+              <path
+                d={generatePath(currentChartData)}
+                fill="none"
+                stroke={colors.currentInvariant}
+                strokeWidth="2px"
+              />
+            </Box>
+          )}
+
+          {/* Real time invariant curve */}
+          {visibility.realTimeInvariant && (
+            <Box
+              as="svg"
+              position="absolute"
+              top="0"
+              left="0"
+              width="100%"
+              height="100%"
+              pointerEvents="none"
+            >
+              <path
+                d={generatePath(realTimeChartData)}
+                fill="none"
+                stroke={colors.realTimeInvariant}
+                strokeWidth="2px"
+              />
+            </Box>
+          )}
+
+          {/* Balance points */}
+          {visibility.balances && specialPoints.balances.map((point, i) => {
+            const xPos = scaleX(point.x);
+            const yPos = scaleY(point.y);
+            if (xPos >= -10 && xPos <= innerWidth + 10 && yPos >= -10 && yPos <= innerHeight + 10) {
+              return (
+                <Tooltip
+                  key={`balance-${i}`}
+                  label={`Balance A: ${i === 0 ? realTimeBalanceA.toFixed(2) : currentBalanceA.toFixed(2)}, Balance B: ${i === 0 ? realTimeBalanceB.toFixed(2) : currentBalanceB.toFixed(2)}`}
+                  placement="top"
+                >
+                  <Circle
+                    position="absolute"
+                    top={`${yPos}px`}
+                    left={`${xPos}px`}
+                    size="10px"
+                    bg={colors.balances}
+                    border="2px solid white"
+                    transform="translate(-50%, -50%)"
+                    cursor="pointer"
+                  />
+                </Tooltip>
+              );
+            }
+            return null;
+          })}
+
+          {/* Min/Max price points */}
+          {visibility.minMaxPrices && specialPoints.minMaxPrices.map((point, i) => {
+            const xPos = scaleX(point.x);
+            const yPos = scaleY(point.y);
+            if (xPos >= -10 && xPos <= innerWidth + 10 && yPos >= -10 && yPos <= innerHeight + 10) {
+              return (
+                <Circle
+                  key={`price-${i}`}
+                  position="absolute"
+                  top={`${yPos}px`}
+                  left={`${xPos}px`}
+                  size="10px"
+                  bg={colors.minMaxPrices}
+                  border="2px solid white"
+                  transform="translate(-50%, -50%)"
+                />
+              );
+            }
+            return null;
+          })}
+
+          {/* Margin points */}
+          {visibility.margins && specialPoints.margins.map((point, i) => {
+            const xPos = scaleX(point.x);
+            const yPos = scaleY(point.y);
+            if (xPos >= -10 && xPos <= innerWidth + 10 && yPos >= -10 && yPos <= innerHeight + 10) {
+              return (
+                <Circle
+                  key={`margin-${i}`}
+                  position="absolute"
+                  top={`${yPos}px`}
+                  left={`${xPos}px`}
+                  size="10px"
+                  bg={colors.margins}
+                  border="2px solid white"
+                  transform="translate(-50%, -50%)"
+                />
+              );
+            }
+            return null;
+          })}
+        </Box>
+
+        {/* X-axis labels */}
+        {xTicks.map((tick, i) => (
+          <Text
+            key={`x-label-${i}`}
+            position="absolute"
+            top={`${chartMargin.top + innerHeight + 15}px`}
+            left={`${chartMargin.left + scaleX(tick)}px`}
+            transform="translateX(-50%)"
+            fontSize="12px"
+            fontWeight="medium"
+          >
+            {formatNumber(tick)}
+          </Text>
+        ))}
+
+        {/* Y-axis labels */}
+        {yTicks.map((tick, i) => (
+          <Text
+            key={`y-label-${i}`}
+            position="absolute"
+            top={`${chartMargin.top + scaleY(tick)}px`}
+            left={`${chartMargin.left - 15}px`}
+            transform="translateY(-50%)"
+            textAlign="right"
+            fontSize="12px"
+            fontWeight="medium"
+            width="50px"
+          >
+            {formatNumber(tick)}
+          </Text>
+        ))}
+
+        {/* Axis labels */}
+        <Text
+          position="absolute"
+          bottom="5px"
+          left="50%"
+          transform="translateX(-50%)"
+          fontWeight="bold"
+          fontSize="14px"
+        >
+          Total Balance A
+        </Text>
+
+        <Text
+          position="absolute"
+          top="50%"
+          left="5px"
+          transform="translateY(-50%) rotate(-90deg)"
+          fontWeight="bold"
+          fontSize="14px"
+        >
+          Total Balance B
+        </Text>
+
+        {/* Legend */}
+        <Box
+          position="absolute"
+          top={`${chartMargin.top + 20}px`}
+          right={`${chartMargin.right + 20}px`}
+          borderRadius="md"
+          border="1px solid"
+          padding="12px"
+          width="220px"
+          backdropFilter="blur(5px)"
+        >
+          <VStack spacing={2} align="stretch">
+            {legendItems.map((item) => (
+              <HStack key={item.id} spacing={3}>
+                <Checkbox
+                  isChecked={visibility[item.id as keyof typeof visibility]}
+                  onChange={() => 
+                    setVisibility({
+                      ...visibility,
+                      [item.id]: !visibility[item.id as keyof typeof visibility]
+                    })
+                  }
+                  size="sm"
+                />
+                {item.isPoint ? (
+                  <Circle size="8px" bg={item.color} border="1px solid white" />
+                ) : (
+                  <Box
+                    height="2px"
+                    width="12px"
+                    bg={item.color}
+                    borderStyle={item.isDashed ? "dashed" : "solid"}
+                    borderWidth={item.isDashed ? "1px" : "0"}
+                    borderColor={item.isDashed ? item.color : "transparent"}
+                  />
+                )}
+                <Text fontSize="11px" fontWeight="500">
+                  {item.text}
+                </Text>
+              </HStack>
+            ))}
+          </VStack>
+        </Box>
+      </Box>
+    </Box>
+  );
 };
