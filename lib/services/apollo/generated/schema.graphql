@@ -6,6 +6,11 @@ scalar BigInt
 
 scalar Bytes
 
+input CreateLBPInput {
+  metadata: LBPMetadataInput!
+  poolContract: LBPoolInput!
+}
+
 scalar Date
 
 """The review data for the ERC4626 token"""
@@ -1233,7 +1238,6 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   decimals: Int!
   displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
   dynamicData: GqlPoolDynamicData!
-  endTime: Int!
   factory: Bytes
   hasAnyAllowedBuffer: Boolean!
   hasErc4626: Boolean!
@@ -1241,11 +1245,69 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   hook: GqlHook
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
-  isProjectTokenSwapInBlocked: Boolean!
-  lbpOwner: String!
   liquidityManagement: LiquidityManagement
   name: String!
   nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
+
+  """
+  The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
+  """
+  owner: Bytes @deprecated(reason: "Use swapFeeManager instead")
+
+  """
+  Account empowered to pause/unpause the pool (or 0 to delegate to governance)
+  """
+  pauseManager: Bytes
+
+  """Account empowered to set the pool creator fee percentage"""
+  poolCreator: Bytes
+  poolTokens: [GqlPoolTokenDetail!]!
+  protocolVersion: Int!
+  staking: GqlPoolStaking
+
+  """
+  Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance)
+  """
+  swapFeeManager: Bytes
+  symbol: String!
+  tags: [String]
+
+  """
+  All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
+  """
+  tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
+  type: GqlPoolType!
+  userBalance: GqlPoolUserBalance
+  vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
+  version: Int!
+  withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
+}
+
+type GqlPoolLiquidityBootstrappingV3 implements GqlPoolBase {
+  address: Bytes!
+  allTokens: [GqlPoolTokenExpanded!]! @deprecated(reason: "Use poolTokens instead")
+  categories: [GqlPoolFilterCategory]
+  chain: GqlChain!
+  createTime: Int!
+  decimals: Int!
+  description: String
+  discord: String
+  displayTokens: [GqlPoolTokenDisplay!]! @deprecated(reason: "Use poolTokens instead")
+  dynamicData: GqlPoolDynamicData!
+  endTime: Int!
+  factory: Bytes
+  farcaster: String
+  hasAnyAllowedBuffer: Boolean!
+  hasErc4626: Boolean!
+  hasNestedErc4626: Boolean!
+  hook: GqlHook
+  id: ID!
+  investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+  isProjectTokenSwapInBlocked: Boolean!
+  lbpName: String
+  lbpOwner: String!
+  liquidityManagement: LiquidityManagement
+  name: String!
 
   """
   The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
@@ -1269,6 +1331,10 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   reserveTokenEndWeight: Float!
   reserveTokenIndex: Int!
   reserveTokenStartWeight: Float!
+
+  """
+  All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
+  """
   staking: GqlPoolStaking
   startTime: Int!
 
@@ -1278,16 +1344,14 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
   swapFeeManager: Bytes
   symbol: String!
   tags: [String]
-
-  """
-  All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
-  """
-  tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
+  telegram: String
   type: GqlPoolType!
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
   version: Int!
+  website: String
   withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
+  x: String
 }
 
 type GqlPoolMetaStable implements GqlPoolBase {
@@ -2127,7 +2191,7 @@ enum GqlPoolType {
   WEIGHTED
 }
 
-union GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted
+union GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolLiquidityBootstrappingV3 | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted
 
 """
 If a user address was provided in the query, the user balance is populated here
@@ -3071,6 +3135,22 @@ union HookParams = ExitFeeHookParams | FeeTakingHookParams | MevTaxHookParams | 
 
 scalar JSON
 
+input LBPMetadataInput {
+  description: String!
+  discord: String
+  farcaster: String
+  lbpName: String!
+  telegram: String
+  tokenLogo: String!
+  website: String!
+  x: String
+}
+
+input LBPoolInput {
+  address: String!
+  chain: GqlChain!
+}
+
 """Liquidity management settings for v3 pools."""
 type LiquidityManagement {
   """
@@ -3104,6 +3184,7 @@ type MevTaxHookParams {
 type Mutation {
   beetsPoolLoadReliquarySnapshotsForAllFarms(chain: GqlChain!): String!
   beetsSyncFbeetsRatio: String!
+  createLBP(input: CreateLBPInput!): Boolean!
   poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
   poolLoadSnapshotsForPools(poolIds: [String!]!, reload: Boolean): String!
   poolReloadAllPoolAprs(chain: GqlChain!): String!

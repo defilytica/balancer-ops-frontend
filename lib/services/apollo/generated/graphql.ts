@@ -23,6 +23,11 @@ export type Scalars = {
   JSON: { input: any; output: any; }
 };
 
+export type CreateLbpInput = {
+  metadata: LbpMetadataInput;
+  poolContract: LbPoolInput;
+};
+
 /** The review data for the ERC4626 token */
 export type Erc4626ReviewData = {
   __typename: 'Erc4626ReviewData';
@@ -1116,7 +1121,6 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   /** @deprecated Use poolTokens instead */
   displayTokens: Array<GqlPoolTokenDisplay>;
   dynamicData: GqlPoolDynamicData;
-  endTime: Scalars['Int']['output'];
   factory?: Maybe<Scalars['Bytes']['output']>;
   hasAnyAllowedBuffer: Scalars['Boolean']['output'];
   hasErc4626: Scalars['Boolean']['output'];
@@ -1125,12 +1129,69 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   id: Scalars['ID']['output'];
   /** @deprecated Removed without replacement */
   investConfig: GqlPoolInvestConfig;
-  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
-  lbpOwner: Scalars['String']['output'];
   liquidityManagement?: Maybe<LiquidityManagement>;
   name: Scalars['String']['output'];
   /** @deprecated Removed without replacement */
   nestingType: GqlPoolNestingType;
+  /**
+   * The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
+   * @deprecated Use swapFeeManager instead
+   */
+  owner?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to pause/unpause the pool (or 0 to delegate to governance) */
+  pauseManager?: Maybe<Scalars['Bytes']['output']>;
+  /** Account empowered to set the pool creator fee percentage */
+  poolCreator?: Maybe<Scalars['Bytes']['output']>;
+  poolTokens: Array<GqlPoolTokenDetail>;
+  protocolVersion: Scalars['Int']['output'];
+  staking?: Maybe<GqlPoolStaking>;
+  /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
+  swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
+  symbol: Scalars['String']['output'];
+  tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  /**
+   * All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
+   * @deprecated Use poolTokens instead
+   */
+  tokens: Array<GqlPoolTokenUnion>;
+  type: GqlPoolType;
+  userBalance?: Maybe<GqlPoolUserBalance>;
+  /** @deprecated use protocolVersion instead */
+  vaultVersion: Scalars['Int']['output'];
+  version: Scalars['Int']['output'];
+  /** @deprecated Removed without replacement */
+  withdrawConfig: GqlPoolWithdrawConfig;
+};
+
+export type GqlPoolLiquidityBootstrappingV3 = GqlPoolBase & {
+  __typename: 'GqlPoolLiquidityBootstrappingV3';
+  address: Scalars['Bytes']['output'];
+  /** @deprecated Use poolTokens instead */
+  allTokens: Array<GqlPoolTokenExpanded>;
+  categories?: Maybe<Array<Maybe<GqlPoolFilterCategory>>>;
+  chain: GqlChain;
+  createTime: Scalars['Int']['output'];
+  decimals: Scalars['Int']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  discord?: Maybe<Scalars['String']['output']>;
+  /** @deprecated Use poolTokens instead */
+  displayTokens: Array<GqlPoolTokenDisplay>;
+  dynamicData: GqlPoolDynamicData;
+  endTime: Scalars['Int']['output'];
+  factory?: Maybe<Scalars['Bytes']['output']>;
+  farcaster?: Maybe<Scalars['String']['output']>;
+  hasAnyAllowedBuffer: Scalars['Boolean']['output'];
+  hasErc4626: Scalars['Boolean']['output'];
+  hasNestedErc4626: Scalars['Boolean']['output'];
+  hook?: Maybe<GqlHook>;
+  id: Scalars['ID']['output'];
+  /** @deprecated Removed without replacement */
+  investConfig: GqlPoolInvestConfig;
+  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
+  lbpName?: Maybe<Scalars['String']['output']>;
+  lbpOwner: Scalars['String']['output'];
+  liquidityManagement?: Maybe<LiquidityManagement>;
+  name: Scalars['String']['output'];
   /**
    * The wallet address of the owner of the pool. Pool owners can set certain properties like swapFees or AMP.
    * @deprecated Use swapFeeManager instead
@@ -1150,24 +1211,23 @@ export type GqlPoolLiquidityBootstrapping = GqlPoolBase & {
   reserveTokenEndWeight: Scalars['Float']['output'];
   reserveTokenIndex: Scalars['Int']['output'];
   reserveTokenStartWeight: Scalars['Float']['output'];
+  /** All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again. */
   staking?: Maybe<GqlPoolStaking>;
   startTime: Scalars['Int']['output'];
   /** Account empowered to set static swap fees for a pool (when 0 on V2 swap fees are immutable, on V3 delegate to governance) */
   swapFeeManager?: Maybe<Scalars['Bytes']['output']>;
   symbol: Scalars['String']['output'];
   tags?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  /**
-   * All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
-   * @deprecated Use poolTokens instead
-   */
-  tokens: Array<GqlPoolTokenUnion>;
+  telegram?: Maybe<Scalars['String']['output']>;
   type: GqlPoolType;
   userBalance?: Maybe<GqlPoolUserBalance>;
   /** @deprecated use protocolVersion instead */
   vaultVersion: Scalars['Int']['output'];
   version: Scalars['Int']['output'];
+  website?: Maybe<Scalars['String']['output']>;
   /** @deprecated Removed without replacement */
   withdrawConfig: GqlPoolWithdrawConfig;
+  x?: Maybe<Scalars['String']['output']>;
 };
 
 export type GqlPoolMetaStable = GqlPoolBase & {
@@ -1910,7 +1970,7 @@ export enum GqlPoolType {
   Weighted = 'WEIGHTED'
 }
 
-export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted;
+export type GqlPoolUnion = GqlPoolComposableStable | GqlPoolElement | GqlPoolFx | GqlPoolGyro | GqlPoolLiquidityBootstrapping | GqlPoolLiquidityBootstrappingV3 | GqlPoolMetaStable | GqlPoolQuantAmmWeighted | GqlPoolReClamm | GqlPoolStable | GqlPoolWeighted;
 
 /** If a user address was provided in the query, the user balance is populated here */
 export type GqlPoolUserBalance = {
@@ -2705,6 +2765,22 @@ export type HookConfig = {
 
 export type HookParams = ExitFeeHookParams | FeeTakingHookParams | MevTaxHookParams | StableSurgeHookParams;
 
+export type LbpMetadataInput = {
+  description: Scalars['String']['input'];
+  discord?: InputMaybe<Scalars['String']['input']>;
+  farcaster?: InputMaybe<Scalars['String']['input']>;
+  lbpName: Scalars['String']['input'];
+  telegram?: InputMaybe<Scalars['String']['input']>;
+  tokenLogo: Scalars['String']['input'];
+  website: Scalars['String']['input'];
+  x?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type LbPoolInput = {
+  address: Scalars['String']['input'];
+  chain: GqlChain;
+};
+
 /** Liquidity management settings for v3 pools. */
 export type LiquidityManagement = {
   __typename: 'LiquidityManagement';
@@ -2730,6 +2806,7 @@ export type Mutation = {
   __typename: 'Mutation';
   beetsPoolLoadReliquarySnapshotsForAllFarms: Scalars['String']['output'];
   beetsSyncFbeetsRatio: Scalars['String']['output'];
+  createLBP: Scalars['Boolean']['output'];
   poolLoadOnChainDataForAllPools: Array<GqlPoolMutationResult>;
   poolLoadSnapshotsForPools: Scalars['String']['output'];
   poolReloadAllPoolAprs: Scalars['String']['output'];
@@ -2762,6 +2839,11 @@ export type Mutation = {
 
 export type MutationBeetsPoolLoadReliquarySnapshotsForAllFarmsArgs = {
   chain: GqlChain;
+};
+
+
+export type MutationCreateLbpArgs = {
+  input: CreateLbpInput;
 };
 
 
