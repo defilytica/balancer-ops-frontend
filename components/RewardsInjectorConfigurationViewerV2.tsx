@@ -101,13 +101,12 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                         Recipient
                       </Text>
                       {showCopyButtons && onCopyConfiguration && (
-                        <Tooltip label="Copy configuration to empty group or create new group">
+                        <Tooltip label="Copy this configuration to empty group or create new group">
                           <IconButton
                             aria-label="Copy configuration"
                             icon={<CopyIcon />}
-                            size="md"
-                            variant="ghost"
-                            // colorScheme="blue"
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleCopyConfiguration(gauge)}
                           />
                         </Tooltip>
