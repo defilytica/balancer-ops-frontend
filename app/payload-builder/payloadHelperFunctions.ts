@@ -1363,3 +1363,57 @@ export function generateHumanReadablePermissions(
 
   return `The authorizer will ${actionText} ${granteeName} (${granteeAddress}):\n\n${permissionsText}`;
 }
+
+// --- Amp Factor Update Payload Balancer v2 ---
+export interface AmpFactorUpdateInput {
+  poolAddress: string;
+  rawEndValue: string;
+  endTime: string;
+  poolName: string;
+}
+
+export function generateAmpFactorUpdatePayload(
+  input: AmpFactorUpdateInput,
+  chainId: string,
+  multisig: string,
+) {
+  const transaction = {
+    to: input.poolAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          internalType: "uint256",
+          name: "rawEndValue",
+          type: "uint256",
+        },
+        {
+          internalType: "uint256",
+          name: "endTime",
+          type: "uint256",
+        },
+      ],
+      name: "startAmplificationParameterUpdate",
+      payable: false,
+    },
+    contractInputsValues: {
+      rawEndValue: input.rawEndValue,
+      endTime: input.endTime,
+    },
+  };
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Update amplification factor to ${input.rawEndValue} for ${input.poolName}`,
+      txBuilderVersion: "1.18.0",
+      createdFromSafeAddress: multisig,
+      createdFromOwnerAddress: "",
+    },
+    transactions: [transaction],
+  };
+}
