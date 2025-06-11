@@ -18,7 +18,7 @@ import {
   Divider,
   IconButton,
 } from "@chakra-ui/react";
-import { InfoIcon, CopyIcon } from "@chakra-ui/icons";
+import { InfoIcon, CopyIcon, DeleteIcon } from "@chakra-ui/icons";
 
 interface RewardsInjectorData {
   gaugeAddress: string;
@@ -42,12 +42,22 @@ interface RewardsInjectorConfigurationViewerV2Props {
     maxPeriods: string;
     doNotStartBeforeTimestamp: string;
   }) => void;
+  onAddToRemove?: (gaugeAddress: string) => void;
   showCopyButtons?: boolean;
+  showTrashButtons?: boolean;
 }
 
 export const RewardsInjectorConfigurationViewerV2: React.FC<
   RewardsInjectorConfigurationViewerV2Props
-> = ({ data, tokenSymbol, tokenDecimals, onCopyConfiguration, showCopyButtons = false }) => {
+> = ({
+  data,
+  tokenSymbol,
+  tokenDecimals,
+  onCopyConfiguration,
+  onAddToRemove,
+  showCopyButtons = false,
+  showTrashButtons = false,
+}) => {
   const bgColor = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
@@ -78,13 +88,27 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
     }
   };
 
+  const handleRemoveConfiguration = (gaugeAddress: string) => {
+    if (onAddToRemove) {
+      onAddToRemove(gaugeAddress);
+    }
+  };
+
   return (
     <Card variant="outline" width="full">
       <CardHeader>
-        <Heading size="md">Current Gauge Configurations</Heading>
+        <HStack justify="space-between" align="center">
+          <Heading size="md">Current Gauge Configurations</Heading>
+          {data && data.length > 0 && (
+            <Badge colorScheme="gray" variant="subtle">
+              {data.length} Active
+            </Badge>
+          )}
+        </HStack>
       </CardHeader>
+
       <CardBody>
-        <VStack align="stretch">
+        <VStack align="stretch" spacing={4}>
           {!data || data.length === 0 ? (
             <Alert status="info" borderRadius="md">
               <AlertIcon />
@@ -100,17 +124,32 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                       <Text fontWeight="medium" color={mutedTextColor}>
                         Recipient
                       </Text>
-                      {showCopyButtons && onCopyConfiguration && (
-                        <Tooltip label="Copy this configuration to empty group or create new group">
-                          <IconButton
-                            aria-label="Copy configuration"
-                            icon={<CopyIcon />}
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCopyConfiguration(gauge)}
-                          />
-                        </Tooltip>
-                      )}
+                      <HStack spacing={2}>
+                        {showCopyButtons && onCopyConfiguration && (
+                          <Tooltip label="Copy this configuration to Add Recipients section">
+                            <IconButton
+                              aria-label="Copy configuration"
+                              icon={<CopyIcon />}
+                              size="sm"
+                              variant="outline"
+                              colorScheme="green"
+                              onClick={() => handleCopyConfiguration(gauge)}
+                            />
+                          </Tooltip>
+                        )}
+                        {showTrashButtons && onAddToRemove && (
+                          <Tooltip label="Add this address to Remove Recipients section">
+                            <IconButton
+                              aria-label="Add to remove section"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              variant="outline"
+                              colorScheme="red"
+                              onClick={() => handleRemoveConfiguration(gauge.gaugeAddress)}
+                            />
+                          </Tooltip>
+                        )}
+                      </HStack>
                     </HStack>
                     <HStack
                       bg={bgColor}
