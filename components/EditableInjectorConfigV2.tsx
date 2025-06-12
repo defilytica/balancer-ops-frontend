@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardBody,
   Heading,
-  Badge,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { AddIcon, InfoIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ethers } from "ethers";
@@ -43,6 +43,8 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   onConfigChange,
   operation,
 }) => {
+  const mutedTextColor = useColorModeValue("gray.600", "gray.400");
+
   const [config, setConfig] = useState<RecipientConfigData>(
     initialData || {
       recipients: [""],
@@ -59,6 +61,28 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
       setConfig(initialData);
     }
   }, [initialData]);
+
+  // Helper function to get minimum datetime (current time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    return now.toISOString().slice(0, 16);
+  };
+
+  // Helper function to convert datetime to Unix timestamp
+  const convertDateTimeToTimestamp = (dateTimeString: string): string => {
+    if (!dateTimeString) return "0";
+    const timestamp = Math.floor(new Date(dateTimeString).getTime() / 1000);
+    return timestamp.toString();
+  };
+
+  // Helper function to convert Unix timestamp to datetime-local format
+  const convertTimestampToDateTime = (timestamp: string): string => {
+    if (!timestamp || timestamp === "0") return "";
+    const timestampNum = parseInt(timestamp);
+    if (isNaN(timestampNum) || timestampNum <= 0) return "";
+    const date = new Date(timestampNum * 1000);
+    return date.toISOString().slice(0, 16);
+  };
 
   const convertToRawAmount = (amount: string): string => {
     try {
@@ -89,6 +113,13 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     onConfigChange(newConfig);
   };
 
+  const handleDateTimeChange = (dateTimeString: string) => {
+    const timestamp = convertDateTimeToTimestamp(dateTimeString);
+    const newConfig = { ...config, doNotStartBeforeTimestamp: timestamp };
+    setConfig(newConfig);
+    onConfigChange(newConfig);
+  };
+
   const addRecipient = () => {
     const newConfig = {
       ...config,
@@ -114,7 +145,9 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   const renderAddOperation = () => (
     <VStack spacing={6} align="stretch">
       <Box>
-        <Text className="font-medium mb-2">Recipients</Text>
+        <Text fontWeight="medium" mb={2}>
+          Recipients
+        </Text>
         <VStack spacing={3} align="stretch">
           {config.recipients.map((recipient, index) => (
             <HStack key={index}>
@@ -130,7 +163,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                   size="sm"
                   onClick={() => removeRecipient(index)}
                 >
-                  <DeleteIcon className="h-4 w-4" />
+                  <DeleteIcon boxSize={4} />
                 </IconButton>
               )}
             </HStack>
@@ -141,45 +174,56 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
         </VStack>
       </Box>
 
-      <Box>
-        <Text className="font-medium mb-2">Amount Per Period ({tokenSymbol})</Text>
-        <Input
-          value={config.amountPerPeriod}
-          onChange={e => handleInputChange("amountPerPeriod", e.target.value)}
-          placeholder={`Enter amount in ${tokenSymbol}`}
-        />
-        <HStack className="mt-1">
-          <Text className="text-sm text-gray-500">Raw amount:</Text>
-          <Text className="text-sm text-gray-500">{config.rawAmountPerPeriod}</Text>
-          <Tooltip title={`Raw amount with ${tokenDecimals} decimals`}>
-            <InfoIcon color="gray.500" />
-          </Tooltip>
-        </HStack>
-      </Box>
-
-      <Box>
-        <Text className="font-medium mb-2">Max Periods</Text>
-        <Input
-          type="number"
-          value={config.maxPeriods}
-          onChange={e => handleInputChange("maxPeriods", e.target.value)}
-          placeholder="Number of weekly periods"
-          min={1}
-          max={255}
-        />
-      </Box>
-
-      <Box>
-        <Text className="font-medium mb-2">Do Not Start Before Timestamp</Text>
-        <Tooltip title="Use 0 to start as soon as gauges are ready">
+      <HStack spacing={4} align="start">
+        <Box flex="1">
+          <Text fontWeight="medium" mb={2}>
+            Amount Per Period ({tokenSymbol})
+          </Text>
+          <Input
+            value={config.amountPerPeriod}
+            onChange={e => handleInputChange("amountPerPeriod", e.target.value)}
+            placeholder={`Enter amount in ${tokenSymbol}`}
+          />
+          <HStack mt={1}>
+            <Text color={mutedTextColor}>Raw amount: {config.rawAmountPerPeriod}</Text>
+            <Tooltip label={`Raw amount with ${tokenDecimals} decimals`}>
+              <InfoIcon color={mutedTextColor} />
+            </Tooltip>
+          </HStack>
+        </Box>
+        <Box flex="1">
+          <Text fontWeight="medium" mb={2}>
+            Max Periods
+          </Text>
           <Input
             type="number"
-            value={config.doNotStartBeforeTimestamp}
-            onChange={e => handleInputChange("doNotStartBeforeTimestamp", e.target.value)}
-            placeholder="Enter timestamp"
-            min={0}
+            value={config.maxPeriods}
+            onChange={e => handleInputChange("maxPeriods", e.target.value)}
+            placeholder="Number of weekly periods"
+            min={1}
+            max={255}
           />
-        </Tooltip>
+        </Box>
+      </HStack>
+
+      <Box>
+        <HStack mb={2}>
+          <Text fontWeight="medium">Do Not Start Before</Text>
+          <Tooltip label="Leave empty to start as soon as gauges are ready">
+            <InfoIcon color={mutedTextColor} />
+          </Tooltip>
+        </HStack>
+        <Input
+          type="datetime-local"
+          value={convertTimestampToDateTime(config.doNotStartBeforeTimestamp)}
+          onChange={e => handleDateTimeChange(e.target.value)}
+          min={getMinDateTime()}
+        />
+        {config.doNotStartBeforeTimestamp && config.doNotStartBeforeTimestamp !== "0" && (
+          <Text mt={2} color={mutedTextColor}>
+            Timestamp: {config.doNotStartBeforeTimestamp}
+          </Text>
+        )}
       </Box>
     </VStack>
   );
@@ -187,7 +231,9 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   const renderRemoveOperation = () => (
     <VStack spacing={6} align="stretch">
       <Box>
-        <Text className="font-medium mb-2">Recipients to Remove</Text>
+        <Text fontWeight="medium" mb={2}>
+          Recipients to Remove
+        </Text>
         <VStack spacing={3} align="stretch">
           {config.recipients.map((recipient, index) => (
             <HStack key={index}>
@@ -203,7 +249,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                   size="sm"
                   onClick={() => removeRecipient(index)}
                 >
-                  <DeleteIcon className="h-4 w-4" />
+                  <DeleteIcon boxSize={4} />
                 </IconButton>
               )}
             </HStack>
@@ -213,7 +259,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
             leftIcon={<AddIcon />}
             size="sm"
             onClick={addRecipient}
-            className="w-full"
+            width="full"
           >
             Add Recipient to Remove
           </Button>
@@ -232,19 +278,16 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <Heading className="text-xl font-semibold">Recipient Configuration</Heading>
-          <Badge variant={operation === "add" ? "default" : "destructive"}>
-            {operation === "add" ? "Add Recipients" : "Remove Recipients"}
-          </Badge>
-        </div>
+        <Heading size="md" fontWeight="semibold">
+          Recipient Configuration
+        </Heading>
       </CardHeader>
       <CardBody>
         {operation === "add" && renderAddOperation()}
         {operation === "remove" && renderRemoveOperation()}
 
         {config.recipients.some(recipient => !recipient) && (
-          <Alert variant="destructive" className="mt-4">
+          <Alert variant="destructive" mt={4}>
             <AlertIcon />
             <AlertDescription>All recipient addresses must be filled</AlertDescription>
           </Alert>
