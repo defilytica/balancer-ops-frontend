@@ -698,7 +698,7 @@ function RewardsInjectorConfiguratorV2({
       amountPerPeriod: gauge.amountPerPeriod,
       rawAmountPerPeriod: gauge.rawAmountPerPeriod,
       maxPeriods: gauge.maxPeriods,
-      doNotStartBeforeTimestamp: "",
+      doNotStartBeforeTimestamp: "0",
     }));
 
     setAddConfigs(newConfigs);
