@@ -16,8 +16,9 @@ import {
   Alert,
   AlertIcon,
   Divider,
+  IconButton,
 } from "@chakra-ui/react";
-import { InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon, CopyIcon, DeleteIcon } from "@chakra-ui/icons";
 
 interface RewardsInjectorData {
   gaugeAddress: string;
@@ -34,11 +35,29 @@ interface RewardsInjectorConfigurationViewerV2Props {
   data: RewardsInjectorData[];
   tokenSymbol: string;
   tokenDecimals: number;
+  onCopyConfiguration?: (config: {
+    gaugeAddress: string;
+    amountPerPeriod: string;
+    rawAmountPerPeriod: string;
+    maxPeriods: string;
+    doNotStartBeforeTimestamp: string;
+  }) => void;
+  onAddToRemove?: (gaugeAddress: string) => void;
+  showCopyButtons?: boolean;
+  showTrashButtons?: boolean;
 }
 
 export const RewardsInjectorConfigurationViewerV2: React.FC<
   RewardsInjectorConfigurationViewerV2Props
-> = ({ data, tokenSymbol, tokenDecimals }) => {
+> = ({
+  data,
+  tokenSymbol,
+  tokenDecimals,
+  onCopyConfiguration,
+  onAddToRemove,
+  showCopyButtons = false,
+  showTrashButtons = false,
+}) => {
   const bgColor = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
@@ -57,13 +76,39 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
     }
   };
 
+  const handleCopyConfiguration = (gauge: RewardsInjectorData) => {
+    if (onCopyConfiguration) {
+      onCopyConfiguration({
+        gaugeAddress: gauge.gaugeAddress,
+        amountPerPeriod: gauge.amountPerPeriod,
+        rawAmountPerPeriod: gauge.rawAmountPerPeriod,
+        maxPeriods: gauge.maxPeriods,
+        doNotStartBeforeTimestamp: "0",
+      });
+    }
+  };
+
+  const handleRemoveConfiguration = (gaugeAddress: string) => {
+    if (onAddToRemove) {
+      onAddToRemove(gaugeAddress);
+    }
+  };
+
   return (
     <Card variant="outline" width="full">
       <CardHeader>
-        <Heading size="md">Current Gauge Configurations</Heading>
+        <HStack justify="space-between" align="center">
+          <Heading size="md">Current Gauge Configurations</Heading>
+          {data && data.length > 0 && (
+            <Badge colorScheme="gray" variant="subtle">
+              {data.length} Active
+            </Badge>
+          )}
+        </HStack>
       </CardHeader>
+
       <CardBody>
-        <VStack spacing={6} align="stretch">
+        <VStack align="stretch" spacing={4}>
           {!data || data.length === 0 ? (
             <Alert status="info" borderRadius="md">
               <AlertIcon />
@@ -74,25 +119,58 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
               <Box key={gauge.gaugeAddress}>
                 {index > 0 && <Divider my={4} />}
                 <VStack spacing={4} align="stretch">
-                  <HStack
-                    bg={bgColor}
-                    p={4}
-                    borderRadius="md"
-                    justify="space-between"
-                    borderWidth="1px"
-                    borderColor={borderColor}
-                  >
-                    <VStack align="start" spacing={1}>
-                      <Text fontFamily="mono">{gauge.gaugeAddress}</Text>
-                      <Text fontSize="sm" color={mutedTextColor}>
-                        {gauge.poolName}
+                  <Box>
+                    <HStack justifyContent="space-between" alignItems="center" mb={2}>
+                      <Text fontWeight="medium" color={mutedTextColor}>
+                        Recipient
                       </Text>
-                    </VStack>
-                    <Badge colorScheme={gauge.isRewardTokenSetup ? "green" : "yellow"}>
-                      {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
-                    </Badge>
-                  </HStack>
+                      <HStack spacing={2}>
+                        {showCopyButtons && onCopyConfiguration && (
+                          <Tooltip label="Copy this configuration to Add Recipients section">
+                            <IconButton
+                              aria-label="Copy configuration"
+                              icon={<CopyIcon />}
+                              size="sm"
+                              variant="outline"
+                              colorScheme="green"
+                              onClick={() => handleCopyConfiguration(gauge)}
+                            />
+                          </Tooltip>
+                        )}
+                        {showTrashButtons && onAddToRemove && (
+                          <Tooltip label="Add this address to Remove Recipients section">
+                            <IconButton
+                              aria-label="Add to remove section"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              variant="outline"
+                              colorScheme="red"
+                              onClick={() => handleRemoveConfiguration(gauge.gaugeAddress)}
+                            />
+                          </Tooltip>
+                        )}
+                      </HStack>
+                    </HStack>
+                    <HStack
+                      bg={bgColor}
+                      p={4}
+                      borderRadius="md"
+                      justify="space-between"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                    >
+                      <VStack align="start" spacing={1}>
+                        <Text fontFamily="mono">{gauge.gaugeAddress}</Text>
+                        <Text fontSize="sm" color={mutedTextColor}>
+                          {gauge.poolName}
+                        </Text>
+                      </VStack>
 
+                      <Badge colorScheme={gauge.isRewardTokenSetup ? "green" : "yellow"}>
+                        {gauge.isRewardTokenSetup ? "Active" : "Pending Setup"}
+                      </Badge>
+                    </HStack>
+                  </Box>
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                     <Box>
                       <Text fontWeight="medium" mb={2} color={mutedTextColor}>

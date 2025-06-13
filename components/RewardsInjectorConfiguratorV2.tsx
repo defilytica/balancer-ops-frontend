@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -23,12 +23,21 @@ import {
   MenuList,
   SimpleGrid,
   Spinner,
-  Stack,
   Switch,
   Text,
   useDisclosure,
   useMediaQuery,
   useToast,
+  Badge,
+  HStack,
+  Tooltip,
+  VStack,
+  Progress,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -38,6 +47,8 @@ import {
   DownloadIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons";
+import { AiOutlineClear } from "react-icons/ai";
+
 import { AddressOption } from "@/types/interfaces";
 import SimulateTransactionButton, {
   BatchFile,
@@ -50,7 +61,7 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
-import { networks } from "@/constants/constants";
+import { GAUGE_MIN_REWARD_AMOUNT_WEI, networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -72,7 +83,7 @@ type RewardsInjectorConfiguratorV2Props = {
 };
 
 interface RecipientConfigData {
-  id: string; // Added unique identifier for each config
+  id: string;
   recipients: string[];
   amountPerPeriod: string;
   maxPeriods: string;
@@ -80,8 +91,45 @@ interface RecipientConfigData {
   rawAmountPerPeriod: string;
 }
 
-// Create a type without id for interfacing with EditableInjectorConfigV2
 type EditableRecipientConfigData = Omit<RecipientConfigData, "id">;
+
+// Helper functions extracted from the component
+const createEmptyConfig = (operationType: "add" | "remove" = "add"): RecipientConfigData => ({
+  id: uuidv4(),
+  recipients: [""],
+  amountPerPeriod: operationType === "add" ? "" : "0",
+  maxPeriods: operationType === "add" ? "" : "0",
+  doNotStartBeforeTimestamp: "0",
+  rawAmountPerPeriod: "0",
+});
+
+const formatAmount = (amount: number) => {
+  return amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const calculateDistribution = (gauges: RewardsInjectorData[]) => {
+  return gauges.reduce(
+    (acc, gauge) => {
+      const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+      const maxPeriods = parseInt(gauge.maxPeriods) || 0;
+      const periodNumber = parseInt(gauge.periodNumber) || 0;
+
+      const gaugeTotal = amountPerPeriod * maxPeriods;
+      const gaugeDistributed = amountPerPeriod * periodNumber;
+      const gaugeRemaining = gaugeTotal - gaugeDistributed;
+
+      return {
+        total: acc.total + gaugeTotal,
+        distributed: acc.distributed + gaugeDistributed,
+        remaining: acc.remaining + gaugeRemaining,
+      };
+    },
+    { total: 0, distributed: 0, remaining: 0 },
+  );
+};
 
 function RewardsInjectorConfiguratorV2({
   addresses,
@@ -97,35 +145,17 @@ function RewardsInjectorConfiguratorV2({
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
-  // Changed to arrays of configurations
-  const [addConfigs, setAddConfigs] = useState<RecipientConfigData[]>([
-    {
-      id: uuidv4(),
-      recipients: [""],
-      amountPerPeriod: "",
-      maxPeriods: "",
-      doNotStartBeforeTimestamp: "0",
-      rawAmountPerPeriod: "0",
-    },
-  ]);
-  const [removeConfigs, setRemoveConfigs] = useState<RecipientConfigData[]>([
-    {
-      id: uuidv4(),
-      recipients: [""],
-      amountPerPeriod: "0",
-      maxPeriods: "0",
-      doNotStartBeforeTimestamp: "0",
-      rawAmountPerPeriod: "0",
-    },
-  ]);
+  const [addConfigs, setAddConfigs] = useState<RecipientConfigData[]>([]);
+  const [removeConfigs, setRemoveConfigs] = useState<RecipientConfigData[]>([]);
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
 
-  // Define Transaction type to fix TypeScript errors
-  // Removed custom Transaction type in favor of imported one
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [operation, setOperation] = useState<"add" | "remove" | null>(null);
+
+  const successColor = useColorModeValue("green.500", "green.300");
+  const errorColor = useColorModeValue("red.500", "red.300");
+  const mutedTextColor = useColorModeValue("gray.600", "gray.400");
 
   useEffect(() => {
     if (selectedAddress && injectorData) {
@@ -136,23 +166,45 @@ function RewardsInjectorConfiguratorV2({
     }
   }, [selectedAddress, injectorData]);
 
-  // Updated to handle config changes for multiple configs
-  const handleConfigChange = (newConfig: EditableRecipientConfigData, configId: string) => {
-    if (operation === "add") {
-      setAddConfigs(prev =>
-        prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
-      );
-    } else if (operation === "remove") {
-      setRemoveConfigs(prev =>
-        prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
-      );
-    }
+  // Handle config changes
+  const handleAddConfigChange = (newConfig: EditableRecipientConfigData, configId: string) => {
+    setAddConfigs(prev =>
+      prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
+    );
   };
 
-  // Add a new config group
-  const addConfigGroup = () => {
-    const newConfig: RecipientConfigData = {
-      id: uuidv4(),
+  const handleRemoveConfigChange = (newConfig: EditableRecipientConfigData, configId: string) => {
+    setRemoveConfigs(prev =>
+      prev.map(config => (config.id === configId ? { ...newConfig, id: configId } : config)),
+    );
+  };
+
+  // Add config operations
+  const addAddConfigGroup = () => {
+    const newConfig = createEmptyConfig("add");
+    setAddConfigs(prev => [...prev, newConfig]);
+  };
+
+  const removeAddConfigGroup = (configId: string) => {
+    const newConfigs = addConfigs.filter(config => config.id !== configId);
+    setAddConfigs(newConfigs);
+
+    const message =
+      newConfigs.length === 0
+        ? "Add Recipients section has been hidden (no configuration groups remaining)."
+        : "Add configuration group has been removed.";
+
+    toast({
+      title: "Configuration Deleted",
+      description: message,
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  const clearAddConfigGroup = (configId: string) => {
+    const emptyData: EditableRecipientConfigData = {
       recipients: [""],
       amountPerPeriod: "",
       maxPeriods: "",
@@ -160,118 +212,107 @@ function RewardsInjectorConfiguratorV2({
       rawAmountPerPeriod: "0",
     };
 
-    if (operation === "add") {
-      setAddConfigs(prev => [...prev, newConfig]);
-    } else if (operation === "remove") {
-      setRemoveConfigs(prev => [...prev, newConfig]);
-    }
-  };
-
-  // Remove a config group
-  const removeConfigGroup = (configId: string) => {
-    if (operation === "add") {
-      if (addConfigs.length <= 1) {
-        toast({
-          title: "Cannot Remove",
-          description: "You must have at least one configuration.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
-      setAddConfigs(prev => prev.filter(config => config.id !== configId));
-    } else if (operation === "remove") {
-      if (removeConfigs.length <= 1) {
-        toast({
-          title: "Cannot Remove",
-          description: "You must have at least one configuration.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
-      setRemoveConfigs(prev => prev.filter(config => config.id !== configId));
-    }
-  };
-
-  const calculateCurrentDistribution = (gauges: RewardsInjectorData[]) => {
-    const distribution = gauges.reduce(
-      (acc, gauge) => {
-        const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
-        const maxPeriods = parseInt(gauge.maxPeriods) || 0;
-        const periodNumber = parseInt(gauge.periodNumber) || 0;
-
-        const gaugeTotal = amountPerPeriod * maxPeriods;
-        const gaugeDistributed = amountPerPeriod * periodNumber;
-        const gaugeRemaining = gaugeTotal - gaugeDistributed;
-
-        return {
-          total: acc.total + gaugeTotal,
-          distributed: acc.distributed + gaugeDistributed,
-          remaining: acc.remaining + gaugeRemaining,
-        };
-      },
-      {
-        total: 0,
-        distributed: 0,
-        remaining: 0,
-      },
+    setAddConfigs(prev =>
+      prev.map(config => (config.id === configId ? { ...emptyData, id: configId } : config)),
     );
 
-    return distribution;
+    toast({
+      title: "Configuration Cleared",
+      description: "All fields have been cleared for this configuration group.",
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
-  // Updated to handle multiple config groups
+  // Remove config operations
+  const addRemoveConfigGroup = () => {
+    const newConfig = createEmptyConfig("remove");
+    setRemoveConfigs(prev => [...prev, newConfig]);
+  };
+
+  const removeRemoveConfigGroup = (configId: string) => {
+    const newConfigs = removeConfigs.filter(config => config.id !== configId);
+    setRemoveConfigs(newConfigs);
+
+    const message =
+      newConfigs.length === 0
+        ? "Remove Recipients section has been hidden (no configuration groups remaining)."
+        : "Remove configuration group has been removed.";
+
+    toast({
+      title: "Configuration Deleted",
+      description: message,
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  const clearRemoveConfigGroup = (configId: string) => {
+    const emptyData: EditableRecipientConfigData = {
+      recipients: [""],
+      amountPerPeriod: "0",
+      maxPeriods: "0",
+      doNotStartBeforeTimestamp: "0",
+      rawAmountPerPeriod: "0",
+    };
+
+    setRemoveConfigs(prev =>
+      prev.map(config => (config.id === configId ? { ...emptyData, id: configId } : config)),
+    );
+
+    toast({
+      title: "Configuration Cleared",
+      description: "All fields have been cleared for this configuration group.",
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  // Calculate new distribution considering both add and remove operations
   const calculateNewDistribution = (
-    operation: "add" | "remove" | null,
     addConfigs: RecipientConfigData[],
     removeConfigs: RecipientConfigData[],
   ) => {
-    const currentDist = calculateCurrentDistribution(gauges);
+    const currentDist = calculateDistribution(gauges);
     let newTotal = currentDist.total;
     let newDistributed = currentDist.distributed;
     let newRemaining = currentDist.remaining;
 
-    if (operation === "add") {
-      addConfigs.forEach(config => {
-        const amount = parseFloat(config.amountPerPeriod) || 0;
-        const periods = parseInt(config.maxPeriods) || 0;
-        const validRecipients = config.recipients.filter(r => r.trim()).length;
+    // Process removals first
+    const removedAddresses = removeConfigs
+      .flatMap(config => config.recipients.filter(r => r.trim()))
+      .filter((address, index, self) => self.indexOf(address) === index);
 
-        const additionalTotal = amount * periods * validRecipients;
-        newTotal += additionalTotal;
-        newRemaining += additionalTotal;
-      });
-    } else if (operation === "remove") {
-      const removedAddresses: string[] = [];
-      removeConfigs.forEach(config => {
-        removedAddresses.push(...config.recipients.filter(r => r.trim()));
-      });
+    removedAddresses.forEach(address => {
+      const gauge = gauges.find(g => g.gaugeAddress.toLowerCase() === address.toLowerCase());
+      if (gauge) {
+        const gaugeAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+        const gaugeMaxPeriods = parseInt(gauge.maxPeriods) || 0;
+        const gaugePeriodNumber = parseInt(gauge.periodNumber) || 0;
 
-      // Remove duplicates using Array.filter instead of Set
-      const uniqueRemovedAddresses = removedAddresses.filter(
-        (address, index, self) => self.indexOf(address) === index,
-      );
+        const gaugeTotal = gaugeAmountPerPeriod * gaugeMaxPeriods;
+        const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
+        const gaugeRemaining = gaugeTotal - gaugeDistributed;
 
-      uniqueRemovedAddresses.forEach(address => {
-        const gauge = gauges.find(g => g.gaugeAddress.toLowerCase() === address.toLowerCase());
-        if (gauge) {
-          const gaugeAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
-          const gaugeMaxPeriods = parseInt(gauge.maxPeriods) || 0;
-          const gaugePeriodNumber = parseInt(gauge.periodNumber) || 0;
+        newTotal -= gaugeTotal;
+        newDistributed -= gaugeDistributed;
+        newRemaining -= gaugeRemaining;
+      }
+    });
 
-          const gaugeTotal = gaugeAmountPerPeriod * gaugeMaxPeriods;
-          const gaugeDistributed = gaugeAmountPerPeriod * gaugePeriodNumber;
-          const gaugeRemaining = gaugeTotal - gaugeDistributed;
+    // Process additions
+    addConfigs.forEach(config => {
+      const amount = parseFloat(config.amountPerPeriod) || 0;
+      const periods = parseInt(config.maxPeriods) || 0;
+      const validRecipients = config.recipients.filter(r => r.trim()).length;
 
-          newTotal -= gaugeTotal / 10 ** tokenDecimals;
-          newDistributed -= gaugeDistributed / 10 ** tokenDecimals;
-          newRemaining -= gaugeRemaining / 10 ** tokenDecimals;
-        }
-      });
-    }
+      const additionalTotal = amount * periods * validRecipients;
+      newTotal += additionalTotal;
+      newRemaining += additionalTotal;
+    });
 
     return {
       total: newTotal,
@@ -280,33 +321,21 @@ function RewardsInjectorConfiguratorV2({
     };
   };
 
-  const formatAmount = (amount: number) => {
-    return amount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
-  const currentDistribution = calculateCurrentDistribution(gauges);
-  const newDistribution = calculateNewDistribution(operation, addConfigs, removeConfigs);
+  const currentDistribution = calculateDistribution(gauges);
+  const newDistribution = calculateNewDistribution(addConfigs, removeConfigs);
   const distributionDelta = newDistribution.total - currentDistribution.total;
 
   // Check if any rewards are too small
-  const MIN_REWARD_AMOUNT_WEI = 604800; // Minimum amount in wei
-
-  const hasSmallRewards =
-    operation === "add" &&
-    addConfigs.some(config => {
-      const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
-      return rawAmount > 0 && rawAmount <= MIN_REWARD_AMOUNT_WEI;
-    });
+  const hasSmallRewards = addConfigs.some(config => {
+    const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
+    return rawAmount > 0 && rawAmount <= GAUGE_MIN_REWARD_AMOUNT_WEI;
+  });
 
   // Convert min amount to human readable format for the warning
   const minHumanReadableAmount = tokenDecimals
-    ? (MIN_REWARD_AMOUNT_WEI / 10 ** tokenDecimals).toFixed(Math.min(6, tokenDecimals))
+    ? (GAUGE_MIN_REWARD_AMOUNT_WEI / 10 ** tokenDecimals).toFixed(Math.min(6, tokenDecimals))
     : "0.00";
 
-  // Updated to generate multiple transactions in the payload
   const generatePayload = () => {
     if (!selectedAddress) {
       toast({
@@ -319,7 +348,6 @@ function RewardsInjectorConfiguratorV2({
       return;
     }
 
-    // Check for too small rewards before generating the payload
     if (hasSmallRewards) {
       toast({
         title: "Rewards Too Small",
@@ -328,62 +356,49 @@ function RewardsInjectorConfiguratorV2({
         duration: 5000,
         isClosable: true,
       });
-      // Allow generation to continue despite the warning
     }
 
     try {
       const chainId = Number(getChainId(selectedAddress.network));
       let transactions: Transaction[] = [];
 
-      if (operation === "add") {
-        // Generate a transaction for each add config
-        for (const config of addConfigs) {
-          // Skip empty configurations
-          if (
-            !config.recipients.some(r => r.trim()) ||
-            !config.rawAmountPerPeriod ||
-            !config.maxPeriods
-          ) {
+      // Helper function to process configs
+      const processConfigs = (configs: RecipientConfigData[], operation: "add" | "remove") => {
+        for (const config of configs) {
+          const validRecipients = config.recipients.filter(r => r.trim());
+          if (validRecipients.length === 0) continue;
+
+          // Skip empty add configurations
+          if (operation === "add" && (!config.rawAmountPerPeriod || !config.maxPeriods)) {
             continue;
           }
 
-          const validRecipients = config.recipients.filter(r => r.trim());
-          if (validRecipients.length === 0) continue;
+          const scheduleInputs = validRecipients.map(recipient =>
+            operation === "add"
+              ? {
+                  gaugeAddress: recipient,
+                  rawAmountPerPeriod: config.rawAmountPerPeriod,
+                  maxPeriods: config.maxPeriods,
+                  doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+                }
+              : { gaugeAddress: recipient },
+          );
 
-          const addPayload = generateInjectorSchedulePayloadV2({
+          const payload = generateInjectorSchedulePayloadV2({
             injectorAddress: selectedAddress.address,
             chainId: chainId,
             safeAddress: selectedSafe,
-            operation: "add",
-            scheduleInputs: validRecipients.map(recipient => ({
-              gaugeAddress: recipient,
-              rawAmountPerPeriod: config.rawAmountPerPeriod,
-              maxPeriods: config.maxPeriods,
-              doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
-            })),
+            operation,
+            scheduleInputs,
           });
 
-          transactions.push(addPayload.transactions[0]);
+          transactions.push(payload.transactions[0]);
         }
-      } else if (operation === "remove") {
-        // Generate a transaction for each remove config
-        for (const config of removeConfigs) {
-          const validRecipients = config.recipients.filter(r => r.trim());
-          if (validRecipients.length === 0) continue;
+      };
 
-          const removePayload = generateInjectorSchedulePayloadV2({
-            injectorAddress: selectedAddress.address,
-            chainId: chainId,
-            safeAddress: selectedSafe,
-            operation: "remove",
-            scheduleInputs: validRecipients.map(recipient => ({
-              gaugeAddress: recipient,
-            })),
-          });
-
-          transactions.push(removePayload.transactions[0]);
-        }
-      }
+      // Process removals first, then additions
+      processConfigs(removeConfigs, "remove");
+      processConfigs(addConfigs, "add");
 
       if (transactions.length === 0) {
         toast({
@@ -396,14 +411,22 @@ function RewardsInjectorConfiguratorV2({
         return;
       }
 
-      // Create the final payload with all transactions
+      // Determine operation type for metadata
+      const hasRemoveOps = removeConfigs.some(config => config.recipients.some(r => r.trim()));
+      const hasAddOps = addConfigs.some(
+        config =>
+          config.recipients.some(r => r.trim()) && config.rawAmountPerPeriod && config.maxPeriods,
+      );
+
+      const operationType = hasRemoveOps && hasAddOps ? "MIXED" : hasAddOps ? "ADD" : "REMOVE";
+
       const finalPayload: BatchFile = {
         version: "1.0",
         chainId: chainId.toString(),
         createdAt: Math.floor(Date.now() / 1000),
         meta: {
-          name: `Rewards Injector Schedule - ${operation?.toUpperCase()}`,
-          description: `Configure rewards injector schedule to ${operation} recipients`,
+          name: `Rewards Injector Schedule - ${operationType}`,
+          description: `Configure rewards injector schedule to ${hasRemoveOps && hasAddOps ? "remove and add" : hasAddOps ? "add" : "remove"} recipients`,
           createdFromSafeAddress: selectedSafe,
         },
         transactions: transactions,
@@ -454,9 +477,83 @@ function RewardsInjectorConfiguratorV2({
     }
   };
 
+  const shouldShowAddSection = () => addConfigs.length > 0;
+  const shouldShowRemoveSection = () => removeConfigs.length > 0;
+  const hasAnyConfigurations = () => shouldShowAddSection() || shouldShowRemoveSection();
+
+  // Handle adding a gauge to the remove section
+  const handleAddToRemove = (gaugeAddress: string) => {
+    // If no remove configs exist, create the remove section with this address
+    if (removeConfigs.length === 0) {
+      const newConfig = { ...createEmptyConfig("remove"), recipients: [gaugeAddress] };
+      setRemoveConfigs([newConfig]);
+
+      toast({
+        title: "Added to Remove Section",
+        description: `Created Remove Recipients section with: ${gaugeAddress}`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Find the first empty remove configuration or add to existing one
+    const emptyConfigIndex = removeConfigs.findIndex(
+      configGroup => !configGroup.recipients.some(r => r.trim()),
+    );
+
+    if (emptyConfigIndex !== -1) {
+      const updatedConfig = { ...removeConfigs[emptyConfigIndex], recipients: [gaugeAddress] };
+      setRemoveConfigs(prev =>
+        prev.map((c, index) => (index === emptyConfigIndex ? updatedConfig : c)),
+      );
+
+      toast({
+        title: "Added to Remove Section",
+        description: `Added ${gaugeAddress} to Remove Configuration Group ${emptyConfigIndex + 1}`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } else {
+      // All groups have recipients, add to the first one (since we typically only want one remove group)
+      const firstConfig = removeConfigs[0];
+      const updatedRecipients = [...firstConfig.recipients];
+
+      // Check if the address is already in the list
+      if (!updatedRecipients.includes(gaugeAddress)) {
+        updatedRecipients.push(gaugeAddress);
+
+        const updatedConfig = {
+          ...firstConfig,
+          recipients: updatedRecipients,
+        };
+
+        setRemoveConfigs(prev => prev.map((c, index) => (index === 0 ? updatedConfig : c)));
+
+        toast({
+          title: "Added to Remove Section",
+          description: `Added ${gaugeAddress} to the existing Remove Configuration Group`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: "Already in Remove Section",
+          description: `${gaugeAddress} is already scheduled for removal`,
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
   const getPrefillValues = useCallback(() => {
-    // Make sure we have a selected injector and an operation type
-    if (!selectedAddress || !operation)
+    // Make sure we have a selected injector
+    if (!selectedAddress)
       return {
         prefillBranchName: "",
         prefillPrName: "",
@@ -472,43 +569,232 @@ function RewardsInjectorConfiguratorV2({
     const networkName = selectedAddress.network;
 
     // Count total recipients and calculate total allocation
-    let totalValidRecipients = 0;
+    let totalAddRecipients = 0;
+    let totalRemoveRecipients = 0;
     let totalAmount = 0;
 
-    if (operation === "add") {
-      addConfigs.forEach(config => {
-        const validRecipients = config.recipients.filter(r => r.trim()).length;
-        totalValidRecipients += validRecipients;
-
+    // Count add configurations
+    addConfigs.forEach(config => {
+      const validRecipients = config.recipients.filter(r => r.trim()).length;
+      if (config.rawAmountPerPeriod && config.maxPeriods) {
+        totalAddRecipients += validRecipients;
         const amountPerPeriod = parseFloat(config.amountPerPeriod) || 0;
         const maxPeriods = parseInt(config.maxPeriods) || 0;
         totalAmount += amountPerPeriod * maxPeriods * validRecipients;
-      });
-    } else {
-      // For remove, just count recipients
-      removeConfigs.forEach(config => {
-        totalValidRecipients += config.recipients.filter(r => r.trim()).length;
-      });
-    }
+      }
+    });
 
-    // Get summary info for PR description
+    // Count remove configurations
+    removeConfigs.forEach(config => {
+      totalRemoveRecipients += config.recipients.filter(r => r.trim()).length;
+    });
+
+    // Determine operation type and create summary
+    let operationType = "";
     let summaryInfo = "";
-    if (operation === "add") {
-      summaryInfo = `adding ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? "s" : ""} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol}`;
+
+    if (totalAddRecipients > 0 && totalRemoveRecipients > 0) {
+      operationType = "mixed";
+      summaryInfo = `adding ${totalAddRecipients} recipient${totalAddRecipients !== 1 ? "s" : ""} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol} and removing ${totalRemoveRecipients} recipient${totalRemoveRecipients !== 1 ? "s" : ""}`;
+    } else if (totalAddRecipients > 0) {
+      operationType = "add";
+      summaryInfo = `adding ${totalAddRecipients} recipient${totalAddRecipients !== 1 ? "s" : ""} with total allocation of ${formatAmount(totalAmount)} ${tokenSymbol}`;
+    } else if (totalRemoveRecipients > 0) {
+      operationType = "remove";
+      summaryInfo = `removing ${totalRemoveRecipients} recipient${totalRemoveRecipients !== 1 ? "s" : ""}`;
     } else {
-      summaryInfo = `removing ${totalValidRecipients} recipient${totalValidRecipients !== 1 ? "s" : ""}`;
+      operationType = "config";
+      summaryInfo = "updating injector configuration";
     }
 
     // Create the filename without any path prefix - the path will come from config
-    const filename = `injector-${operation}-recipients-${shortInjectorId}-${uniqueId}.json`;
+    const filename = `injector-${operationType}-recipients-${shortInjectorId}-${uniqueId}.json`;
 
     return {
-      prefillBranchName: `feature/injector-${operation}-${shortInjectorId}-${uniqueId}`,
-      prefillPrName: `${operation === "add" ? "Add" : "Remove"} Recipients for ${tokenSymbol} Injector on ${networkName}`,
+      prefillBranchName: `feature/injector-${operationType}-${shortInjectorId}-${uniqueId}`,
+      prefillPrName: `${operationType === "add" ? "Add" : operationType === "remove" ? "Remove" : operationType === "mixed" ? "Update" : "Configure"} Recipients for ${tokenSymbol} Injector on ${networkName}`,
       prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} by ${summaryInfo} on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedAddress, operation, addConfigs, removeConfigs, tokenSymbol, formatAmount]);
+  }, [selectedAddress, addConfigs, removeConfigs, tokenSymbol]);
+
+  // Generic handler for copying configurations
+  const handleCopyConfiguration = (config: {
+    gaugeAddress: string;
+    amountPerPeriod: string;
+    rawAmountPerPeriod: string;
+    maxPeriods: string;
+    doNotStartBeforeTimestamp: string;
+  }) => {
+    const newConfig = {
+      id: uuidv4(),
+      recipients: [config.gaugeAddress],
+      amountPerPeriod: config.amountPerPeriod,
+      rawAmountPerPeriod: config.rawAmountPerPeriod,
+      maxPeriods: config.maxPeriods,
+      doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+    };
+
+    if (addConfigs.length === 0) {
+      setAddConfigs([newConfig]);
+      toast({
+        title: "Configuration Copied",
+        description: `Created Add Recipients section with: ${config.gaugeAddress} - ${config.amountPerPeriod} ${tokenSymbol} per period for ${config.maxPeriods} periods.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    const emptyConfigIndex = addConfigs.findIndex(
+      configGroup =>
+        !configGroup.recipients.some(r => r.trim()) &&
+        !configGroup.amountPerPeriod &&
+        !configGroup.maxPeriods,
+    );
+
+    if (emptyConfigIndex !== -1) {
+      setAddConfigs(prev => prev.map((c, index) => (index === emptyConfigIndex ? newConfig : c)));
+
+      toast({
+        title: "Configuration Copied",
+        description: `Copied to Configuration Group ${emptyConfigIndex + 1}: ${config.gaugeAddress} with ${config.amountPerPeriod} ${tokenSymbol} per period for ${config.maxPeriods} periods.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } else {
+      setAddConfigs(prev => [...prev, newConfig]);
+
+      toast({
+        title: "Configuration Copied",
+        description: `Created new Configuration Group ${addConfigs.length + 1}: ${config.gaugeAddress} with ${config.amountPerPeriod} ${tokenSymbol} per period for ${config.maxPeriods} periods.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleCopyAllConfigurations = () => {
+    if (!gauges || gauges.length === 0) {
+      toast({
+        title: "No Configurations to Copy",
+        description: "There are no existing gauge configurations to copy.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    const newConfigs: RecipientConfigData[] = gauges.map(gauge => ({
+      id: uuidv4(),
+      recipients: [gauge.gaugeAddress],
+      amountPerPeriod: gauge.amountPerPeriod,
+      rawAmountPerPeriod: gauge.rawAmountPerPeriod,
+      maxPeriods: gauge.maxPeriods,
+      doNotStartBeforeTimestamp: "0",
+    }));
+
+    setAddConfigs(newConfigs);
+
+    toast({
+      title: "All Configurations Copied",
+      description: `Created Add Recipients section with ${gauges.length} gauge configurations. Each gauge has been placed in its own configuration group.`,
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+  };
+
+  // Render helper for configuration sections
+  const renderConfigSection = (
+    configs: RecipientConfigData[],
+    title: string,
+    operation: "add" | "remove",
+    onAddGroup: () => void,
+    onRemoveGroup: (configId: string) => void,
+    onClearGroup: (configId: string) => void,
+  ) => (
+    <Box mt={8}>
+      <Flex justifyContent="space-between" alignItems="center" mb={4}>
+        <Heading as="h3" size="md">
+          {title}
+        </Heading>
+        <Button variant="outline" leftIcon={<AddIcon />} onClick={onAddGroup} size="sm">
+          Add Configuration Group
+        </Button>
+      </Flex>
+
+      {configs.map((config, index) => {
+        const isEmpty =
+          operation === "add"
+            ? !config.recipients.some(r => r.trim()) &&
+              !config.amountPerPeriod &&
+              !config.maxPeriods
+            : !config.recipients.some(r => r.trim());
+
+        return (
+          <Box key={config.id} p={4} mb={4} borderWidth="1px" borderRadius="md" position="relative">
+            <Flex justifyContent="space-between" alignItems="center" mb={3}>
+              <HStack spacing={2}>
+                <Heading as="h4" size="sm">
+                  {title} Configuration Group {index + 1}
+                </Heading>
+                {isEmpty && (
+                  <Badge colorScheme="gray" variant="subtle" size="sm">
+                    Empty
+                  </Badge>
+                )}
+              </HStack>
+              <HStack spacing={2}>
+                <Tooltip label="Clear all fields in this group">
+                  <IconButton
+                    aria-label="Clear configuration"
+                    icon={<AiOutlineClear />}
+                    size="md"
+                    onClick={() => onClearGroup(config.id)}
+                    colorScheme="gray"
+                    variant="ghost"
+                  />
+                </Tooltip>
+                <Tooltip label="Delete this configuration group">
+                  <IconButton
+                    aria-label="Delete configuration"
+                    icon={<DeleteIcon />}
+                    size="sm"
+                    onClick={() => onRemoveGroup(config.id)}
+                    colorScheme="red"
+                    variant="ghost"
+                  />
+                </Tooltip>
+              </HStack>
+            </Flex>
+
+            <EditableInjectorConfigV2
+              initialData={{
+                recipients: config.recipients,
+                amountPerPeriod: config.amountPerPeriod,
+                maxPeriods: config.maxPeriods,
+                doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
+                rawAmountPerPeriod: config.rawAmountPerPeriod,
+              }}
+              tokenSymbol={tokenSymbol}
+              tokenDecimals={tokenDecimals}
+              operation={operation}
+              onConfigChange={newConfig =>
+                operation === "add"
+                  ? handleAddConfigChange(newConfig, config.id)
+                  : handleRemoveConfigChange(newConfig, config.id)
+              }
+            />
+          </Box>
+        );
+      })}
+    </Box>
+  );
 
   return (
     <Container maxW="container.xl">
@@ -517,7 +803,8 @@ function RewardsInjectorConfiguratorV2({
           Injector Schedule Payload Configurator
         </Heading>
         <Text mb={6}>
-          Build a injector schedule payload to configure reward emissions on a gauge set.
+          Build a injector schedule payload to add new recipients and remove existing ones.
+          Configure both operations simultaneously for maximum flexibility.
         </Text>
       </Box>
       <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
@@ -615,41 +902,101 @@ function RewardsInjectorConfiguratorV2({
 
       {selectedAddress && !isLoading && (
         <>
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={4}>
-            <Card>
-              <CardBody>
-                <Stack spacing={3}>
-                  <Heading size="md">Current Total Distribution</Heading>
-                  <Text fontSize="2xl" fontWeight="bold">
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mb={6}>
+            <Card borderWidth="1px" borderRadius="xl">
+              <VStack spacing={4} align="stretch" p={4}>
+                <HStack justify="space-between" align="center">
+                  <Badge colorScheme="gray" variant="subtle" size="sm">
+                    Current
+                  </Badge>
+                </HStack>
+                <Stat>
+                  <StatLabel fontSize="md">Total Distribution</StatLabel>
+                  <StatNumber fontSize="2xl">
                     {formatAmount(currentDistribution.total)} {tokenSymbol}
-                  </Text>
-                </Stack>
-              </CardBody>
+                  </StatNumber>
+                  <StatHelpText fontSize="sm">
+                    Distributed: {formatAmount(currentDistribution.distributed)} | Remaining:{" "}
+                    {formatAmount(currentDistribution.remaining)}
+                  </StatHelpText>
+                </Stat>
+                {currentDistribution.total > 0 && (
+                  <Progress
+                    value={(currentDistribution.distributed / currentDistribution.total) * 100}
+                    colorScheme="gray"
+                    size="md"
+                    borderRadius="full"
+                  />
+                )}
+              </VStack>
             </Card>
-            <Card>
-              <CardBody>
-                <Stack spacing={3}>
-                  <Heading size="md">New Total Distribution</Heading>
-                  <Text fontSize="2xl" fontWeight="bold">
+
+            <Card borderWidth="1px" borderRadius="xl">
+              <VStack spacing={4} align="stretch" p={4}>
+                <HStack justify="space-between" align="center">
+                  <Badge colorScheme="blue" variant="subtle" size="sm">
+                    Preview
+                  </Badge>
+                </HStack>
+                <Stat>
+                  <StatLabel fontSize="md">New Total Distribution</StatLabel>
+                  <StatNumber fontSize="2xl">
                     {formatAmount(newDistribution.total)} {tokenSymbol}
-                  </Text>
-                </Stack>
-              </CardBody>
+                  </StatNumber>
+                  <StatHelpText fontSize="sm">After configuration changes</StatHelpText>
+                </Stat>
+                {newDistribution.total > 0 && (
+                  <Progress
+                    value={(newDistribution.distributed / newDistribution.total) * 100}
+                    colorScheme="gray"
+                    size="md"
+                    borderRadius="full"
+                  />
+                )}
+              </VStack>
             </Card>
-            <Card>
-              <CardBody>
-                <Stack spacing={3}>
-                  <Heading size="md">Distribution Delta</Heading>
-                  <Text
+
+            <Card borderWidth="2px" borderRadius="xl">
+              <VStack spacing={4} align="stretch" p={4}>
+                <HStack justify="space-between" align="center">
+                  <Badge
+                    colorScheme={
+                      distributionDelta === 0 ? "gray" : distributionDelta > 0 ? "green" : "red"
+                    }
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {distributionDelta === 0
+                      ? "No Change"
+                      : distributionDelta > 0
+                        ? "Increase"
+                        : "Decrease"}
+                  </Badge>
+                </HStack>
+                <Stat>
+                  <StatLabel fontSize="md">Distribution Delta</StatLabel>
+                  <StatNumber
                     fontSize="2xl"
-                    fontWeight="bold"
-                    color={distributionDelta >= 0 ? "green.500" : "red.500"}
+                    color={
+                      distributionDelta === 0
+                        ? "gray.500"
+                        : distributionDelta > 0
+                          ? successColor
+                          : errorColor
+                    }
                   >
                     {distributionDelta >= 0 ? "+" : ""}
                     {formatAmount(distributionDelta)} {tokenSymbol}
-                  </Text>
-                </Stack>
-              </CardBody>
+                  </StatNumber>
+                  <StatHelpText fontSize="sm">
+                    {distributionDelta > contractBalance
+                      ? `⚠️ Insufficient funds (need ${formatAmount(distributionDelta - contractBalance)} more)`
+                      : distributionDelta === 0
+                        ? "No additional funding required"
+                        : "Within available balance"}
+                  </StatHelpText>
+                </Stat>
+              </VStack>
             </Card>
           </SimpleGrid>
 
@@ -669,83 +1016,179 @@ function RewardsInjectorConfiguratorV2({
               <AlertIcon />
               <AlertTitle mr={2}>Rewards Too Small!</AlertTitle>
               <AlertDescription>
-                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI or{" "}
+                One or more reward amounts are too small (≤ {GAUGE_MIN_REWARD_AMOUNT_WEI} WEI or{" "}
                 {minHumanReadableAmount} {tokenSymbol}). The gauge cannot handle rewards this small.
                 Please increase the reward amount to be at least 1 WEI / second.
               </AlertDescription>
             </Alert>
           )}
 
-          <Box mt={6}>
-            <Heading as="h2" size="lg" mb={4}>
-              Current Configuration
-            </Heading>
-            <RewardsInjectorConfigurationViewerV2
-              data={gauges}
-              tokenSymbol={tokenSymbol}
-              tokenDecimals={tokenDecimals}
-            />
-          </Box>
-          <Box mt={6} gap={4}>
-            <Button onClick={() => setOperation("add")} mr={4}>
-              Add Recipients
-            </Button>
-            <Button onClick={() => setOperation("remove")}>Remove Recipients</Button>
-          </Box>
-          {operation && (
-            <Box mt={6}>
-              <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                <Heading as="h3" size="md">
-                  {operation === "add"
-                    ? "Add Recipients Configuration"
-                    : "Remove Recipients Configuration"}
+          <Alert status="info" borderRadius="lg" variant="left-accent">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Ready to configure!</AlertTitle>
+              <AlertDescription>
+                Use the sections below to add new recipients and remove existing ones. Both
+                operations can be configured simultaneously and will be combined into a single
+                payload.
+              </AlertDescription>
+            </Box>
+          </Alert>
+
+          <Box mt={8}>
+            <VStack spacing={6} align="stretch">
+              <Flex justifyContent="space-between" alignItems="center">
+                <Heading as="h2" size="lg">
+                  Current Configuration
                 </Heading>
-                <Button leftIcon={<AddIcon />} onClick={addConfigGroup} size="sm">
-                  Add Configuration Group
-                </Button>
+
+                <VStack spacing={2} align="end">
+                  {gauges && gauges.length > 0 && (
+                    <HStack spacing={3}>
+                      <Button
+                        leftIcon={<CopyIcon />}
+                        onClick={handleCopyAllConfigurations}
+                        size="md"
+                        variant="secondary"
+                      >
+                        Copy All Configurations
+                      </Button>
+                    </HStack>
+                  )}
+
+                  <Text fontSize="xs" color="gray.500" textAlign="right">
+                    💡 Copy buttons populate the "Add Recipients" section | Trash buttons populate
+                    the "Remove Recipients" section
+                  </Text>
+                </VStack>
               </Flex>
 
-              {/* Map through the configurations array instead of rendering a single one */}
-              {(operation === "add" ? addConfigs : removeConfigs).map((config, index) => (
-                <Box
-                  key={config.id}
-                  p={4}
-                  mb={4}
-                  borderWidth="1px"
-                  borderRadius="md"
-                  position="relative"
-                >
-                  <Flex justifyContent="space-between" alignItems="center" mb={3}>
-                    <Heading as="h4" size="sm">
-                      Configuration Group {index + 1}
-                    </Heading>
-                    <IconButton
-                      aria-label="Delete configuration"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      onClick={() => removeConfigGroup(config.id)}
-                      colorScheme="red"
-                      variant="ghost"
-                    />
-                  </Flex>
+              <RewardsInjectorConfigurationViewerV2
+                data={gauges}
+                tokenSymbol={tokenSymbol}
+                tokenDecimals={tokenDecimals}
+                onCopyConfiguration={handleCopyConfiguration}
+                onAddToRemove={handleAddToRemove}
+                showCopyButtons={true}
+                showTrashButtons={true}
+              />
+            </VStack>
+          </Box>
 
-                  <EditableInjectorConfigV2
-                    initialData={{
-                      recipients: config.recipients,
-                      amountPerPeriod: config.amountPerPeriod,
-                      maxPeriods: config.maxPeriods,
-                      doNotStartBeforeTimestamp: config.doNotStartBeforeTimestamp,
-                      rawAmountPerPeriod: config.rawAmountPerPeriod,
-                    }}
-                    tokenSymbol={tokenSymbol}
-                    tokenDecimals={tokenDecimals}
-                    operation={operation}
-                    onConfigChange={newConfig => handleConfigChange(newConfig, config.id)}
-                  />
-                </Box>
-              ))}
+          {/* Configuration Actions */}
+          {!hasAnyConfigurations() && (
+            <Box mt={8}>
+              <Card borderWidth="1px" borderRadius="xl" overflow="hidden">
+                <CardBody p={6}>
+                  <VStack spacing={4} align="center">
+                    <Heading as="h3" size="md" textAlign="center">
+                      Configure Recipients
+                    </Heading>
+                    <Text textAlign="center" color={mutedTextColor}>
+                      Add new recipients or remove existing ones from the injector schedule.
+                    </Text>
+                    <HStack spacing={4}>
+                      <Button
+                        leftIcon={<AddIcon />}
+                        onClick={addAddConfigGroup}
+                        colorScheme="green"
+                        variant="outline"
+                      >
+                        Add Recipients
+                      </Button>
+                      <Button
+                        leftIcon={<DeleteIcon />}
+                        onClick={addRemoveConfigGroup}
+                        colorScheme="red"
+                        variant="outline"
+                      >
+                        Remove Recipients
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </CardBody>
+              </Card>
             </Box>
           )}
+
+          {hasAnyConfigurations() && !shouldShowAddSection() && (
+            <Box mt={8}>
+              <Card borderWidth="1px" borderColor="green.200" borderRadius="xl" overflow="hidden">
+                <CardBody p={4}>
+                  <Flex justifyContent="space-between" alignItems="center">
+                    <VStack spacing={1} align="start">
+                      <Text fontWeight="medium" color="green.500">
+                        Want to add recipients?
+                      </Text>
+                      <Text fontSize="sm" color={mutedTextColor}>
+                        Create a configuration group to add new recipients to the injector.
+                      </Text>
+                    </VStack>
+                    <Button
+                      leftIcon={<AddIcon />}
+                      onClick={addAddConfigGroup}
+                      colorScheme="green"
+                      variant="outline"
+                      size="sm"
+                    >
+                      Add Recipients
+                    </Button>
+                  </Flex>
+                </CardBody>
+              </Card>
+            </Box>
+          )}
+
+          {hasAnyConfigurations() && !shouldShowRemoveSection() && (
+            <Box mt={8}>
+              <Card borderWidth="1px" borderColor="red.200" borderRadius="xl" overflow="hidden">
+                <CardBody p={4}>
+                  <Flex justifyContent="space-between" alignItems="center">
+                    <VStack spacing={1} align="start">
+                      <Text fontWeight="medium" color="red.500">
+                        Want to remove recipients?
+                      </Text>
+                      <Text fontSize="sm" color={mutedTextColor}>
+                        Create a configuration group to remove existing recipients from the
+                        injector.
+                      </Text>
+                    </VStack>
+                    <Button
+                      leftIcon={<DeleteIcon />}
+                      onClick={addRemoveConfigGroup}
+                      colorScheme="red"
+                      variant="outline"
+                      size="sm"
+                    >
+                      Remove Recipients
+                    </Button>
+                  </Flex>
+                </CardBody>
+              </Card>
+            </Box>
+          )}
+
+          {/* Add Recipients Section */}
+          {shouldShowAddSection() &&
+            renderConfigSection(
+              addConfigs,
+              "+ Add Recipients",
+              "add",
+              addAddConfigGroup,
+              removeAddConfigGroup,
+              clearAddConfigGroup,
+            )}
+
+          {/* Remove Recipients Section */}
+          {shouldShowRemoveSection() &&
+            renderConfigSection(
+              removeConfigs,
+              "- Remove Recipients",
+              "remove",
+              addRemoveConfigGroup,
+              removeRemoveConfigGroup,
+              clearRemoveConfigGroup,
+            )}
         </>
       )}
 
@@ -755,9 +1198,9 @@ function RewardsInjectorConfiguratorV2({
         </Flex>
       )}
 
-      {selectedAddress && !isLoading && operation && (
+      {selectedAddress && !isLoading && (
         <Flex justifyContent="space-between" mt={6} mb={6}>
-          <Button colorScheme="blue" onClick={generatePayload}>
+          <Button variant="primary" onClick={generatePayload} isDisabled={!hasAnyConfigurations()}>
             Generate Payload
           </Button>
           {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
