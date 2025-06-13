@@ -61,7 +61,7 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
-import { networks } from "@/constants/constants";
+import { GAUGE_MIN_REWARD_AMOUNT_WEI, networks } from "@/constants/constants";
 import { formatTokenName } from "@/lib/utils/formatTokenName";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -92,9 +92,6 @@ interface RecipientConfigData {
 }
 
 type EditableRecipientConfigData = Omit<RecipientConfigData, "id">;
-
-// Constants
-const MIN_REWARD_AMOUNT_WEI = 604800;
 
 // Helper functions extracted from the component
 const createEmptyConfig = (operationType: "add" | "remove" = "add"): RecipientConfigData => ({
@@ -331,12 +328,12 @@ function RewardsInjectorConfiguratorV2({
   // Check if any rewards are too small
   const hasSmallRewards = addConfigs.some(config => {
     const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
-    return rawAmount > 0 && rawAmount <= MIN_REWARD_AMOUNT_WEI;
+    return rawAmount > 0 && rawAmount <= GAUGE_MIN_REWARD_AMOUNT_WEI;
   });
 
   // Convert min amount to human readable format for the warning
   const minHumanReadableAmount = tokenDecimals
-    ? (MIN_REWARD_AMOUNT_WEI / 10 ** tokenDecimals).toFixed(Math.min(6, tokenDecimals))
+    ? (GAUGE_MIN_REWARD_AMOUNT_WEI / 10 ** tokenDecimals).toFixed(Math.min(6, tokenDecimals))
     : "0.00";
 
   const generatePayload = () => {
@@ -1019,7 +1016,7 @@ function RewardsInjectorConfiguratorV2({
               <AlertIcon />
               <AlertTitle mr={2}>Rewards Too Small!</AlertTitle>
               <AlertDescription>
-                One or more reward amounts are too small (≤ {MIN_REWARD_AMOUNT_WEI} WEI or{" "}
+                One or more reward amounts are too small (≤ {GAUGE_MIN_REWARD_AMOUNT_WEI} WEI or{" "}
                 {minHumanReadableAmount} {tokenSymbol}). The gauge cannot handle rewards this small.
                 Please increase the reward amount to be at least 1 WEI / second.
               </AlertDescription>

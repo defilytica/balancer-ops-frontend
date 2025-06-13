@@ -588,3 +588,5 @@ export const SWAP_FEE_PARAMS = {
     MAX: 100, // 100%
   },
 };
+
+export const GAUGE_MIN_REWARD_AMOUNT_WEI = 604800;

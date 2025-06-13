@@ -55,6 +55,9 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     },
   );
 
+  // Helper local state for datetime input
+  const [doNotStartBeforeDateTime, setDoNotStartBeforeDateTime] = useState<string>("");
+
   // Update local state when initialData changes (for copy configuration functionality)
   useEffect(() => {
     if (initialData) {
@@ -73,15 +76,6 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     if (!dateTimeString) return "0";
     const timestamp = Math.floor(new Date(dateTimeString).getTime() / 1000);
     return timestamp.toString();
-  };
-
-  // Helper function to convert Unix timestamp to datetime-local format
-  const convertTimestampToDateTime = (timestamp: string): string => {
-    if (!timestamp || timestamp === "0") return "";
-    const timestampNum = parseInt(timestamp);
-    if (isNaN(timestampNum) || timestampNum <= 0) return "";
-    const date = new Date(timestampNum * 1000);
-    return date.toISOString().slice(0, 16);
   };
 
   const convertToRawAmount = (amount: string): string => {
@@ -114,8 +108,11 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   };
 
   const handleDateTimeChange = (dateTimeString: string) => {
-    const timestamp = convertDateTimeToTimestamp(dateTimeString);
-    const newConfig = { ...config, doNotStartBeforeTimestamp: timestamp };
+    setDoNotStartBeforeDateTime(dateTimeString);
+    const newConfig = {
+      ...config,
+      doNotStartBeforeTimestamp: convertDateTimeToTimestamp(dateTimeString),
+    };
     setConfig(newConfig);
     onConfigChange(newConfig);
   };
@@ -215,7 +212,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
         </HStack>
         <Input
           type="datetime-local"
-          value={convertTimestampToDateTime(config.doNotStartBeforeTimestamp)}
+          value={doNotStartBeforeDateTime}
           onChange={e => handleDateTimeChange(e.target.value)}
           min={getMinDateTime()}
         />
