@@ -49,25 +49,12 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
     return "normal";
   };
 
-  const getRowBgColor = (status: string) => {
-    switch (status) {
-      case "critical":
-        return "red.50";
-      case "warning":
-        return "orange.50";
-      default:
-        return "transparent";
-    }
-  };
-
   const getCardBorderColor = (status: string) => {
     switch (status) {
       case "critical":
-        return "red.200";
+        return "red.500";
       case "warning":
-        return "orange.200";
-      default:
-        return "gray.200";
+        return "orange.500";
     }
   };
 
@@ -149,7 +136,7 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
               p={4}
               borderWidth="2px"
               borderColor={getCardBorderColor(balanceStatus)}
-              bg={getRowBgColor(balanceStatus)}
+              bg={"transparent"}
             >
               <VStack align="stretch" spacing={2}>
                 <HStack justify="space-between" wrap="wrap">
