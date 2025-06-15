@@ -14,6 +14,7 @@ import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
 import { fetchBufferOwnerShares } from "@/lib/services/fetchBufferOwnerShares";
 import { fetchBufferTotalShares } from "@/lib/services/fetchBufferTotalShares";
+import { fetchBufferAsset } from "@/lib/services/fetchBufferAsset";
 import { formatValue } from "@/lib/utils/formatValue";
 import {
   AddressBook,
@@ -156,6 +157,21 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     queryFn: () =>
       fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
     enabled: !!selectedToken && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
+  });
+
+  // Fetch buffer asset (underlying token) for manually added token
+  const {
+    data: bufferAsset,
+    isLoading: isLoadingBufferAsset,
+    isError: isBufferAssetError,
+  } = useTanStackQuery({
+    queryKey: ["bufferAsset", selectedToken?.address, selectedNetwork],
+    queryFn: () => fetchBufferAsset(selectedToken!.address, selectedNetwork.toLowerCase()),
+    enabled:
+      !!selectedToken &&
+      !!selectedNetwork &&
+      !!networks[selectedNetwork.toLowerCase()] &&
+      selectedToken.isManual,
   });
 
   const isGenerateButtonDisabled = useMemo(() => {
@@ -318,7 +334,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       return generateAddLiquidityToBufferPayload(
         {
           wrappedToken: selectedToken!.address,
-          underlyingToken: selectedToken!.underlyingTokenAddress,
+          underlyingToken: selectedToken!.isManual
+            ? bufferAsset?.underlyingToken || selectedToken!.underlyingTokenAddress
+            : selectedToken!.underlyingTokenAddress,
           maxAmountUnderlyingIn: underlyingTokenAmount || "0",
           maxAmountWrappedIn: wrappedTokenAmount || "0",
           exactSharesToIssue: sharesAmount,
@@ -339,6 +357,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       sharesAmount,
       ownerSafe,
       includePermit2,
+      bufferAsset,
       toast,
     ],
   );
@@ -502,10 +521,15 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                 placeholder="Select wrapped token"
                 isDisabled={!selectedNetwork}
                 onlyErc4626={true}
+                allowManualInput={true}
               />
-              {underlyingToken && (
+              {selectedToken && (
                 <Text fontSize="sm" mt={1.5} color="gray.400">
-                  Underlying token: {underlyingToken.address} ({underlyingToken.symbol})
+                  {selectedToken.isManual && bufferAsset
+                    ? `Underlying token: ${bufferAsset.underlyingToken}`
+                    : underlyingToken
+                      ? `Underlying token: ${underlyingToken.address} (${underlyingToken.symbol})`
+                      : null}
                 </Text>
               )}
             </FormControl>
@@ -543,14 +567,17 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                       <Text fontSize="sm" color="gray.400">
                         Balance: {bufferBalance.underlyingBalance.toString()}
                       </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        ≈{" "}
-                        {formatValue(
-                          bufferBalance.underlyingBalance,
-                          underlyingToken?.decimals ?? 0,
-                        )}{" "}
-                        {underlyingToken?.symbol}
-                      </Text>
+                      {/* don't show scaled balance for manual inputs */}
+                      {!selectedToken?.isManual && (
+                        <Text fontSize="xs" color="gray.500">
+                          ≈{" "}
+                          {formatValue(
+                            bufferBalance.underlyingBalance,
+                            underlyingToken?.decimals ?? selectedToken.decimals,
+                          )}{" "}
+                          {underlyingToken?.symbol ?? "tokens"}
+                        </Text>
+                      )}
                     </Flex>
                   )
                 )}
@@ -588,10 +615,13 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                       <Text fontSize="sm" color="gray.400">
                         Balance: {bufferBalance.wrappedBalance.toString()}
                       </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        ≈ {formatValue(bufferBalance.wrappedBalance, selectedToken.decimals)}{" "}
-                        {selectedToken.symbol}
-                      </Text>
+                      {/* don't show scaled balance for manual inputs */}
+                      {!selectedToken?.isManual && (
+                        <Text fontSize="xs" color="gray.500">
+                          ≈ {formatValue(bufferBalance.wrappedBalance, selectedToken.decimals)}{" "}
+                          {selectedToken.symbol}
+                        </Text>
+                      )}
                     </Flex>
                   )
                 )}
@@ -633,9 +663,15 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                       <Text fontSize="sm" color="gray.400">
                         Balance: {bufferShares.shares.toString()}
                       </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        ≈ {formatValue(bufferShares.shares, underlyingToken?.decimals ?? 0)}
-                      </Text>
+                      {!selectedToken?.isManual && (
+                        <Text fontSize="xs" color="gray.500">
+                          ≈{" "}
+                          {formatValue(
+                            bufferShares.shares,
+                            underlyingToken?.decimals ?? selectedToken.decimals,
+                          )}
+                        </Text>
+                      )}
                     </Flex>
                   )
                 )}
@@ -680,9 +716,15 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                         <Text fontSize="sm" color="gray.400">
                           Address balance: {ownerShares.ownerShares.toString()}
                         </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          ≈ {formatValue(ownerShares.ownerShares, underlyingToken?.decimals ?? 0)}
-                        </Text>
+                        {!selectedToken?.isManual && (
+                          <Text fontSize="xs" color="gray.500">
+                            ≈{" "}
+                            {formatValue(
+                              ownerShares.ownerShares,
+                              underlyingToken?.decimals ?? selectedToken.decimals,
+                            )}
+                          </Text>
+                        )}
                       </Flex>
                     </>
                   )
@@ -703,7 +745,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         </Flex>
         {operationType === BufferOperation.REMOVE &&
           ownerShares?.ownerShares === BigInt(0) &&
-          isAddress(ownerSafe) && (
+          isAddress(ownerSafe) &&
+          selectedToken && (
             <Alert status="error" alignItems="center">
               <AlertIcon />
               <Text>
@@ -712,7 +755,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             </Alert>
           )}
 
-        {selectedToken && !isInitialized && (
+        {selectedToken && !isLoadingInitialized && !isInitialized && (
           <Alert status="error" alignItems="center">
             <AlertIcon />
             <Text>

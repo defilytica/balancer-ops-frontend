@@ -113,6 +113,7 @@ export interface TokenListToken {
   logoURI: string;
   isErc4626?: boolean;
   underlyingTokenAddress?: string;
+  isManual?: boolean;
 }
 
 export interface TokenWithBalance extends PoolToken {
