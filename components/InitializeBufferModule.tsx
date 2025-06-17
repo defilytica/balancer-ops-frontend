@@ -5,7 +5,8 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
+  InputGroup,
+  InputRightElement,
   VStack,
   useToast,
   Flex,
@@ -17,16 +18,15 @@ import {
   AlertIcon,
   Link,
   Container,
-  IconButton,
 } from "@chakra-ui/react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   AddressBook,
   GetTokensQuery,
   GetTokensQueryVariables,
   TokenListToken,
 } from "@/types/interfaces";
-import { CopyIcon, DownloadIcon, CloseIcon } from "@chakra-ui/icons";
+import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import {
   copyJsonToClipboard,
@@ -41,7 +41,11 @@ import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
+import { fetchBufferAsset } from "@/lib/services/fetchBufferAsset";
 import { useQuery as useTanStackQuery } from "@tanstack/react-query";
+import { isZeroAddress } from "@ethereumjs/util";
+import { isAddress } from "viem";
+import { useDebounce } from "use-debounce";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -50,7 +54,6 @@ interface InitializeBufferModuleProps {
 export default function InitializeBufferModule({ addressBook }: InitializeBufferModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedToken, setSelectedToken] = useState<TokenListToken | undefined>();
-  const [wrappedTokenAddress, setWrappedTokenAddress] = useState("");
   const [underlyingTokenAddress, setUnderlyingTokenAddress] = useState("");
   const [exactAmountUnderlyingIn, setExactAmountUnderlyingIn] = useState("");
   const [exactAmountWrappedIn, setExactAmountWrappedIn] = useState("");
@@ -59,6 +62,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const [includePermit2, setIncludePermit2] = useState(false);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const toast = useToast();
+
+  const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
 
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
@@ -87,6 +92,21 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     [tokensData?.tokenGetTokens, selectedToken?.underlyingTokenAddress],
   );
 
+  // Fetch buffer asset (underlying token) for manually added token
+  const {
+    data: bufferAsset,
+    isLoading: isLoadingBufferAsset,
+    isError: isBufferAssetError,
+  } = useTanStackQuery({
+    queryKey: ["bufferAsset", selectedToken?.address, selectedNetwork],
+    queryFn: () => fetchBufferAsset(selectedToken!.address, selectedNetwork.toLowerCase()),
+    enabled:
+      !!selectedToken &&
+      !!selectedNetwork &&
+      !!networks[selectedNetwork.toLowerCase()] &&
+      selectedToken.isManual,
+  });
+
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(network =>
@@ -95,25 +115,41 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   }, [addressBook]);
 
   const isGenerateButtonDisabled = useMemo(() => {
-    return (
-      !selectedNetwork ||
-      !wrappedTokenAddress ||
-      !minIssuedShares ||
-      (!exactAmountUnderlyingIn && !exactAmountWrappedIn)
-    );
+    // Check if required fields are missing
+    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
+      return true;
+    }
+
+    // Check if both amounts are empty
+    if (!exactAmountUnderlyingIn.trim() && !exactAmountWrappedIn.trim()) {
+      return true;
+    }
+
+    // Check if underlying amount is provided but underlying token address is invalid
+    if (
+      exactAmountUnderlyingIn.trim() &&
+      parseFloat(exactAmountUnderlyingIn) > 0 &&
+      (!debouncedUnderlyingTokenAddress ||
+        isZeroAddress(debouncedUnderlyingTokenAddress) ||
+        !isAddress(debouncedUnderlyingTokenAddress))
+    ) {
+      return true;
+    }
+
+    return false;
   }, [
     selectedNetwork,
-    wrappedTokenAddress,
+    selectedToken,
     minIssuedShares,
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
+    debouncedUnderlyingTokenAddress,
   ]);
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
     setSelectedToken(undefined);
-    setWrappedTokenAddress("");
     setUnderlyingTokenAddress("");
     setExactAmountUnderlyingIn("");
     setExactAmountWrappedIn("");
@@ -125,9 +161,25 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
   const handleTokenSelect = (token: TokenListToken) => {
     setSelectedToken(token);
-    setWrappedTokenAddress(token.address);
-    setUnderlyingTokenAddress(token.underlyingTokenAddress ?? "");
+    // Auto-fill underlying token if available from token data
+    if (token.underlyingTokenAddress) {
+      setUnderlyingTokenAddress(token.underlyingTokenAddress);
+    } else {
+      // For manual tokens, clear the underlying address so user can input it
+      setUnderlyingTokenAddress("");
+    }
   };
+
+  // Auto-fill underlying token address when bufferAsset is fetched for manual tokens
+  useEffect(() => {
+    if (
+      selectedToken?.isManual &&
+      bufferAsset?.underlyingToken &&
+      !isZeroAddress(bufferAsset.underlyingToken)
+    ) {
+      setUnderlyingTokenAddress(bufferAsset.underlyingToken);
+    }
+  }, [bufferAsset, selectedToken]);
 
   // Fetch buffer initialization status
   const {
@@ -135,15 +187,15 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     isLoading: isLoadingInitialized,
     isError: isInitializedError,
   } = useTanStackQuery({
-    queryKey: ["bufferInitialized", wrappedTokenAddress, selectedNetwork],
+    queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
     queryFn: () =>
-      fetchBufferInitializationStatus(wrappedTokenAddress, selectedNetwork.toLowerCase()),
+      fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
     enabled:
-      !!wrappedTokenAddress && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
+      !!selectedToken?.address && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
   });
 
   const handleGenerateClick = useCallback(() => {
-    if (!selectedNetwork || !wrappedTokenAddress || !minIssuedShares) {
+    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -199,6 +251,25 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       return;
     }
 
+    // Validate underlying token address when underlying amount is provided
+    if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) > 0) {
+      if (
+        !debouncedUnderlyingTokenAddress ||
+        isZeroAddress(debouncedUnderlyingTokenAddress) ||
+        !isAddress(debouncedUnderlyingTokenAddress)
+      ) {
+        toast({
+          title: "Invalid underlying token address",
+          description:
+            "When providing an underlying token amount, you must provide a valid underlying token address.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+    }
+
     const networkInfo = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     if (!networkInfo) {
       toast({
@@ -246,8 +317,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
     const payload = generateInitializeBufferPayload(
       {
-        wrappedToken: wrappedTokenAddress,
-        underlyingToken: underlyingTokenAddress,
+        wrappedToken: selectedToken.address,
+        underlyingToken: debouncedUnderlyingTokenAddress,
         exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
         exactAmountWrappedIn: exactAmountWrappedIn || "0",
         minIssuedShares,
@@ -261,8 +332,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   }, [
     selectedNetwork,
-    wrappedTokenAddress,
-    underlyingTokenAddress,
+    selectedToken,
+    debouncedUnderlyingTokenAddress,
     minIssuedShares,
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
@@ -271,6 +342,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     toast,
     addressBook,
     isInitialized,
+    bufferAsset,
   ]);
 
   return (
@@ -296,91 +368,61 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Flex>
         </Alert>
 
+        <Box width="calc(50% - 8px)">
+          <NetworkSelector
+            networks={networks}
+            networkOptions={networkOptionsWithV3}
+            selectedNetwork={selectedNetwork}
+            handleNetworkChange={handleNetworkChange}
+            label="Network"
+          />
+        </Box>
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
-          <Box flex="2">
-            <NetworkSelector
-              networks={networks}
-              networkOptions={networkOptionsWithV3}
+          <FormControl isRequired>
+            <FormLabel>Wrapped Token</FormLabel>
+            <TokenSelector
               selectedNetwork={selectedNetwork}
-              handleNetworkChange={handleNetworkChange}
-              label="Network"
+              onSelect={handleTokenSelect}
+              selectedToken={selectedToken}
+              placeholder="Select wrapped token"
+              isDisabled={!selectedNetwork}
+              onlyErc4626={true}
+              allowManualInput={true}
             />
-          </Box>
-
-          <Box flex="3">
-            <FormControl>
-              <FormLabel>Wrapped Token</FormLabel>
-              <Flex gap={2}>
-                <TokenSelector
-                  selectedNetwork={selectedNetwork}
-                  onSelect={handleTokenSelect}
-                  selectedToken={selectedToken}
-                  placeholder="Select wrapped token"
-                  isDisabled={!selectedNetwork}
-                  onlyErc4626={true}
-                />
-                {selectedToken && (
-                  <IconButton
-                    aria-label="Clear selection"
-                    icon={<CloseIcon color="gray.300" />}
-                    size="md"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedToken(undefined);
-                      setWrappedTokenAddress("");
-                      setUnderlyingTokenAddress("");
-                    }}
-                  />
-                )}
-              </Flex>
-            </FormControl>
-          </Box>
-        </Flex>
-        <Flex direction={{ base: "column", md: "row" }} gap={4}>
+          </FormControl>
           <FormControl>
             <FormLabel>
               Underlying Token Address
-              {underlyingToken && ` (${underlyingToken.symbol})`}
+              {!selectedToken?.isManual && underlyingToken && ` (${underlyingToken.symbol})`}
             </FormLabel>
-            <Input
-              placeholder="0x..."
-              value={underlyingTokenAddress}
-              onChange={e => {
-                setSelectedToken(undefined);
-                setUnderlyingTokenAddress(e.target.value);
-              }}
-              isDisabled={!!selectedToken}
-            />
-          </FormControl>
-          <FormControl isRequired>
-            <FormLabel>
-              Wrapped Token Address
-              {selectedToken && ` (${selectedToken.symbol})`}
-            </FormLabel>
-            <Input
-              placeholder="0x..."
-              value={wrappedTokenAddress}
-              onChange={e => {
-                setSelectedToken(undefined);
-                setWrappedTokenAddress(e.target.value);
-              }}
-              isDisabled={!!selectedToken}
-            />
+            <InputGroup>
+              <Input
+                placeholder="0x..."
+                value={underlyingTokenAddress}
+                onChange={e => setUnderlyingTokenAddress(e.target.value)}
+                isDisabled={
+                  !selectedToken ||
+                  (!!selectedToken.underlyingTokenAddress &&
+                    !isZeroAddress(selectedToken.underlyingTokenAddress)) ||
+                  (selectedToken.isManual &&
+                    bufferAsset?.underlyingToken &&
+                    !isZeroAddress(bufferAsset.underlyingToken))
+                }
+              />
+              {debouncedUnderlyingTokenAddress.trim() && (
+                <InputRightElement>
+                  <Text
+                    fontSize="sm"
+                    color={isAddress(debouncedUnderlyingTokenAddress) ? "green.500" : "red.500"}
+                  >
+                    {isAddress(debouncedUnderlyingTokenAddress) ? "✓" : "✗"}
+                  </Text>
+                </InputRightElement>
+              )}
+            </InputGroup>
           </FormControl>
         </Flex>
         <Flex direction={{ base: "column", md: "row" }} gap={4} mb={2}>
-          <FormControl>
-            <FormLabel>Underlying Token Amount</FormLabel>
-            <Input
-              name="exactAmountUnderlyingIn"
-              value={exactAmountUnderlyingIn}
-              onChange={e => setExactAmountUnderlyingIn(e.target.value)}
-              placeholder="Amount in token native decimals"
-              type="number"
-              isDisabled={!wrappedTokenAddress}
-            />
-          </FormControl>
-
           <FormControl>
             <FormLabel>Wrapped Token Amount</FormLabel>
             <Input
@@ -389,7 +431,19 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               onChange={e => setExactAmountWrappedIn(e.target.value)}
               placeholder="Amount in token native decimals"
               type="number"
-              isDisabled={!wrappedTokenAddress}
+              isDisabled={!selectedToken}
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Underlying Token Amount</FormLabel>
+            <Input
+              name="exactAmountUnderlyingIn"
+              value={exactAmountUnderlyingIn}
+              onChange={e => setExactAmountUnderlyingIn(e.target.value)}
+              placeholder="Amount in token native decimals"
+              type="number"
+              isDisabled={!selectedToken}
             />
           </FormControl>
 
@@ -401,7 +455,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               onChange={e => setMinIssuedShares(e.target.value)}
               placeholder="Minimum issued shares amount"
               type="number"
-              isDisabled={!wrappedTokenAddress}
+              isDisabled={!selectedToken}
             />
           </FormControl>
         </Flex>
@@ -414,14 +468,14 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               value={seedingSafe}
               onChange={e => setSeedingSafe(e.target.value)}
               placeholder="Seeding Safe address"
-              isDisabled={!wrappedTokenAddress}
+              isDisabled={!selectedToken}
             />
           </FormControl>
           <Box mt={6}>
             <Checkbox
               size="lg"
               onChange={e => setIncludePermit2(e.target.checked)}
-              isDisabled={!wrappedTokenAddress}
+              isDisabled={!selectedToken}
             >
               <FormLabel mb="0">Include Permit2 approvals</FormLabel>
             </Checkbox>
@@ -429,7 +483,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         </Flex>
 
         {/* Display error if buffer is already initialized */}
-        {wrappedTokenAddress && selectedNetwork && isInitialized && (
+        {selectedToken && selectedNetwork && isInitialized && (
           <Alert status="error" alignItems="center">
             <AlertIcon />
             <Text>

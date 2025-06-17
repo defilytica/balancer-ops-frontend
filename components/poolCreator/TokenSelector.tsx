@@ -32,6 +32,7 @@ import { Search2Icon, ChevronDownIcon, AddIcon } from "@chakra-ui/icons";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { GetTokensQuery, GetTokensQueryVariables, TokenListToken } from "@/types/interfaces";
 import { isAddress } from "viem";
+import { useDebounce } from "use-debounce";
 
 interface TokenSelectorProps {
   selectedNetwork: string;
@@ -56,6 +57,8 @@ export const TokenSelector = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualTokenAddress, setManualTokenAddress] = useState("");
+
+  const [debouncedManualTokenAddress] = useDebounce(manualTokenAddress, 300);
 
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
   const fallbackLogo =
@@ -82,7 +85,7 @@ export const TokenSelector = ({
           token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           token.address.toLowerCase().includes(searchQuery.toLowerCase())) &&
         token.symbol.toLowerCase() !== "eth" &&
-        (!onlyErc4626 || token.underlyingTokenAddress),
+        (!onlyErc4626 || token.isErc4626),
     ) || [];
 
   const handleSelect = (token: TokenListToken) => {
@@ -93,16 +96,16 @@ export const TokenSelector = ({
   };
 
   const handleManualTokenSubmit = () => {
-    if (!isAddress(manualTokenAddress)) return;
+    if (!isAddress(debouncedManualTokenAddress)) return;
 
     const token: TokenListToken = {
       chainId: parseInt(selectedNetwork) || 1,
-      address: manualTokenAddress,
-      symbol: manualTokenAddress,
-      name: manualTokenAddress,
-      decimals: -1, // Default value, not used for raw amounts
+      address: debouncedManualTokenAddress,
+      symbol: debouncedManualTokenAddress,
+      name: debouncedManualTokenAddress,
+      decimals: -1,
       logoURI: fallbackLogo,
-      isErc4626: onlyErc4626, // Assume ERC4626 if required
+      isErc4626: onlyErc4626,
       isManual: true,
     };
 
@@ -266,13 +269,13 @@ export const TokenSelector = ({
                         onChange={e => setManualTokenAddress(e.target.value)}
                         placeholder="0x..."
                       />
-                      {manualTokenAddress.length >= 42 && (
+                      {debouncedManualTokenAddress.trim() && (
                         <InputRightElement>
                           <Text
                             fontSize="sm"
-                            color={isAddress(manualTokenAddress) ? "green.500" : "red.500"}
+                            color={isAddress(debouncedManualTokenAddress) ? "green.500" : "red.500"}
                           >
-                            {isAddress(manualTokenAddress) ? "✓" : "✗"}
+                            {isAddress(debouncedManualTokenAddress) ? "✓" : "✗"}
                           </Text>
                         </InputRightElement>
                       )}
@@ -288,7 +291,10 @@ export const TokenSelector = ({
               <Button variant="ghost" mr={3} onClick={() => setShowManualInput(false)}>
                 Back to Search
               </Button>
-              <Button onClick={handleManualTokenSubmit} isDisabled={!isAddress(manualTokenAddress)}>
+              <Button
+                onClick={handleManualTokenSubmit}
+                isDisabled={!isAddress(debouncedManualTokenAddress)}
+              >
                 Add Token
               </Button>
             </ModalFooter>

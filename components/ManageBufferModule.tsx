@@ -53,6 +53,7 @@ import {
 import { useQuery as useTanStackQuery } from "@tanstack/react-query";
 import React, { useCallback, useMemo, useState } from "react";
 import { isAddress } from "viem";
+import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
 
@@ -335,7 +336,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         {
           wrappedToken: selectedToken!.address,
           underlyingToken: selectedToken!.isManual
-            ? bufferAsset?.underlyingToken || selectedToken!.underlyingTokenAddress
+            ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
+              ? bufferAsset.underlyingToken
+              : selectedToken!.underlyingTokenAddress
             : selectedToken!.underlyingTokenAddress,
           maxAmountUnderlyingIn: underlyingTokenAmount || "0",
           maxAmountWrappedIn: wrappedTokenAmount || "0",
@@ -488,20 +491,25 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             </AlertDescription>
           </Box>
         </Alert>
-        <FormControl>
-          <FormLabel>Operation Type</FormLabel>
-          <Select
-            value={operationType}
-            onChange={e => {
-              setOperationType(e.target.value as BufferOperation);
-            }}
-          >
-            <option value={BufferOperation.ADD}>Add Liquidity</option>
-            <option value={BufferOperation.REMOVE}>Remove Liquidity</option>
-          </Select>
-        </FormControl>
-        <Flex direction={{ base: "column", md: "row" }} gap={4} mb={4}>
-          <Box flex="2">
+        <Box width="calc(50% - 8px)">
+          <FormControl>
+            <FormLabel>Operation Type</FormLabel>
+            <Select
+              value={operationType}
+              onChange={e => {
+                setOperationType(e.target.value as BufferOperation);
+              }}
+              variant="outline"
+              shadow="none"
+            >
+              <option value={BufferOperation.ADD}>Add Liquidity</option>
+              <option value={BufferOperation.REMOVE}>Remove Liquidity</option>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Flex direction={{ base: "column", md: "row" }} gap={4}>
+          <Box flex="1">
             <NetworkSelector
               networks={networks}
               networkOptions={networkOptionsWithV3}
@@ -511,7 +519,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             />
           </Box>
 
-          <Box flex="3">
+          <Box flex="1">
             <FormControl isRequired>
               <FormLabel>Wrapped Token</FormLabel>
               <TokenSelector
@@ -525,7 +533,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               />
               {selectedToken && (
                 <Text fontSize="sm" mt={1.5} color="gray.400">
-                  {selectedToken.isManual && bufferAsset
+                  {selectedToken.isManual &&
+                  bufferAsset &&
+                  !isZeroAddress(bufferAsset.underlyingToken)
                     ? `Underlying token: ${bufferAsset.underlyingToken}`
                     : underlyingToken
                       ? `Underlying token: ${underlyingToken.address} (${underlyingToken.symbol})`
@@ -537,6 +547,50 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         </Flex>
 
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
+          <FormControl>
+            <FormLabel>
+              {operationType === BufferOperation.ADD
+                ? "Max Wrapped Token Amount"
+                : "Min Wrapped Token Out"}
+            </FormLabel>
+            <Input
+              name="wrappedTokenAmount"
+              value={wrappedTokenAmount}
+              onChange={e => setWrappedTokenAmount(e.target.value)}
+              placeholder="Amount in token native decimals"
+              type="number"
+              isDisabled={!selectedToken}
+            />
+            {selectedToken && (
+              <>
+                {isLoadingBalance ? (
+                  <Text fontSize="sm" mt={1} color="gray.400">
+                    Loading balance...
+                  </Text>
+                ) : isBalanceError ? (
+                  <Text fontSize="sm" mt={1} color="gray.400">
+                    Failed to load balance
+                  </Text>
+                ) : (
+                  bufferBalance && (
+                    <Flex direction="column" gap={1} mt={1}>
+                      <Text fontSize="sm" color="gray.400">
+                        Balance: {bufferBalance.wrappedBalance.toString()}
+                      </Text>
+                      {/* don't show scaled balance for manual inputs */}
+                      {!selectedToken?.isManual && (
+                        <Text fontSize="xs" color="gray.500">
+                          ≈ {formatValue(bufferBalance.wrappedBalance, selectedToken.decimals)}{" "}
+                          {selectedToken.symbol}
+                        </Text>
+                      )}
+                    </Flex>
+                  )
+                )}
+              </>
+            )}
+          </FormControl>
+
           <FormControl>
             <FormLabel>
               {operationType === BufferOperation.ADD
@@ -576,50 +630,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                             underlyingToken?.decimals ?? selectedToken.decimals,
                           )}{" "}
                           {underlyingToken?.symbol ?? "tokens"}
-                        </Text>
-                      )}
-                    </Flex>
-                  )
-                )}
-              </>
-            )}
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>
-              {operationType === BufferOperation.ADD
-                ? "Max Wrapped Token Amount"
-                : "Min Wrapped Token Out"}
-            </FormLabel>
-            <Input
-              name="wrappedTokenAmount"
-              value={wrappedTokenAmount}
-              onChange={e => setWrappedTokenAmount(e.target.value)}
-              placeholder="Amount in token native decimals"
-              type="number"
-              isDisabled={!selectedToken}
-            />
-            {selectedToken && (
-              <>
-                {isLoadingBalance ? (
-                  <Text fontSize="sm" mt={1} color="gray.400">
-                    Loading balance...
-                  </Text>
-                ) : isBalanceError ? (
-                  <Text fontSize="sm" mt={1} color="gray.400">
-                    Failed to load balance
-                  </Text>
-                ) : (
-                  bufferBalance && (
-                    <Flex direction="column" gap={1} mt={1}>
-                      <Text fontSize="sm" color="gray.400">
-                        Balance: {bufferBalance.wrappedBalance.toString()}
-                      </Text>
-                      {/* don't show scaled balance for manual inputs */}
-                      {!selectedToken?.isManual && (
-                        <Text fontSize="xs" color="gray.500">
-                          ≈ {formatValue(bufferBalance.wrappedBalance, selectedToken.decimals)}{" "}
-                          {selectedToken.symbol}
                         </Text>
                       )}
                     </Flex>

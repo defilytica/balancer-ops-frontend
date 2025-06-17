@@ -88,7 +88,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       <Menu>
         <MenuButton
           as={Button}
-          rightIcon={<ChevronDown />}
+          rightIcon={<ChevronDown size={15} />}
           width="100%"
           borderWidth="1px"
           justifyContent="space-between"
