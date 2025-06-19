@@ -1417,3 +1417,98 @@ export function generateAmpFactorUpdatePayload(
     transactions: [transaction],
   };
 }
+// --- Emergency payloads - v3 ---
+
+export interface EmergencyActionInput {
+  poolAddress: string;
+  poolName: string;
+  actions: ("pause" | "enableRecoveryMode")[];
+  isV3Pool: boolean;
+}
+
+export interface EmergencyPayloadInput {
+  pools: EmergencyActionInput[];
+  emergencyWallet: string;
+  chainId: string;
+  vaultAddress?: string; // For V3 pools
+}
+
+export function generateEmergencyPayload(input: EmergencyPayloadInput) {
+  const transactions = [];
+
+  for (const pool of input.pools) {
+    for (const action of pool.actions) {
+      if (pool.isV3Pool && input.vaultAddress) {
+        // V3 pools: call vault contract
+        if (action === "pause") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "pausePool",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        } else if (action === "enableRecoveryMode") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "enableRecoveryMode",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        }
+      } else {
+        // V2 pools: call pool contract directly
+        transactions.push({
+          to: pool.poolAddress,
+          value: "0",
+          data: null,
+          contractMethod: {
+            inputs: [],
+            name: action,
+            payable: false,
+          },
+          contractInputsValues: null,
+        });
+      }
+    }
+  }
+
+  return {
+    version: "1.0",
+    chainId: input.chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: "Emergency actions for Balancer pools",
+      txBuilderVersion: "1.18.0",
+      createdFromSafeAddress: input.emergencyWallet,
+      createdFromOwnerAddress: "",
+    },
+    transactions,
+  };
+}
+
+export function generateHumanReadableEmergency(input: EmergencyPayloadInput): string {
+  const poolSummaries = input.pools.map(pool => {
+    const actionsText = pool.actions.join(" and ");
+    return `${pool.poolName} (${pool.poolAddress}): ${actionsText}`;
+  });
+
+  const poolType = input.pools[0]?.isV3Pool ? "v3" : "v2";
+  const actionCount = input.pools.reduce((sum, pool) => sum + pool.actions.length, 0);
+
+  return `The Emergency SubDAO at ${input.emergencyWallet} will execute ${actionCount} emergency action${actionCount !== 1 ? "s" : ""} on ${input.pools.length} Balancer ${poolType} pool${input.pools.length !== 1 ? "s" : ""}:\n\n${poolSummaries.join("\n")}`;
+}
