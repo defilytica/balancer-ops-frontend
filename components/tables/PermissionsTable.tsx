@@ -110,7 +110,6 @@ export const PermissionsTable: React.FC<PermissionsTableProps> = ({
           <TableContainer
             w="full"
             borderColor="transparent"
-            maxHeight="500px"
             borderRadius="xl"
             borderWidth="1px"
             shadow="md"
