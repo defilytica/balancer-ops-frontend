@@ -3146,6 +3146,12 @@ input LBPMetadataInput {
   x: String
 }
 
+type LBPPriceChartData {
+  intervalTimestamp: Int!
+  projectTokenPrice: Float!
+  reservePrice: Float!
+}
+
 input LBPoolInput {
   address: String!
   chain: GqlChain!
@@ -3259,6 +3265,7 @@ type Query {
   blocksGetBlocksPerSecond: Float! @deprecated
   blocksGetBlocksPerYear: Float! @deprecated
   latestSyncedBlocks: GqlLatestSyncedBlocks!
+  lbpPriceChart(chain: GqlChain!, id: String!, interval: Int): [LBPPriceChartData!]
 
   """Getting swap, add and remove events with paging"""
   poolEvents(first: Int, skip: Int, where: GqlPoolEventsFilter): [GqlPoolEvent!]!

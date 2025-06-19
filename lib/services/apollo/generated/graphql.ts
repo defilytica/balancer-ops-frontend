@@ -2776,6 +2776,13 @@ export type LbpMetadataInput = {
   x?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type LbpPriceChartData = {
+  __typename: 'LBPPriceChartData';
+  intervalTimestamp: Scalars['Int']['output'];
+  projectTokenPrice: Scalars['Float']['output'];
+  reservePrice: Scalars['Float']['output'];
+};
+
 export type LbPoolInput = {
   address: Scalars['String']['input'];
   chain: GqlChain;
@@ -2977,6 +2984,7 @@ export type Query = {
   /** @deprecated No longer supported */
   blocksGetBlocksPerYear: Scalars['Float']['output'];
   latestSyncedBlocks: GqlLatestSyncedBlocks;
+  lbpPriceChart?: Maybe<Array<LbpPriceChartData>>;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
   /**
@@ -3097,6 +3105,13 @@ export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
   chain?: InputMaybe<GqlChain>;
   id: Scalars['String']['input'];
   range: GqlPoolSnapshotDataRange;
+};
+
+
+export type QueryLbpPriceChartArgs = {
+  chain: GqlChain;
+  id: Scalars['String']['input'];
+  interval?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
