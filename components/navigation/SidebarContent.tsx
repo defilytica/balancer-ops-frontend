@@ -25,6 +25,7 @@ import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import NextLink from "next/link";
+import { GoAlertFill } from "react-icons/go";
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
@@ -95,6 +96,12 @@ const LinkItems = [
     icon: TbFishHook,
     target: "/hooks",
     description: "View and configure hooks",
+  },
+  {
+    name: "Emergency",
+    icon: GoAlertFill,
+    target: "/payload-builder/emergency",
+    description: "Create Emergency Payloads",
   },
 ];
 
