@@ -7,6 +7,7 @@ import {
   AlertDescription,
   AlertIcon,
   AlertTitle,
+  Badge,
   Box,
   Button,
   Card,
@@ -27,6 +28,8 @@ import {
   List,
   ListIcon,
   ListItem,
+  Radio,
+  RadioGroup,
   Stack,
   Text,
   useDisclosure,
@@ -38,6 +41,7 @@ import {
   CopyIcon,
   DeleteIcon,
   DownloadIcon,
+  InfoIcon,
   WarningIcon,
 } from "@chakra-ui/icons";
 import {
@@ -49,11 +53,14 @@ import {
   EmergencyActionInput,
   EmergencyPayloadInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetV3PoolsDocument,
   GetV3PoolsQuery,
   GetV3PoolsQueryVariables,
+  GetPoolsDocument,
+  GetPoolsQuery,
+  GetPoolsQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
 import { AddressBook, Pool } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
@@ -67,6 +74,8 @@ import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 interface SelectedPool extends Pool {
   selectedActions: ("pause" | "enableRecoveryMode")[];
+  isV3Pool: boolean;
+  pauseMethod?: "pause" | "setPaused"; // For v2 pools only
 }
 
 interface EmergencyPayloadBuilderProps {
@@ -74,30 +83,69 @@ interface EmergencyPayloadBuilderProps {
 }
 
 export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloadBuilderProps) {
+  const [protocolVersion, setProtocolVersion] = useState<"v2" | "v3" | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPools, setSelectedPools] = useState<SelectedPool[]>([]);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
+  const [globalPauseMethod, setGlobalPauseMethod] = useState<"pause" | "setPaused">("pause");
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Get V3 networks (emergency actions are primarily for V3)
-  const networkOptionsWithV3 = useMemo(() => {
-    const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(
-      network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
-    );
-  }, [addressBook]);
+  // Get available networks based on protocol version
+  const availableNetworkOptions = useMemo(() => {
+    if (!protocolVersion) return [];
 
-  const { loading, error, data } = useQuery<GetV3PoolsQuery, GetV3PoolsQueryVariables>(
-    GetV3PoolsDocument,
-    {
-      variables: { chainIn: [selectedNetwork as any] },
-      skip: !selectedNetwork,
-    },
-  );
+    if (protocolVersion === "v3") {
+      // For V3, only show networks with V3 vault deployed
+      const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
+      return NETWORK_OPTIONS.filter(
+        network =>
+          networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
+      );
+    } else {
+      // For V2, show all networks except SONIC
+      return NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+    }
+  }, [protocolVersion, addressBook]);
+
+  // Query V3 pools (only when V3 is selected)
+  const {
+    loading: v3Loading,
+    error: v3Error,
+    data: v3Data,
+  } = useQuery<GetV3PoolsQuery, GetV3PoolsQueryVariables>(GetV3PoolsDocument, {
+    variables: { chainIn: [selectedNetwork as any] },
+    skip: !selectedNetwork || protocolVersion !== "v3",
+  });
+
+  // Query V2 pools (only when V2 is selected)
+  const {
+    loading: v2Loading,
+    error: v2Error,
+    data: v2Data,
+  } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(GetPoolsDocument, {
+    variables: { chainIn: [selectedNetwork as any] },
+    skip: !selectedNetwork || protocolVersion !== "v2",
+  });
+
+  // Get pools based on selected protocol
+  const availablePools = useMemo(() => {
+    if (protocolVersion === "v3" && v3Data?.poolGetPools) {
+      return v3Data.poolGetPools.map(pool => ({ ...pool, isV3Pool: true }));
+    } else if (protocolVersion === "v2" && v2Data?.poolGetPools) {
+      // Filter to only include pools with protocolVersion: 2
+      return v2Data.poolGetPools
+        .filter(pool => pool.protocolVersion === 2)
+        .map(pool => ({ ...pool, isV3Pool: false }));
+    }
+    return [];
+  }, [protocolVersion, v3Data, v2Data]);
+
+  const loading = protocolVersion === "v3" ? v3Loading : v2Loading;
+  const error = protocolVersion === "v3" ? v3Error : v2Error;
 
   // Resolve emergency wallet when network changes
   useEffect(() => {
@@ -112,6 +160,15 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     }
   }, [selectedNetwork, addressBook]);
 
+  const handleProtocolVersionChange = useCallback((version: "v2" | "v3") => {
+    setProtocolVersion(version);
+    setSelectedNetwork("");
+    setSelectedPools([]);
+    setGeneratedPayload(null);
+    setHumanReadableText(null);
+    setGlobalPauseMethod("pause"); // Reset to default
+  }, []);
+
   const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
@@ -120,18 +177,30 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setHumanReadableText(null);
   }, []);
 
-  const handlePoolSelect = useCallback((pool: Pool) => {
-    setSelectedPools(prev => {
-      // Check if pool is already selected
-      const existingIndex = prev.findIndex(p => p.address === pool.address);
-      if (existingIndex >= 0) {
-        return prev; // Pool already selected
-      }
+  const handlePoolSelect = useCallback(
+    (pool: Pool & { isV3Pool?: boolean }) => {
+      setSelectedPools(prev => {
+        // Check if pool is already selected
+        const existingIndex = prev.findIndex(p => p.address === pool.address);
+        if (existingIndex >= 0) {
+          return prev; // Pool already selected
+        }
 
-      // Add pool with default actions
-      return [...prev, { ...pool, selectedActions: ["pause"] }];
-    });
-  }, []);
+        // Add pool with default actions and protocol version
+        const isV3Pool = protocolVersion === "v3";
+        return [
+          ...prev,
+          {
+            ...pool,
+            selectedActions: ["pause"],
+            isV3Pool,
+            pauseMethod: isV3Pool ? undefined : globalPauseMethod,
+          },
+        ];
+      });
+    },
+    [protocolVersion, globalPauseMethod],
+  );
 
   const handleRemovePool = useCallback((poolAddress: string) => {
     setSelectedPools(prev => prev.filter(p => p.address !== poolAddress));
@@ -144,6 +213,23 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
           ? { ...pool, selectedActions: actions as ("pause" | "enableRecoveryMode")[] }
           : pool,
       ),
+    );
+  }, []);
+
+  const handlePauseMethodChange = useCallback(
+    (poolAddress: string, method: "pause" | "setPaused") => {
+      setSelectedPools(prev =>
+        prev.map(pool => (pool.address === poolAddress ? { ...pool, pauseMethod: method } : pool)),
+      );
+    },
+    [],
+  );
+
+  const handleGlobalPauseMethodChange = useCallback((method: "pause" | "setPaused") => {
+    setGlobalPauseMethod(method);
+    // Update all existing v2 pools to use the new method
+    setSelectedPools(prev =>
+      prev.map(pool => (!pool.isV3Pool ? { ...pool, pauseMethod: method } : pool)),
     );
   }, []);
 
@@ -170,6 +256,17 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return;
     }
 
+    if (!protocolVersion) {
+      toast({
+        title: "Protocol version not selected",
+        description: "Please select a protocol version first",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     if (!networkOption) {
       toast({
@@ -182,13 +279,27 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return;
     }
 
-    // Get vault address for V3 operations
-    const vaultAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241204-v3-vault",
-      "Vault",
-    );
+    // Get vault address only for V3 operations
+    let vaultAddress;
+    if (protocolVersion === "v3") {
+      vaultAddress = getAddress(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "20241204-v3-vault",
+        "Vault",
+      );
+
+      if (!vaultAddress) {
+        toast({
+          title: "Vault address not found",
+          description: "V3 Vault address could not be resolved for this network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+    }
 
     const emergencyActions: EmergencyActionInput[] = selectedPools
       .filter(pool => pool.selectedActions.length > 0)
@@ -196,7 +307,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         poolAddress: pool.address,
         poolName: pool.name,
         actions: pool.selectedActions,
-        isV3Pool: true, // Assuming V3 for now
+        isV3Pool: protocolVersion === "v3",
+        pauseMethod: pool.pauseMethod || "pause",
       }));
 
     const payloadInput: EmergencyPayloadInput = {
@@ -211,7 +323,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
     setGeneratedPayload(JSON.stringify(payload, null, 2));
     setHumanReadableText(humanReadable);
-  }, [selectedPools, emergencyWallet, selectedNetwork, addressBook]);
+  }, [selectedPools, emergencyWallet, selectedNetwork, addressBook, protocolVersion]);
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -228,7 +340,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   };
 
   const getPrefillValues = useCallback(() => {
-    if (selectedPools.length === 0) return {};
+    if (selectedPools.length === 0 || !protocolVersion) return {};
 
     const uniqueId = generateUniqueId();
     const firstPoolId = selectedPools[0].address.substring(0, 8);
@@ -241,15 +353,16 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     const networkName = networkOption?.label || selectedNetwork;
     const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
-    const filename = networkPath + `/emergency-actions-${firstPoolId}-${uniqueId}.json`;
+    const filename =
+      networkPath + `/emergency-actions-${protocolVersion}-${firstPoolId}-${uniqueId}.json`;
 
     return {
-      prefillBranchName: `emergency/pools-${firstPoolId}-${uniqueId}`,
-      prefillPrName: `Emergency Actions for ${selectedPools.length} Pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}`,
-      prefillDescription: `Emergency actions: ${totalActions} action${totalActions !== 1 ? "s" : ""} across ${selectedPools.length} pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}.`,
+      prefillBranchName: `emergency/${protocolVersion}-pools-${firstPoolId}-${uniqueId}`,
+      prefillPrName: `Emergency Actions for ${selectedPools.length} ${protocolVersion.toUpperCase()} Pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}`,
+      prefillDescription: `Emergency actions: ${totalActions} action${totalActions !== 1 ? "s" : ""} across ${selectedPools.length} ${protocolVersion} pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedPools, selectedNetwork]);
+  }, [selectedPools, selectedNetwork, protocolVersion]);
 
   return (
     <Container maxW="container.lg">
@@ -288,36 +401,131 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       </Alert>
 
-      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-        <GridItem colSpan={{ base: 12, md: 4 }}>
-          <NetworkSelector
-            networks={networks}
-            networkOptions={networkOptionsWithV3}
-            selectedNetwork={selectedNetwork}
-            handleNetworkChange={handleNetworkChange}
-            label="Network"
-          />
-        </GridItem>
+      {/* Step 1: Protocol Version Selection */}
+      <Box mb={6}>
+        <Heading as="h3" size="md" mb={4}>
+          Step 1: Select Protocol Version
+        </Heading>
+        <HStack spacing={4}>
+          <Button
+            size="lg"
+            colorScheme={protocolVersion === "v2" ? "blue" : "gray"}
+            variant={protocolVersion === "v2" ? "solid" : "outline"}
+            onClick={() => handleProtocolVersionChange("v2")}
+            leftIcon={<Badge colorScheme="blue">V2</Badge>}
+          >
+            Balancer v2 Pools
+          </Button>
+          <Button
+            size="lg"
+            colorScheme={protocolVersion === "v3" ? "purple" : "gray"}
+            variant={protocolVersion === "v3" ? "solid" : "outline"}
+            onClick={() => handleProtocolVersionChange("v3")}
+            leftIcon={<Badge colorScheme="purple">V3</Badge>}
+          >
+            Balancer v3 Pools
+          </Button>
+        </HStack>
+        {protocolVersion && (
+          <Alert
+            status={"info"}
+            mt={3}
+            p={3}
+            borderRadius="md"
+            borderLeftWidth="4px"
+            borderLeftColor={protocolVersion === "v3" ? "purple.500" : "blue.500"}
+          >
+            <Text fontSize="sm">
+              {protocolVersion === "v2" ? (
+                <>
+                  Actions will be called directly on each pool contract (pause() or setPaused(),
+                  enableRecoveryMode())
+                </>
+              ) : (
+                <>
+                  Actions will be called through the Vault contract (pausePool(),
+                  enableRecoveryMode())
+                </>
+              )}
+            </Text>
+          </Alert>
+        )}
+      </Box>
 
-        <GridItem colSpan={{ base: 12, md: 8 }}>
-          {selectedNetwork && (
-            <PoolSelector
-              pools={data?.poolGetPools}
-              loading={loading}
-              error={error}
-              selectedPool={null}
-              onPoolSelect={handlePoolSelect}
-              onClearSelection={() => {}}
-            />
-          )}
-        </GridItem>
-      </Grid>
+      {/* Step 1.5: V2 Pause Method Selection */}
+      {protocolVersion === "v2" && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            V2 Pool Pause Method Selection
+          </Heading>
+          <Card>
+            <CardBody>
+              <FormControl>
+                <FormLabel fontSize="md" fontWeight="bold">
+                  Choose Pause Method for V2 Pools
+                </FormLabel>
+                <RadioGroup value={globalPauseMethod} onChange={handleGlobalPauseMethodChange}>
+                  <VStack align="start" spacing={3}>
+                    <Radio value="pause" colorScheme="blue">
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="medium">pause() - Modern V2 Pools</Text>
+                        <Text fontSize="sm" color="gray.600">
+                          Use for newer Balancer v2 pools (most common)
+                        </Text>
+                      </VStack>
+                    </Radio>
+                    <Radio value="setPaused" colorScheme="orange">
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="medium">setPaused(true) - Legacy V2 Pools</Text>
+                        <Text fontSize="sm" color="gray.600">
+                          Use for older Balancer v2 pools that don't have the pause() method
+                        </Text>
+                      </VStack>
+                    </Radio>
+                  </VStack>
+                </RadioGroup>
+                <Alert status="info" mt={4} size="sm">
+                  <AlertIcon />
+                  <Box>
+                    <Text fontSize="sm">
+                      <strong>Not sure which to use?</strong> Try pause() first (default). If the
+                      transaction fails, use setPaused(true) instead. You can change this for
+                      individual pools later.
+                    </Text>
+                  </Box>
+                </Alert>
+              </FormControl>
+            </CardBody>
+          </Card>
+        </Box>
+      )}
 
+      {/* Step 2: Network Selection */}
+      {protocolVersion && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            Step 2: Select Network
+          </Heading>
+          <Grid templateColumns="repeat(12, 1fr)" gap={4}>
+            <GridItem colSpan={{ base: 12, md: 6 }}>
+              <NetworkSelector
+                networks={networks}
+                networkOptions={availableNetworkOptions}
+                selectedNetwork={selectedNetwork}
+                handleNetworkChange={handleNetworkChange}
+                label="Network"
+              />
+            </GridItem>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Emergency Wallet Display */}
       {emergencyWallet && (
         <Card mb={6}>
           <CardBody>
-            <Text fontSize="sm" color="gray.600" mb={1}>
-              Emergency Wallet
+            <Text fontSize="sm" fontWeight={"bold"} mb={1}>
+              Emergency Wallet for {selectedNetwork}
             </Text>
             <Text fontFamily="mono" fontSize="sm">
               {emergencyWallet}
@@ -326,10 +534,31 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Card>
       )}
 
+      {/* Step 3: Pool Selection */}
+      {protocolVersion && selectedNetwork && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            Step 3: Select {protocolVersion.toUpperCase()} Pools
+          </Heading>
+          <Grid templateColumns="repeat(12, 1fr)" gap={4}>
+            <GridItem colSpan={{ base: 12, md: 8 }}>
+              <PoolSelector
+                pools={availablePools}
+                loading={loading}
+                error={error}
+                selectedPool={null}
+                onPoolSelect={handlePoolSelect}
+                onClearSelection={() => {}}
+              />
+            </GridItem>
+          </Grid>
+        </Box>
+      )}
+
       {selectedPools.length > 0 && (
         <Box mb={6}>
           <Heading as="h3" size="md" mb={4}>
-            Selected Pools ({selectedPools.length})
+            Selected {protocolVersion?.toUpperCase()} Pools ({selectedPools.length})
           </Heading>
           <VStack spacing={4}>
             {selectedPools.map(pool => (
@@ -337,9 +566,19 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 <CardHeader pb={2}>
                   <Flex justify="space-between" align="center">
                     <Box>
-                      <Text fontWeight="bold" fontSize="md">
-                        {pool.name}
-                      </Text>
+                      <Flex align="center" gap={2}>
+                        <Text fontWeight="bold" fontSize="md">
+                          {pool.name}
+                        </Text>
+                        <Badge colorScheme={protocolVersion === "v3" ? "purple" : "blue"} size="sm">
+                          {protocolVersion?.toUpperCase()}
+                        </Badge>
+                        {!pool.isV3Pool && pool.pauseMethod === "setPaused" && (
+                          <Badge colorScheme="orange" size="sm">
+                            Legacy
+                          </Badge>
+                        )}
+                      </Flex>
                       <Text fontSize="sm" color="gray.600" fontFamily="mono">
                         {pool.address}
                       </Text>
@@ -355,22 +594,51 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                   </Flex>
                 </CardHeader>
                 <CardBody pt={2}>
-                  <FormControl>
-                    <FormLabel fontSize="sm">Emergency Actions</FormLabel>
-                    <CheckboxGroup
-                      value={pool.selectedActions}
-                      onChange={values => handleActionChange(pool.address, values as string[])}
-                    >
-                      <Stack direction="row" spacing={4}>
-                        <Checkbox value="pause" colorScheme="red">
-                          Pause Pool
-                        </Checkbox>
-                        <Checkbox value="enableRecoveryMode" colorScheme="orange">
-                          Enable Recovery Mode
-                        </Checkbox>
-                      </Stack>
-                    </CheckboxGroup>
-                  </FormControl>
+                  <VStack spacing={4} align="stretch">
+                    <FormControl>
+                      <FormLabel fontSize="sm">Emergency Actions</FormLabel>
+                      <CheckboxGroup
+                        value={pool.selectedActions}
+                        onChange={values => handleActionChange(pool.address, values as string[])}
+                      >
+                        <Stack direction="row" spacing={4}>
+                          <Checkbox value="pause" colorScheme="red">
+                            Pause Pool
+                          </Checkbox>
+                          <Checkbox value="enableRecoveryMode" colorScheme="orange">
+                            Enable Recovery Mode
+                          </Checkbox>
+                        </Stack>
+                      </CheckboxGroup>
+                    </FormControl>
+
+                    {/* Individual pause method selection for V2 pools */}
+                    {!pool.isV3Pool && pool.selectedActions.includes("pause") && (
+                      <FormControl>
+                        <FormLabel fontSize="sm">
+                          <Flex align="center" gap={1}>
+                            Pause Method for this Pool
+                            <InfoIcon color="gray.500" />
+                          </Flex>
+                        </FormLabel>
+                        <RadioGroup
+                          value={pool.pauseMethod || "pause"}
+                          onChange={(value: "pause" | "setPaused") =>
+                            handlePauseMethodChange(pool.address, value)
+                          }
+                        >
+                          <HStack spacing={6}>
+                            <Radio value="pause" size="sm">
+                              pause()
+                            </Radio>
+                            <Radio value="setPaused" size="sm">
+                              setPaused(true)
+                            </Radio>
+                          </HStack>
+                        </RadioGroup>
+                      </FormControl>
+                    )}
+                  </VStack>
                 </CardBody>
               </Card>
             ))}
@@ -382,7 +650,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         <Button
           variant="primary"
           onClick={handleGenerateClick}
-          isDisabled={selectedPools.length === 0 || !emergencyWallet}
+          isDisabled={selectedPools.length === 0 || !emergencyWallet || !protocolVersion}
           colorScheme="red"
         >
           Generate Emergency Payload

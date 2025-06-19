@@ -1417,13 +1417,14 @@ export function generateAmpFactorUpdatePayload(
     transactions: [transaction],
   };
 }
-// --- Emergency payloads - v3 ---
+// --- Emergency payloads ---
 
 export interface EmergencyActionInput {
   poolAddress: string;
   poolName: string;
   actions: ("pause" | "enableRecoveryMode")[];
   isV3Pool: boolean;
+  pauseMethod?: "pause" | "setPaused"; // For V2 pools only
 }
 
 export interface EmergencyPayloadInput {
@@ -1471,17 +1472,53 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
         }
       } else {
         // V2 pools: call pool contract directly
-        transactions.push({
-          to: pool.poolAddress,
-          value: "0",
-          data: null,
-          contractMethod: {
-            inputs: [],
-            name: action,
-            payable: false,
-          },
-          contractInputsValues: null,
-        });
+        if (action === "pause") {
+          // Handle different pause methods for V2 pools
+          const pauseMethod = pool.pauseMethod || "pause";
+
+          if (pauseMethod === "setPaused") {
+            // Legacy pause method: setPaused(true)
+            transactions.push({
+              to: pool.poolAddress,
+              value: "0",
+              data: null,
+              contractMethod: {
+                inputs: [{ internalType: "bool", name: "paused", type: "bool" }],
+                name: "setPaused",
+                payable: false,
+              },
+              contractInputsValues: {
+                paused: true,
+              },
+            });
+          } else {
+            // Modern pause method: pause()
+            transactions.push({
+              to: pool.poolAddress,
+              value: "0",
+              data: null,
+              contractMethod: {
+                inputs: [],
+                name: "pause",
+                payable: false,
+              },
+              contractInputsValues: null,
+            });
+          }
+        } else if (action === "enableRecoveryMode") {
+          // Recovery mode is the same for all V2 pools
+          transactions.push({
+            to: pool.poolAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [],
+              name: "enableRecoveryMode",
+              payable: false,
+            },
+            contractInputsValues: null,
+          });
+        }
       }
     }
   }
@@ -1503,12 +1540,34 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
 
 export function generateHumanReadableEmergency(input: EmergencyPayloadInput): string {
   const poolSummaries = input.pools.map(pool => {
-    const actionsText = pool.actions.join(" and ");
-    return `${pool.poolName} (${pool.poolAddress}): ${actionsText}`;
+    const actionsText = pool.actions
+      .map(action => {
+        if (action === "pause" && !pool.isV3Pool) {
+          const method = pool.pauseMethod || "pause";
+          return method === "setPaused" ? "setPaused(true)" : "pause()";
+        }
+        return action;
+      })
+      .join(" and ");
+
+    const poolType = pool.isV3Pool ? "v3" : "v2";
+    return `${pool.poolName} (${poolType}) ${pool.poolAddress}: ${actionsText}`;
   });
 
-  const poolType = input.pools[0]?.isV3Pool ? "v3" : "v2";
   const actionCount = input.pools.reduce((sum, pool) => sum + pool.actions.length, 0);
+  const poolType = input.pools[0]?.isV3Pool ? "v3" : "v2";
 
-  return `The Emergency SubDAO at ${input.emergencyWallet} will execute ${actionCount} emergency action${actionCount !== 1 ? "s" : ""} on ${input.pools.length} Balancer ${poolType} pool${input.pools.length !== 1 ? "s" : ""}:\n\n${poolSummaries.join("\n")}`;
+  // Add note about pause methods if any v2 pools use setPaused
+  const hasLegacyPause = input.pools.some(
+    pool => !pool.isV3Pool && pool.pauseMethod === "setPaused" && pool.actions.includes("pause"),
+  );
+
+  let description = `The Emergency SubDAO at ${input.emergencyWallet} will execute ${actionCount} emergency action${actionCount !== 1 ? "s" : ""} on ${input.pools.length} Balancer ${poolType} pool${input.pools.length !== 1 ? "s" : ""}:\n\n${poolSummaries.join("\n")}`;
+
+  if (hasLegacyPause) {
+    description +=
+      "\n\nNote: Some pools will use the legacy setPaused(true) method for pausing (indicated in the action description above).";
+  }
+
+  return description;
 }
