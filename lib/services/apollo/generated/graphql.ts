@@ -1890,6 +1890,10 @@ export type GqlPoolTokenDetail = {
   isExemptFromProtocolYieldFee: Scalars['Boolean']['output'];
   /** Token logo */
   logoURI?: Maybe<Scalars['String']['output']>;
+  /** If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault. */
+  maxDeposit?: Maybe<Scalars['String']['output']>;
+  /** If it is an ERC4626 token, this  defines how much can be withdrawn from the ERC4626 vault. */
+  maxWithdraw?: Maybe<Scalars['String']['output']>;
   /** Name of the pool token. */
   name: Scalars['String']['output'];
   /** Additional data for the nested pool if the token is a BPT. Null otherwise. */
@@ -2776,6 +2780,19 @@ export type LbpMetadataInput = {
   x?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type LbpPriceChartData = {
+  __typename: 'LBPPriceChartData';
+  buyVolume: Scalars['Float']['output'];
+  /** @deprecated No longer supported */
+  intervalTimestamp: Scalars['Int']['output'];
+  projectTokenPrice: Scalars['Float']['output'];
+  reservePrice: Scalars['Float']['output'];
+  sellVolume: Scalars['Float']['output'];
+  swapCount: Scalars['Int']['output'];
+  timestamp: Scalars['Int']['output'];
+  volume: Scalars['Float']['output'];
+};
+
 export type LbPoolInput = {
   address: Scalars['String']['input'];
   chain: GqlChain;
@@ -2977,6 +2994,7 @@ export type Query = {
   /** @deprecated No longer supported */
   blocksGetBlocksPerYear: Scalars['Float']['output'];
   latestSyncedBlocks: GqlLatestSyncedBlocks;
+  lbpPriceChart?: Maybe<Array<LbpPriceChartData>>;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
   /**
@@ -3097,6 +3115,13 @@ export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
   chain?: InputMaybe<GqlChain>;
   id: Scalars['String']['input'];
   range: GqlPoolSnapshotDataRange;
+};
+
+
+export type QueryLbpPriceChartArgs = {
+  chain: GqlChain;
+  dataPoints?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['String']['input'];
 };
 
 
