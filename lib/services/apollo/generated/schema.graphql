@@ -2091,6 +2091,16 @@ type GqlPoolTokenDetail {
   """Token logo"""
   logoURI: String
 
+  """
+  If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault.
+  """
+  maxDeposit: String
+
+  """
+  If it is an ERC4626 token, this  defines how much can be withdrawn from the ERC4626 vault.
+  """
+  maxWithdraw: String
+
   """Name of the pool token."""
   name: String!
 
@@ -3147,9 +3157,14 @@ input LBPMetadataInput {
 }
 
 type LBPPriceChartData {
-  intervalTimestamp: Int!
+  buyVolume: Float!
+  intervalTimestamp: Int! @deprecated
   projectTokenPrice: Float!
   reservePrice: Float!
+  sellVolume: Float!
+  swapCount: Int!
+  timestamp: Int!
+  volume: Float!
 }
 
 input LBPoolInput {
@@ -3265,7 +3280,7 @@ type Query {
   blocksGetBlocksPerSecond: Float! @deprecated
   blocksGetBlocksPerYear: Float! @deprecated
   latestSyncedBlocks: GqlLatestSyncedBlocks!
-  lbpPriceChart(chain: GqlChain!, id: String!, interval: Int): [LBPPriceChartData!]
+  lbpPriceChart(chain: GqlChain!, dataPoints: Int, id: String!): [LBPPriceChartData!]
 
   """Getting swap, add and remove events with paging"""
   poolEvents(first: Int, skip: Int, where: GqlPoolEventsFilter): [GqlPoolEvent!]!

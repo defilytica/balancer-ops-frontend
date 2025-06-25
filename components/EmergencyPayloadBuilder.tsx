@@ -90,6 +90,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
   const [globalPauseMethod, setGlobalPauseMethod] = useState<"pause" | "setPaused">("pause");
+  const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -164,6 +165,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setProtocolVersion(version);
     setSelectedNetwork("");
     setSelectedPools([]);
+    setVaultActions([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
     setGlobalPauseMethod("pause"); // Reset to default
@@ -173,6 +175,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
     setSelectedPools([]);
+    setVaultActions([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
   }, []);
@@ -210,10 +213,17 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedPools(prev =>
       prev.map(pool =>
         pool.address === poolAddress
-          ? { ...pool, selectedActions: actions as ("pause" | "enableRecoveryMode")[] }
+          ? {
+              ...pool,
+              selectedActions: actions as ("pause" | "enableRecoveryMode")[],
+            }
           : pool,
       ),
     );
+  }, []);
+
+  const handleVaultActionChange = useCallback((actions: string[]) => {
+    setVaultActions(actions as ("pauseVault" | "pauseVaultBuffers")[]);
   }, []);
 
   const handlePauseMethodChange = useCallback(
@@ -234,10 +244,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   }, []);
 
   const handleGenerateClick = useCallback(() => {
-    if (selectedPools.length === 0) {
+    if (selectedPools.length === 0 && vaultActions.length === 0) {
       toast({
-        title: "No pools selected",
-        description: "Please select at least one pool for emergency actions",
+        title: "No actions selected",
+        description: "Please select at least one pool action or vault action for emergency actions",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -316,6 +326,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       emergencyWallet,
       chainId: networkOption.chainId,
       vaultAddress,
+      vaultActions: protocolVersion === "v3" ? vaultActions : [],
     };
 
     const payload = generateEmergencyPayload(payloadInput);
@@ -323,7 +334,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
     setGeneratedPayload(JSON.stringify(payload, null, 2));
     setHumanReadableText(humanReadable);
-  }, [selectedPools, emergencyWallet, selectedNetwork, addressBook, protocolVersion]);
+  }, [selectedPools, vaultActions, emergencyWallet, selectedNetwork, addressBook, protocolVersion]);
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -386,7 +397,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             <List spacing={2} fontSize="sm">
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
-                <strong>Pause Pool:</strong> Immediately stops all operations on the selected pool
+                <strong>Pause Pool/Vault:</strong> Immediately stops all operations on the selected
+                pool or vault
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
@@ -443,7 +455,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </>
               ) : (
                 <>
-                  Actions will be called through the Vault contract (pausePool(),
+                  Actions will be called through the Vault contract (pauseVault(),
                   enableRecoveryMode())
                 </>
               )}
@@ -534,11 +546,43 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Card>
       )}
 
+      {/* V3 Vault-Level Actions */}
+      {protocolVersion === "v3" && selectedNetwork && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            V3 Vault-Level Emergency Actions
+          </Heading>
+          <Card>
+            <CardBody>
+              <Text fontSize="sm" mb={3}>
+                These actions affect the entire V3 vault on {selectedNetwork}, not individual pools.
+              </Text>
+              <FormControl>
+                <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
+                <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
+                  <Stack direction="row" spacing={4}>
+                    <Checkbox value="pauseVault" colorScheme="red">
+                      Pause Vault
+                    </Checkbox>
+                    <Checkbox value="pauseVaultBuffers" colorScheme="red">
+                      Pause Vault Buffers
+                    </Checkbox>
+                  </Stack>
+                </CheckboxGroup>
+                <Text fontSize="xs" color="gray.500" mt={2}>
+                  Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts buffer operations only.
+                </Text>
+              </FormControl>
+            </CardBody>
+          </Card>
+        </Box>
+      )}
+
       {/* Step 3: Pool Selection */}
       {protocolVersion && selectedNetwork && (
         <Box mb={6}>
           <Heading as="h3" size="md" mb={4}>
-            Step 3: Select {protocolVersion.toUpperCase()} Pools
+            {protocolVersion === "v3" ? "Step 4:" : "Step 3:"} Select {protocolVersion.toUpperCase()} Pools (Optional)
           </Heading>
           <Grid templateColumns="repeat(12, 1fr)" gap={4}>
             <GridItem colSpan={{ base: 12, md: 8 }}>
@@ -650,7 +694,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         <Button
           variant="primary"
           onClick={handleGenerateClick}
-          isDisabled={selectedPools.length === 0 || !emergencyWallet || !protocolVersion}
+          isDisabled={(selectedPools.length === 0 && vaultActions.length === 0) || !emergencyWallet || !protocolVersion}
           colorScheme="red"
         >
           Generate Emergency Payload
