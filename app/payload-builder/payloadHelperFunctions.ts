@@ -1451,7 +1451,7 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
             name: "pauseVault",
             payable: false,
           },
-          contractInputsValues: null,
+          contractInputsValues: {},
         });
       } else if (action === "pauseVaultBuffers") {
         transactions.push({
@@ -1463,7 +1463,7 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
             name: "pauseVaultBuffers",
             payable: false,
           },
-          contractInputsValues: null,
+          contractInputsValues: {},
         });
       }
     }
@@ -1497,7 +1497,7 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
               name: "pauseVault",
               payable: false,
             },
-            contractInputsValues: null,
+            contractInputsValues: {},
           });
         } else if (action === "enableRecoveryMode") {
           transactions.push({
@@ -1546,7 +1546,7 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
                 name: "pause",
                 payable: false,
               },
-              contractInputsValues: null,
+              contractInputsValues: {},
             });
           }
         } else if (action === "enableRecoveryMode") {
@@ -1560,7 +1560,7 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
               name: "enableRecoveryMode",
               payable: false,
             },
-            contractInputsValues: null,
+            contractInputsValues: {},
           });
         }
       }

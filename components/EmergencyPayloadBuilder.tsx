@@ -413,56 +413,57 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       </Alert>
 
-      {/* Step 1: Protocol Version Selection */}
-      <Box mb={6}>
-        <Heading as="h3" size="md" mb={4}>
-          Step 1: Select Protocol Version
-        </Heading>
-        <HStack spacing={4}>
-          <Button
-            size="lg"
-            colorScheme={protocolVersion === "v2" ? "blue" : "gray"}
-            variant={protocolVersion === "v2" ? "solid" : "outline"}
-            onClick={() => handleProtocolVersionChange("v2")}
-            leftIcon={<Badge colorScheme="blue">V2</Badge>}
-          >
-            Balancer v2 Pools
-          </Button>
-          <Button
-            size="lg"
-            colorScheme={protocolVersion === "v3" ? "purple" : "gray"}
-            variant={protocolVersion === "v3" ? "solid" : "outline"}
-            onClick={() => handleProtocolVersionChange("v3")}
-            leftIcon={<Badge colorScheme="purple">V3</Badge>}
-          >
-            Balancer v3 Pools
-          </Button>
-        </HStack>
-        {protocolVersion && (
-          <Alert
-            status={"info"}
-            mt={3}
-            p={3}
-            borderRadius="md"
-            borderLeftWidth="4px"
-            borderLeftColor={protocolVersion === "v3" ? "purple.500" : "blue.500"}
-          >
-            <Text fontSize="sm">
-              {protocolVersion === "v2" ? (
-                <>
-                  Actions will be called directly on each pool contract (pause() or setPaused(),
-                  enableRecoveryMode())
-                </>
-              ) : (
-                <>
-                  Actions will be called through the Vault contract (pauseVault(),
-                  enableRecoveryMode())
-                </>
-              )}
-            </Text>
-          </Alert>
-        )}
-      </Box>
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={12}>
+          <Heading as="h3" size="md" mb={4}>
+            Select Protocol Version
+          </Heading>
+          <HStack spacing={4}>
+            <Button
+              size="lg"
+              colorScheme={protocolVersion === "v2" ? "blue" : "gray"}
+              variant={protocolVersion === "v2" ? "solid" : "outline"}
+              onClick={() => handleProtocolVersionChange("v2")}
+              leftIcon={<Badge colorScheme="blue">V2</Badge>}
+            >
+              Balancer v2 Pools
+            </Button>
+            <Button
+              size="lg"
+              colorScheme={protocolVersion === "v3" ? "purple" : "gray"}
+              variant={protocolVersion === "v3" ? "solid" : "outline"}
+              onClick={() => handleProtocolVersionChange("v3")}
+              leftIcon={<Badge colorScheme="purple">V3</Badge>}
+            >
+              Balancer v3 Pools
+            </Button>
+          </HStack>
+          {protocolVersion && (
+            <Alert
+              status={"info"}
+              mt={3}
+              p={3}
+              borderRadius="md"
+              borderLeftWidth="4px"
+              borderLeftColor={protocolVersion === "v3" ? "purple.500" : "blue.500"}
+            >
+              <Text fontSize="sm">
+                {protocolVersion === "v2" ? (
+                  <>
+                    Actions will be called directly on each pool contract (pause() or setPaused(),
+                    enableRecoveryMode())
+                  </>
+                ) : (
+                  <>
+                    Actions will be called through the Vault contract (pauseVault(),
+                    enableRecoveryMode())
+                  </>
+                )}
+              </Text>
+            </Alert>
+          )}
+        </GridItem>
+      </Grid>
 
       {/* Step 1.5: V2 Pause Method Selection */}
       {protocolVersion === "v2" && (
@@ -512,91 +513,118 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       )}
 
-      {/* Step 2: Network Selection */}
       {protocolVersion && (
-        <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
-            Step 2: Select Network
-          </Heading>
-          <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-            <GridItem colSpan={{ base: 12, md: 6 }}>
-              <NetworkSelector
-                networks={networks}
-                networkOptions={availableNetworkOptions}
-                selectedNetwork={selectedNetwork}
-                handleNetworkChange={handleNetworkChange}
-                label="Network"
-              />
-            </GridItem>
-          </Grid>
-        </Box>
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={{ base: 12, md: 4 }}>
+            <NetworkSelector
+              networks={networks}
+              networkOptions={availableNetworkOptions}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+              label="Network"
+            />
+          </GridItem>
+        </Grid>
       )}
 
       {/* Emergency Wallet Display */}
       {emergencyWallet && (
-        <Card mb={6}>
-          <CardBody>
-            <Text fontSize="sm" fontWeight={"bold"} mb={1}>
-              Emergency Wallet for {selectedNetwork}
-            </Text>
-            <Text fontFamily="mono" fontSize="sm">
-              {emergencyWallet}
-            </Text>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* V3 Vault-Level Actions */}
-      {protocolVersion === "v3" && selectedNetwork && (
-        <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
-            V3 Vault-Level Emergency Actions
-          </Heading>
-          <Card>
-            <CardBody>
-              <Text fontSize="sm" mb={3}>
-                These actions affect the entire V3 vault on {selectedNetwork}, not individual pools.
-              </Text>
-              <FormControl>
-                <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
-                <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
-                  <Stack direction="row" spacing={4}>
-                    <Checkbox value="pauseVault" colorScheme="red">
-                      Pause Vault
-                    </Checkbox>
-                    <Checkbox value="pauseVaultBuffers" colorScheme="red">
-                      Pause Vault Buffers
-                    </Checkbox>
-                  </Stack>
-                </CheckboxGroup>
-                <Text fontSize="xs" color="gray.500" mt={2}>
-                  Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts buffer operations only.
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={{ base: 12, md: 6 }}>
+            <Card>
+              <CardBody>
+                <Text fontSize="sm" fontWeight={"bold"} mb={1}>
+                  Emergency Wallet for {selectedNetwork}
                 </Text>
-              </FormControl>
-            </CardBody>
-          </Card>
-        </Box>
+                <Text fontFamily="mono" fontSize="sm">
+                  {emergencyWallet}
+                </Text>
+              </CardBody>
+            </Card>
+          </GridItem>
+        </Grid>
       )}
 
-      {/* Step 3: Pool Selection */}
+      {protocolVersion === "v3" && selectedNetwork && (
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={12}>
+            <Heading as="h3" size="md" mb={4}>
+              V3 Vault-Level Emergency Actions
+            </Heading>
+            <Alert status="info" mb={4}>
+              <AlertIcon />
+              <AlertDescription>
+                These actions affect the entire V3 vault on {selectedNetwork}. No pool selection
+                needed.
+              </AlertDescription>
+            </Alert>
+            <Card>
+              <CardBody>
+                <FormControl>
+                  <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
+                  <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
+                    <Stack direction="row" spacing={4}>
+                      <Checkbox value="pauseVault" colorScheme="red">
+                        Pause Vault
+                      </Checkbox>
+                      <Checkbox value="pauseVaultBuffers" colorScheme="red">
+                        Pause Vault Buffers
+                      </Checkbox>
+                    </Stack>
+                  </CheckboxGroup>
+                  <Text fontSize="xs" color="gray.500" mt={2}>
+                    Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts
+                    buffer operations only.
+                  </Text>
+                </FormControl>
+              </CardBody>
+            </Card>
+            {vaultActions.length > 0 && (
+              <Alert status="success" mt={4}>
+                <AlertIcon />
+                <AlertDescription>
+                  ✓ Vault actions selected. You can generate the payload now or optionally add
+                  specific pool actions below.
+                </AlertDescription>
+              </Alert>
+            )}
+          </GridItem>
+        </Grid>
+      )}
+
       {protocolVersion && selectedNetwork && (
-        <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
-            {protocolVersion === "v3" ? "Step 4:" : "Step 3:"} Select {protocolVersion.toUpperCase()} Pools (Optional)
-          </Heading>
-          <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-            <GridItem colSpan={{ base: 12, md: 8 }}>
-              <PoolSelector
-                pools={availablePools}
-                loading={loading}
-                error={error}
-                selectedPool={null}
-                onPoolSelect={handlePoolSelect}
-                onClearSelection={() => {}}
-              />
-            </GridItem>
-          </Grid>
-        </Box>
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={12}>
+            {/* Show pool selection heading and context based on protocol */}
+            {protocolVersion === "v3" && vaultActions.length > 0 ? (
+              <>
+                <Heading as="h3" size="md" mb={4}>
+                  Additional Pool Actions (Optional)
+                </Heading>
+                <Alert status="info" mb={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    Optionally add specific pool actions to combine with your vault actions.
+                  </AlertDescription>
+                </Alert>
+              </>
+            ) : (
+              <Heading as="h3" size="md" mb={4}>
+                Select {protocolVersion.toUpperCase()} Pools
+              </Heading>
+            )}
+          </GridItem>
+          <GridItem colSpan={{ base: 12, md: 8 }}>
+            <PoolSelector
+              pools={availablePools}
+              loading={loading}
+              error={error}
+              selectedPool={null}
+              onPoolSelect={handlePoolSelect}
+              onClearSelection={() => {}}
+            />
+          </GridItem>
+        </Grid>
       )}
 
       {selectedPools.length > 0 && (
@@ -691,14 +719,24 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       )}
 
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={(selectedPools.length === 0 && vaultActions.length === 0) || !emergencyWallet || !protocolVersion}
-          colorScheme="red"
-        >
-          Generate Emergency Payload
-        </Button>
+        {!selectedPools.length && !vaultActions.length ? (
+          <Button variant="primary" isDisabled={true} colorScheme="red">
+            {!protocolVersion
+              ? "Select Protocol Version"
+              : !selectedNetwork
+                ? "Select Network"
+                : "Select Actions"}
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!emergencyWallet || !protocolVersion}
+            colorScheme="red"
+          >
+            Generate Emergency Payload
+          </Button>
+        )}
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
 
@@ -711,9 +749,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
 
-          <Flex mt={4} mb={4} gap={2}>
+          <Box display="flex" alignItems="center" mt="20px">
             <Button
               variant="secondary"
+              mr="10px"
               leftIcon={<DownloadIcon />}
               onClick={() => handleDownloadClick(generatedPayload)}
             >
@@ -721,13 +760,14 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             </Button>
             <Button
               variant="secondary"
+              mr="10px"
               leftIcon={<CopyIcon />}
               onClick={() => copyJsonToClipboard(generatedPayload, toast)}
             >
-              Copy Payload
+              Copy Payload to Clipboard
             </Button>
-            <OpenPRButton onClick={handleOpenPRModal} />
-          </Flex>
+            <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
+          </Box>
 
           {humanReadableText && (
             <Box mt={4}>
@@ -749,15 +789,16 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </>
       )}
 
-      <Box mt={8} />
-      <PRCreationModal
-        type="emergency-actions"
-        network={selectedNetwork}
-        isOpen={isOpen}
-        onClose={onClose}
-        payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-        {...getPrefillValues()}
-      />
+      {generatedPayload && (
+        <PRCreationModal
+          type="emergency-actions"
+          network={selectedNetwork}
+          isOpen={isOpen}
+          onClose={onClose}
+          payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+          {...getPrefillValues()}
+        />
+      )}
     </Container>
   );
 }
