@@ -1433,12 +1433,30 @@ export interface EmergencyPayloadInput {
   chainId: string;
   vaultAddress?: string; // For V3 pools
   vaultActions?: ("pauseVault" | "pauseVaultBuffers")[];
+  factoryActions?: { address: string; name: string }[]; // For V3 factory disable actions
 }
 
 export function generateEmergencyPayload(input: EmergencyPayloadInput) {
   const transactions = [];
 
-  // Add vault-level actions first (for V3)
+  // Add factory disable actions first (for V3)
+  if (input.factoryActions && input.factoryActions.length > 0) {
+    for (const factory of input.factoryActions) {
+      transactions.push({
+        to: factory.address,
+        value: "0",
+        data: null,
+        contractMethod: {
+          inputs: [],
+          name: "disable",
+          payable: false,
+        },
+        contractInputsValues: {},
+      });
+    }
+  }
+
+  // Add vault-level actions (for V3)
   if (input.vaultActions && input.vaultActions.length > 0 && input.vaultAddress) {
     for (const action of input.vaultActions) {
       if (action === "pauseVault") {
@@ -1585,7 +1603,13 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
 export function generateHumanReadableEmergency(input: EmergencyPayloadInput): string {
   let description = `The Emergency SubDAO at ${input.emergencyWallet} will execute emergency actions:\n\n`;
 
-  // Add vault-level actions first
+  // Add factory disable actions first
+  if (input.factoryActions && input.factoryActions.length > 0) {
+    const factoryActionsText = input.factoryActions.map(f => `${f.name} (${f.address})`).join("\n");
+    description += `Factory disable actions:\n${factoryActionsText}\n\n`;
+  }
+
+  // Add vault-level actions
   if (input.vaultActions && input.vaultActions.length > 0) {
     const vaultActionsText = input.vaultActions.join(", ");
     description += `Vault-level actions: ${vaultActionsText}\n\n`;

@@ -71,6 +71,7 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import PoolSelector from "@/components/PoolSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { getV3PoolFactoriesForNetwork, V3PoolFactory } from "@/lib/utils/getV3PoolFactories";
 
 interface SelectedPool extends Pool {
   selectedActions: ("pause" | "enableRecoveryMode")[];
@@ -91,6 +92,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
   const [globalPauseMethod, setGlobalPauseMethod] = useState<"pause" | "setPaused">("pause");
   const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
+  const [selectedFactories, setSelectedFactories] = useState<V3PoolFactory[]>([]); // For V3 factory disable actions
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -111,6 +113,14 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
     }
   }, [protocolVersion, addressBook]);
+
+  // Get available V3 factories for the selected network
+  const availableFactories = useMemo(() => {
+    if (protocolVersion !== "v3" || !selectedNetwork) return [];
+    const factories = getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
+    console.log('Available factories for', selectedNetwork, ':', factories);
+    return factories;
+  }, [protocolVersion, selectedNetwork, addressBook]);
 
   // Query V3 pools (only when V3 is selected)
   const {
@@ -166,6 +176,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedNetwork("");
     setSelectedPools([]);
     setVaultActions([]);
+    setSelectedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
     setGlobalPauseMethod("pause"); // Reset to default
@@ -176,6 +187,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedNetwork(newNetwork);
     setSelectedPools([]);
     setVaultActions([]);
+    setSelectedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
   }, []);
@@ -226,6 +238,21 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setVaultActions(actions as ("pauseVault" | "pauseVaultBuffers")[]);
   }, []);
 
+  const handleFactorySelect = useCallback((factory: V3PoolFactory) => {
+    setSelectedFactories(prev => {
+      // Check if factory is already selected
+      const existingIndex = prev.findIndex(f => f.address === factory.address);
+      if (existingIndex >= 0) {
+        return prev; // Factory already selected
+      }
+      return [...prev, factory];
+    });
+  }, []);
+
+  const handleRemoveFactory = useCallback((factoryAddress: string) => {
+    setSelectedFactories(prev => prev.filter(f => f.address !== factoryAddress));
+  }, []);
+
   const handlePauseMethodChange = useCallback(
     (poolAddress: string, method: "pause" | "setPaused") => {
       setSelectedPools(prev =>
@@ -244,10 +271,11 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   }, []);
 
   const handleGenerateClick = useCallback(() => {
-    if (selectedPools.length === 0 && vaultActions.length === 0) {
+    if (selectedPools.length === 0 && vaultActions.length === 0 && selectedFactories.length === 0) {
       toast({
         title: "No actions selected",
-        description: "Please select at least one pool action or vault action for emergency actions",
+        description:
+          "Please select at least one pool action, vault action, or factory disable action for emergency actions",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -327,6 +355,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       chainId: networkOption.chainId,
       vaultAddress,
       vaultActions: protocolVersion === "v3" ? vaultActions : [],
+      factoryActions:
+        protocolVersion === "v3"
+          ? selectedFactories.map(f => ({ address: f.address, name: f.displayName }))
+          : [],
     };
 
     const payload = generateEmergencyPayload(payloadInput);
@@ -334,7 +366,15 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
     setGeneratedPayload(JSON.stringify(payload, null, 2));
     setHumanReadableText(humanReadable);
-  }, [selectedPools, vaultActions, emergencyWallet, selectedNetwork, addressBook, protocolVersion]);
+  }, [
+    selectedPools,
+    vaultActions,
+    selectedFactories,
+    emergencyWallet,
+    selectedNetwork,
+    addressBook,
+    protocolVersion,
+  ]);
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -351,29 +391,55 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   };
 
   const getPrefillValues = useCallback(() => {
-    if (selectedPools.length === 0 || !protocolVersion) return {};
+    if (
+      (selectedPools.length === 0 && vaultActions.length === 0 && selectedFactories.length === 0) ||
+      !protocolVersion
+    )
+      return {};
 
     const uniqueId = generateUniqueId();
-    const firstPoolId = selectedPools[0].address.substring(0, 8);
+    const firstPoolId =
+      selectedPools.length > 0 ? selectedPools[0].address.substring(0, 8) : "vault";
 
     // Count total actions
-    const totalActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
+    const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
+    const totalActions = poolActions + vaultActions.length + selectedFactories.length;
 
     // Get network name
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
     const networkName = networkOption?.label || selectedNetwork;
     const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
+    // Generate description
+    const descriptions = [];
+    if (selectedPools.length > 0) {
+      descriptions.push(
+        `${selectedPools.length} ${protocolVersion} pool${selectedPools.length !== 1 ? "s" : ""}`,
+      );
+    }
+    if (vaultActions.length > 0) {
+      descriptions.push(
+        `${vaultActions.length} vault action${vaultActions.length !== 1 ? "s" : ""}`,
+      );
+    }
+    if (selectedFactories.length > 0) {
+      descriptions.push(
+        `${selectedFactories.length} factory disable action${selectedFactories.length !== 1 ? "s" : ""}`,
+      );
+    }
+
+    const actionType =
+      selectedFactories.length > 0 ? "mixed" : selectedPools.length > 0 ? "pools" : "vault";
     const filename =
-      networkPath + `/emergency-actions-${protocolVersion}-${firstPoolId}-${uniqueId}.json`;
+      networkPath + `/emergency-actions-${protocolVersion}-${actionType}-${uniqueId}.json`;
 
     return {
-      prefillBranchName: `emergency/${protocolVersion}-pools-${firstPoolId}-${uniqueId}`,
-      prefillPrName: `Emergency Actions for ${selectedPools.length} ${protocolVersion.toUpperCase()} Pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}`,
-      prefillDescription: `Emergency actions: ${totalActions} action${totalActions !== 1 ? "s" : ""} across ${selectedPools.length} ${protocolVersion} pool${selectedPools.length !== 1 ? "s" : ""} on ${networkName}.`,
+      prefillBranchName: `emergency/${protocolVersion}-${actionType}-${uniqueId}`,
+      prefillPrName: `Emergency Actions for ${protocolVersion.toUpperCase()} on ${networkName}`,
+      prefillDescription: `Emergency actions: ${totalActions} total action${totalActions !== 1 ? "s" : ""} (${descriptions.join(", ")}) on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedPools, selectedNetwork, protocolVersion]);
+  }, [selectedPools, vaultActions, selectedFactories, selectedNetwork, protocolVersion]);
 
   return (
     <Container maxW="container.lg">
@@ -426,7 +492,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               onClick={() => handleProtocolVersionChange("v2")}
               leftIcon={<Badge colorScheme="blue">V2</Badge>}
             >
-              Balancer v2 Pools
+              Balancer v2
             </Button>
             <Button
               size="lg"
@@ -435,7 +501,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               onClick={() => handleProtocolVersionChange("v3")}
               leftIcon={<Badge colorScheme="purple">V3</Badge>}
             >
-              Balancer v3 Pools
+              Balancer v3
             </Button>
           </HStack>
           {protocolVersion && (
@@ -592,6 +658,78 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Grid>
       )}
 
+      {protocolVersion === "v3" && selectedNetwork && (
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={12}>
+            <Heading as="h3" size="md" mb={4}>
+              V3 Factory Disable Actions
+            </Heading>
+            <Alert status="warning" mb={4}>
+              <AlertIcon />
+              <AlertDescription>
+                Disable pool factories to prevent creation of new pools of specific types. This
+                action is irreversible.
+              </AlertDescription>
+            </Alert>
+            <Card>
+              <CardBody>
+                <FormControl>
+                  <FormLabel fontSize="sm">Available Pool Factories</FormLabel>
+                  {availableFactories.length === 0 ? (
+                    <Alert status="info">
+                      <AlertIcon />
+                      <AlertDescription>
+                        No V3 pool factories found for {selectedNetwork}. Network: {selectedNetwork}, Protocol: {protocolVersion}
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <VStack align="stretch" spacing={2}>
+                      {availableFactories.map(factory => (
+                        <Flex
+                          key={factory.address}
+                          justify="space-between"
+                          align="center"
+                          p={2}
+                          borderWidth="1px"
+                          borderRadius="md"
+                        >
+                          <Box>
+                            <Text fontWeight="medium">{factory.displayName}</Text>
+                            <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                              {factory.address}
+                            </Text>
+                          </Box>
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => handleFactorySelect(factory)}
+                            isDisabled={selectedFactories.some(f => f.address === factory.address)}
+                          >
+                            {selectedFactories.some(f => f.address === factory.address)
+                              ? "Selected"
+                              : "Select"}
+                          </Button>
+                        </Flex>
+                      ))}
+                    </VStack>
+                  )}
+                </FormControl>
+              </CardBody>
+            </Card>
+            {selectedFactories.length > 0 && (
+              <Alert status="success" mt={4}>
+                <AlertIcon />
+                <AlertDescription>
+                  ✓ {selectedFactories.length} factory{selectedFactories.length !== 1 ? "ies" : "y"}{" "}
+                  selected for disable action.
+                </AlertDescription>
+              </Alert>
+            )}
+          </GridItem>
+        </Grid>
+      )}
+
       {protocolVersion && selectedNetwork && (
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
           <GridItem colSpan={12}>
@@ -718,8 +856,50 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       )}
 
+      {selectedFactories.length > 0 && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            Selected V3 Factories for Disable ({selectedFactories.length})
+          </Heading>
+          <VStack spacing={3}>
+            {selectedFactories.map(factory => (
+              <Card key={factory.address} w="100%">
+                <CardBody>
+                  <Flex justify="space-between" align="center">
+                    <Box>
+                      <Flex align="center" gap={2}>
+                        <Text fontWeight="bold" fontSize="md">
+                          {factory.displayName}
+                        </Text>
+                        <Badge colorScheme="red" size="sm">
+                          DISABLE
+                        </Badge>
+                      </Flex>
+                      <Text fontSize="sm" color="gray.600" fontFamily="mono">
+                        {factory.address}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500">
+                        Category: {factory.category}
+                      </Text>
+                    </Box>
+                    <IconButton
+                      aria-label="Remove factory"
+                      icon={<DeleteIcon />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="red"
+                      onClick={() => handleRemoveFactory(factory.address)}
+                    />
+                  </Flex>
+                </CardBody>
+              </Card>
+            ))}
+          </VStack>
+        </Box>
+      )}
+
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPools.length && !vaultActions.length ? (
+        {!selectedPools.length && !vaultActions.length && !selectedFactories.length ? (
           <Button variant="primary" isDisabled={true} colorScheme="red">
             {!protocolVersion
               ? "Select Protocol Version"
