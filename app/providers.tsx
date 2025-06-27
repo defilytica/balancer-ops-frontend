@@ -9,6 +9,8 @@ import { CacheProvider } from "@chakra-ui/next-js";
 import { ApolloClientProvider } from "@/lib/services/apollo/ApolloClientprovider";
 import { Web3Provider } from "@/lib/modules/web3/Web3Provider";
 import { wagmiConfig } from "@/lib/modules/web3/WagmiConfig";
+import { PayloadComposerProvider } from "@/app/payload-builder/composer/PayloadComposerContext";
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
@@ -17,7 +19,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <Web3Provider wagmiConfig={wagmiConfig}>
             <CacheProvider>
               <ColorThemeProvider defaultTheme={DEFAULT_THEME_COLOR_MODE}>
-                <ThemeProvider>{children}</ThemeProvider>
+                <PayloadComposerProvider>
+                  <ThemeProvider>{children}</ThemeProvider>
+                </PayloadComposerProvider>
               </ColorThemeProvider>
             </CacheProvider>
           </Web3Provider>

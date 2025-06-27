@@ -1,7 +1,8 @@
-import React from "react";
-import { Box, Heading, Text, SimpleGrid, VStack } from "@chakra-ui/react";
+import { Box, Heading, Text, SimpleGrid, VStack, Flex, Card } from "@chakra-ui/react";
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import CustomCard from "@/components/CustomCard";
+import ComposerIndicator from "./composer/ComposerIndicator";
+import { PayloadComposerProvider } from "./composer/PayloadComposerContext";
 
 const CATEGORIZED_PAYLOADS = {
   "Gauge Management": ["enable-gauge", "kill-gauge"],
@@ -27,39 +28,64 @@ const PayloadBuilder = () => {
   };
 
   return (
-    <Box p={4} maxW="container.xl" mx="auto">
-      <Heading as="h2" size="lg" mb={2} variant="special">
-        Payload Builder Library
-      </Heading>
-      <Text mb={4}>Choose from a variety of options to create Balancer DAO Payloads</Text>
+    <PayloadComposerProvider>
+      <Box p={4} maxW="container.xl" mx="auto">
+        <Box mb={4}>
+          <Heading as="h2" size="lg" mb={2} variant="special">
+            Payload Builder Library
+          </Heading>
+          <Text>Choose from a variety of options to create Balancer DAO Payloads</Text>
+        </Box>
 
-      <VStack spacing={8} align="stretch">
-        {Object.entries(CATEGORIZED_PAYLOADS).map(([category, payloadKeys]) => (
-          <Box key={category}>
-            <Heading as="h3" size="md" mb={4} pb={2}>
-              {category}
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-              {payloadKeys.map(key => {
-                const payload = getPayloadByKey(key);
-                if (!payload) return null;
+        <Card boxShadow="md" borderRadius="md" p={6} mb={4}>
+          <Flex
+            justify="space-between"
+            align="center"
+            direction={{ base: "column", md: "row" }}
+            gap={4}
+          >
+            <Box>
+              <Heading size="md" mb={2} variant="secondary">
+                Payload composer
+              </Heading>
+              <Text fontSize="md">
+                Build complex workflows by combining multiple operations into a single transaction.
+              </Text>
+            </Box>
+            <Box width={{ base: "full", md: "auto" }}>
+              <ComposerIndicator />
+            </Box>
+          </Flex>
+        </Card>
 
-                return (
-                  <CustomCard
-                    key={payload.key}
-                    title={payload.label}
-                    description={payload.description}
-                    button_label={payload.button_label}
-                    icon={<payload.icon />}
-                    link={payload.href}
-                  />
-                );
-              })}
-            </SimpleGrid>
-          </Box>
-        ))}
-      </VStack>
-    </Box>
+        <VStack spacing={8} align="stretch">
+          {Object.entries(CATEGORIZED_PAYLOADS).map(([category, payloadKeys]) => (
+            <Box key={category}>
+              <Heading as="h3" size="md" mb={4} pb={2}>
+                {category}
+              </Heading>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                {payloadKeys.map(key => {
+                  const payload = getPayloadByKey(key);
+                  if (!payload) return null;
+
+                  return (
+                    <CustomCard
+                      key={payload.key}
+                      title={payload.label}
+                      description={payload.description}
+                      button_label={payload.button_label}
+                      icon={<payload.icon />}
+                      link={payload.href}
+                    />
+                  );
+                })}
+              </SimpleGrid>
+            </Box>
+          ))}
+        </VStack>
+      </Box>
+    </PayloadComposerProvider>
   );
 };
 
