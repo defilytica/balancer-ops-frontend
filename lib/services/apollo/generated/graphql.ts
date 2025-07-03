@@ -96,6 +96,7 @@ export enum GqlChain {
   Fantom = 'FANTOM',
   Fraxtal = 'FRAXTAL',
   Gnosis = 'GNOSIS',
+  Hyperevm = 'HYPEREVM',
   Mainnet = 'MAINNET',
   Mode = 'MODE',
   Optimism = 'OPTIMISM',
@@ -2783,6 +2784,9 @@ export type LbpMetadataInput = {
 export type LbpPriceChartData = {
   __typename: 'LBPPriceChartData';
   buyVolume: Scalars['Float']['output'];
+  cumulativeFees: Scalars['Float']['output'];
+  cumulativeVolume: Scalars['Float']['output'];
+  fees: Scalars['Float']['output'];
   /** @deprecated No longer supported */
   intervalTimestamp: Scalars['Int']['output'];
   projectTokenPrice: Scalars['Float']['output'];
@@ -2790,6 +2794,7 @@ export type LbpPriceChartData = {
   sellVolume: Scalars['Float']['output'];
   swapCount: Scalars['Int']['output'];
   timestamp: Scalars['Int']['output'];
+  tvl: Scalars['Float']['output'];
   volume: Scalars['Float']['output'];
 };
 

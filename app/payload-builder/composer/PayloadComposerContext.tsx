@@ -1,15 +1,17 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useIsMounted } from "@/lib/shared/hooks/useIsMounted";
+import type { SafeBatchFile } from "./payloadCombiner";
 
 export type PayloadOperation = {
   id: string;
   type: string;
-  title: string;
-  description: string;
-  params: Record<string, any>;
+  title?: string;
+  description?: string;
+  payload: SafeBatchFile; // The actual transaction payload
+  params: Record<string, any>; // Only display parameters for UI
   timestamp: number;
-  builderPath: string; // e.g., "initialize-buffer"
+  builderPath?: string; // e.g., "initialize-buffer"
 };
 
 type PayloadComposerContextType = {

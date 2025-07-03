@@ -12,6 +12,13 @@ const ComposerIndicator = ({ onClick }: ComposerIndicatorProps) => {
   const { operationCount, isMounted } = useComposer();
   const router = useRouter();
 
+  const borderColor = useColorModeValue("gray.600", "gray.500");
+  const hoverBg = useColorModeValue("gray.100", "gray.700");
+  const hoverBorderColor = useColorModeValue("brown.100", "brown.300");
+  const hoverColor = useColorModeValue("brown.700", "brown.200");
+  const badgeBg = useColorModeValue("blue.500", "blue.400");
+  const badgeColor = useColorModeValue("white", "white");
+
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -50,11 +57,11 @@ const ComposerIndicator = ({ onClick }: ComposerIndicatorProps) => {
           colorScheme="gray"
           size="md"
           width="full"
-          borderColor={useColorModeValue("gray.600", "gray.500")}
+          borderColor={borderColor}
           _hover={{
-            bg: useColorModeValue("gray.100", "gray.700"),
-            borderColor: useColorModeValue("brown.100", "brown.300"),
-            color: useColorModeValue("brown.700", "brown.200"),
+            bg: hoverBg,
+            borderColor: hoverBorderColor,
+            color: hoverColor,
           }}
         >
           Composer
@@ -64,8 +71,8 @@ const ComposerIndicator = ({ onClick }: ComposerIndicatorProps) => {
             position="absolute"
             top="-8px"
             right="-8px"
-            bg={useColorModeValue("blue.500", "blue.400")}
-            color={useColorModeValue("white", "white")}
+            bg={badgeBg}
+            color={badgeColor}
             borderRadius="full"
             minW="22px"
             h="22px"

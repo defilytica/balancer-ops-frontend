@@ -3,27 +3,22 @@ import React, { useState } from "react";
 import { Button, useToast } from "@chakra-ui/react";
 import { AddIcon, CheckIcon } from "@chakra-ui/icons";
 import { useComposer } from "./PayloadComposerContext";
-import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { generateUniqueOperationId } from "@/lib/utils/generateUniqueID";
 
 interface ComposerButtonProps {
-  type: string;
-  title: string;
-  description: string;
-  params: Record<string, any>;
-  builderPath: string;
+  generateData: () => {
+    type: string;
+    title?: string;
+    description?: string;
+    payload: any;
+    params: Record<string, any>;
+    builderPath?: string;
+  } | null;
   isDisabled?: boolean;
-  onAdd?: () => void; // Optional callback after successful add
+  onAdd?: () => void;
 }
 
-const ComposerButton = ({
-  type,
-  title,
-  description,
-  params,
-  builderPath,
-  isDisabled = false,
-  onAdd,
-}: ComposerButtonProps) => {
+const ComposerButton = ({ generateData, isDisabled = false, onAdd }: ComposerButtonProps) => {
   const { addOperation } = useComposer();
   const [isLoading, setIsLoading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -33,19 +28,21 @@ const ComposerButton = ({
     try {
       setIsLoading(true);
 
-      // Validate params before adding
-      if (!params || typeof params !== "object") {
-        throw new Error("Invalid payload parameters");
+      // Generate data when clicked
+      const operationData = generateData();
+      if (!operationData) {
+        // generateData should have shown error toast
+        return;
       }
 
-      // Create the operation
       const operation = {
-        id: generateUniqueId(),
-        type,
-        title,
-        description,
-        params: { ...params },
-        builderPath,
+        id: generateUniqueOperationId(),
+        type: operationData.type,
+        title: operationData.title,
+        description: operationData.description,
+        payload: operationData.payload,
+        params: operationData.params,
+        builderPath: operationData.builderPath,
       };
 
       // Add to composer
@@ -55,7 +52,7 @@ const ComposerButton = ({
       setJustAdded(true);
       toast({
         title: "Added to Composer",
-        description: `"${title}" has been added to your payload composer`,
+        description: `"${operationData.title}" has been added to your payload composer`,
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -86,7 +83,7 @@ const ComposerButton = ({
       isDisabled={isDisabled}
       isLoading={isLoading}
       loadingText="Adding..."
-      colorScheme={justAdded ? "green" : "blue"}
+      colorScheme={justAdded ? "green" : "brown"}
       variant="outline"
       leftIcon={justAdded ? <CheckIcon /> : <AddIcon />}
       size="md"

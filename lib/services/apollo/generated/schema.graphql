@@ -89,6 +89,7 @@ enum GqlChain {
   FANTOM
   FRAXTAL
   GNOSIS
+  HYPEREVM
   MAINNET
   MODE
   OPTIMISM
@@ -3158,12 +3159,16 @@ input LBPMetadataInput {
 
 type LBPPriceChartData {
   buyVolume: Float!
+  cumulativeFees: Float!
+  cumulativeVolume: Float!
+  fees: Float!
   intervalTimestamp: Int! @deprecated
   projectTokenPrice: Float!
   reservePrice: Float!
   sellVolume: Float!
   swapCount: Int!
   timestamp: Int!
+  tvl: Float!
   volume: Float!
 }
 
