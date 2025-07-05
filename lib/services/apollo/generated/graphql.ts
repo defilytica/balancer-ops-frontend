@@ -2789,8 +2789,10 @@ export type LbpPriceChartData = {
   fees: Scalars['Float']['output'];
   /** @deprecated No longer supported */
   intervalTimestamp: Scalars['Int']['output'];
+  projectTokenBalance: Scalars['Float']['output'];
   projectTokenPrice: Scalars['Float']['output'];
   reservePrice: Scalars['Float']['output'];
+  reserveTokenBalance: Scalars['Float']['output'];
   sellVolume: Scalars['Float']['output'];
   swapCount: Scalars['Int']['output'];
   timestamp: Scalars['Int']['output'];

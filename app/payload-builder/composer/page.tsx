@@ -26,19 +26,14 @@ export default function ComposerPage() {
     <Container maxW="7xl" py={8}>
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Flex justifyContent="space-between" alignItems="center">
-          <Box>
-            <Heading as="h2" size="lg" variant="special" mb={2}>
-              Payload Composer
-            </Heading>
-            <Text color={mutedTextColor} fontSize="md">
-              Combine multiple payload operations into a single transaction
-            </Text>
-          </Box>
-          <Box>
-            <ComposerIndicator />
-          </Box>
-        </Flex>
+        <Box>
+          <Heading as="h2" size="lg" variant="special" mb={2}>
+            Payload Composer
+          </Heading>
+          <Text color={mutedTextColor} fontSize="md">
+            Combine multiple payload operations into a single transaction
+          </Text>
+        </Box>
 
         {/* How it Works */}
         <Box>

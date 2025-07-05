@@ -154,7 +154,7 @@ export default function ComposerPayloadViewer() {
                 <Text fontWeight="medium">Manual Edits Applied</Text>
                 <Text fontSize="sm" color={mutedText} mt={1}>
                   The payload has been manually edited. Changes won't sync back to individual
-                  operations.
+                  operations above.
                 </Text>
               </Box>
             </VStack>
@@ -164,7 +164,7 @@ export default function ComposerPayloadViewer() {
               leftIcon={<EditIcon />}
               onClick={handleResetToOriginal}
             >
-              Reset to Original
+              Reset To Original
             </Button>
           </Flex>
         </Alert>
