@@ -93,6 +93,11 @@ interface RecipientConfigData {
 
 type EditableRecipientConfigData = Omit<RecipientConfigData, "id">;
 
+interface EditingConfigState {
+  id: string;
+  data: EditableRecipientConfigData;
+}
+
 // Helper functions extracted from the component
 const createEmptyConfig = (operationType: "add" | "remove" = "add"): RecipientConfigData => ({
   id: uuidv4(),
@@ -148,6 +153,10 @@ function RewardsInjectorConfiguratorV2({
   const [addConfigs, setAddConfigs] = useState<RecipientConfigData[]>([]);
   const [removeConfigs, setRemoveConfigs] = useState<RecipientConfigData[]>([]);
   const [generatedPayload, setGeneratedPayload] = useState<BatchFile | null>(null);
+  const [editingConfig, setEditingConfig] = useState<EditingConfigState | null>(null);
+  const [editedConfigs, setEditedConfigs] = useState<Map<string, EditableRecipientConfigData>>(
+    new Map(),
+  );
 
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const toast = useToast();
@@ -271,7 +280,7 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
-  // Calculate new distribution considering both add and remove operations
+  // Calculate new distribution considering add, remove, and edit operations
   const calculateNewDistribution = (
     addConfigs: RecipientConfigData[],
     removeConfigs: RecipientConfigData[],
@@ -303,6 +312,34 @@ function RewardsInjectorConfiguratorV2({
       }
     });
 
+    // Process edited configurations (subtract original, add new)
+    editedConfigs.forEach((editedData, gaugeAddress) => {
+      const gauge = gauges.find(g => g.gaugeAddress.toLowerCase() === gaugeAddress.toLowerCase());
+      if (gauge) {
+        // Subtract original gauge configuration
+        const originalAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+        const originalMaxPeriods = parseInt(gauge.maxPeriods) || 0;
+        const originalPeriodNumber = parseInt(gauge.periodNumber) || 0;
+
+        const originalTotal = originalAmountPerPeriod * originalMaxPeriods;
+        const originalDistributed = originalAmountPerPeriod * originalPeriodNumber;
+        const originalRemaining = originalTotal - originalDistributed;
+
+        newTotal -= originalTotal;
+        newDistributed -= originalDistributed;
+        newRemaining -= originalRemaining;
+
+        // Add edited configuration for all recipients
+        const editedAmountPerPeriod = parseFloat(editedData.amountPerPeriod) || 0;
+        const editedMaxPeriods = parseInt(editedData.maxPeriods) || 0;
+        const validRecipients = editedData.recipients.filter(r => r.trim()).length;
+
+        const editedTotal = editedAmountPerPeriod * editedMaxPeriods * validRecipients;
+        newTotal += editedTotal;
+        newRemaining += editedTotal;
+      }
+    });
+
     // Process additions
     addConfigs.forEach(config => {
       const amount = parseFloat(config.amountPerPeriod) || 0;
@@ -326,10 +363,15 @@ function RewardsInjectorConfiguratorV2({
   const distributionDelta = newDistribution.total - currentDistribution.total;
 
   // Check if any rewards are too small
-  const hasSmallRewards = addConfigs.some(config => {
-    const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
-    return rawAmount > 0 && rawAmount <= GAUGE_MIN_REWARD_AMOUNT_WEI;
-  });
+  const hasSmallRewards =
+    addConfigs.some(config => {
+      const rawAmount = parseInt(config.rawAmountPerPeriod || "0");
+      return rawAmount > 0 && rawAmount <= GAUGE_MIN_REWARD_AMOUNT_WEI;
+    }) ||
+    Array.from(editedConfigs.values()).some(editedData => {
+      const rawAmount = parseInt(editedData.rawAmountPerPeriod || "0");
+      return rawAmount > 0 && rawAmount <= GAUGE_MIN_REWARD_AMOUNT_WEI;
+    });
 
   // Convert min amount to human readable format for the warning
   const minHumanReadableAmount = tokenDecimals
@@ -396,14 +438,35 @@ function RewardsInjectorConfiguratorV2({
         }
       };
 
-      // Process removals first, then additions
+      // Process removals first, then additions, then edited configurations
       processConfigs(removeConfigs, "remove");
       processConfigs(addConfigs, "add");
 
-      if (transactions.length === 0) {
+      // Process edited configurations
+      editedConfigs.forEach((editedData, gaugeAddress) => {
+        const scheduleInputs = editedData.recipients.map(recipient => ({
+          gaugeAddress: recipient,
+          rawAmountPerPeriod: editedData.rawAmountPerPeriod,
+          maxPeriods: editedData.maxPeriods,
+          doNotStartBeforeTimestamp: editedData.doNotStartBeforeTimestamp,
+        }));
+
+        const payload = generateInjectorSchedulePayloadV2({
+          injectorAddress: selectedAddress.address,
+          chainId: chainId,
+          safeAddress: selectedSafe,
+          operation: "add",
+          scheduleInputs,
+        });
+
+        transactions.push(payload.transactions[0]);
+      });
+
+      if (transactions.length === 0 && editedConfigs.size === 0) {
         toast({
           title: "No valid configurations",
-          description: "Please add at least one valid configuration with recipients.",
+          description:
+            "Please add at least one valid configuration with recipients or edit an existing configuration.",
           status: "warning",
           duration: 5000,
           isClosable: true,
@@ -417,8 +480,14 @@ function RewardsInjectorConfiguratorV2({
         config =>
           config.recipients.some(r => r.trim()) && config.rawAmountPerPeriod && config.maxPeriods,
       );
+      const hasEditOps = editedConfigs.size > 0;
 
-      const operationType = hasRemoveOps && hasAddOps ? "MIXED" : hasAddOps ? "ADD" : "REMOVE";
+      const operationType =
+        hasRemoveOps && (hasAddOps || hasEditOps)
+          ? "MIXED"
+          : hasAddOps || hasEditOps
+            ? "ADD"
+            : "REMOVE";
 
       const finalPayload: BatchFile = {
         version: "1.0",
@@ -426,7 +495,7 @@ function RewardsInjectorConfiguratorV2({
         createdAt: Math.floor(Date.now() / 1000),
         meta: {
           name: `Rewards Injector Schedule - ${operationType}`,
-          description: `Configure rewards injector schedule to ${hasRemoveOps && hasAddOps ? "remove and add" : hasAddOps ? "add" : "remove"} recipients`,
+          description: `Configure rewards injector schedule to ${hasRemoveOps && (hasAddOps || hasEditOps) ? "remove and add" : hasAddOps || hasEditOps ? "add" : "remove"} recipients`,
           createdFromSafeAddress: selectedSafe,
         },
         transactions: transactions,
@@ -479,7 +548,8 @@ function RewardsInjectorConfiguratorV2({
 
   const shouldShowAddSection = () => addConfigs.length > 0;
   const shouldShowRemoveSection = () => removeConfigs.length > 0;
-  const hasAnyConfigurations = () => shouldShowAddSection() || shouldShowRemoveSection();
+  const hasAnyConfigurations = () =>
+    shouldShowAddSection() || shouldShowRemoveSection() || editedConfigs.size > 0;
 
   // Handle adding a gauge to the remove section
   const handleAddToRemove = (gaugeAddress: string) => {
@@ -709,6 +779,74 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
+  const handleEditConfiguration = (configToEdit: RewardsInjectorData) => {
+    // Check if there are existing edits for this gauge
+    const existingEdit = editedConfigs.get(configToEdit.gaugeAddress);
+
+    setEditingConfig({
+      id: configToEdit.gaugeAddress, // Using gaugeAddress as a unique ID for editing
+      data: existingEdit || {
+        // If no existing edits, use original values
+        recipients: [configToEdit.gaugeAddress], // Start with the current gauge, but allow adding more
+        amountPerPeriod: configToEdit.amountPerPeriod,
+        rawAmountPerPeriod: configToEdit.rawAmountPerPeriod,
+        maxPeriods: configToEdit.maxPeriods,
+        doNotStartBeforeTimestamp: "0", // Default to 0, can be changed in edit view
+      },
+    });
+    toast({
+      title: "Editing Mode",
+      description: `You are now editing the configuration for ${configToEdit.gaugeAddress}.`,
+      status: "info",
+      duration: 4000,
+      isClosable: true,
+    });
+  };
+
+  const handleSaveEditedConfiguration = () => {
+    if (!editingConfig) return;
+
+    // Merge the new changes with any existing edits for this gauge
+    setEditedConfigs(prev => {
+      const existingEdit = prev.get(editingConfig.id);
+      const mergedEdit = existingEdit
+        ? { ...existingEdit, ...editingConfig.data } // Merge with existing edits
+        : editingConfig.data; // No existing edits, use current data
+
+      return new Map(prev.set(editingConfig.id, mergedEdit));
+    });
+
+    toast({
+      title: "Configuration Saved",
+      description: `Configuration for ${editingConfig.id} has been updated. Generate a payload to apply the changes.`,
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+
+    // Exit editing mode
+    setEditingConfig(null);
+  };
+
+  const handleCancelEdit = () => {
+    if (!editingConfig) return;
+
+    toast({
+      title: "Edit Cancelled",
+      description: `Cancelled editing configuration for ${editingConfig.id}.`,
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
+
+    setEditingConfig(null);
+  };
+
+  const handleEditingDataChange = (newData: EditableRecipientConfigData) => {
+    if (!editingConfig) return;
+    setEditingConfig(prev => (prev ? { ...prev, data: newData } : null));
+  };
+
   // Render helper for configuration sections
   const renderConfigSection = (
     configs: RecipientConfigData[],
@@ -720,10 +858,23 @@ function RewardsInjectorConfiguratorV2({
   ) => (
     <Box mt={8}>
       <Flex justifyContent="space-between" alignItems="center" mb={4}>
-        <Heading as="h3" size="md">
-          {title}
-        </Heading>
-        <Button variant="outline" leftIcon={<AddIcon />} onClick={onAddGroup} size="sm">
+        <VStack align="start" spacing={1}>
+          <Heading as="h3" size="md">
+            {title}
+          </Heading>
+          {editingConfig && (
+            <Text fontSize="sm" color="orange.500">
+              Complete your current edit to modify these configurations.
+            </Text>
+          )}
+        </VStack>
+        <Button
+          variant="outline"
+          leftIcon={<AddIcon />}
+          onClick={onAddGroup}
+          size="sm"
+          isDisabled={editingConfig !== null}
+        >
           Add Configuration Group
         </Button>
       </Flex>
@@ -758,6 +909,7 @@ function RewardsInjectorConfiguratorV2({
                     onClick={() => onClearGroup(config.id)}
                     colorScheme="gray"
                     variant="ghost"
+                    isDisabled={editingConfig !== null}
                   />
                 </Tooltip>
                 <Tooltip label="Delete this configuration group">
@@ -768,6 +920,7 @@ function RewardsInjectorConfiguratorV2({
                     onClick={() => onRemoveGroup(config.id)}
                     colorScheme="red"
                     variant="ghost"
+                    isDisabled={editingConfig !== null}
                   />
                 </Tooltip>
               </HStack>
@@ -789,6 +942,7 @@ function RewardsInjectorConfiguratorV2({
                   ? handleAddConfigChange(newConfig, config.id)
                   : handleRemoveConfigChange(newConfig, config.id)
               }
+              isDisabled={editingConfig !== null}
             />
           </Box>
         );
@@ -812,7 +966,7 @@ function RewardsInjectorConfiguratorV2({
           <MenuButton
             as={Button}
             rightIcon={<ChevronDownIcon />}
-            isDisabled={isLoading}
+            isDisabled={isLoading || editingConfig !== null}
             whiteSpace="normal"
             height="auto"
             blockSize="auto"
@@ -893,6 +1047,7 @@ function RewardsInjectorConfiguratorV2({
               setGauges([]);
               onVersionToggle();
             }}
+            isDisabled={editingConfig !== null}
           />
           <FormLabel htmlFor="version-switch" mb="0" ml={2}>
             V2
@@ -1050,6 +1205,7 @@ function RewardsInjectorConfiguratorV2({
                         onClick={handleCopyAllConfigurations}
                         size="md"
                         variant="secondary"
+                        isDisabled={editingConfig !== null}
                       >
                         Copy All Configurations
                       </Button>
@@ -1068,9 +1224,17 @@ function RewardsInjectorConfiguratorV2({
                 tokenSymbol={tokenSymbol}
                 tokenDecimals={tokenDecimals}
                 onCopyConfiguration={handleCopyConfiguration}
+                onEditConfiguration={handleEditConfiguration}
                 onAddToRemove={handleAddToRemove}
                 showCopyButtons={true}
                 showTrashButtons={true}
+                showEditButtons={true}
+                editingGaugeId={editingConfig?.id || null}
+                editingData={editingConfig?.data || null}
+                onEditingDataChange={handleEditingDataChange}
+                onSaveEdit={handleSaveEditedConfiguration}
+                onCancelEdit={handleCancelEdit}
+                editedConfigs={editedConfigs}
               />
             </VStack>
           </Box>
@@ -1086,6 +1250,11 @@ function RewardsInjectorConfiguratorV2({
                     </Heading>
                     <Text textAlign="center" color={mutedTextColor}>
                       Add new recipients or remove existing ones from the injector schedule.
+                      {editingConfig && (
+                        <Text fontSize="sm" color="orange.500" mt={2}>
+                          Complete your current edit to access these actions.
+                        </Text>
+                      )}
                     </Text>
                     <HStack spacing={4}>
                       <Button
@@ -1093,6 +1262,7 @@ function RewardsInjectorConfiguratorV2({
                         onClick={addAddConfigGroup}
                         colorScheme="green"
                         variant="outline"
+                        isDisabled={editingConfig !== null}
                       >
                         Add Recipients
                       </Button>
@@ -1101,6 +1271,7 @@ function RewardsInjectorConfiguratorV2({
                         onClick={addRemoveConfigGroup}
                         colorScheme="red"
                         variant="outline"
+                        isDisabled={editingConfig !== null}
                       >
                         Remove Recipients
                       </Button>
@@ -1122,6 +1293,11 @@ function RewardsInjectorConfiguratorV2({
                       </Text>
                       <Text fontSize="sm" color={mutedTextColor}>
                         Create a configuration group to add new recipients to the injector.
+                        {editingConfig && (
+                          <Text fontSize="xs" color="orange.500" mt={1}>
+                            Complete your current edit first.
+                          </Text>
+                        )}
                       </Text>
                     </VStack>
                     <Button
@@ -1130,6 +1306,7 @@ function RewardsInjectorConfiguratorV2({
                       colorScheme="green"
                       variant="outline"
                       size="sm"
+                      isDisabled={editingConfig !== null}
                     >
                       Add Recipients
                     </Button>
@@ -1151,6 +1328,11 @@ function RewardsInjectorConfiguratorV2({
                       <Text fontSize="sm" color={mutedTextColor}>
                         Create a configuration group to remove existing recipients from the
                         injector.
+                        {editingConfig && (
+                          <Text fontSize="xs" color="orange.500" mt={1}>
+                            Complete your current edit first.
+                          </Text>
+                        )}
                       </Text>
                     </VStack>
                     <Button
@@ -1159,6 +1341,7 @@ function RewardsInjectorConfiguratorV2({
                       colorScheme="red"
                       variant="outline"
                       size="sm"
+                      isDisabled={editingConfig !== null}
                     >
                       Remove Recipients
                     </Button>
@@ -1200,7 +1383,11 @@ function RewardsInjectorConfiguratorV2({
 
       {selectedAddress && !isLoading && (
         <Flex justifyContent="space-between" mt={6} mb={6}>
-          <Button variant="primary" onClick={generatePayload} isDisabled={!hasAnyConfigurations()}>
+          <Button
+            variant="primary"
+            onClick={generatePayload}
+            isDisabled={!hasAnyConfigurations() || editingConfig !== null}
+          >
             Generate Payload
           </Button>
           {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}

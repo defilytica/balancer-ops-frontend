@@ -34,6 +34,7 @@ interface EditableInjectorConfigV2Props {
   tokenDecimals: number;
   onConfigChange: (config: RecipientConfigData) => void;
   operation: "add" | "remove" | null;
+  isDisabled?: boolean;
 }
 
 const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
@@ -42,6 +43,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   tokenDecimals,
   onConfigChange,
   operation,
+  isDisabled = false,
 }) => {
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
 
@@ -58,18 +60,29 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
   // Helper local state for datetime input
   const [doNotStartBeforeDateTime, setDoNotStartBeforeDateTime] = useState<string>("");
 
+  // Helper function to convert UTC timestamp to local datetime string for datetime-local input
+  const convertTimestampToLocalDateTime = (timestamp: string): string => {
+    if (!timestamp || timestamp === "0") return "";
+    const date = new Date(parseInt(timestamp) * 1000);
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  // Helper function to get minimum datetime (current time) for datetime-local input
+  const getMinDateTime = () => {
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return localNow.toISOString().slice(0, 16);
+  };
+
   // Update local state when initialData changes (for copy configuration functionality)
   useEffect(() => {
     if (initialData) {
       setConfig(initialData);
+      const localDateTime = convertTimestampToLocalDateTime(initialData.doNotStartBeforeTimestamp);
+      setDoNotStartBeforeDateTime(localDateTime);
     }
   }, [initialData]);
-
-  // Helper function to get minimum datetime (current time)
-  const getMinDateTime = () => {
-    const now = new Date();
-    return now.toISOString().slice(0, 16);
-  };
 
   // Helper function to convert datetime to Unix timestamp
   const convertDateTimeToTimestamp = (dateTimeString: string): string => {
@@ -87,12 +100,16 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     }
   };
 
+  // Unified helper to update config and notify parent
+  const updateConfig = (newConfig: RecipientConfigData) => {
+    setConfig(newConfig);
+    onConfigChange(newConfig);
+  };
+
   const handleRecipientChange = (index: number, value: string) => {
     const newRecipients = [...config.recipients];
     newRecipients[index] = value;
-    const newConfig = { ...config, recipients: newRecipients };
-    setConfig(newConfig);
-    onConfigChange(newConfig);
+    updateConfig({ ...config, recipients: newRecipients });
   };
 
   const handleInputChange = (field: keyof RecipientConfigData, value: string) => {
@@ -100,39 +117,36 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     if (field === "amountPerPeriod") {
       newConfig.amountPerPeriod = value;
       newConfig.rawAmountPerPeriod = convertToRawAmount(value);
+    } else if (field === "recipients") {
+      // This shouldn't happen as recipients are handled separately
+      console.warn("Recipients should be handled via handleRecipientChange");
     } else {
-      (newConfig[field] as any) = value;
+      // Handle string fields: maxPeriods, doNotStartBeforeTimestamp, rawAmountPerPeriod
+      (newConfig[field] as string) = value;
     }
-    setConfig(newConfig);
-    onConfigChange(newConfig);
+    updateConfig(newConfig);
   };
 
   const handleDateTimeChange = (dateTimeString: string) => {
     setDoNotStartBeforeDateTime(dateTimeString);
-    const newConfig = {
+    updateConfig({
       ...config,
       doNotStartBeforeTimestamp: convertDateTimeToTimestamp(dateTimeString),
-    };
-    setConfig(newConfig);
-    onConfigChange(newConfig);
+    });
   };
 
   const addRecipient = () => {
-    const newConfig = {
+    updateConfig({
       ...config,
       recipients: [...config.recipients, ""],
-    };
-    setConfig(newConfig);
-    onConfigChange(newConfig);
+    });
   };
 
   const removeRecipient = (index: number) => {
-    const newConfig = {
+    updateConfig({
       ...config,
       recipients: config.recipients.filter((_, i) => i !== index),
-    };
-    setConfig(newConfig);
-    onConfigChange(newConfig);
+    });
   };
 
   if (operation === null) {
@@ -152,6 +166,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                 placeholder="Recipient address"
                 value={recipient}
                 onChange={e => handleRecipientChange(index, e.target.value)}
+                isDisabled={isDisabled}
               />
               {config.recipients.length > 1 && (
                 <IconButton
@@ -159,13 +174,20 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeRecipient(index)}
+                  isDisabled={isDisabled}
                 >
                   <DeleteIcon boxSize={4} />
                 </IconButton>
               )}
             </HStack>
           ))}
-          <Button leftIcon={<AddIcon />} onClick={addRecipient} size="sm" variant="outline">
+          <Button
+            leftIcon={<AddIcon />}
+            onClick={addRecipient}
+            size="sm"
+            variant="outline"
+            isDisabled={isDisabled}
+          >
             Add Recipient
           </Button>
         </VStack>
@@ -180,6 +202,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
             value={config.amountPerPeriod}
             onChange={e => handleInputChange("amountPerPeriod", e.target.value)}
             placeholder={`Enter amount in ${tokenSymbol}`}
+            isDisabled={isDisabled}
           />
           <HStack mt={1}>
             <Text color={mutedTextColor}>Raw amount: {config.rawAmountPerPeriod}</Text>
@@ -199,6 +222,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
             placeholder="Number of weekly periods"
             min={1}
             max={255}
+            isDisabled={isDisabled}
           />
         </Box>
       </HStack>
@@ -215,6 +239,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
           value={doNotStartBeforeDateTime}
           onChange={e => handleDateTimeChange(e.target.value)}
           min={getMinDateTime()}
+          isDisabled={isDisabled}
         />
         {config.doNotStartBeforeTimestamp && config.doNotStartBeforeTimestamp !== "0" && (
           <Text mt={2} color={mutedTextColor}>
@@ -238,6 +263,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                 placeholder="Recipient address to remove"
                 value={recipient}
                 onChange={e => handleRecipientChange(index, e.target.value)}
+                isDisabled={isDisabled}
               />
               {config.recipients.length > 1 && (
                 <IconButton
@@ -245,6 +271,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeRecipient(index)}
+                  isDisabled={isDisabled}
                 >
                   <DeleteIcon boxSize={4} />
                 </IconButton>
@@ -257,6 +284,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
             size="sm"
             onClick={addRecipient}
             width="full"
+            isDisabled={isDisabled}
           >
             Add Recipient to Remove
           </Button>
@@ -276,7 +304,7 @@ const EditableInjectorConfigV2: React.FC<EditableInjectorConfigV2Props> = ({
     <Card>
       <CardHeader>
         <Heading size="md" fontWeight="semibold">
-          Recipient Configuration
+          {operation === "add" ? "Add Recipient" : "Remove Recipient"}
         </Heading>
       </CardHeader>
       <CardBody>
