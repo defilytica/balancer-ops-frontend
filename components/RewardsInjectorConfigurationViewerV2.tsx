@@ -21,6 +21,7 @@ import {
 } from "@chakra-ui/react";
 import { InfoIcon, CopyIcon, DeleteIcon, EditIcon, CheckIcon, CloseIcon } from "@chakra-ui/icons";
 import EditableInjectorConfigV2 from "./EditableInjectorConfigV2";
+import { AiOutlineClear } from "react-icons/ai";
 
 interface RewardsInjectorData {
   gaugeAddress: string;
@@ -76,6 +77,7 @@ interface RewardsInjectorConfigurationViewerV2Props {
       rawAmountPerPeriod: string;
     }
   >;
+  onResetEditedConfiguration?: (gaugeAddress: string) => void;
 }
 
 export const RewardsInjectorConfigurationViewerV2: React.FC<
@@ -96,6 +98,7 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
   onSaveEdit,
   onCancelEdit,
   editedConfigs = new Map(),
+  onResetEditedConfiguration,
 }) => {
   const bgColor = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
@@ -264,44 +267,80 @@ export const RewardsInjectorConfigurationViewerV2: React.FC<
                           )}
                         </HStack>
                         <HStack spacing={2}>
-                          {showEditButtons && onEditConfiguration && (
-                            <Tooltip label="Edit this configuration in place">
-                              <IconButton
-                                aria-label="Edit configuration"
-                                icon={<EditIcon />}
-                                size="sm"
-                                variant="outline"
-                                colorScheme="blue"
-                                onClick={() => handleEditConfiguration(gauge)}
-                                isDisabled={editingGaugeId !== null} // Disable if any gauge is being edited
-                              />
-                            </Tooltip>
-                          )}
-                          {showCopyButtons && onCopyConfiguration && (
-                            <Tooltip label="Copy this configuration to Add Recipients section">
-                              <IconButton
-                                aria-label="Copy configuration"
-                                icon={<CopyIcon />}
-                                size="sm"
-                                variant="outline"
-                                colorScheme="green"
-                                onClick={() => handleCopyConfiguration(gauge)}
-                                isDisabled={editingGaugeId !== null} // Disable if any gauge is being edited
-                              />
-                            </Tooltip>
-                          )}
-                          {showTrashButtons && onAddToRemove && (
-                            <Tooltip label="Add this address to Remove Recipients section">
-                              <IconButton
-                                aria-label="Add to remove section"
-                                icon={<DeleteIcon />}
-                                size="sm"
-                                variant="outline"
-                                colorScheme="red"
-                                onClick={() => handleRemoveConfiguration(gauge.gaugeAddress)}
-                                isDisabled={editingGaugeId !== null} // Disable if any gauge is being edited
-                              />
-                            </Tooltip>
+                          {editedConfigs.has(gauge.gaugeAddress) ? (
+                            // Edited state: Reset + Edit
+                            <>
+                              <Tooltip label="Undo all edits for this configuration.">
+                                <IconButton
+                                  aria-label="Reset configuration"
+                                  icon={<AiOutlineClear />}
+                                  size="sm"
+                                  variant="outline"
+                                  colorScheme="white"
+                                  onClick={() => onResetEditedConfiguration?.(gauge.gaugeAddress)}
+                                  isDisabled={editingGaugeId !== null}
+                                />
+                              </Tooltip>
+
+                              {showEditButtons && onEditConfiguration && (
+                                <Tooltip label="Edit this configuration in place">
+                                  <IconButton
+                                    aria-label="Edit configuration"
+                                    icon={<EditIcon />}
+                                    size="sm"
+                                    variant="outline"
+                                    colorScheme="blue"
+                                    onClick={() => handleEditConfiguration(gauge)}
+                                    isDisabled={editingGaugeId !== null}
+                                  />
+                                </Tooltip>
+                              )}
+                            </>
+                          ) : (
+                            // Unedited state: Edit + Copy + Remove
+                            <>
+                              {showEditButtons && onEditConfiguration && (
+                                <Tooltip label="Edit this configuration in place">
+                                  <IconButton
+                                    aria-label="Edit configuration"
+                                    icon={<EditIcon />}
+                                    size="sm"
+                                    variant="outline"
+                                    colorScheme="blue"
+                                    onClick={() => handleEditConfiguration(gauge)}
+                                    isDisabled={editingGaugeId !== null}
+                                  />
+                                </Tooltip>
+                              )}
+
+                              {showCopyButtons && onCopyConfiguration && (
+                                <Tooltip label="Copy this configuration to Add Recipients section">
+                                  <IconButton
+                                    aria-label="Copy configuration"
+                                    icon={<CopyIcon />}
+                                    size="sm"
+                                    variant="outline"
+                                    colorScheme="green"
+                                    onClick={() => handleCopyConfiguration(gauge)}
+                                    isDisabled={editingGaugeId !== null}
+                                  />
+                                </Tooltip>
+                              )}
+
+                              {showTrashButtons && onAddToRemove && (
+                                <Tooltip label="Add this address to Remove Recipients section">
+                                  <IconButton
+                                    aria-label="Add to remove section"
+                                    icon={<DeleteIcon />}
+                                    size="sm"
+                                    variant="outline"
+                                    colorScheme="red"
+                                    onClick={() => handleRemoveConfiguration(gauge.gaugeAddress)}
+                                    isDisabled={editingGaugeId !== null}
+                                  />
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </HStack>
                       </HStack>

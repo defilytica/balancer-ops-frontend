@@ -747,38 +747,6 @@ function RewardsInjectorConfiguratorV2({
     }
   };
 
-  const handleCopyAllConfigurations = () => {
-    if (!gauges || gauges.length === 0) {
-      toast({
-        title: "No Configurations to Copy",
-        description: "There are no existing gauge configurations to copy.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    const newConfigs: RecipientConfigData[] = gauges.map(gauge => ({
-      id: uuidv4(),
-      recipients: [gauge.gaugeAddress],
-      amountPerPeriod: gauge.amountPerPeriod,
-      rawAmountPerPeriod: gauge.rawAmountPerPeriod,
-      maxPeriods: gauge.maxPeriods,
-      doNotStartBeforeTimestamp: "0",
-    }));
-
-    setAddConfigs(newConfigs);
-
-    toast({
-      title: "All Configurations Copied",
-      description: `Created Add Recipients section with ${gauges.length} gauge configurations. Each gauge has been placed in its own configuration group.`,
-      status: "success",
-      duration: 5000,
-      isClosable: true,
-    });
-  };
-
   const handleEditConfiguration = (configToEdit: RewardsInjectorData) => {
     // Check if there are existing edits for this gauge
     const existingEdit = editedConfigs.get(configToEdit.gaugeAddress);
@@ -793,13 +761,6 @@ function RewardsInjectorConfiguratorV2({
         maxPeriods: configToEdit.maxPeriods,
         doNotStartBeforeTimestamp: "0", // Default to 0, can be changed in edit view
       },
-    });
-    toast({
-      title: "Editing Mode",
-      description: `You are now editing the configuration for ${configToEdit.gaugeAddress}.`,
-      status: "info",
-      duration: 4000,
-      isClosable: true,
     });
   };
 
@@ -830,21 +791,29 @@ function RewardsInjectorConfiguratorV2({
 
   const handleCancelEdit = () => {
     if (!editingConfig) return;
-
-    toast({
-      title: "Edit Cancelled",
-      description: `Cancelled editing configuration for ${editingConfig.id}.`,
-      status: "info",
-      duration: 3000,
-      isClosable: true,
-    });
-
     setEditingConfig(null);
   };
 
   const handleEditingDataChange = (newData: EditableRecipientConfigData) => {
     if (!editingConfig) return;
     setEditingConfig(prev => (prev ? { ...prev, data: newData } : null));
+  };
+
+  // Reset functions for edited configurations
+  const handleResetEditedConfiguration = (gaugeAddress: string) => {
+    setEditedConfigs(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(gaugeAddress);
+      return newMap;
+    });
+
+    toast({
+      title: "Configuration Reset",
+      description: `Configuration for ${gaugeAddress} has been reset to its original values.`,
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
   // Render helper for configuration sections
@@ -1198,20 +1167,6 @@ function RewardsInjectorConfiguratorV2({
                 </Heading>
 
                 <VStack spacing={2} align="end">
-                  {gauges && gauges.length > 0 && (
-                    <HStack spacing={3}>
-                      <Button
-                        leftIcon={<CopyIcon />}
-                        onClick={handleCopyAllConfigurations}
-                        size="md"
-                        variant="secondary"
-                        isDisabled={editingConfig !== null}
-                      >
-                        Copy All Configurations
-                      </Button>
-                    </HStack>
-                  )}
-
                   <Text fontSize="xs" color="gray.500" textAlign="right">
                     💡 Copy buttons populate the "Add Recipients" section | Trash buttons populate
                     the "Remove Recipients" section
@@ -1235,6 +1190,7 @@ function RewardsInjectorConfiguratorV2({
                 onSaveEdit={handleSaveEditedConfiguration}
                 onCancelEdit={handleCancelEdit}
                 editedConfigs={editedConfigs}
+                onResetEditedConfiguration={handleResetEditedConfiguration}
               />
             </VStack>
           </Box>
