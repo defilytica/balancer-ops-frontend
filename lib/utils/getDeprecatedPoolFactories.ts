@@ -1,4 +1,5 @@
 import { V3PoolFactory } from "./getV3PoolFactories";
+import { formatFactoryName, getVersionFromDeployment } from "./formatFactoryName";
 
 interface BalancerContract {
   name: string;
@@ -39,31 +40,33 @@ export async function getDeprecatedPoolFactoriesForNetwork(
     const data: BalancerDeploymentsData = await response.json();
     const deprecatedFactories: DeprecatedPoolFactory[] = [];
 
-    // Iterate through all deployments
+    // Process each deployment
     for (const [deploymentId, deploymentData] of Object.entries(data)) {
-      // Check if this deployment is deprecated and has contracts
-      if (deploymentData.status === "DEPRECATED" && deploymentData.contracts) {
-        // Filter by protocol version if specified
-        if (protocolVersion) {
-          const versionMatches = deploymentData.version === protocolVersion;
-          if (!versionMatches) {
-            continue; // Skip this deployment if version doesn't match
-          }
-        }
-        
-        // Look for contracts with "PoolFactory" in the name
-        for (const contract of deploymentData.contracts) {
-          if (contract.name.includes("PoolFactory") && contract.address) {
-            deprecatedFactories.push({
-              name: contract.name,
-              address: contract.address,
-              category: deploymentId,
-              displayName: formatDeprecatedFactoryDisplayName(contract.name, deploymentId),
-              status: "DEPRECATED",
-              deployment: deploymentId,
-            });
-          }
-        }
+      // Only process deprecated deployments with contracts
+      if (deploymentData.status !== "DEPRECATED" || !deploymentData.contracts) {
+        continue;
+      }
+
+      // Filter by protocol version if specified
+      if (protocolVersion && deploymentData.version !== protocolVersion) {
+        continue;
+      }
+
+      // Find pool factories in this deployment
+      const poolFactories = deploymentData.contracts.filter(
+        contract => contract.name.includes("PoolFactory") && contract.address,
+      );
+
+      // Add each pool factory to the results
+      for (const factory of poolFactories) {
+        deprecatedFactories.push({
+          name: factory.name,
+          address: factory.address,
+          category: deploymentId,
+          displayName: formatDeprecatedFactoryDisplayName(factory.name, deploymentId),
+          status: "DEPRECATED",
+          deployment: deploymentId,
+        });
       }
     }
 
@@ -76,53 +79,20 @@ export async function getDeprecatedPoolFactoriesForNetwork(
 
 /**
  * Format deprecated factory name for display in UI
- * Examples:
- * - "WeightedPoolFactory" + "20241205-v3-weighted-pool" -> "Weighted Pool Factory (Deprecated)"
- * - "StablePoolFactory" + "20220609-stable-pool-v2" -> "Stable Pool Factory (Deprecated)"
  */
 function formatDeprecatedFactoryDisplayName(factoryName: string, deployment: string): string {
-  // Remove "Factory" suffix if present
-  let displayName = factoryName.replace(/Factory$/, "");
-
-  // Handle special cases based on deployment or factory name
-  if (displayName.includes("Gyro2CLP")) {
-    displayName = displayName.replace("Gyro2CLPPool", "Gyro 2CLP Pool");
-  } else if (displayName.includes("GyroECLP")) {
-    displayName = displayName.replace("GyroECLPPool", "Gyro ECLP Pool");
-  } else if (displayName.includes("WeightedPool")) {
-    displayName = displayName.replace("WeightedPool", "Weighted Pool");
-  } else if (displayName.includes("StablePool")) {
-    displayName = displayName.replace("StablePool", "Stable Pool");
-  } else if (displayName.includes("LiquidityBootstrappingPool")) {
-    displayName = displayName.replace("LiquidityBootstrappingPool", "LBP");
-  } else if (displayName.includes("InvestmentPool")) {
-    displayName = displayName.replace("InvestmentPool", "Investment Pool");
-  } else if (displayName.includes("ManagedPool")) {
-    displayName = displayName.replace("ManagedPool", "Managed Pool");
-  } else if (displayName.includes("ComposableStablePool")) {
-    displayName = displayName.replace("ComposableStablePool", "Composable Stable Pool");
-  } else {
-    // Generic handling: add spaces before capital letters and handle "Pool" suffix
-    displayName = displayName
-      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capital letters
-      .replace(/Pool$/, " Pool"); // Ensure "Pool" is separated
-  }
-
-  // Add version info if available from deployment ID
-  let versionInfo = "";
-  if (deployment.includes("-v2")) {
-    versionInfo = " (v2)";
-  } else if (deployment.includes("-v3")) {
-    versionInfo = " (v3)";
-  }
-
-  return `${displayName} Factory${versionInfo} (Deprecated)`;
+  const baseName = formatFactoryName(factoryName);
+  const versionInfo = getVersionFromDeployment(deployment);
+  return `${baseName}${versionInfo} (Deprecated)`;
 }
 
 /**
  * Check if deprecated factories exist for the given network
  */
-export async function hasDeprecatedPoolFactories(network: string, protocolVersion?: "v2" | "v3"): Promise<boolean> {
+export async function hasDeprecatedPoolFactories(
+  network: string,
+  protocolVersion?: "v2" | "v3",
+): Promise<boolean> {
   const factories = await getDeprecatedPoolFactoriesForNetwork(network, protocolVersion);
   return factories.length > 0;
 }

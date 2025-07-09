@@ -1,5 +1,6 @@
 import { AddressBook } from "@/types/interfaces";
 import { getCategories, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { formatFactoryName } from "./formatFactoryName";
 
 export interface V3PoolFactory {
   name: string;
@@ -20,35 +21,36 @@ export function getV3PoolFactoriesForNetwork(
 
   try {
     const categories = getCategories(addressBook, network.toLowerCase());
-    console.log(`Categories for ${network}:`, categories);
 
-    // Filter for V3 pool categories (contain "v3" and date pattern) and have PoolFactory
-    const v3Categories = categories.filter(
-      category => category.includes("v3") && /^\d{8}-v3-/.test(category), // Matches pattern like "20241205-v3-"
-    ).filter(category => {
-      const categoryData = addressBook.active[network.toLowerCase()]?.[category];
-      return categoryData && Object.keys(categoryData).some(key => key.includes("PoolFactory"));
-    });
-    console.log(`V3 categories for ${network}:`, v3Categories);
+    // Filter for V3 pool categories with the correct pattern and that contain pool factories
+    const v3Categories = categories
+      .filter(category => category.includes("v3") && /^\d{8}-v3-/.test(category))
+      .filter(category => {
+        const categoryData = addressBook.active[network.toLowerCase()]?.[category];
+        return categoryData && Object.keys(categoryData).some(key => key.includes("PoolFactory"));
+      });
 
+    // Process each V3 category
     for (const category of v3Categories) {
       const categoryData = addressBook.active[network.toLowerCase()]?.[category];
-      console.log(`Category data for ${category}:`, categoryData);
 
       if (typeof categoryData === "object" && categoryData) {
-        for (const [key, address] of Object.entries(categoryData)) {
-          console.log(`Checking ${key}: ${address}, isFactory: ${key.includes("Factory")}, isMock: ${key.includes("Mock")}`);
-          // Include only factory contracts, exclude Mocks
-          if (key.includes("Factory") && !key.includes("Mock") && typeof address === "string") {
-            const factory = {
-              name: key,
-              address,
-              category,
-              displayName: formatFactoryDisplayName(key, category),
-            };
-            console.log(`Adding factory:`, factory);
-            factories.push(factory);
-          }
+        // Find pool factories in this category (exclude Mock contracts)
+        const poolFactories = Object.entries(categoryData).filter(
+          (entry): entry is [string, string] => {
+            const [key, address] = entry;
+            return key.includes("Factory") && !key.includes("Mock") && typeof address === "string";
+          },
+        );
+
+        // Add each pool factory to the results
+        for (const [name, address] of poolFactories) {
+          factories.push({
+            name,
+            address,
+            category,
+            displayName: formatFactoryDisplayName(name),
+          });
         }
       }
     }
@@ -85,31 +87,9 @@ export function getAllV3PoolFactories(addressBook: AddressBook): {
 
 /**
  * Format factory name for display in UI
- * Examples:
- * - "WeightedPoolFactory" + "20241205-v3-weighted-pool" -> "Weighted Pool Factory"
- * - "Gyro2CLPPoolFactory" + "20250120-v3-gyro-2clp" -> "Gyro 2CLP Pool Factory"
  */
-function formatFactoryDisplayName(factoryName: string, category: string): string {
-  // Remove "Factory" suffix if present
-  let displayName = factoryName.replace(/Factory$/, "");
-
-  // Handle special cases based on category or factory name
-  if (displayName.includes("Gyro2CLP")) {
-    displayName = displayName.replace("Gyro2CLPPool", "Gyro 2CLP Pool");
-  } else if (displayName.includes("GyroECLP")) {
-    displayName = displayName.replace("GyroECLPPool", "Gyro ECLP Pool");
-  } else if (displayName.includes("WeightedPool")) {
-    displayName = displayName.replace("WeightedPool", "Weighted Pool");
-  } else if (displayName.includes("StablePool")) {
-    displayName = displayName.replace("StablePool", "Stable Pool");
-  } else {
-    // Generic handling: add spaces before capital letters and handle "Pool" suffix
-    displayName = displayName
-      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capital letters
-      .replace(/Pool$/, " Pool"); // Ensure "Pool" is separated
-  }
-
-  return `${displayName} Factory`;
+function formatFactoryDisplayName(factoryName: string): string {
+  return formatFactoryName(factoryName);
 }
 
 /**
