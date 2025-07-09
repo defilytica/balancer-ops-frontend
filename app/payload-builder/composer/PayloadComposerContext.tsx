@@ -1,7 +1,12 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from "react";
 import { useIsMounted } from "@/lib/shared/hooks/useIsMounted";
-import type { SafeBatchFile } from "./payloadCombiner";
+import {
+  combinePayloadOperations,
+  validatePayloadCompatibility,
+  type SafeBatchFile,
+  type PayloadCombinationResult,
+} from "./payloadCombiner";
 
 export type PayloadOperation = {
   id: string;
@@ -14,6 +19,11 @@ export type PayloadOperation = {
   builderPath?: string; // e.g., "initialize-buffer"
 };
 
+export interface CompatibilityResult {
+  isCompatible: boolean;
+  issues: string[];
+}
+
 type PayloadComposerContextType = {
   operations: PayloadOperation[];
   addOperation: (op: Omit<PayloadOperation, "timestamp">) => void;
@@ -22,6 +32,12 @@ type PayloadComposerContextType = {
   reorderOperations: (from: number, to: number) => void;
   operationCount: number;
   isMounted: boolean;
+  // Computed validation and combination results
+  compatibilityCheck: CompatibilityResult;
+  combinationResult: PayloadCombinationResult;
+  hasValidationErrors: boolean;
+  hasTechnicalErrors: boolean;
+  hasAnyErrors: boolean;
 };
 
 const PayloadComposerContext = createContext<PayloadComposerContextType | undefined>(undefined);
@@ -31,6 +47,20 @@ const STORAGE_KEY = "payload-composer-cart";
 export const PayloadComposerProvider = ({ children }: { children: ReactNode }) => {
   const [operations, setOperations] = useState<PayloadOperation[]>([]);
   const isMounted = useIsMounted();
+
+  // Memoized validation and combination results
+  const compatibilityCheck = useMemo(() => {
+    return validatePayloadCompatibility(operations);
+  }, [operations]);
+
+  const combinationResult = useMemo(() => {
+    return combinePayloadOperations(operations);
+  }, [operations]);
+
+  // Derived error states
+  const hasValidationErrors = compatibilityCheck.issues.length > 0;
+  const hasTechnicalErrors = combinationResult.errors.length > 0;
+  const hasAnyErrors = hasValidationErrors || hasTechnicalErrors;
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -104,6 +134,11 @@ export const PayloadComposerProvider = ({ children }: { children: ReactNode }) =
         reorderOperations,
         operationCount,
         isMounted,
+        compatibilityCheck,
+        combinationResult,
+        hasValidationErrors,
+        hasTechnicalErrors,
+        hasAnyErrors,
       }}
     >
       {children}

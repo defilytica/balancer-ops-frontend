@@ -31,7 +31,11 @@ import { getNetworkString } from "@/lib/utils/getNetworkString";
 // Motion wrapper for cards
 const MotionCard = motion(Card);
 
-const ComposerOperationsPreview = () => {
+interface ComposerOperationsPreviewProps {
+  hasManualEdits: boolean;
+}
+
+const ComposerOperationsPreview = ({ hasManualEdits }: ComposerOperationsPreviewProps) => {
   const { operations, removeOperation, clearAll, reorderOperations, operationCount, isMounted } =
     useComposer();
 
@@ -171,7 +175,35 @@ const ComposerOperationsPreview = () => {
   }
 
   return (
-    <Card mt={4} borderColor={borderColor} borderWidth="2px" shadow="sm">
+    <Card mt={4} borderColor={borderColor} borderWidth="2px" shadow="sm" position="relative">
+      {/* Global disabled overlay */}
+      {hasManualEdits && (
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="rgba(255, 255, 255, 0.2)"
+          _dark={{ bg: "rgba(255, 255, 255, 0.1)" }}
+          backdropFilter="blur(4px)"
+          zIndex={1}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="md"
+        >
+          <VStack spacing={2} textAlign="center">
+            <Text fontWeight="semibold" color="gray.600" _dark={{ color: "gray.300" }}>
+              Operations Locked
+            </Text>
+            <Text fontSize="sm" color="gray.500" _dark={{ color: "gray.400" }}>
+              Payload was manually edited
+            </Text>
+          </VStack>
+        </Box>
+      )}
+
       <CardBody>
         <VStack spacing={spacing} align="stretch">
           {/* Header */}

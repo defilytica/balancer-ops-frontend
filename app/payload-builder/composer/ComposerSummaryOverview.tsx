@@ -25,31 +25,23 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, WarningIcon, InfoIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { useComposer } from "./PayloadComposerContext";
-import { combinePayloadOperations, validatePayloadCompatibility } from "./payloadCombiner";
 import { AiOutlineDashboard } from "react-icons/ai";
 
 export default function ComposerSummaryOverview() {
-  const { operations, isMounted } = useComposer();
+  const {
+    operations,
+    isMounted,
+    combinationResult,
+    compatibilityCheck,
+    hasValidationErrors,
+    hasTechnicalErrors,
+  } = useComposer();
 
   const bgColor = useColorModeValue("white", "background.level2");
   const borderColor = useColorModeValue("gray.200", "border.base");
   const mutedText = useColorModeValue("gray.600", "font.secondary");
   const lightText = useColorModeValue("gray.500", "gray.400");
   const iconColor = useColorModeValue("gray.400", "gray.500");
-
-  // Combine payloads and validate compatibility
-  const { combinationResult, compatibilityCheck } = useMemo(() => {
-    const compatibility = validatePayloadCompatibility(operations);
-    const combination = combinePayloadOperations(operations);
-
-    return {
-      combinationResult: combination,
-      compatibilityCheck: compatibility,
-    };
-  }, [operations]);
-
-  const hasValidationErrors = compatibilityCheck.issues.length > 0;
-  const hasTechnicalErrors = combinationResult.errors.length > 0;
 
   // Show loading skeleton during hydration to prevent mismatches
   if (!isMounted) {

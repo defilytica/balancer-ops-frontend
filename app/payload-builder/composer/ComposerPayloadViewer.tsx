@@ -16,15 +16,21 @@ import {
 } from "@chakra-ui/react";
 import { CopyIcon, DownloadIcon, InfoIcon, EditIcon } from "@chakra-ui/icons";
 import { useComposer } from "./PayloadComposerContext";
-import { combinePayloadOperations, validatePayloadCompatibility } from "./payloadCombiner";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { copyJsonToClipboard, handleDownloadClick } from "../payloadHelperFunctions";
 
-export default function ComposerPayloadViewer() {
-  const { operations, isMounted } = useComposer();
+interface ComposerPayloadViewerProps {
+  hasManualEdits: boolean;
+  setHasManualEdits: (hasEdits: boolean) => void;
+}
+
+export default function ComposerPayloadViewer({
+  hasManualEdits,
+  setHasManualEdits,
+}: ComposerPayloadViewerProps) {
+  const { operations, isMounted, combinationResult, hasAnyErrors } = useComposer();
   const [editedPayload, setEditedPayload] = useState<string>("");
-  const [hasManualEdits, setHasManualEdits] = useState(false);
   const toast = useToast();
 
   // Color mode values
@@ -33,21 +39,6 @@ export default function ComposerPayloadViewer() {
   const mutedText = useColorModeValue("gray.600", "font.secondary");
   const lightText = useColorModeValue("gray.500", "gray.400");
   const iconColor = useColorModeValue("gray.400", "gray.500");
-
-  // Combine payloads and validate compatibility
-  const { combinationResult, compatibilityCheck, hasAnyErrors } = useMemo(() => {
-    const compatibility = validatePayloadCompatibility(operations);
-    const combination = combinePayloadOperations(operations);
-
-    const hasValidationErrors = compatibility.issues.length > 0;
-    const hasTechnicalErrors = combination.errors.length > 0;
-
-    return {
-      combinationResult: combination,
-      compatibilityCheck: compatibility,
-      hasAnyErrors: hasValidationErrors || hasTechnicalErrors,
-    };
-  }, [operations]);
 
   // Format the payload for display
   const formattedPayload = useMemo(() => {

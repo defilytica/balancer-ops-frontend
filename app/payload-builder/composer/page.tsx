@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import {
   Container,
   Heading,
@@ -17,11 +18,21 @@ import { Settings } from "react-feather";
 import { FiZap } from "react-icons/fi";
 import ComposerOperationsPreview from "./ComposerOperationsPreview";
 import ComposerPayloadViewer from "./ComposerPayloadViewer";
-import ComposerIndicator from "./ComposerIndicator";
 import ComposersummaryOverview from "./ComposerSummaryOverview";
+import { useComposer } from "./PayloadComposerContext";
 
 export default function ComposerPage() {
+  const [hasManualEdits, setHasManualEdits] = useState(false);
+  const { operations } = useComposer();
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
+
+  // Reset manual edits when operations change (since payload will be regenerated)
+  useEffect(() => {
+    if (hasManualEdits) {
+      setHasManualEdits(false);
+    }
+  }, [operations]);
+
   return (
     <Container maxW="7xl" py={8}>
       <VStack spacing={6} align="stretch">
@@ -76,14 +87,17 @@ export default function ComposerPage() {
         <ComposersummaryOverview />
 
         {/* Operations Management with Reordering */}
-        <ComposerOperationsPreview />
+        <ComposerOperationsPreview hasManualEdits={hasManualEdits} />
 
         <Divider />
 
         {/* Combined Stats and Execution */}
         <VStack spacing={4} align="stretch">
           {/* Execution interface with JSON editor and buttons */}
-          <ComposerPayloadViewer />
+          <ComposerPayloadViewer
+            hasManualEdits={hasManualEdits}
+            setHasManualEdits={setHasManualEdits}
+          />
         </VStack>
       </VStack>
     </Container>
