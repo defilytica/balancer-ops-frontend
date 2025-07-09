@@ -94,7 +94,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
-  const [globalPauseMethod, setGlobalPauseMethod] = useState<"pause" | "setPaused">("pause");
   const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
   const [selectedFactories, setSelectedFactories] = useState<V3PoolFactory[]>([]); // For V3 factory disable actions
   const [selectedDeprecatedFactories, setSelectedDeprecatedFactories] = useState<
@@ -218,7 +217,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedDeprecatedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
-    setGlobalPauseMethod("pause"); // Reset to default
   }, []);
 
   const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -249,12 +247,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             ...pool,
             selectedActions: ["pause"],
             isV3Pool,
-            pauseMethod: isV3Pool ? undefined : globalPauseMethod,
+            pauseMethod: isV3Pool ? undefined : "pause", // Default to "pause" for V2 pools
           },
         ];
       });
     },
-    [protocolVersion, globalPauseMethod],
+    [protocolVersion],
   );
 
   const handleRemovePool = useCallback((poolAddress: string) => {
@@ -317,13 +315,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     [],
   );
 
-  const handleGlobalPauseMethodChange = useCallback((method: "pause" | "setPaused") => {
-    setGlobalPauseMethod(method);
-    // Update all existing v2 pools to use the new method
-    setSelectedPools(prev =>
-      prev.map(pool => (!pool.isV3Pool ? { ...pool, pauseMethod: method } : pool)),
-    );
-  }, []);
 
   const handleGenerateClick = useCallback(() => {
     if (
@@ -581,7 +572,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={12}>
           <Heading as="h3" size="md" mb={4}>
-            1. Select Protocol Version
+            Select Protocol Version
           </Heading>
           <Text fontSize="sm" color="font.secondary" mb={4}>
             Choose the Balancer protocol version for your emergency actions. This determines which
@@ -634,57 +625,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </GridItem>
       </Grid>
 
-      {/* Step 1.5: V2 Pause Method Selection */}
-      {protocolVersion === "v2" && (
-        <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
-            1.5. V2 Pool Pause Method Selection
-          </Heading>
-          <Text fontSize="sm" color="font.secondary" mb={4}>
-            Choose the pause method for V2 pools. Most modern V2 pools use pause(), while older
-            pools may require setPaused().
-          </Text>
-          <Card>
-            <CardBody>
-              <FormControl>
-                <FormLabel fontSize="md" fontWeight="bold">
-                  Choose Pause Method for V2 Pools
-                </FormLabel>
-                <RadioGroup value={globalPauseMethod} onChange={handleGlobalPauseMethodChange}>
-                  <VStack align="start" spacing={3}>
-                    <Radio value="pause" colorScheme="blue">
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="medium">pause() - Modern V2 Pools</Text>
-                        <Text fontSize="sm" color="font.secondary">
-                          Use for newer Balancer v2 pools (most common)
-                        </Text>
-                      </VStack>
-                    </Radio>
-                    <Radio value="setPaused" colorScheme="orange">
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="medium">setPaused(true) - Legacy V2 Pools</Text>
-                        <Text fontSize="sm" color="font.secondary">
-                          Use for older Balancer v2 pools that don't have the pause() method
-                        </Text>
-                      </VStack>
-                    </Radio>
-                  </VStack>
-                </RadioGroup>
-                <Alert status="info" mt={4} size="sm">
-                  <AlertIcon />
-                  <Box>
-                    <Text fontSize="sm">
-                      <strong>Not sure which to use?</strong> Try pause() first (default). If the
-                      transaction fails, use setPaused(true) instead. You can change this for
-                      individual pools later.
-                    </Text>
-                  </Box>
-                </Alert>
-              </FormControl>
-            </CardBody>
-          </Card>
-        </Box>
-      )}
 
       {protocolVersion && (
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
@@ -694,7 +634,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               networkOptions={availableNetworkOptions}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
-              label="2. Select Network"
+              label="Select Network"
             />
           </GridItem>
         </Grid>
@@ -718,11 +658,22 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Grid>
       )}
 
+      {protocolVersion && selectedNetwork && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            Emergency Actions
+          </Heading>
+          <Text fontSize="sm" color="font.secondary" mb={6}>
+            Select the emergency actions to include in your payload. You can combine multiple action types.
+          </Text>
+        </Box>
+      )}
+
       {protocolVersion === "v3" && selectedNetwork && (
-        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-          <GridItem colSpan={12}>
-            <Heading as="h3" size="md" mb={4}>
-              3. V3 Vault-Level Emergency Actions
+        <Card mb={6}>
+          <CardBody>
+            <Heading as="h4" size="sm" mb={4}>
+              🔒 Vault Actions (affects all pools)
             </Heading>
             <Alert status="info" mb={4}>
               <AlertIcon />
@@ -766,15 +717,15 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </AlertDescription>
               </Alert>
             )}
-          </GridItem>
-        </Grid>
+          </CardBody>
+        </Card>
       )}
 
       {protocolVersion === "v3" && selectedNetwork && (
-        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-          <GridItem colSpan={12}>
-            <Heading as="h3" size="md" mb={4}>
-              4. V3 Factory Disable Actions
+        <Card mb={6}>
+          <CardBody>
+            <Heading as="h4" size="sm" mb={4}>
+              ⚠️ Factory Actions (disable new pool creation)
             </Heading>
             <Alert status="warning" mb={4}>
               <AlertIcon />
@@ -943,18 +894,18 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </AlertDescription>
               </Alert>
             )}
-          </GridItem>
-        </Grid>
+          </CardBody>
+        </Card>
       )}
 
       {protocolVersion && selectedNetwork && (
-        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-          <GridItem colSpan={12}>
+        <Card mb={6}>
+          <CardBody>
             {/* Show pool selection heading and context based on protocol */}
             {protocolVersion === "v3" && vaultActions.length > 0 ? (
               <>
-                <Heading as="h3" size="md" mb={4}>
-                  5. Additional Pool Actions (Optional)
+                <Heading as="h4" size="sm" mb={4}>
+                  🏊 Additional Pool Actions (Optional)
                 </Heading>
                 <Alert status="info" mb={4}>
                   <AlertIcon />
@@ -964,13 +915,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </Alert>
               </>
             ) : (
-              <Heading as="h3" size="md" mb={4}>
-                {protocolVersion === "v3" ? "5. " : "3. "}Select {protocolVersion.toUpperCase()}{" "}
-                Pools
+              <Heading as="h4" size="sm" mb={4}>
+                🏊 Pool Actions (affects individual pools)
               </Heading>
             )}
-          </GridItem>
-          <GridItem colSpan={{ base: 12, md: 8 }}>
             <PoolSelector
               pools={availablePools}
               loading={loading}
@@ -979,13 +927,13 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               onPoolSelect={handlePoolSelect}
               onClearSelection={() => {}}
             />
-          </GridItem>
-        </Grid>
+          </CardBody>
+        </Card>
       )}
 
       {selectedPools.length > 0 && (
         <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
+          <Heading as="h4" size="sm" mb={4}>
             Selected {protocolVersion?.toUpperCase()} Pools ({selectedPools.length})
           </Heading>
           <VStack spacing={4}>
@@ -1055,15 +1003,33 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                             handlePauseMethodChange(pool.address, value)
                           }
                         >
-                          <HStack spacing={6}>
+                          <VStack align="start" spacing={2}>
                             <Radio value="pause" size="sm">
-                              pause()
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="sm" fontWeight="medium">
+                                  pause() - Modern V2 Pools
+                                </Text>
+                                <Text fontSize="xs" color="font.secondary">
+                                  Use for newer Balancer v2 pools (most common)
+                                </Text>
+                              </VStack>
                             </Radio>
                             <Radio value="setPaused" size="sm">
-                              setPaused(true)
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="sm" fontWeight="medium">
+                                  setPaused(true) - Legacy V2 Pools
+                                </Text>
+                                <Text fontSize="xs" color="font.secondary">
+                                  Use for older pools that don't have the pause() method
+                                </Text>
+                              </VStack>
                             </Radio>
-                          </HStack>
+                          </VStack>
                         </RadioGroup>
+                        <Text fontSize="xs" color="font.secondary" mt={2}>
+                          <strong>Not sure which to use?</strong> Try pause() first (default). If the
+                          transaction fails, switch to setPaused(true).
+                        </Text>
                       </FormControl>
                     )}
                   </VStack>
@@ -1076,7 +1042,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
       {selectedFactories.length > 0 && (
         <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
+          <Heading as="h4" size="sm" mb={4}>
             Selected V3 Factories for Disable ({selectedFactories.length})
           </Heading>
           <VStack spacing={3}>
@@ -1118,7 +1084,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
       {selectedDeprecatedFactories.length > 0 && (
         <Box mb={6}>
-          <Heading as="h3" size="md" mb={4}>
+          <Heading as="h4" size="sm" mb={4}>
             Selected Deprecated Factories for Disable ({selectedDeprecatedFactories.length})
           </Heading>
           <VStack spacing={3}>
