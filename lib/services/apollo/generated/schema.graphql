@@ -89,6 +89,7 @@ enum GqlChain {
   FANTOM
   FRAXTAL
   GNOSIS
+  HYPEREVM
   MAINNET
   MODE
   OPTIMISM
@@ -2682,7 +2683,7 @@ A hop of a route. A route can have many hops meaning it traverses more than one 
 """
 type GqlSorSwapRouteHop {
   """The pool entity of this hop."""
-  pool: GqlPoolMinimal!
+  pool: GqlPoolMinimal! @deprecated
 
   """The pool id of this hop."""
   poolId: String!
@@ -3158,12 +3159,18 @@ input LBPMetadataInput {
 
 type LBPPriceChartData {
   buyVolume: Float!
+  cumulativeFees: Float!
+  cumulativeVolume: Float!
+  fees: Float!
   intervalTimestamp: Int! @deprecated
+  projectTokenBalance: Float!
   projectTokenPrice: Float!
   reservePrice: Float!
+  reserveTokenBalance: Float!
   sellVolume: Float!
   swapCount: Int!
   timestamp: Int!
+  tvl: Float!
   volume: Float!
 }
 

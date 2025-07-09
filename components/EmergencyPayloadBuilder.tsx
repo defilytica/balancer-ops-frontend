@@ -72,6 +72,10 @@ import { NetworkSelector } from "@/components/NetworkSelector";
 import PoolSelector from "@/components/PoolSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { getV3PoolFactoriesForNetwork, V3PoolFactory } from "@/lib/utils/getV3PoolFactories";
+import {
+  DeprecatedPoolFactory,
+  getDeprecatedPoolFactoriesForNetwork,
+} from "@/lib/utils/getDeprecatedPoolFactories";
 
 interface SelectedPool extends Pool {
   selectedActions: ("pause" | "enableRecoveryMode")[];
@@ -93,6 +97,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [globalPauseMethod, setGlobalPauseMethod] = useState<"pause" | "setPaused">("pause");
   const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
   const [selectedFactories, setSelectedFactories] = useState<V3PoolFactory[]>([]); // For V3 factory disable actions
+  const [selectedDeprecatedFactories, setSelectedDeprecatedFactories] = useState<
+    DeprecatedPoolFactory[]
+  >([]); // For deprecated factory disable actions
+  const [includeDeprecated, setIncludeDeprecated] = useState<boolean>(false); // Toggle for showing deprecated factories
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -118,9 +126,39 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const availableFactories = useMemo(() => {
     if (protocolVersion !== "v3" || !selectedNetwork) return [];
     const factories = getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
-    console.log('Available factories for', selectedNetwork, ':', factories);
+    console.log("Available factories for", selectedNetwork, ":", factories);
     return factories;
   }, [protocolVersion, selectedNetwork, addressBook]);
+
+  // Get deprecated factories for the selected network
+  const [deprecatedFactories, setDeprecatedFactories] = useState<DeprecatedPoolFactory[]>([]);
+  const [loadingDeprecated, setLoadingDeprecated] = useState(false);
+
+  // Fetch deprecated factories when network changes and deprecated toggle is enabled
+  useEffect(() => {
+    if (protocolVersion !== "v3" || !selectedNetwork || !includeDeprecated) {
+      setDeprecatedFactories([]);
+      return;
+    }
+
+    const fetchDeprecatedFactories = async () => {
+      setLoadingDeprecated(true);
+      try {
+        const factories = await getDeprecatedPoolFactoriesForNetwork(
+          selectedNetwork,
+          protocolVersion,
+        );
+        setDeprecatedFactories(factories);
+      } catch (error) {
+        console.error("Error fetching deprecated factories:", error);
+        setDeprecatedFactories([]);
+      } finally {
+        setLoadingDeprecated(false);
+      }
+    };
+
+    fetchDeprecatedFactories();
+  }, [protocolVersion, selectedNetwork, includeDeprecated]);
 
   // Query V3 pools (only when V3 is selected)
   const {
@@ -177,6 +215,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedPools([]);
     setVaultActions([]);
     setSelectedFactories([]);
+    setSelectedDeprecatedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
     setGlobalPauseMethod("pause"); // Reset to default
@@ -188,6 +227,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedPools([]);
     setVaultActions([]);
     setSelectedFactories([]);
+    setSelectedDeprecatedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
   }, []);
@@ -253,6 +293,21 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedFactories(prev => prev.filter(f => f.address !== factoryAddress));
   }, []);
 
+  const handleDeprecatedFactorySelect = useCallback((factory: DeprecatedPoolFactory) => {
+    setSelectedDeprecatedFactories(prev => {
+      // Check if factory is already selected
+      const existingIndex = prev.findIndex(f => f.address === factory.address);
+      if (existingIndex >= 0) {
+        return prev; // Factory already selected
+      }
+      return [...prev, factory];
+    });
+  }, []);
+
+  const handleRemoveDeprecatedFactory = useCallback((factoryAddress: string) => {
+    setSelectedDeprecatedFactories(prev => prev.filter(f => f.address !== factoryAddress));
+  }, []);
+
   const handlePauseMethodChange = useCallback(
     (poolAddress: string, method: "pause" | "setPaused") => {
       setSelectedPools(prev =>
@@ -271,7 +326,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   }, []);
 
   const handleGenerateClick = useCallback(() => {
-    if (selectedPools.length === 0 && vaultActions.length === 0 && selectedFactories.length === 0) {
+    if (
+      selectedPools.length === 0 &&
+      vaultActions.length === 0 &&
+      selectedFactories.length === 0 &&
+      selectedDeprecatedFactories.length === 0
+    ) {
       toast({
         title: "No actions selected",
         description:
@@ -357,7 +417,13 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       vaultActions: protocolVersion === "v3" ? vaultActions : [],
       factoryActions:
         protocolVersion === "v3"
-          ? selectedFactories.map(f => ({ address: f.address, name: f.displayName }))
+          ? [
+              ...selectedFactories.map(f => ({ address: f.address, name: f.displayName })),
+              ...selectedDeprecatedFactories.map(f => ({
+                address: f.address,
+                name: f.displayName,
+              })),
+            ]
           : [],
     };
 
@@ -370,6 +436,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     selectedPools,
     vaultActions,
     selectedFactories,
+    selectedDeprecatedFactories,
     emergencyWallet,
     selectedNetwork,
     addressBook,
@@ -392,7 +459,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
   const getPrefillValues = useCallback(() => {
     if (
-      (selectedPools.length === 0 && vaultActions.length === 0 && selectedFactories.length === 0) ||
+      (selectedPools.length === 0 &&
+        vaultActions.length === 0 &&
+        selectedFactories.length === 0 &&
+        selectedDeprecatedFactories.length === 0) ||
       !protocolVersion
     )
       return {};
@@ -403,7 +473,11 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
     // Count total actions
     const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
-    const totalActions = poolActions + vaultActions.length + selectedFactories.length;
+    const totalActions =
+      poolActions +
+      vaultActions.length +
+      selectedFactories.length +
+      selectedDeprecatedFactories.length;
 
     // Get network name
     const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
@@ -422,14 +496,19 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         `${vaultActions.length} vault action${vaultActions.length !== 1 ? "s" : ""}`,
       );
     }
-    if (selectedFactories.length > 0) {
+    const totalFactoryActions = selectedFactories.length + selectedDeprecatedFactories.length;
+    if (totalFactoryActions > 0) {
       descriptions.push(
-        `${selectedFactories.length} factory disable action${selectedFactories.length !== 1 ? "s" : ""}`,
+        `${totalFactoryActions} factory disable action${totalFactoryActions !== 1 ? "s" : ""}`,
       );
     }
 
     const actionType =
-      selectedFactories.length > 0 ? "mixed" : selectedPools.length > 0 ? "pools" : "vault";
+      selectedFactories.length > 0 || selectedDeprecatedFactories.length > 0
+        ? "mixed"
+        : selectedPools.length > 0
+          ? "pools"
+          : "vault";
     const filename =
       networkPath + `/emergency-actions-${protocolVersion}-${actionType}-${uniqueId}.json`;
 
@@ -439,40 +518,60 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       prefillDescription: `Emergency actions: ${totalActions} total action${totalActions !== 1 ? "s" : ""} (${descriptions.join(", ")}) on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedPools, vaultActions, selectedFactories, selectedNetwork, protocolVersion]);
+  }, [
+    selectedPools,
+    vaultActions,
+    selectedFactories,
+    selectedDeprecatedFactories,
+    selectedNetwork,
+    protocolVersion,
+  ]);
 
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
+      <Heading as="h2" size="lg" variant="special" mb={4}>
         Emergency Actions Payload Builder
       </Heading>
 
-      <Alert status="warning" mb={6} py={3} variant="left-accent" borderRadius="md">
+      <Text fontSize="md" color="font.secondary" mb={6}>
+        Create emergency payloads for pool pausing, recovery mode, vault actions, and factory
+        disabling. These actions can be executed by the Emergency SubDAO wallet during critical
+        situations.
+      </Text>
+
+      <Alert status="warning" mb={6} py={4} variant="left-accent" borderRadius="md">
         <Box flex="1">
           <Flex align="center">
             <AlertIcon boxSize="20px" />
             <AlertTitle fontSize="lg" ml={2}>
-              Emergency SubDAO Actions
+              🚨 Emergency SubDAO Actions
             </AlertTitle>
           </Flex>
           <AlertDescription display="block">
-            <Text fontSize="sm" mb={2}>
+            <Text fontSize="sm" mb={3}>
               This tool creates payloads for emergency actions that can be executed by the Emergency
-              SubDAO wallet.
+              SubDAO wallet. Use these actions only in genuine emergency situations.
             </Text>
             <List spacing={2} fontSize="sm">
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
-                <strong>Pause Pool/Vault:</strong> Immediately stops all operations on the selected
-                pool or vault
+                <strong>Pause Pool/Vault:</strong> Immediately stops all operations (swaps, adds,
+                removes)
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
-                <strong>Enable Recovery Mode:</strong> Allows proportional withdrawals only
+                <strong>Enable Recovery Mode:</strong> Allows proportional withdrawals only, no
+                trading
+              </ListItem>
+              <ListItem>
+                <ListIcon as={ChevronRightIcon} color="orange.500" />
+                <strong>Disable Factory:</strong> Permanently prevents new pool deployments from
+                specific factories
               </ListItem>
               <ListItem>
                 <ListIcon as={WarningIcon} color="red.500" />
-                These actions should only be used in genuine emergency situations
+                <strong>Important:</strong> These actions should only be used during actual
+                emergencies
               </ListItem>
             </List>
           </AlertDescription>
@@ -482,8 +581,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={12}>
           <Heading as="h3" size="md" mb={4}>
-            Select Protocol Version
+            1. Select Protocol Version
           </Heading>
+          <Text fontSize="sm" color="font.secondary" mb={4}>
+            Choose the Balancer protocol version for your emergency actions. This determines which
+            networks and action types are available.
+          </Text>
           <HStack spacing={4}>
             <Button
               size="lg"
@@ -535,8 +638,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       {protocolVersion === "v2" && (
         <Box mb={6}>
           <Heading as="h3" size="md" mb={4}>
-            V2 Pool Pause Method Selection
+            1.5. V2 Pool Pause Method Selection
           </Heading>
+          <Text fontSize="sm" color="font.secondary" mb={4}>
+            Choose the pause method for V2 pools. Most modern V2 pools use pause(), while older
+            pools may require setPaused().
+          </Text>
           <Card>
             <CardBody>
               <FormControl>
@@ -548,7 +655,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                     <Radio value="pause" colorScheme="blue">
                       <VStack align="start" spacing={1}>
                         <Text fontWeight="medium">pause() - Modern V2 Pools</Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="font.secondary">
                           Use for newer Balancer v2 pools (most common)
                         </Text>
                       </VStack>
@@ -556,7 +663,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                     <Radio value="setPaused" colorScheme="orange">
                       <VStack align="start" spacing={1}>
                         <Text fontWeight="medium">setPaused(true) - Legacy V2 Pools</Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="font.secondary">
                           Use for older Balancer v2 pools that don't have the pause() method
                         </Text>
                       </VStack>
@@ -587,7 +694,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               networkOptions={availableNetworkOptions}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
-              label="Network"
+              label="2. Select Network"
             />
           </GridItem>
         </Grid>
@@ -615,13 +722,18 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
           <GridItem colSpan={12}>
             <Heading as="h3" size="md" mb={4}>
-              V3 Vault-Level Emergency Actions
+              3. V3 Vault-Level Emergency Actions
             </Heading>
             <Alert status="info" mb={4}>
               <AlertIcon />
               <AlertDescription>
-                These actions affect the entire V3 vault on {selectedNetwork}. No pool selection
-                needed.
+                <Text fontWeight="bold" mb={1}>
+                  🔒 Vault-Level Actions
+                </Text>
+                <Text fontSize="sm">
+                  These actions affect the entire V3 vault on {selectedNetwork}. No specific pool
+                  selection needed - they will impact all pools in the vault.
+                </Text>
               </AlertDescription>
             </Alert>
             <Card>
@@ -638,7 +750,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                       </Checkbox>
                     </Stack>
                   </CheckboxGroup>
-                  <Text fontSize="xs" color="gray.500" mt={2}>
+                  <Text fontSize="xs" color="font.secondary" mt={2}>
                     Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts
                     buffer operations only.
                   </Text>
@@ -662,13 +774,19 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
           <GridItem colSpan={12}>
             <Heading as="h3" size="md" mb={4}>
-              V3 Factory Disable Actions
+              4. V3 Factory Disable Actions
             </Heading>
             <Alert status="warning" mb={4}>
               <AlertIcon />
               <AlertDescription>
-                Disable pool factories to prevent creation of new pools of specific types. This
-                action is irreversible.
+                <Text fontWeight="bold" mb={1}>
+                  ⚠️ Factory Disable Actions
+                </Text>
+                <Text fontSize="sm">
+                  Disable pool factories to prevent creation of new pools of specific types. This
+                  action is <strong>irreversible</strong> and will permanently stop new pool
+                  deployments from these factories.
+                </Text>
               </AlertDescription>
             </Alert>
             <Card>
@@ -679,7 +797,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                     <Alert status="info">
                       <AlertIcon />
                       <AlertDescription>
-                        No V3 pool factories found for {selectedNetwork}. Network: {selectedNetwork}, Protocol: {protocolVersion}
+                        No V3 pool factories found for {selectedNetwork}. Network: {selectedNetwork}
+                        , Protocol: {protocolVersion}
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -695,7 +814,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                         >
                           <Box>
                             <Text fontWeight="medium">{factory.displayName}</Text>
-                            <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                            <Text fontSize="xs" color="font.secondary" fontFamily="mono">
                               {factory.address}
                             </Text>
                           </Box>
@@ -717,12 +836,110 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </FormControl>
               </CardBody>
             </Card>
-            {selectedFactories.length > 0 && (
+
+            {/* Deprecated Factories Toggle */}
+            <Card mt={4}>
+              <CardBody>
+                <FormControl>
+                  <Checkbox
+                    isChecked={includeDeprecated}
+                    onChange={e => setIncludeDeprecated(e.target.checked)}
+                    colorScheme="orange"
+                  >
+                    <Text fontWeight="medium">Include Deprecated Pool Factories</Text>
+                  </Checkbox>
+                  <Text fontSize="xs" color="font.secondary" mt={1}>
+                    Show deprecated pool factories that can also be disabled for emergency purposes.
+                    These are older factory versions that may still be functional but are no longer
+                    officially supported.
+                  </Text>
+                </FormControl>
+              </CardBody>
+            </Card>
+
+            {/* Deprecated Factories List */}
+            {includeDeprecated && (
+              <Card mt={4}>
+                <CardBody>
+                  <FormControl>
+                    <FormLabel fontSize="sm">Deprecated Pool Factories</FormLabel>
+                    {loadingDeprecated ? (
+                      <Alert status="info">
+                        <AlertIcon />
+                        <AlertDescription>Loading deprecated factories...</AlertDescription>
+                      </Alert>
+                    ) : deprecatedFactories.length === 0 ? (
+                      <Alert status="info">
+                        <AlertIcon />
+                        <AlertDescription>
+                          No deprecated pool factories found for {selectedNetwork}
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <VStack align="stretch" spacing={2}>
+                        {deprecatedFactories.map(factory => (
+                          <Flex
+                            key={factory.address}
+                            justify="space-between"
+                            align="center"
+                            p={2}
+                            borderWidth="1px"
+                            borderRadius="md"
+                          >
+                            <Box>
+                              <Flex align="center" gap={2}>
+                                <Text fontWeight="medium">{factory.displayName}</Text>
+                                <Badge colorScheme="orange" size="sm">
+                                  DEPRECATED
+                                </Badge>
+                              </Flex>
+                              <Text fontSize="xs" color="font.secondary" fontFamily="mono">
+                                {factory.address}
+                              </Text>
+                              <Text fontSize="xs" color="font.secondary">
+                                Deployment: {factory.deployment}
+                              </Text>
+                            </Box>
+                            <Button
+                              size="sm"
+                              colorScheme="orange"
+                              variant="outline"
+                              onClick={() => handleDeprecatedFactorySelect(factory)}
+                              isDisabled={selectedDeprecatedFactories.some(
+                                f => f.address === factory.address,
+                              )}
+                            >
+                              {selectedDeprecatedFactories.some(f => f.address === factory.address)
+                                ? "Selected"
+                                : "Select"}
+                            </Button>
+                          </Flex>
+                        ))}
+                      </VStack>
+                    )}
+                  </FormControl>
+                </CardBody>
+              </Card>
+            )}
+            {(selectedFactories.length > 0 || selectedDeprecatedFactories.length > 0) && (
               <Alert status="success" mt={4}>
                 <AlertIcon />
                 <AlertDescription>
-                  ✓ {selectedFactories.length} factory{selectedFactories.length !== 1 ? "ies" : "y"}{" "}
-                  selected for disable action.
+                  ✓ {selectedFactories.length + selectedDeprecatedFactories.length} factory
+                  {selectedFactories.length + selectedDeprecatedFactories.length !== 1
+                    ? "ies"
+                    : "y"}{" "}
+                  selected for disable action
+                  {selectedFactories.length > 0 &&
+                    selectedDeprecatedFactories.length > 0 &&
+                    ` (${selectedFactories.length} active, ${selectedDeprecatedFactories.length} deprecated)`}
+                  {selectedFactories.length > 0 &&
+                    selectedDeprecatedFactories.length === 0 &&
+                    ` (${selectedFactories.length} active)`}
+                  {selectedFactories.length === 0 &&
+                    selectedDeprecatedFactories.length > 0 &&
+                    ` (${selectedDeprecatedFactories.length} deprecated)`}
+                  .
                 </AlertDescription>
               </Alert>
             )}
@@ -737,7 +954,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             {protocolVersion === "v3" && vaultActions.length > 0 ? (
               <>
                 <Heading as="h3" size="md" mb={4}>
-                  Additional Pool Actions (Optional)
+                  5. Additional Pool Actions (Optional)
                 </Heading>
                 <Alert status="info" mb={4}>
                   <AlertIcon />
@@ -748,7 +965,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               </>
             ) : (
               <Heading as="h3" size="md" mb={4}>
-                Select {protocolVersion.toUpperCase()} Pools
+                {protocolVersion === "v3" ? "5. " : "3. "}Select {protocolVersion.toUpperCase()}{" "}
+                Pools
               </Heading>
             )}
           </GridItem>
@@ -789,7 +1007,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                           </Badge>
                         )}
                       </Flex>
-                      <Text fontSize="sm" color="gray.600" fontFamily="mono">
+                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
                         {pool.address}
                       </Text>
                     </Box>
@@ -828,7 +1046,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                         <FormLabel fontSize="sm">
                           <Flex align="center" gap={1}>
                             Pause Method for this Pool
-                            <InfoIcon color="gray.500" />
+                            <InfoIcon color="font.secondary" />
                           </Flex>
                         </FormLabel>
                         <RadioGroup
@@ -875,10 +1093,10 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                           DISABLE
                         </Badge>
                       </Flex>
-                      <Text fontSize="sm" color="gray.600" fontFamily="mono">
+                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
                         {factory.address}
                       </Text>
-                      <Text fontSize="xs" color="gray.500">
+                      <Text fontSize="xs" color="font.secondary">
                         Category: {factory.category}
                       </Text>
                     </Box>
@@ -898,8 +1116,56 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       )}
 
+      {selectedDeprecatedFactories.length > 0 && (
+        <Box mb={6}>
+          <Heading as="h3" size="md" mb={4}>
+            Selected Deprecated Factories for Disable ({selectedDeprecatedFactories.length})
+          </Heading>
+          <VStack spacing={3}>
+            {selectedDeprecatedFactories.map(factory => (
+              <Card key={factory.address} w="100%">
+                <CardBody>
+                  <Flex justify="space-between" align="center">
+                    <Box>
+                      <Flex align="center" gap={2}>
+                        <Text fontWeight="bold" fontSize="md">
+                          {factory.displayName}
+                        </Text>
+                        <Badge colorScheme="orange" size="sm">
+                          DEPRECATED
+                        </Badge>
+                        <Badge colorScheme="red" size="sm">
+                          DISABLE
+                        </Badge>
+                      </Flex>
+                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
+                        {factory.address}
+                      </Text>
+                      <Text fontSize="xs" color="font.secondary">
+                        Deployment: {factory.deployment}
+                      </Text>
+                    </Box>
+                    <IconButton
+                      aria-label="Remove deprecated factory"
+                      icon={<DeleteIcon />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="orange"
+                      onClick={() => handleRemoveDeprecatedFactory(factory.address)}
+                    />
+                  </Flex>
+                </CardBody>
+              </Card>
+            ))}
+          </VStack>
+        </Box>
+      )}
+
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPools.length && !vaultActions.length && !selectedFactories.length ? (
+        {!selectedPools.length &&
+        !vaultActions.length &&
+        !selectedFactories.length &&
+        !selectedDeprecatedFactories.length ? (
           <Button variant="primary" isDisabled={true} colorScheme="red">
             {!protocolVersion
               ? "Select Protocol Version"
