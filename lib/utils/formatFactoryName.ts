@@ -1,4 +1,5 @@
 /**
+ * Format factory name for display in UI by converting camelCase to human-readable format
  * Examples:
  * - "WeightedPoolFactory" -> "Weighted Pool Factory"
  * - "Gyro2CLPPoolFactory" -> "Gyro 2 CLP Pool Factory"
