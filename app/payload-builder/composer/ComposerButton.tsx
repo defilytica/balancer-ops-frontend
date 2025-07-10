@@ -2,15 +2,16 @@
 import React, { useState } from "react";
 import { Button, useToast } from "@chakra-ui/react";
 import { AddIcon, CheckIcon } from "@chakra-ui/icons";
-import { useComposer } from "./PayloadComposerContext";
+import { useComposer, type PayloadOperation } from "./PayloadComposerContext";
 import { generateUniqueOperationId } from "@/lib/utils/generateUniqueID";
+import type { SafeBatchFile, SafeTransaction } from "./payloadCombiner";
 
 interface ComposerButtonProps {
   generateData: () => {
     type: string;
     title?: string;
     description?: string;
-    payload: any;
+    payload: SafeBatchFile;
     params: Record<string, any>;
     builderPath?: string;
   } | null;
@@ -19,10 +20,51 @@ interface ComposerButtonProps {
 }
 
 const ComposerButton = ({ generateData, isDisabled = false, onAdd }: ComposerButtonProps) => {
-  const { addOperation } = useComposer();
+  const { addOperation, operations } = useComposer();
   const [isLoading, setIsLoading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const toast = useToast();
+
+  // Simple duplicate detection function
+  const findDuplicate = (newTransactions: SafeTransaction[]) => {
+    for (const existing of operations) {
+      const existingTransactions = existing.payload?.transactions || [];
+      if (JSON.stringify(newTransactions) === JSON.stringify(existingTransactions)) {
+        return existing;
+      }
+    }
+    return null;
+  };
+
+  const addOperationToComposer = (operationData: Omit<PayloadOperation, "timestamp" | "id">) => {
+    const operation = {
+      id: generateUniqueOperationId(),
+      type: operationData.type,
+      title: operationData.title,
+      description: operationData.description,
+      payload: operationData.payload,
+      params: operationData.params,
+      builderPath: operationData.builderPath,
+    };
+
+    addOperation(operation);
+
+    // Show success feedback
+    setJustAdded(true);
+    toast({
+      title: "Added to Composer",
+      description: `"${operationData.title}" has been added to your payload composer`,
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    });
+
+    // Call optional callback
+    onAdd?.();
+
+    // Reset success state after animation
+    setTimeout(() => setJustAdded(false), 2000);
+  };
 
   const handleAddToComposer = async () => {
     try {
@@ -31,38 +73,26 @@ const ComposerButton = ({ generateData, isDisabled = false, onAdd }: ComposerBut
       // Generate data when clicked
       const operationData = generateData();
       if (!operationData) {
-        // generateData should have shown error toast
         return;
       }
 
-      const operation = {
-        id: generateUniqueOperationId(),
-        type: operationData.type,
-        title: operationData.title,
-        description: operationData.description,
-        payload: operationData.payload,
-        params: operationData.params,
-        builderPath: operationData.builderPath,
-      };
+      const newTransactions = operationData.payload?.transactions || [];
+      const duplicate = findDuplicate(newTransactions);
 
-      // Add to composer
-      addOperation(operation);
+      // If duplicate found, show toast and don't add
+      if (duplicate) {
+        toast({
+          title: "Duplicate Transaction",
+          description: "This transaction is already in your Composer.",
+          status: "warning",
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
+      }
 
-      // Show success feedback
-      setJustAdded(true);
-      toast({
-        title: "Added to Composer",
-        description: `"${operationData.title}" has been added to your payload composer`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      // Call optional callback
-      onAdd?.();
-
-      // Reset success state after animation
-      setTimeout(() => setJustAdded(false), 2000);
+      // No duplicate, add the operation
+      addOperationToComposer(operationData);
     } catch (error) {
       console.error("Failed to add operation to composer:", error);
       toast({

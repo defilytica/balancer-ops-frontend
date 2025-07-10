@@ -94,11 +94,7 @@ export const PayloadComposerProvider = ({ children }: { children: ReactNode }) =
   }, [operations, isMounted]);
 
   const addOperation = (op: Omit<PayloadOperation, "timestamp">) => {
-    const newOperation: PayloadOperation = {
-      ...op,
-      timestamp: Date.now(),
-    };
-    setOperations(prev => [...prev, newOperation]);
+    setOperations(prev => [...prev, { ...op, timestamp: Date.now() }]);
   };
 
   const removeOperation = (id: string) => {
