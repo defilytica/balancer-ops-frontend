@@ -725,13 +725,13 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         <Card mb={6}>
           <CardBody>
             <Heading as="h4" size="sm" mb={4}>
-              ⚠️ Factory Actions (disable new pool creation)
+              Factory Actions (disable new pool creation)
             </Heading>
             <Alert status="warning" mb={4}>
               <AlertIcon />
               <AlertDescription>
                 <Text fontWeight="bold" mb={1}>
-                  ⚠️ Factory Disable Actions
+                  Factory Disable Actions
                 </Text>
                 <Text fontSize="sm">
                   Disable pool factories to prevent creation of new pools of specific types. This
