@@ -609,6 +609,8 @@ function RewardsInjectorConfiguratorV2({
           </>
         )}
 
+        <Divider my={4} />
+
         {isLoading && (
           <Flex justifyContent="center" alignItems="center" height="200px">
             <Spinner size="xl" />
@@ -617,7 +619,7 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <Flex justifyContent="space-between" mt={6} mb={6}>
-            <Button colorScheme="blue" onClick={generatePayload}>
+            <Button variant="primary" onClick={generatePayload}>
               Generate Payload
             </Button>
             {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}

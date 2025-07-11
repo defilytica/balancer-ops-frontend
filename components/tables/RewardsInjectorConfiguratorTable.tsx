@@ -12,6 +12,7 @@ import {
   Button,
   IconButton,
   HStack,
+  VStack,
   Tooltip,
   useColorModeValue,
   TableContainer,
@@ -24,6 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
+import { InjectorDateTimePicker } from "@/components/InjectorDateTimePicker";
 import { ethers } from "ethers";
 
 interface RewardsInjectorConfiguratorTableProps {
@@ -88,27 +90,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
     }
   };
 
-  // Helper function to convert UTC timestamp to local datetime string for datetime-local input
-  const convertTimestampToLocalDateTime = (timestamp: string): string => {
-    if (!timestamp || timestamp === "0") return "";
-    const date = new Date(parseInt(timestamp) * 1000);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  };
-
-  // Helper function to get minimum datetime (current time) for datetime-local input
-  const getMinDateTime = () => {
-    const now = new Date();
-    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return localNow.toISOString().slice(0, 16);
-  };
-
-  const convertDateTimeToTimestamp = (dateTimeString: string): string => {
-    if (!dateTimeString) return "0";
-    const timestamp = Math.floor(new Date(dateTimeString).getTime() / 1000);
-    return timestamp.toString();
-  };
-
   const handleFieldChange = (field: keyof RewardsInjectorData, value: string) => {
     if (!editingData) return;
 
@@ -131,11 +112,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
     }
 
     setEditingData(updatedGauge);
-  };
-
-  const handleDateTimeChange = (dateTimeString: string) => {
-    const timestamp = convertDateTimeToTimestamp(dateTimeString);
-    handleFieldChange("doNotStartBeforeTimestamp", timestamp);
   };
 
   const handleSave = (index: number) => {
@@ -170,11 +146,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
     }
 
     setNewRecipientData(updatedData);
-  };
-
-  const handleNewRecipientDateTimeChange = (dateTimeString: string) => {
-    const timestamp = convertDateTimeToTimestamp(dateTimeString);
-    handleNewRecipientChange("doNotStartBeforeTimestamp", timestamp);
   };
 
   const handleAddRecipient = () => {
@@ -251,7 +222,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
               <Th isNumeric>Amount per Period</Th>
               <Th isNumeric>Periods</Th>
               <Th>Start Time</Th>
-              {/* <Th>Last Injection</Th> */}
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -337,15 +307,11 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
                   </Td>
                   <Td>
                     {editingIndex === index ? (
-                      <Input
-                        type="datetime-local"
-                        value={convertTimestampToLocalDateTime(
-                          editingData?.doNotStartBeforeTimestamp || "0",
-                        )}
-                        onChange={e => handleDateTimeChange(e.target.value)}
-                        min={getMinDateTime()}
-                        size="sm"
-                        width="180px"
+                      <InjectorDateTimePicker
+                        value={editingData?.doNotStartBeforeTimestamp || "0"}
+                        onChange={(value: string) =>
+                          handleFieldChange("doNotStartBeforeTimestamp", value)
+                        }
                       />
                     ) : (
                       <Text fontSize="sm">
@@ -459,16 +425,11 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
                   />
                 </Td>
                 <Td>
-                  <Input
-                    type="datetime-local"
-                    value={convertTimestampToLocalDateTime(
-                      newRecipientData.doNotStartBeforeTimestamp || "0",
-                    )}
-                    onChange={e => handleNewRecipientDateTimeChange(e.target.value)}
-                    min={getMinDateTime()}
-                    size="sm"
-                    width="180px"
-                    placeholder="Select start time"
+                  <InjectorDateTimePicker
+                    value={newRecipientData.doNotStartBeforeTimestamp || "0"}
+                    onChange={(value: string) =>
+                      handleNewRecipientChange("doNotStartBeforeTimestamp", value)
+                    }
                   />
                 </Td>
                 {/* <Td>

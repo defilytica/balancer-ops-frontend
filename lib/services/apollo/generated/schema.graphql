@@ -89,6 +89,7 @@ enum GqlChain {
   FANTOM
   FRAXTAL
   GNOSIS
+  HYPEREVM
   MAINNET
   MODE
   OPTIMISM
@@ -1459,6 +1460,9 @@ type GqlPoolMinimal {
   """Pool is receiving rewards when liquidity tokens are staked"""
   incentivized: Boolean!
 
+  """LBP specific params for v3 pools only."""
+  lbpParams: LiquidityBootstrappingPoolV3Params
+
   """Liquidity management settings for v3 pools."""
   liquidityManagement: LiquidityManagement
 
@@ -2091,6 +2095,16 @@ type GqlPoolTokenDetail {
   """Token logo"""
   logoURI: String
 
+  """
+  If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault.
+  """
+  maxDeposit: String
+
+  """
+  If it is an ERC4626 token, this  defines how much can be withdrawn from the ERC4626 vault.
+  """
+  maxWithdraw: String
+
   """Name of the pool token."""
   name: String!
 
@@ -2672,7 +2686,7 @@ A hop of a route. A route can have many hops meaning it traverses more than one 
 """
 type GqlSorSwapRouteHop {
   """The pool entity of this hop."""
-  pool: GqlPoolMinimal!
+  pool: GqlPoolMinimal! @deprecated
 
   """The pool id of this hop."""
   poolId: String!
@@ -3147,14 +3161,48 @@ input LBPMetadataInput {
 }
 
 type LBPPriceChartData {
-  intervalTimestamp: Int!
+  buyVolume: Float!
+  cumulativeFees: Float!
+  cumulativeVolume: Float!
+  fees: Float!
+  intervalTimestamp: Int! @deprecated
+  projectTokenBalance: Float!
   projectTokenPrice: Float!
   reservePrice: Float!
+  reserveTokenBalance: Float!
+  sellVolume: Float!
+  swapCount: Int!
+  timestamp: Int!
+  tvl: Float!
+  volume: Float!
 }
 
 input LBPoolInput {
   address: String!
   chain: GqlChain!
+}
+
+"""LBP specific params for v3 pools only."""
+type LiquidityBootstrappingPoolV3Params {
+  description: String
+  discord: String
+  endTime: Int!
+  farcaster: String
+  isProjectTokenSwapInBlocked: Boolean!
+  lbpName: String
+  lbpOwner: String!
+  projectToken: String!
+  projectTokenEndWeight: Float!
+  projectTokenIndex: Int!
+  projectTokenStartWeight: Float!
+  reserveToken: String!
+  reserveTokenEndWeight: Float!
+  reserveTokenIndex: Int!
+  reserveTokenStartWeight: Float!
+  startTime: Int!
+  telegram: String
+  website: String
+  x: String
 }
 
 """Liquidity management settings for v3 pools."""
@@ -3265,7 +3313,7 @@ type Query {
   blocksGetBlocksPerSecond: Float! @deprecated
   blocksGetBlocksPerYear: Float! @deprecated
   latestSyncedBlocks: GqlLatestSyncedBlocks!
-  lbpPriceChart(chain: GqlChain!, id: String!, interval: Int): [LBPPriceChartData!]
+  lbpPriceChart(chain: GqlChain!, dataPoints: Int, id: String!): [LBPPriceChartData!]
 
   """Getting swap, add and remove events with paging"""
   poolEvents(first: Int, skip: Int, where: GqlPoolEventsFilter): [GqlPoolEvent!]!

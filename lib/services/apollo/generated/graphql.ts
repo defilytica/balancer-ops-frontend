@@ -96,6 +96,7 @@ export enum GqlChain {
   Fantom = 'FANTOM',
   Fraxtal = 'FRAXTAL',
   Gnosis = 'GNOSIS',
+  Hyperevm = 'HYPEREVM',
   Mainnet = 'MAINNET',
   Mode = 'MODE',
   Optimism = 'OPTIMISM',
@@ -1319,6 +1320,8 @@ export type GqlPoolMinimal = {
   id: Scalars['ID']['output'];
   /** Pool is receiving rewards when liquidity tokens are staked */
   incentivized: Scalars['Boolean']['output'];
+  /** LBP specific params for v3 pools only. */
+  lbpParams?: Maybe<LiquidityBootstrappingPoolV3Params>;
   /** Liquidity management settings for v3 pools. */
   liquidityManagement?: Maybe<LiquidityManagement>;
   /** The name of the pool as per contract */
@@ -1890,6 +1893,10 @@ export type GqlPoolTokenDetail = {
   isExemptFromProtocolYieldFee: Scalars['Boolean']['output'];
   /** Token logo */
   logoURI?: Maybe<Scalars['String']['output']>;
+  /** If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault. */
+  maxDeposit?: Maybe<Scalars['String']['output']>;
+  /** If it is an ERC4626 token, this  defines how much can be withdrawn from the ERC4626 vault. */
+  maxWithdraw?: Maybe<Scalars['String']['output']>;
   /** Name of the pool token. */
   name: Scalars['String']['output'];
   /** Additional data for the nested pool if the token is a BPT. Null otherwise. */
@@ -2378,7 +2385,10 @@ export type GqlSorSwapRoute = {
 /** A hop of a route. A route can have many hops meaning it traverses more than one pool. */
 export type GqlSorSwapRouteHop = {
   __typename: 'GqlSorSwapRouteHop';
-  /** The pool entity of this hop. */
+  /**
+   * The pool entity of this hop.
+   * @deprecated No longer supported
+   */
   pool: GqlPoolMinimal;
   /** The pool id of this hop. */
   poolId: Scalars['String']['output'];
@@ -2778,14 +2788,50 @@ export type LbpMetadataInput = {
 
 export type LbpPriceChartData = {
   __typename: 'LBPPriceChartData';
+  buyVolume: Scalars['Float']['output'];
+  cumulativeFees: Scalars['Float']['output'];
+  cumulativeVolume: Scalars['Float']['output'];
+  fees: Scalars['Float']['output'];
+  /** @deprecated No longer supported */
   intervalTimestamp: Scalars['Int']['output'];
+  projectTokenBalance: Scalars['Float']['output'];
   projectTokenPrice: Scalars['Float']['output'];
   reservePrice: Scalars['Float']['output'];
+  reserveTokenBalance: Scalars['Float']['output'];
+  sellVolume: Scalars['Float']['output'];
+  swapCount: Scalars['Int']['output'];
+  timestamp: Scalars['Int']['output'];
+  tvl: Scalars['Float']['output'];
+  volume: Scalars['Float']['output'];
 };
 
 export type LbPoolInput = {
   address: Scalars['String']['input'];
   chain: GqlChain;
+};
+
+/** LBP specific params for v3 pools only. */
+export type LiquidityBootstrappingPoolV3Params = {
+  __typename: 'LiquidityBootstrappingPoolV3Params';
+  description?: Maybe<Scalars['String']['output']>;
+  discord?: Maybe<Scalars['String']['output']>;
+  endTime: Scalars['Int']['output'];
+  farcaster?: Maybe<Scalars['String']['output']>;
+  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
+  lbpName?: Maybe<Scalars['String']['output']>;
+  lbpOwner: Scalars['String']['output'];
+  projectToken: Scalars['String']['output'];
+  projectTokenEndWeight: Scalars['Float']['output'];
+  projectTokenIndex: Scalars['Int']['output'];
+  projectTokenStartWeight: Scalars['Float']['output'];
+  reserveToken: Scalars['String']['output'];
+  reserveTokenEndWeight: Scalars['Float']['output'];
+  reserveTokenIndex: Scalars['Int']['output'];
+  reserveTokenStartWeight: Scalars['Float']['output'];
+  startTime: Scalars['Int']['output'];
+  telegram?: Maybe<Scalars['String']['output']>;
+  website?: Maybe<Scalars['String']['output']>;
+  x?: Maybe<Scalars['String']['output']>;
 };
 
 /** Liquidity management settings for v3 pools. */
@@ -3110,8 +3156,8 @@ export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
 
 export type QueryLbpPriceChartArgs = {
   chain: GqlChain;
+  dataPoints?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
-  interval?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
