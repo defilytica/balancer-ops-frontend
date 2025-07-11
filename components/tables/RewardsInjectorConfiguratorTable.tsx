@@ -24,7 +24,6 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
-import { networks } from "@/constants/constants";
 import { ethers } from "ethers";
 
 interface RewardsInjectorConfiguratorTableProps {
@@ -259,7 +258,7 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
           <Tbody>
             {data.map((gauge, index) => {
               return (
-                <Tr key={gauge.gaugeAddress} _hover={{ bg: "whiteAlpha.50" }}>
+                <Tr key={gauge.id || gauge.gaugeAddress} _hover={{ bg: "whiteAlpha.50" }}>
                   <Td>
                     <HStack spacing={2} align="center">
                       <Box>
@@ -269,8 +268,9 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
                           </Text>
                           {(() => {
                             const isNewlyAdded = newlyAddedGauges.some(
-                              newGauge => newGauge.gaugeAddress === gauge.gaugeAddress,
+                              newGauge => newGauge.id === gauge.id,
                             );
+
                             if (isNewlyAdded) {
                               return (
                                 <Badge colorScheme="green" size="sm">

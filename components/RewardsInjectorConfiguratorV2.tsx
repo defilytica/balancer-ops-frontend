@@ -1,6 +1,10 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Box,
   Button,
   Card,
@@ -45,7 +49,6 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfiguratorTable } from "./tables/RewardsInjectorConfiguratorTable";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
-import { ethers } from "ethers";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -69,6 +72,7 @@ function RewardsInjectorConfiguratorV2({
   onVersionToggle,
 }: RewardsInjectorConfiguratorV2Props) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
+  const [originalGauges, setOriginalGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
@@ -87,7 +91,12 @@ function RewardsInjectorConfiguratorV2({
       setTokenSymbol(injectorData.tokenInfo.symbol);
       setTokenDecimals(injectorData.tokenInfo.decimals);
       setGauges(injectorData.gauges);
+      setOriginalGauges(injectorData.gauges);
       setContractBalance(injectorData.contractBalance);
+      // Reset all change tracking when new data is loaded
+      setEditedGauges(new Set());
+      setRemovedGauges([]);
+      setNewlyAddedGauges([]);
     }
   }, [selectedAddress, injectorData]);
 
@@ -107,12 +116,13 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
-  // handleCancelEdit is no longer needed in the parent - editing is managed entirely by the table component
-
   const handleAddRecipient = (newGauge: RewardsInjectorData) => {
-    const newGauges = [...gauges, { ...newGauge, isEdited: true }];
+    // Add a unique identifier to track this as a newly added gauge
+    const id = crypto.randomUUID();
+    const gaugeWithId = { ...newGauge, isEdited: true, id };
+    const newGauges = [...gauges, gaugeWithId];
     setGauges(newGauges);
-    setNewlyAddedGauges(prev => [...prev, newGauge]);
+    setNewlyAddedGauges(prev => [...prev, gaugeWithId]);
 
     toast({
       title: "Recipient Added",
@@ -131,15 +141,11 @@ function RewardsInjectorConfiguratorV2({
     setGauges(newGauges);
 
     // Check if this gauge was newly added (in which case, just remove it from newlyAddedGauges)
-    const wasNewlyAdded = newlyAddedGauges.some(
-      newGauge => newGauge.gaugeAddress === gauge.gaugeAddress,
-    );
+    const wasNewlyAdded = newlyAddedGauges.some(newGauge => newGauge.id === gauge.id);
 
     if (wasNewlyAdded) {
       // Remove from newly added gauges list
-      setNewlyAddedGauges(prev =>
-        prev.filter(newGauge => newGauge.gaugeAddress !== gauge.gaugeAddress),
-      );
+      setNewlyAddedGauges(prev => prev.filter(newGauge => newGauge.id !== gauge.id));
     } else {
       // Add to removed gauges list for payload generation (only for originally existing gauges)
       setRemovedGauges(prev => [...prev, gauge]);
@@ -158,13 +164,6 @@ function RewardsInjectorConfiguratorV2({
       });
       return newSet;
     });
-
-    // If we were editing this gauge, cancel edit mode
-    // if (editingIndex === index) { // This state is no longer managed by the parent
-    //   setEditingIndex(null);
-    // } else if (editingIndex !== null && editingIndex > index) { // This state is no longer managed by the parent
-    //   setEditingIndex(editingIndex - 1);
-    // }
 
     toast({
       title: "Configuration Removed",
@@ -202,6 +201,54 @@ function RewardsInjectorConfiguratorV2({
     return distribution;
   };
 
+  const calculateNewDistribution = () => {
+    let newDistribution = { total: 0, distributed: 0, remaining: 0 };
+
+    // Process each current gauge
+    gauges.forEach((gauge, index) => {
+      const newAmountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+      const maxPeriods = parseInt(gauge.maxPeriods) || 0;
+      const periodNumber = parseInt(gauge.periodNumber) || 0;
+
+      // Check if this gauge was edited
+      if (editedGauges.has(index)) {
+        // For edited gauges: preserve already distributed amount, apply new rate to remaining periods
+        const originalGauge = originalGauges.find(orig => orig.gaugeAddress === gauge.gaugeAddress);
+        if (originalGauge) {
+          const originalAmountPerPeriod = parseFloat(originalGauge.amountPerPeriod) || 0;
+          const alreadyDistributed = originalAmountPerPeriod * periodNumber;
+          const remainingPeriods = maxPeriods - periodNumber;
+          const futureDistribution = newAmountPerPeriod * remainingPeriods;
+
+          newDistribution.distributed += alreadyDistributed;
+          newDistribution.remaining += futureDistribution;
+          newDistribution.total += alreadyDistributed + futureDistribution;
+        }
+      } else {
+        // For non-edited gauges (original or newly added): use standard calculation
+        const gaugeTotal = newAmountPerPeriod * maxPeriods;
+        const gaugeDistributed = newAmountPerPeriod * periodNumber;
+        const gaugeRemaining = gaugeTotal - gaugeDistributed;
+
+        newDistribution.total += gaugeTotal;
+        newDistribution.distributed += gaugeDistributed;
+        newDistribution.remaining += gaugeRemaining;
+      }
+    });
+
+    // For deleted gauges, add back only the DISTRIBUTED amount
+    removedGauges.forEach(gauge => {
+      const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+      const periodNumber = parseInt(gauge.periodNumber) || 0;
+      const gaugeDistributed = amountPerPeriod * periodNumber;
+
+      newDistribution.distributed += gaugeDistributed;
+      newDistribution.total += gaugeDistributed;
+    });
+
+    return newDistribution;
+  };
+
   const formatAmount = (amount: number) => {
     return amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -209,7 +256,9 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
-  const currentDistribution = calculateCurrentDistribution(gauges);
+  const currentDistribution = calculateCurrentDistribution(originalGauges);
+  const newDistribution = calculateNewDistribution();
+  const distributionDelta = newDistribution.total - currentDistribution.total;
 
   const generatePayload = () => {
     if (!selectedAddress) {
@@ -493,24 +542,55 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mb={6}>
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
               <Card>
                 <CardBody>
-                  <Heading size="md">Contract Balance</Heading>
-                  <Text fontSize="2xl" fontWeight="bold">
-                    {formatAmount(contractBalance)} {tokenSymbol}
-                  </Text>
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <Heading size="md">Total Distribution</Heading>
-                  <Text fontSize="2xl" fontWeight="bold">
+                  <Heading size="md">Current Total Distribution</Heading>
+                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
                     {formatAmount(currentDistribution.total)} {tokenSymbol}
                   </Text>
                 </CardBody>
               </Card>
+              <Card>
+                <CardBody>
+                  <Heading size="md">New Total Distribution</Heading>
+                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
+                    {formatAmount(newDistribution.total)} {tokenSymbol}
+                  </Text>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Heading size="md">Distribution Delta</Heading>
+                  <Text
+                    fontSize="2xl"
+                    fontWeight="bold"
+                    color={
+                      distributionDelta > 0
+                        ? "green.400"
+                        : distributionDelta < 0
+                          ? "red.400"
+                          : "gray.600"
+                    }
+                    mt={2}
+                  >
+                    {distributionDelta >= 0 ? "+" : ""}
+                    {formatAmount(distributionDelta)} {tokenSymbol}
+                  </Text>
+                </CardBody>
+              </Card>
             </SimpleGrid>
+
+            {distributionDelta > contractBalance && (
+              <Alert status="error" mb={4}>
+                <AlertIcon />
+                <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
+                <AlertDescription>
+                  Additional {formatAmount(distributionDelta - contractBalance)} {tokenSymbol}{" "}
+                  required to complete all distributions.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Box mt={6}>
               <Heading as="h2" size="lg" mb={4}>
