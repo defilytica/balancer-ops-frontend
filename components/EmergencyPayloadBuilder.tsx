@@ -535,7 +535,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
           <Flex align="center">
             <AlertIcon boxSize="20px" />
             <AlertTitle fontSize="lg" ml={2}>
-              🚨 Emergency SubDAO Actions
+              Emergency SubDAO Actions
             </AlertTitle>
           </Flex>
           <AlertDescription display="block">
