@@ -3,6 +3,7 @@ import { FaRegChartBar } from "react-icons/fa6";
 import { FaBridgeCircleCheck } from "react-icons/fa6";
 import { FaUnlockAlt } from "react-icons/fa";
 import { GiAmplitude } from "react-icons/gi";
+import { GoAlertFill } from "react-icons/go";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
 import OptimismLogo from "@/public/imgs/optimism.svg";
@@ -240,6 +241,18 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "feature/amp-factor-update",
     prNamePlaceholder: "Configure Amp Update on Pool XYZ",
     prTypePath: "MaxiOps/PoolParameterChanges/PoolAmpChanges/",
+  },
+  {
+    href: "/payload-builder/emergency",
+    key: "emergency",
+    label: "Emergency Actions",
+    description: "Create emergency payloads to pause pools or enable recovery mode",
+    button_label: "Create Emergency Payload",
+    icon: GoAlertFill,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/emergency-payload",
+    prNamePlaceholder: "Create emergency payload for pool XYZ",
+    prTypePath: "MaxiOps/Emergency-Multisigs/",
   },
 ];
 

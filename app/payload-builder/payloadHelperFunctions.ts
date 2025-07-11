@@ -1417,3 +1417,236 @@ export function generateAmpFactorUpdatePayload(
     transactions: [transaction],
   };
 }
+// --- Emergency payloads ---
+
+export interface EmergencyActionInput {
+  poolAddress: string;
+  poolName: string;
+  actions: ("pause" | "enableRecoveryMode" | "pauseVault")[];
+  isV3Pool: boolean;
+  pauseMethod?: "pause" | "setPaused"; // For V2 pools only
+}
+
+export interface EmergencyPayloadInput {
+  pools: EmergencyActionInput[];
+  emergencyWallet: string;
+  chainId: string;
+  vaultAddress?: string; // For V3 pools
+  vaultActions?: ("pauseVault" | "pauseVaultBuffers")[];
+  factoryActions?: { address: string; name: string }[]; // For V3 factory disable actions
+}
+
+export function generateEmergencyPayload(input: EmergencyPayloadInput) {
+  const transactions = [];
+
+  // Add factory disable actions first (for V3)
+  if (input.factoryActions && input.factoryActions.length > 0) {
+    for (const factory of input.factoryActions) {
+      transactions.push({
+        to: factory.address,
+        value: "0",
+        data: null,
+        contractMethod: {
+          inputs: [],
+          name: "disable",
+          payable: false,
+        },
+        contractInputsValues: {},
+      });
+    }
+  }
+
+  // Add vault-level actions (for V3)
+  if (input.vaultActions && input.vaultActions.length > 0 && input.vaultAddress) {
+    for (const action of input.vaultActions) {
+      if (action === "pauseVault") {
+        transactions.push({
+          to: input.vaultAddress,
+          value: "0",
+          data: null,
+          contractMethod: {
+            inputs: [],
+            name: "pauseVault",
+            payable: false,
+          },
+          contractInputsValues: {},
+        });
+      } else if (action === "pauseVaultBuffers") {
+        transactions.push({
+          to: input.vaultAddress,
+          value: "0",
+          data: null,
+          contractMethod: {
+            inputs: [],
+            name: "pauseVaultBuffers",
+            payable: false,
+          },
+          contractInputsValues: {},
+        });
+      }
+    }
+  }
+
+  for (const pool of input.pools) {
+    for (const action of pool.actions) {
+      if (pool.isV3Pool && input.vaultAddress) {
+        // V3 pools: call vault contract
+        if (action === "pause") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "pausePool",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        } else if (action === "pauseVault") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [],
+              name: "pauseVault",
+              payable: false,
+            },
+            contractInputsValues: {},
+          });
+        } else if (action === "enableRecoveryMode") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "enableRecoveryMode",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        }
+      } else {
+        // V2 pools: call pool contract directly
+        if (action === "pause") {
+          // Handle different pause methods for V2 pools
+          const pauseMethod = pool.pauseMethod || "pause";
+
+          if (pauseMethod === "setPaused") {
+            // Legacy pause method: setPaused(true)
+            transactions.push({
+              to: pool.poolAddress,
+              value: "0",
+              data: null,
+              contractMethod: {
+                inputs: [{ internalType: "bool", name: "paused", type: "bool" }],
+                name: "setPaused",
+                payable: false,
+              },
+              contractInputsValues: {
+                paused: true,
+              },
+            });
+          } else {
+            // Modern pause method: pause()
+            transactions.push({
+              to: pool.poolAddress,
+              value: "0",
+              data: null,
+              contractMethod: {
+                inputs: [],
+                name: "pause",
+                payable: false,
+              },
+              contractInputsValues: {},
+            });
+          }
+        } else if (action === "enableRecoveryMode") {
+          // Recovery mode is the same for all V2 pools
+          transactions.push({
+            to: pool.poolAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [],
+              name: "enableRecoveryMode",
+              payable: false,
+            },
+            contractInputsValues: {},
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    version: "1.0",
+    chainId: input.chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: "Emergency actions for Balancer pools",
+      txBuilderVersion: "1.18.0",
+      createdFromSafeAddress: input.emergencyWallet,
+      createdFromOwnerAddress: "",
+    },
+    transactions,
+  };
+}
+
+export function generateHumanReadableEmergency(input: EmergencyPayloadInput): string {
+  let description = `The Emergency SubDAO at ${input.emergencyWallet} will execute emergency actions:\n\n`;
+
+  // Add factory disable actions first
+  if (input.factoryActions && input.factoryActions.length > 0) {
+    const factoryActionsText = input.factoryActions.map(f => `${f.name} (${f.address})`).join("\n");
+    description += `Factory disable actions:\n${factoryActionsText}\n\n`;
+  }
+
+  // Add vault-level actions
+  if (input.vaultActions && input.vaultActions.length > 0) {
+    const vaultActionsText = input.vaultActions.join(", ");
+    description += `Vault-level actions: ${vaultActionsText}\n\n`;
+  }
+
+  // Add pool-level actions
+  if (input.pools.length > 0) {
+    const poolSummaries = input.pools.map(pool => {
+      const actionsText = pool.actions
+        .map(action => {
+          if (action === "pause" && !pool.isV3Pool) {
+            const method = pool.pauseMethod || "pause";
+            return method === "setPaused" ? "setPaused(true)" : "pause()";
+          }
+          return action;
+        })
+        .join(" and ");
+
+      const poolType = pool.isV3Pool ? "v3" : "v2";
+      return `${pool.poolName} (${poolType}) ${pool.poolAddress}: ${actionsText}`;
+    });
+
+    const actionCount = input.pools.reduce((sum, pool) => sum + pool.actions.length, 0);
+    const poolType = input.pools[0]?.isV3Pool ? "v3" : "v2";
+
+    description += `Pool-level actions (${actionCount} action${actionCount !== 1 ? "s" : ""} on ${input.pools.length} ${poolType} pool${input.pools.length !== 1 ? "s" : ""}):\n${poolSummaries.join("\n")}`;
+
+    // Add note about pause methods if any v2 pools use setPaused
+    const hasLegacyPause = input.pools.some(
+      pool => !pool.isV3Pool && pool.pauseMethod === "setPaused" && pool.actions.includes("pause"),
+    );
+
+    if (hasLegacyPause) {
+      description +=
+        "\n\nNote: Some pools will use the legacy setPaused(true) method for pausing (indicated in the action description above).";
+    }
+  }
+
+  return description;
+}
