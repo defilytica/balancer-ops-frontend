@@ -315,7 +315,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     [],
   );
 
-
   const handleGenerateClick = useCallback(() => {
     if (
       selectedPools.length === 0 &&
@@ -459,9 +458,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return {};
 
     const uniqueId = generateUniqueId();
-    const firstPoolId =
-      selectedPools.length > 0 ? selectedPools[0].address.substring(0, 8) : "vault";
-
+    selectedPools.length > 0 ? selectedPools[0].address.substring(0, 8) : "vault";
     // Count total actions
     const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
     const totalActions =
@@ -625,7 +622,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </GridItem>
       </Grid>
 
-
       {protocolVersion && (
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
           <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -664,7 +660,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
             Emergency Actions
           </Heading>
           <Text fontSize="sm" color="font.secondary" mb={6}>
-            Select the emergency actions to include in your payload. You can combine multiple action types.
+            Select the emergency actions to include in your payload. You can combine multiple action
+            types.
           </Text>
         </Box>
       )}
@@ -1027,8 +1024,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                           </VStack>
                         </RadioGroup>
                         <Text fontSize="xs" color="font.secondary" mt={2}>
-                          <strong>Not sure which to use?</strong> Try pause() first (default). If the
-                          transaction fails, switch to setPaused(true).
+                          <strong>Not sure which to use?</strong> Try pause() first (default). If
+                          the transaction fails, switch to setPaused(true).
                         </Text>
                       </FormControl>
                     )}
