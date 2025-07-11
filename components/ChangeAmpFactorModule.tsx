@@ -55,6 +55,8 @@ import { useAmpFactor } from "@/app/hooks/amp-factor/useAmpFactor";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { useValidateAmpFactor } from "@/lib/hooks/validation/useValidateAmpFactor";
 import { useValidateEndTime } from "@/lib/hooks/validation/useValidateEndTime";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 // Constants for different protocol versions
 const PROTOCOL_CONFIG = {
@@ -275,6 +277,31 @@ export default function ChangeAmpFactorModule({
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
+  // Generate composer data only when button is clicked
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Extract relevant parameters from the payload
+    let endValue = payload.transactions[0].contractInputsValues.rawEndValue;
+    let endTime = payload.transactions[0].contractInputsValues.endTime;
+
+    return {
+      type: `amp-factor-update-v3`,
+      title: `Update Amplification Factor (V3)`,
+      description: payload.meta.description,
+      payload: payload,
+      params: {
+        pool: payload.transactions[0].to,
+        rawEndValue: endValue,
+        endTime: endTime,
+      },
+      builderPath: `amp-factor-update-v3`,
+    };
+  }, [generatedPayload]);
+
   const getPrefillValues = useCallback(() => {
     if (!selectedPool || !debouncedAmpFactor || !debouncedEndDateTime) return {};
 
@@ -344,9 +371,20 @@ export default function ChangeAmpFactorModule({
 
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        {config.title}
-      </Heading>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Heading as="h2" size="lg" variant="special">
+          {config.title}
+        </Heading>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -507,14 +545,24 @@ export default function ChangeAmpFactorModule({
         />
       )}
 
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={!selectedPool || !isAuthorizedPool || !isValid || isLoadingAmp}
-        >
-          Generate Payload
-        </Button>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
+        <Flex gap={2} alignItems="center">
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!selectedPool || !isAuthorizedPool || !isValid || isLoadingAmp}
+          >
+            Generate Payload
+          </Button>
+          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+        </Flex>
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
