@@ -71,11 +71,12 @@ function RewardsInjectorConfiguratorV2({
   isV2,
   onVersionToggle,
 }: RewardsInjectorConfiguratorV2Props) {
-  const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
-  const [originalGauges, setOriginalGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState(0);
+
+  const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
+  const [originalGauges, setOriginalGauges] = useState<RewardsInjectorData[]>([]);
   const [editedGauges, setEditedGauges] = useState<Set<number>>(new Set());
   const [removedGauges, setRemovedGauges] = useState<RewardsInjectorData[]>([]);
   const [newlyAddedGauges, setNewlyAddedGauges] = useState<RewardsInjectorData[]>([]);
@@ -236,14 +237,23 @@ function RewardsInjectorConfiguratorV2({
       }
     });
 
-    // For deleted gauges, add back only the DISTRIBUTED amount
+    // For deleted gauges, we need to preserve the already distributed amount
+    // because those tokens were already distributed and can't be "undistributed"
+    // Use ORIGINAL values for calculating already distributed amount
     removedGauges.forEach(gauge => {
-      const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
-      const periodNumber = parseInt(gauge.periodNumber) || 0;
-      const gaugeDistributed = amountPerPeriod * periodNumber;
+      // Find the original gauge to get the correct distributed amount
+      const originalGauge = originalGauges.find(orig => orig.gaugeAddress === gauge.gaugeAddress);
 
-      newDistribution.distributed += gaugeDistributed;
-      newDistribution.total += gaugeDistributed;
+      if (originalGauge) {
+        // Use original values for calculating what was already distributed
+        const originalAmountPerPeriod = parseFloat(originalGauge.amountPerPeriod) || 0;
+        const periodNumber = parseInt(originalGauge.periodNumber) || 0;
+        const alreadyDistributed = originalAmountPerPeriod * periodNumber;
+
+        // Only add the distributed amount - future distributions are cancelled
+        newDistribution.distributed += alreadyDistributed;
+        newDistribution.total += alreadyDistributed;
+      }
     });
 
     return newDistribution;
@@ -258,7 +268,7 @@ function RewardsInjectorConfiguratorV2({
 
   const currentDistribution = calculateCurrentDistribution(originalGauges);
   const newDistribution = calculateNewDistribution();
-  const distributionDelta = newDistribution.total - currentDistribution.total;
+  const distributionDelta = newDistribution.remaining - currentDistribution.remaining;
 
   const generatePayload = () => {
     if (!selectedAddress) {
@@ -561,7 +571,7 @@ function RewardsInjectorConfiguratorV2({
               </Card>
               <Card>
                 <CardBody>
-                  <Heading size="md">Distribution Delta</Heading>
+                  <Heading size="md">Future Distribution Delta</Heading>
                   <Text
                     fontSize="2xl"
                     fontWeight="bold"
@@ -587,7 +597,7 @@ function RewardsInjectorConfiguratorV2({
                 <AlertTitle mr={2}>Insufficient Funds!</AlertTitle>
                 <AlertDescription>
                   Additional {formatAmount(distributionDelta - contractBalance)} {tokenSymbol}{" "}
-                  required to complete all distributions.
+                  required to complete all future distributions.
                 </AlertDescription>
               </Alert>
             )}
