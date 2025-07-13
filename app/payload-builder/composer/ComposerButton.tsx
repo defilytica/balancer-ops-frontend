@@ -77,6 +77,19 @@ const ComposerButton = ({ generateData, isDisabled = false, onAdd }: ComposerBut
       }
 
       const newTransactions = operationData.payload?.transactions || [];
+
+      // Check if transactions array is empty
+      if (newTransactions.length === 0) {
+        toast({
+          title: "No Transactions",
+          description: "Cannot add to Composer: No transactions in payload.",
+          status: "warning",
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
+      }
+
       const duplicate = findDuplicate(newTransactions);
 
       // If duplicate found, show toast and don't add
