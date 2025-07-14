@@ -329,22 +329,18 @@ function RewardsInjectorConfiguratorV2({
         });
       }
 
-      // Remove recipients
+      // Remove recipients - batch all removed gauges into a single transaction
       if (removedGauges.length > 0) {
-        removedGauges.forEach(gauge => {
-          const removePayload = generateInjectorSchedulePayloadV2({
-            injectorAddress: selectedAddress.address,
-            chainId: chainId,
-            safeAddress: selectedSafe,
-            operation: "remove",
-            scheduleInputs: [
-              {
-                gaugeAddress: gauge.gaugeAddress,
-              },
-            ],
-          });
-          transactions.push(removePayload.transactions[0]);
+        const removePayload = generateInjectorSchedulePayloadV2({
+          injectorAddress: selectedAddress.address,
+          chainId: chainId,
+          safeAddress: selectedSafe,
+          operation: "remove",
+          scheduleInputs: removedGauges.map(gauge => ({
+            gaugeAddress: gauge.gaugeAddress,
+          })),
         });
+        transactions.push(removePayload.transactions[0]);
       }
 
       if (transactions.length === 0) {
