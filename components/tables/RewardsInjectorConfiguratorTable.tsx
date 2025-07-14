@@ -1,6 +1,7 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
+  Flex,
   Table,
   Thead,
   Tbody,
@@ -12,15 +13,11 @@ import {
   Button,
   IconButton,
   HStack,
-  VStack,
   Tooltip,
   useColorModeValue,
   TableContainer,
   Alert,
   AlertIcon,
-  Image,
-  Avatar,
-  Icon,
   Input,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
@@ -38,7 +35,7 @@ interface RewardsInjectorConfiguratorTableProps {
   newlyAddedGauges?: RewardsInjectorData[];
 }
 
-export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfiguratorTableProps> = ({
+export const RewardsInjectorConfiguratorTable = ({
   data,
   tokenSymbol,
   tokenDecimals,
@@ -46,15 +43,15 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
   onSaveEdit,
   onAddRecipient,
   newlyAddedGauges = [],
-}) => {
+}: RewardsInjectorConfiguratorTableProps) => {
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
 
-  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
-  const [editingData, setEditingData] = React.useState<RewardsInjectorData | null>(null);
-  const [isAddingRecipient, setIsAddingRecipient] = React.useState(false);
-  const [newRecipientData, setNewRecipientData] = React.useState<RewardsInjectorData>({
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingData, setEditingData] = useState<RewardsInjectorData | null>(null);
+  const [isAddingRecipient, setIsAddingRecipient] = useState(false);
+  const [newRecipientData, setNewRecipientData] = useState<RewardsInjectorData>({
     gaugeAddress: "",
     poolName: "",
     amountPerPeriod: "",
@@ -183,14 +180,18 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
   };
 
   // Initialize editing data when entering edit mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       editingIndex !== null &&
       editingIndex !== undefined &&
       editingIndex >= 0 &&
       editingIndex < data.length
     ) {
-      setEditingData({ ...data[editingIndex] });
+      // When editing, reset periodNumber to 0 to create a fresh configuration
+      setEditingData({
+        ...data[editingIndex],
+        periodNumber: "0",
+      });
     } else {
       setEditingData(null);
     }
@@ -319,11 +320,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
                       </Text>
                     )}
                   </Td>
-                  {/* <Td>
-                    <Text fontSize="xs">
-                      {formatTimestamp(gauge.lastInjectionTimeStamp || "0")}
-                    </Text>
-                  </Td> */}
                   <Td>
                     {editingIndex === index ? (
                       <HStack spacing={1.5}>
@@ -432,11 +428,6 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
                     }
                   />
                 </Td>
-                {/* <Td>
-                  <Text fontSize="xs" color="gray.500">
-                    -
-                  </Text>
-                </Td> */}
                 <Td>
                   <HStack spacing={1.5}>
                     <Tooltip label="Add recipient">
@@ -467,16 +458,18 @@ export const RewardsInjectorConfiguratorTable: React.FC<RewardsInjectorConfigura
         </Table>
       </TableContainer>
       {onAddRecipient && (
-        <Button
-          leftIcon={<AddIcon />}
-          onClick={() => setIsAddingRecipient(!isAddingRecipient)}
-          colorScheme="green"
-          variant="outline"
-          isDisabled={isAddingRecipient}
-          mt={4}
-        >
-          {isAddingRecipient ? "Cancel Add" : "Add Recipient"}
-        </Button>
+        <Flex justifyContent="flex-end" mt={4}>
+          <Button
+            leftIcon={<AddIcon />}
+            onClick={() => setIsAddingRecipient(!isAddingRecipient)}
+            colorScheme="green"
+            variant="outline"
+            isDisabled={isAddingRecipient}
+            size="sm"
+          >
+            Add Recipient
+          </Button>
+        </Flex>
       )}
     </>
   );

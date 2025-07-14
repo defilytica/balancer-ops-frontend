@@ -217,9 +217,9 @@ function RewardsInjectorConfiguratorV2({
         const originalGauge = originalGauges.find(orig => orig.gaugeAddress === gauge.gaugeAddress);
         if (originalGauge) {
           const originalAmountPerPeriod = parseFloat(originalGauge.amountPerPeriod) || 0;
-          const alreadyDistributed = originalAmountPerPeriod * periodNumber;
-          const remainingPeriods = maxPeriods - periodNumber;
-          const futureDistribution = newAmountPerPeriod * remainingPeriods;
+          const originalPeriodNumber = parseInt(originalGauge.periodNumber) || 0;
+          const alreadyDistributed = originalAmountPerPeriod * originalPeriodNumber;
+          const futureDistribution = newAmountPerPeriod * maxPeriods; // New configuration starts fresh
 
           newDistribution.distributed += alreadyDistributed;
           newDistribution.remaining += futureDistribution;
@@ -552,7 +552,15 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={6}>
+              <Card>
+                <CardBody>
+                  <Heading size="md">Contract Balance</Heading>
+                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
+                    {formatAmount(contractBalance)} {tokenSymbol}
+                  </Text>
+                </CardBody>
+              </Card>
               <Card>
                 <CardBody>
                   <Heading size="md">Current Total Distribution</Heading>
@@ -603,9 +611,25 @@ function RewardsInjectorConfiguratorV2({
             )}
 
             <Box mt={6}>
-              <Heading as="h2" size="lg" mb={4}>
-                Current Configuration
-              </Heading>
+              <Box mb={4}>
+                <Heading as="h2" size="lg">
+                  Current Configuration
+                </Heading>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  {gauges.length} recipient{gauges.length !== 1 ? "s" : ""} configured
+                  {(editedGauges.size > 0 ||
+                    newlyAddedGauges.length > 0 ||
+                    removedGauges.length > 0) && (
+                    <Text as="span" ml={2} color="orange.400">
+                      • {editedGauges.size + newlyAddedGauges.length + removedGauges.length} pending
+                      change
+                      {editedGauges.size + newlyAddedGauges.length + removedGauges.length !== 1
+                        ? "s"
+                        : ""}
+                    </Text>
+                  )}
+                </Text>
+              </Box>
               <RewardsInjectorConfiguratorTable
                 data={gauges}
                 tokenSymbol={tokenSymbol}
