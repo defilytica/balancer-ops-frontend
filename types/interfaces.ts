@@ -54,6 +54,7 @@ export interface Pool {
     swapFee: string;
     poolId: string;
     totalLiquidity: string;
+    volume24h?: string;
   };
   hook?: Hook;
 }
@@ -93,6 +94,7 @@ export interface PoolToken {
   isErc4626?: boolean;
   useUnderlyingForAddRemove?: boolean;
   underlyingToken?: UnderlyingToken;
+  balance?: string;
 }
 
 export interface UnderlyingToken {

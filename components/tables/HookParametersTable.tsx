@@ -18,15 +18,16 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Pool, AddressBook } from "@/types/interfaces";
-import { networks, NETWORK_OPTIONS } from "@/constants/constants";
+import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
+import { formatTokenAmount } from "@/lib/utils/formatTokenAmount";
 import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
-import { useFormattedHookAttributes } from "@/lib/data/useFormattedHookAttributes";
+import { ArrowUp, ArrowDown } from "react-feather";
 import { formatHookAttributes } from "@/lib/data/useFormattedHookAttributes";
 import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { isZeroAddress } from "@ethereumjs/util";
 import { HookType } from "@/components/HookParametersDashboardModule";
@@ -38,6 +39,13 @@ interface HookTableProps {
   addressBook: AddressBook;
 }
 
+enum Sorting {
+  Asc = "asc",
+  Desc = "desc",
+}
+
+type SortField = "tvl" | "volume24h" | string;
+
 export const HookParametersTable = ({
   pools,
   selectedHookType = "STABLE_SURGE",
@@ -45,6 +53,9 @@ export const HookParametersTable = ({
 }: HookTableProps) => {
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
+
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<Sorting>(Sorting.Desc);
 
   const getConfigRoute = useCallback(
     (pool: Pool) => {
@@ -75,9 +86,21 @@ export const HookParametersTable = ({
     [addressBook],
   );
 
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+      } else {
+        setSortField(field);
+        setSortDirection(Sorting.Desc);
+      }
+    },
+    [sortField, sortDirection],
+  );
+
   // Filter pools based on selected hook type
   const filteredPools = useMemo(() => {
-    return pools.filter(pool => {
+    let filtered = pools.filter(pool => {
       if (selectedHookType === "STABLE_SURGE") {
         return isStableSurgeHookParams(pool.hook?.params);
       } else if (selectedHookType === "MEV_TAX") {
@@ -85,7 +108,37 @@ export const HookParametersTable = ({
       }
       return false;
     });
-  }, [pools, selectedHookType]);
+
+    // Apply sorting
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue: number;
+        let bValue: number;
+
+        if (sortField === "tvl") {
+          aValue = Number(a.dynamicData?.totalLiquidity || 0);
+          bValue = Number(b.dynamicData?.totalLiquidity || 0);
+        } else if (sortField === "volume24h") {
+          aValue = Number(a.dynamicData?.volume24h || 0);
+          bValue = Number(b.dynamicData?.volume24h || 0);
+        } else {
+          // Handle hook parameter sorting
+          const aParams = formatHookAttributes(a, false);
+          const bParams = formatHookAttributes(b, false);
+          const aParam = aParams.find(p => p.title === sortField);
+          const bParam = bParams.find(p => p.title === sortField);
+
+          // Extract numeric values from parameter strings
+          aValue = aParam ? parseFloat(aParam.value.replace(/[^0-9.-]/g, "")) || 0 : 0;
+          bValue = bParam ? parseFloat(bParam.value.replace(/[^0-9.-]/g, "")) || 0 : 0;
+        }
+
+        return sortDirection === Sorting.Asc ? aValue - bValue : bValue - aValue;
+      });
+    }
+
+    return filtered;
+  }, [pools, selectedHookType, sortField, sortDirection]);
 
   // Get parameter names from the first pool with the selected hook type
   const parameterNames = useMemo(() => {
@@ -111,19 +164,87 @@ export const HookParametersTable = ({
               <Icon as={Globe} boxSize="5" />
             </Th>
             <Th>Pool name</Th>
-            <Th isNumeric>TVL</Th>
+            <Th isNumeric w="100px" px={3}>
+              <Button
+                variant="unstyled"
+                size="sm"
+                fontWeight="medium"
+                color={sortField === "tvl" ? "green.500" : "inherit"}
+                rightIcon={
+                  <Icon
+                    as={sortField === "tvl" && sortDirection === Sorting.Asc ? ArrowUp : ArrowDown}
+                    boxSize={3}
+                    opacity={sortField === "tvl" ? 1 : 0.4}
+                    color={sortField === "tvl" ? "green.500" : "inherit"}
+                  />
+                }
+                onClick={() => handleSort("tvl")}
+                _hover={{ bg: "whiteAlpha.100" }}
+              >
+                TVL
+              </Button>
+            </Th>
+            <Th isNumeric w="100px" px={3}>
+              <Button
+                variant="unstyled"
+                size="sm"
+                fontWeight="medium"
+                color={sortField === "volume24h" ? "green.500" : "inherit"}
+                rightIcon={
+                  <Icon
+                    as={
+                      sortField === "volume24h" && sortDirection === Sorting.Asc
+                        ? ArrowUp
+                        : ArrowDown
+                    }
+                    boxSize={3}
+                    opacity={sortField === "volume24h" ? 1 : 0.4}
+                    color={sortField === "volume24h" ? "green.500" : "inherit"}
+                  />
+                }
+                onClick={() => handleSort("volume24h")}
+                _hover={{ bg: "whiteAlpha.100" }}
+              >
+                24h Volume
+              </Button>
+            </Th>
             {parameterNames.map((paramName, index) => (
-              <Th key={index} isNumeric>
-                {paramName}
+              <Th key={index} isNumeric w="120px" px={3}>
+                <Button
+                  variant="unstyled"
+                  size="sm"
+                  fontWeight="medium"
+                  color={sortField === paramName ? "green.500" : "inherit"}
+                  rightIcon={
+                    <Icon
+                      as={
+                        sortField === paramName && sortDirection === Sorting.Asc
+                          ? ArrowUp
+                          : ArrowDown
+                      }
+                      boxSize={3}
+                      opacity={sortField === paramName ? 1 : 0.4}
+                      color={sortField === paramName ? "green.500" : "inherit"}
+                    />
+                  }
+                  onClick={() => handleSort(paramName)}
+                  _hover={{ bg: "whiteAlpha.100" }}
+                >
+                  {paramName}
+                </Button>
               </Th>
             ))}
-            <Th>Owner</Th>
-            <Th>Configure</Th>
+            <Th w="80px" px={3}>
+              Owner
+            </Th>
+            <Th w="120px" px={3}>
+              Configure
+            </Th>
           </Tr>
         </Thead>
         <Tbody>
           {filteredPools.map(pool => {
-            const parameters = useFormattedHookAttributes(pool, false);
+            const parameters = formatHookAttributes(pool, false);
 
             return (
               <Tr key={pool.address} _hover={{ bg: "whiteAlpha.50" }}>
@@ -136,19 +257,47 @@ export const HookParametersTable = ({
                     />
                   </HStack>
                 </Td>
-                <Td>
-                  <HStack>
-                    {pool.poolTokens.map((token, index) => (
-                      <Box
-                        key={index}
-                        ml={index === 0 ? 0 : "-15px"}
-                        zIndex={pool.poolTokens.length - index}
-                      >
-                        <Tooltip
-                          bgColor="background.level4"
-                          label={token.symbol}
-                          textColor="font.primary"
-                          placement="bottom"
+                <Td px={3}>
+                  <Tooltip
+                    bgColor="background.level4"
+                    textColor="font.primary"
+                    placement="bottom"
+                    label={
+                      <Box>
+                        <Text fontWeight="bold" mb={2}>
+                          Token Balances:
+                        </Text>
+                        {pool.poolTokens.map((token, index) => (
+                          <HStack key={index} spacing={2} mb={1}>
+                            {token.logoURI ? (
+                              <Avatar
+                                src={token.logoURI}
+                                size="xs"
+                                borderWidth="1px"
+                                borderColor="background.level1"
+                              />
+                            ) : (
+                              <Icon
+                                as={FaCircle}
+                                boxSize="4"
+                                borderWidth="1px"
+                                borderColor="background.level1"
+                              />
+                            )}
+                            <Text fontSize="sm">
+                              {token.symbol}: {formatTokenAmount(token.balance || "0")}
+                            </Text>
+                          </HStack>
+                        ))}
+                      </Box>
+                    }
+                  >
+                    <HStack cursor="pointer" spacing={1}>
+                      {pool.poolTokens.map((token, index) => (
+                        <Box
+                          key={index}
+                          ml={index === 0 ? 0 : "-12px"}
+                          zIndex={pool.poolTokens.length - index}
                         >
                           {token.logoURI ? (
                             <Avatar
@@ -161,45 +310,50 @@ export const HookParametersTable = ({
                             <Box display="flex">
                               <Icon
                                 as={FaCircle}
-                                boxSize="5"
+                                boxSize="4"
                                 borderWidth="1px"
                                 borderColor="background.level1"
                               />
                             </Box>
                           )}
-                        </Tooltip>
-                      </Box>
-                    ))}
-                    <Text>{pool.name || pool.symbol}</Text>
-                  </HStack>
+                        </Box>
+                      ))}
+                      <Text
+                        as="a"
+                        href={`https://balancer.fi/pools/${pool.chain.toLowerCase()}/v3/${pool.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        color="blue.500"
+                        _hover={{ textDecoration: "underline" }}
+                      >
+                        {pool.name || pool.symbol}
+                      </Text>
+                    </HStack>
+                  </Tooltip>
                 </Td>
-                <Td isNumeric>
+                <Td isNumeric px={3}>
                   <Text>
                     {shortCurrencyFormat(Number(pool.dynamicData?.totalLiquidity || "0"))}
                   </Text>
                 </Td>
+                <Td isNumeric px={3}>
+                  <Text>{shortCurrencyFormat(Number(pool.dynamicData?.volume24h || "0"))}</Text>
+                </Td>
                 {parameters.map((param, index) => (
-                  <Td key={index} isNumeric>
+                  <Td key={index} isNumeric px={3}>
                     <Text>{param.value}</Text>
                   </Td>
                 ))}
-                <Td>
-                  <Badge
-                    colorScheme="purple"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    px={1}
-                    py={1}
-                  >
+                <Td px={3}>
+                  <Badge colorScheme="purple" size="sm" px={3} py={1}>
                     {getOwnerType(pool)}
                   </Badge>
                 </Td>
-                <Td>
+                <Td px={3}>
                   <Link href={getConfigRoute(pool)}>
                     <Button
-                      size="sm"
-                      leftIcon={<Icon as={Settings} boxSize="4" />}
+                      size="xs"
+                      leftIcon={<Icon as={Settings} boxSize="3" />}
                       variant="outline"
                       borderColor={configButtonColor}
                       color={configButtonColor}
@@ -208,7 +362,7 @@ export const HookParametersTable = ({
                         borderColor: configButtonHoverColor,
                       }}
                     >
-                      Configure
+                      Config
                     </Button>
                   </Link>
                 </Td>
