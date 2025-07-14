@@ -104,6 +104,15 @@ export const HookParametersTable = ({
     return percentage.toFixed(1);
   }, []);
 
+  const getNetworkNameForUrl = useCallback((chainName: string) => {
+    return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
+  }, []);
+
+  const getPoolUrl = useCallback((pool: Pool) => {
+    const networkName = getNetworkNameForUrl(pool.chain);
+    return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
+  }, [getNetworkNameForUrl]);
+
   const handleSort = useCallback(
     (field: SortField) => {
       if (sortField === field) {
@@ -274,9 +283,18 @@ export const HookParametersTable = ({
         <Tbody>
           {filteredPools.map(pool => {
             const parameters = formatHookAttributes(pool, false);
+            const poolUrl = getPoolUrl(pool);
+
+            const handleRowClick = () => {
+              window.open(poolUrl, "_blank", "noopener,noreferrer");
+            };
 
             return (
-              <Tr key={pool.address} _hover={{ bg: "whiteAlpha.50" }}>
+              <Tr 
+                key={pool.address} 
+                _hover={{ bg: "whiteAlpha.50", cursor: "pointer" }}
+                onClick={handleRowClick}
+              >
                 <Td>
                   <HStack spacing={2}>
                     <Image
@@ -350,14 +368,7 @@ export const HookParametersTable = ({
                           )}
                         </Box>
                       ))}
-                      <Text
-                        as="a"
-                        href={`https://balancer.fi/pools/${pool.chain.toLowerCase()}/v3/${pool.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        color="blue.500"
-                        _hover={{ textDecoration: "underline" }}
-                      >
+                      <Text>
                         {pool.name || pool.symbol}
                       </Text>
                     </HStack>
@@ -382,7 +393,7 @@ export const HookParametersTable = ({
                   </Badge>
                 </Td>
                 <Td px={3}>
-                  <Link href={getConfigRoute(pool)}>
+                  <Link href={getConfigRoute(pool)} onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="xs"
                       leftIcon={<Icon as={Settings} boxSize="3" />}
