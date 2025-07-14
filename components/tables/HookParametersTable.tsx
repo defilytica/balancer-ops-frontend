@@ -37,6 +37,7 @@ interface HookTableProps {
   pools: Pool[];
   selectedHookType?: HookType;
   addressBook: AddressBook;
+  minTvl?: number | null;
 }
 
 enum Sorting {
@@ -50,6 +51,7 @@ export const HookParametersTable = ({
   pools,
   selectedHookType = "STABLE_SURGE",
   addressBook,
+  minTvl,
 }: HookTableProps) => {
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
@@ -86,6 +88,22 @@ export const HookParametersTable = ({
     [addressBook],
   );
 
+  const calculateTokenPercentage = useCallback((token: Pool["poolTokens"][0], pool: Pool) => {
+    if (!token.balanceUSD || !pool.dynamicData?.totalLiquidity) {
+      return "0.0";
+    }
+
+    const tokenUSDValue = parseFloat(token.balanceUSD);
+    const totalLiquidity = parseFloat(pool.dynamicData.totalLiquidity);
+
+    if (totalLiquidity === 0) {
+      return "0.0";
+    }
+
+    const percentage = (tokenUSDValue / totalLiquidity) * 100;
+    return percentage.toFixed(1);
+  }, []);
+
   const handleSort = useCallback(
     (field: SortField) => {
       if (sortField === field) {
@@ -98,15 +116,26 @@ export const HookParametersTable = ({
     [sortField, sortDirection],
   );
 
-  // Filter pools based on selected hook type
+  // Filter pools based on selected hook type and minimum TVL
   const filteredPools = useMemo(() => {
     let filtered = pools.filter(pool => {
-      if (selectedHookType === "STABLE_SURGE") {
-        return isStableSurgeHookParams(pool.hook?.params);
-      } else if (selectedHookType === "MEV_TAX") {
-        return isMevTaxHookParams(pool.hook?.params);
+      // Filter by hook type
+      const hookTypeMatch = 
+        selectedHookType === "STABLE_SURGE" 
+          ? isStableSurgeHookParams(pool.hook?.params)
+          : selectedHookType === "MEV_TAX" 
+          ? isMevTaxHookParams(pool.hook?.params)
+          : false;
+
+      if (!hookTypeMatch) return false;
+
+      // Filter by minimum TVL
+      if (minTvl !== null && minTvl !== undefined) {
+        const poolTvl = Number(pool.dynamicData?.totalLiquidity || 0);
+        if (poolTvl < minTvl) return false;
       }
-      return false;
+
+      return true;
     });
 
     // Apply sorting
@@ -138,7 +167,7 @@ export const HookParametersTable = ({
     }
 
     return filtered;
-  }, [pools, selectedHookType, sortField, sortDirection]);
+  }, [pools, selectedHookType, minTvl, sortField, sortDirection]);
 
   // Get parameter names from the first pool with the selected hook type
   const parameterNames = useMemo(() => {
@@ -267,28 +296,31 @@ export const HookParametersTable = ({
                         <Text fontWeight="bold" mb={2}>
                           Token Balances:
                         </Text>
-                        {pool.poolTokens.map((token, index) => (
-                          <HStack key={index} spacing={2} mb={1}>
-                            {token.logoURI ? (
-                              <Avatar
-                                src={token.logoURI}
-                                size="xs"
-                                borderWidth="1px"
-                                borderColor="background.level1"
-                              />
-                            ) : (
-                              <Icon
-                                as={FaCircle}
-                                boxSize="4"
-                                borderWidth="1px"
-                                borderColor="background.level1"
-                              />
-                            )}
-                            <Text fontSize="sm">
-                              {token.symbol}: {formatTokenAmount(token.balance || "0")}
-                            </Text>
-                          </HStack>
-                        ))}
+                        {pool.poolTokens.map((token, index) => {
+                          const percentage = calculateTokenPercentage(token, pool);
+                          return (
+                            <HStack key={index} spacing={2} mb={1}>
+                              {token.logoURI ? (
+                                <Avatar
+                                  src={token.logoURI}
+                                  size="xs"
+                                  borderWidth="1px"
+                                  borderColor="background.level1"
+                                />
+                              ) : (
+                                <Icon
+                                  as={FaCircle}
+                                  boxSize="4"
+                                  borderWidth="1px"
+                                  borderColor="background.level1"
+                                />
+                              )}
+                              <Text fontSize="sm">
+                                {token.symbol}: {formatTokenAmount(token.balance || "0")} ({percentage}%)
+                              </Text>
+                            </HStack>
+                          );
+                        })}
                       </Box>
                     }
                   >

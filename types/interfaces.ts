@@ -95,6 +95,7 @@ export interface PoolToken {
   useUnderlyingForAddRemove?: boolean;
   underlyingToken?: UnderlyingToken;
   balance?: string;
+  balanceUSD?: string;
 }
 
 export interface UnderlyingToken {
