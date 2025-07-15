@@ -466,17 +466,26 @@ export function generateInjectorSchedulePayloadV2({
     parameters = [scheduleInputs.map(input => input.gaugeAddress)];
   }
 
+  let contractInputsValues: any;
+  if (operation === "add") {
+    contractInputsValues = {
+      recipients: `[${parameters[0].join(", ")}]`,
+      amountPerPeriod: parameters[1],
+      maxPeriods: parameters[2],
+      doNotStartBeforeTimestamp: parameters[3],
+    };
+  } else {
+    contractInputsValues = {
+      recipients: `[${parameters[0].join(", ")}]`,
+    };
+  }
+
   const batchTransaction = {
     to: injectorAddress,
     value: "0",
     data: null,
     contractMethod,
-    contractInputsValues: {
-      recipients: `[${parameters[0].join(", ")}]`,
-      amountPerPeriod: parameters[1],
-      maxPeriods: parameters[2],
-      doNotStartBeforeTimestamp: parameters[3],
-    },
+    contractInputsValues,
   };
 
   return {
