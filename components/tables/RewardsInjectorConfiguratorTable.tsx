@@ -13,12 +13,19 @@ import {
   Button,
   IconButton,
   HStack,
+  VStack,
   Tooltip,
   useColorModeValue,
+  useMediaQuery,
   TableContainer,
   Alert,
   AlertIcon,
   Input,
+  Card,
+  CardBody,
+  Divider,
+  FormLabel,
+  Stack,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
@@ -47,6 +54,7 @@ export const RewardsInjectorConfiguratorTable = ({
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
+  const [isMobile] = useMediaQuery("(max-width: 48em)");
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<RewardsInjectorData | null>(null);
@@ -206,6 +214,279 @@ export const RewardsInjectorConfiguratorTable = ({
     );
   }
 
+  // Mobile Card Layout
+  const MobileCard = ({ gauge, index }: { gauge: RewardsInjectorData; index: number }) => {
+    const isNewlyAdded = newlyAddedGauges.some(newGauge => newGauge.id === gauge.id);
+    const isEditing = editingIndex === index;
+
+    return (
+      <Card key={gauge.id || gauge.gaugeAddress} variant="outline" size="sm">
+        <CardBody p={4}>
+          <VStack spacing={3} align="stretch">
+            {/* Header with address and badges */}
+            <HStack justify="space-between" align="flex-start">
+              <VStack align="flex-start" spacing={1} flex={1}>
+                <Text fontWeight="medium" fontSize="sm" fontFamily="mono" wordBreak="break-all">
+                  {gauge.gaugeAddress}
+                </Text>
+                <Text fontSize="xs" color={mutedTextColor} noOfLines={2}>
+                  {gauge.poolName}
+                </Text>
+              </VStack>
+              <VStack spacing={1}>
+                {isNewlyAdded && (
+                  <Badge colorScheme="green" size="sm">
+                    NEW
+                  </Badge>
+                )}
+                {gauge.isEdited && (
+                  <Badge colorScheme="orange" size="sm">
+                    EDITED
+                  </Badge>
+                )}
+              </VStack>
+            </HStack>
+
+            <Divider />
+
+            {/* Amount per Period */}
+            <Box>
+              <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+                Amount per Period
+              </FormLabel>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editingData?.amountPerPeriod || ""}
+                  onChange={e => handleFieldChange("amountPerPeriod", e.target.value)}
+                  size="sm"
+                />
+              ) : (
+                <VStack align="flex-start" spacing={1}>
+                  <Text fontWeight="bold" fontSize="sm">
+                    {gauge.amountPerPeriod} {tokenSymbol}
+                  </Text>
+                  <Text fontSize="xs" color={mutedTextColor} fontFamily="mono">
+                    Raw: {gauge.rawAmountPerPeriod}
+                  </Text>
+                </VStack>
+              )}
+            </Box>
+
+            {/* Periods */}
+            <Box>
+              <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+                Periods
+              </FormLabel>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  min="1"
+                  max="255"
+                  value={editingData?.maxPeriods || ""}
+                  onChange={e => handleFieldChange("maxPeriods", e.target.value)}
+                  size="sm"
+                />
+              ) : (
+                <Text fontSize="sm" fontWeight="medium">
+                  {gauge.periodNumber} / {gauge.maxPeriods}
+                </Text>
+              )}
+            </Box>
+
+            {/* Start Time */}
+            <Box>
+              <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+                Start Time
+              </FormLabel>
+              {isEditing ? (
+                <InjectorDateTimePicker
+                  value={editingData?.doNotStartBeforeTimestamp || "0"}
+                  onChange={(value: string) =>
+                    handleFieldChange("doNotStartBeforeTimestamp", value)
+                  }
+                />
+              ) : (
+                <Text fontSize="sm" fontWeight="medium">
+                  {formatTimestamp(gauge.doNotStartBeforeTimestamp || "0")}
+                </Text>
+              )}
+            </Box>
+
+            <Divider />
+
+            {/* Actions */}
+            <HStack justify="flex-end" spacing={2}>
+              {isEditing ? (
+                <>
+                  <Button
+                    leftIcon={<CheckIcon />}
+                    size="sm"
+                    colorScheme="green"
+                    variant="outline"
+                    onClick={() => handleSave(index)}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    leftIcon={<CloseIcon />}
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    leftIcon={<EditIcon />}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingIndex(index)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    leftIcon={<DeleteIcon />}
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => onDelete?.(index, gauge)}
+                  >
+                    Delete
+                  </Button>
+                </>
+              )}
+            </HStack>
+          </VStack>
+        </CardBody>
+      </Card>
+    );
+  };
+
+  // Mobile Add Form
+  const MobileAddForm = () => (
+    <Card variant="outline" size="sm">
+      <CardBody p={4}>
+        <VStack spacing={3} align="stretch">
+          <Text fontWeight="medium" fontSize="sm">
+            Add New Recipient
+          </Text>
+
+          <Box>
+            <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+              Gauge Address
+            </FormLabel>
+            <Input
+              type="text"
+              placeholder="0x..."
+              value={newRecipientData.gaugeAddress}
+              onChange={e => handleNewRecipientChange("gaugeAddress", e.target.value)}
+              size="sm"
+              fontFamily="mono"
+            />
+          </Box>
+
+          <Box>
+            <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+              Amount per Period
+            </FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="Amount"
+              value={newRecipientData.amountPerPeriod}
+              onChange={e => handleNewRecipientChange("amountPerPeriod", e.target.value)}
+              size="sm"
+            />
+          </Box>
+
+          <Box>
+            <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+              Max Periods
+            </FormLabel>
+            <Input
+              type="number"
+              min="1"
+              max="255"
+              placeholder="Periods"
+              value={newRecipientData.maxPeriods}
+              onChange={e => handleNewRecipientChange("maxPeriods", e.target.value)}
+              size="sm"
+            />
+          </Box>
+
+          <Box>
+            <FormLabel fontSize="xs" color={mutedTextColor} mb={1}>
+              Start Time
+            </FormLabel>
+            <InjectorDateTimePicker
+              value={newRecipientData.doNotStartBeforeTimestamp || "0"}
+              onChange={(value: string) =>
+                handleNewRecipientChange("doNotStartBeforeTimestamp", value)
+              }
+            />
+          </Box>
+
+          <HStack justify="flex-end" spacing={2}>
+            <Button
+              leftIcon={<CheckIcon />}
+              size="sm"
+              colorScheme="green"
+              variant="outline"
+              onClick={handleAddRecipient}
+            >
+              Add
+            </Button>
+            <Button
+              leftIcon={<CloseIcon />}
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              onClick={handleCancelAdd}
+            >
+              Cancel
+            </Button>
+          </HStack>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <Box w="full">
+        <VStack spacing={4} align="stretch">
+          {data.map((gauge, index) => (
+            <MobileCard key={gauge.id || gauge.gaugeAddress} gauge={gauge} index={index} />
+          ))}
+
+          {isAddingRecipient && <MobileAddForm />}
+        </VStack>
+
+        {onAddRecipient && (
+          <Box mt={6}>
+            <Button
+              leftIcon={<AddIcon />}
+              onClick={() => setIsAddingRecipient(!isAddingRecipient)}
+              colorScheme="green"
+              variant="outline"
+              isDisabled={isAddingRecipient}
+              width="full"
+            >
+              Add Recipient
+            </Button>
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  // Desktop Table Layout
   return (
     <>
       <TableContainer
@@ -214,57 +495,65 @@ export const RewardsInjectorConfiguratorTable = ({
         borderRadius="xl"
         borderWidth="1px"
         shadow="md"
-        p={2}
+        p={4}
       >
-        <Table variant="simple">
+        <Table variant="simple" size="md">
           <Thead>
             <Tr>
-              <Th>Pool / Gauge</Th>
-              <Th isNumeric>Amount per Period</Th>
-              <Th isNumeric>Periods</Th>
-              <Th>Start Time</Th>
-              <Th>Actions</Th>
+              <Th py={4} fontSize="sm" fontWeight="semibold">
+                Pool / Gauge
+              </Th>
+              <Th py={4} fontSize="sm" fontWeight="semibold" isNumeric>
+                Amount per Period
+              </Th>
+              <Th py={4} fontSize="sm" fontWeight="semibold" isNumeric>
+                Periods
+              </Th>
+              <Th py={4} fontSize="sm" fontWeight="semibold">
+                Start Time
+              </Th>
+              <Th py={4} fontSize="sm" fontWeight="semibold">
+                Actions
+              </Th>
             </Tr>
           </Thead>
           <Tbody>
             {data.map((gauge, index) => {
               return (
                 <Tr key={gauge.id || gauge.gaugeAddress} _hover={{ bg: "whiteAlpha.50" }}>
-                  <Td>
-                    <HStack spacing={2} align="center">
-                      <Box>
-                        <HStack spacing={2} align="center">
-                          <Text fontWeight="medium" fontSize="sm">
-                            {gauge.gaugeAddress}
-                          </Text>
-                          {(() => {
-                            const isNewlyAdded = newlyAddedGauges.some(
-                              newGauge => newGauge.id === gauge.id,
-                            );
-
-                            if (isNewlyAdded) {
-                              return (
-                                <Badge colorScheme="green" size="sm">
-                                  NEW
-                                </Badge>
-                              );
-                            } else if (gauge.isEdited) {
-                              return (
-                                <Badge colorScheme="orange" size="sm">
-                                  EDITED
-                                </Badge>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </HStack>
-                        <Text fontSize="xs" color={mutedTextColor} fontFamily="mono" mt={0.5}>
-                          {gauge.poolName}
+                  <Td py={6} pr={6}>
+                    <VStack spacing={2} align="flex-start">
+                      <HStack spacing={2} align="center">
+                        <Text fontWeight="medium" fontSize="sm" fontFamily="mono">
+                          {gauge.gaugeAddress}
                         </Text>
-                      </Box>
-                    </HStack>
+                        {(() => {
+                          const isNewlyAdded = newlyAddedGauges.some(
+                            newGauge => newGauge.id === gauge.id,
+                          );
+
+                          if (isNewlyAdded) {
+                            return (
+                              <Badge colorScheme="green" size="sm">
+                                NEW
+                              </Badge>
+                            );
+                          } else if (gauge.isEdited) {
+                            return (
+                              <Badge colorScheme="orange" size="sm">
+                                EDITED
+                              </Badge>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </HStack>
+                      <Text fontSize="xs" color={mutedTextColor} maxW="300px" isTruncated>
+                        {gauge.poolName}
+                      </Text>
+                    </VStack>
                   </Td>
-                  <Td isNumeric>
+                  <Td py={6} isNumeric>
                     {editingIndex === index ? (
                       <Box>
                         <Input
@@ -273,22 +562,22 @@ export const RewardsInjectorConfiguratorTable = ({
                           value={editingData?.amountPerPeriod || ""}
                           onChange={e => handleFieldChange("amountPerPeriod", e.target.value)}
                           size="sm"
-                          width="80px"
+                          width="120px"
                           textAlign="right"
                         />
                       </Box>
                     ) : (
-                      <Box>
+                      <VStack spacing={1} align="flex-end">
                         <Text fontWeight="bold" fontSize="sm">
                           {gauge.amountPerPeriod} {tokenSymbol}
                         </Text>
-                        <Text fontSize="xs" color={mutedTextColor} mt={0.5}>
+                        <Text fontSize="xs" color={mutedTextColor} fontFamily="mono">
                           Raw: {gauge.rawAmountPerPeriod}
                         </Text>
-                      </Box>
+                      </VStack>
                     )}
                   </Td>
-                  <Td isNumeric>
+                  <Td py={6} isNumeric>
                     {editingIndex === index ? (
                       <Input
                         type="number"
@@ -297,16 +586,16 @@ export const RewardsInjectorConfiguratorTable = ({
                         value={editingData?.maxPeriods || ""}
                         onChange={e => handleFieldChange("maxPeriods", e.target.value)}
                         size="sm"
-                        width="60px"
+                        width="80px"
                         textAlign="right"
                       />
                     ) : (
-                      <Text>
+                      <Text fontSize="sm" fontWeight="medium">
                         {gauge.periodNumber} / {gauge.maxPeriods}
                       </Text>
                     )}
                   </Td>
-                  <Td>
+                  <Td py={6} minW="180px">
                     {editingIndex === index ? (
                       <InjectorDateTimePicker
                         value={editingData?.doNotStartBeforeTimestamp || "0"}
@@ -315,14 +604,14 @@ export const RewardsInjectorConfiguratorTable = ({
                         }
                       />
                     ) : (
-                      <Text fontSize="sm">
+                      <Text fontSize="sm" fontWeight="medium">
                         {formatTimestamp(gauge.doNotStartBeforeTimestamp || "0")}
                       </Text>
                     )}
                   </Td>
-                  <Td>
+                  <Td py={6}>
                     {editingIndex === index ? (
-                      <HStack spacing={1.5}>
+                      <HStack spacing={2}>
                         <Tooltip label="Save changes">
                           <IconButton
                             aria-label="Save"
@@ -345,7 +634,7 @@ export const RewardsInjectorConfiguratorTable = ({
                         </Tooltip>
                       </HStack>
                     ) : (
-                      <HStack spacing={1.5}>
+                      <HStack spacing={2}>
                         <Tooltip label="Edit configuration">
                           <IconButton
                             aria-label="Edit"
@@ -384,7 +673,7 @@ export const RewardsInjectorConfiguratorTable = ({
             })}
             {isAddingRecipient && (
               <Tr>
-                <Td>
+                <Td py={6} pr={6}>
                   <Input
                     type="text"
                     placeholder="0x..."
@@ -392,9 +681,10 @@ export const RewardsInjectorConfiguratorTable = ({
                     onChange={e => handleNewRecipientChange("gaugeAddress", e.target.value)}
                     size="sm"
                     fontFamily="mono"
+                    width="full"
                   />
                 </Td>
-                <Td isNumeric>
+                <Td py={6} isNumeric>
                   <Box>
                     <Input
                       type="number"
@@ -403,12 +693,12 @@ export const RewardsInjectorConfiguratorTable = ({
                       value={newRecipientData.amountPerPeriod}
                       onChange={e => handleNewRecipientChange("amountPerPeriod", e.target.value)}
                       size="sm"
-                      width="100px"
+                      width="120px"
                       textAlign="right"
                     />
                   </Box>
                 </Td>
-                <Td isNumeric>
+                <Td py={6} isNumeric>
                   <Input
                     type="number"
                     min="1"
@@ -417,10 +707,11 @@ export const RewardsInjectorConfiguratorTable = ({
                     value={newRecipientData.maxPeriods}
                     onChange={e => handleNewRecipientChange("maxPeriods", e.target.value)}
                     size="sm"
+                    width="80px"
                     textAlign="right"
                   />
                 </Td>
-                <Td>
+                <Td py={6} minW="180px">
                   <InjectorDateTimePicker
                     value={newRecipientData.doNotStartBeforeTimestamp || "0"}
                     onChange={(value: string) =>
@@ -428,8 +719,8 @@ export const RewardsInjectorConfiguratorTable = ({
                     }
                   />
                 </Td>
-                <Td>
-                  <HStack spacing={1.5}>
+                <Td py={6}>
+                  <HStack spacing={2}>
                     <Tooltip label="Add recipient">
                       <IconButton
                         aria-label="Add"
@@ -458,7 +749,7 @@ export const RewardsInjectorConfiguratorTable = ({
         </Table>
       </TableContainer>
       {onAddRecipient && (
-        <Flex justifyContent="flex-end" mt={4}>
+        <Flex justifyContent="flex-end" mt={6}>
           <Button
             leftIcon={<AddIcon />}
             onClick={() => setIsAddingRecipient(!isAddingRecipient)}
