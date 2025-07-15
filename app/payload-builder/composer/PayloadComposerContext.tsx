@@ -6,6 +6,7 @@ import {
   validatePayloadCompatibility,
   type SafeBatchFile,
   type PayloadCombinationResult,
+  type ValidationResult,
 } from "./payloadCombiner";
 
 export type PayloadOperation = {
@@ -19,11 +20,6 @@ export type PayloadOperation = {
   builderPath?: string; // e.g., "initialize-buffer"
 };
 
-export interface CompatibilityResult {
-  isCompatible: boolean;
-  issues: string[];
-}
-
 type PayloadComposerContextType = {
   operations: PayloadOperation[];
   addOperation: (op: Omit<PayloadOperation, "timestamp">) => void;
@@ -33,11 +29,10 @@ type PayloadComposerContextType = {
   operationCount: number;
   isMounted: boolean;
   // Computed validation and combination results
-  compatibilityCheck: CompatibilityResult;
+  compatibilityCheck: ValidationResult;
   combinationResult: PayloadCombinationResult;
-  hasValidationErrors: boolean;
-  hasTechnicalErrors: boolean;
-  hasAnyErrors: boolean;
+  hasErrors: boolean;
+  hasWarnings: boolean;
 };
 
 const PayloadComposerContext = createContext<PayloadComposerContextType | undefined>(undefined);
@@ -57,10 +52,10 @@ export const PayloadComposerProvider = ({ children }: { children: ReactNode }) =
     return combinePayloadOperations(operations);
   }, [operations]);
 
-  // Derived error states
-  const hasValidationErrors = compatibilityCheck.issues.length > 0;
-  const hasTechnicalErrors = combinationResult.errors.length > 0;
-  const hasAnyErrors = hasValidationErrors || hasTechnicalErrors;
+  // Simplified error states
+  const hasErrors =
+    compatibilityCheck.blockingIssues.length > 0 || combinationResult.errors.length > 0;
+  const hasWarnings = compatibilityCheck.warningIssues.length > 0;
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -132,9 +127,8 @@ export const PayloadComposerProvider = ({ children }: { children: ReactNode }) =
         isMounted,
         compatibilityCheck,
         combinationResult,
-        hasValidationErrors,
-        hasTechnicalErrors,
-        hasAnyErrors,
+        hasErrors,
+        hasWarnings,
       }}
     >
       {children}

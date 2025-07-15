@@ -28,14 +28,8 @@ import { useComposer } from "./PayloadComposerContext";
 import { AiOutlineDashboard } from "react-icons/ai";
 
 export default function ComposerSummaryOverview() {
-  const {
-    operations,
-    isMounted,
-    combinationResult,
-    compatibilityCheck,
-    hasValidationErrors,
-    hasTechnicalErrors,
-  } = useComposer();
+  const { operations, isMounted, combinationResult, compatibilityCheck, hasErrors, hasWarnings } =
+    useComposer();
 
   const bgColor = useColorModeValue("white", "background.level2");
   const borderColor = useColorModeValue("gray.200", "border.base");
@@ -90,7 +84,7 @@ export default function ComposerSummaryOverview() {
               </Text>
             </HStack>
             <HStack spacing={2}>
-              {!hasValidationErrors && !hasTechnicalErrors ? (
+              {!hasErrors ? (
                 <Badge colorScheme="green" variant="subtle">
                   <HStack spacing={1}>
                     <Icon as={CheckIcon} boxSize={3} />
@@ -102,6 +96,14 @@ export default function ComposerSummaryOverview() {
                   <HStack spacing={1}>
                     <Icon as={WarningIcon} boxSize={3} />
                     <Text>Invalid</Text>
+                  </HStack>
+                </Badge>
+              )}
+              {hasWarnings && (
+                <Badge colorScheme="yellow" variant="subtle">
+                  <HStack spacing={1}>
+                    <Icon as={InfoIcon} boxSize={3} />
+                    <Text>Warnings</Text>
                   </HStack>
                 </Badge>
               )}
@@ -165,21 +167,27 @@ export default function ComposerSummaryOverview() {
         </VStack>
       </Box>
 
-      {(hasValidationErrors || hasTechnicalErrors) && (
+      {(hasErrors || hasWarnings) && (
         <VStack spacing={3} align="stretch">
-          {/* Validation Errors */}
-          {hasValidationErrors && (
+          {/* Errors */}
+          {hasErrors && (
             <Alert status="error" py={3} variant="left-accent" borderRadius="md">
               <Box flex="1">
                 <Flex align="center">
                   <AlertIcon />
-                  <AlertTitle fontSize="lg">Validation Errors:</AlertTitle>
+                  <AlertTitle fontSize="lg">Errors</AlertTitle>
                 </Flex>
                 <AlertDescription display="block">
                   <List spacing={2} mt={2}>
-                    {compatibilityCheck.issues.map((error, index) => (
+                    {compatibilityCheck.blockingIssues.map((error, index) => (
                       <ListItem key={index} fontSize="sm">
                         <ListIcon as={ChevronRightIcon} />
+                        {error}
+                      </ListItem>
+                    ))}
+                    {combinationResult.errors.map((error, index) => (
+                      <ListItem key={`tech-${index}`} fontSize="sm">
+                        <ListIcon as={WarningIcon} color="red.500" />
                         {error}
                       </ListItem>
                     ))}
@@ -189,21 +197,25 @@ export default function ComposerSummaryOverview() {
             </Alert>
           )}
 
-          {/* Technical Errors */}
-          {hasTechnicalErrors && (
-            <Alert status="error">
-              <AlertIcon />
-              <VStack align="start" spacing={2} flex="1">
-                <Text fontWeight="medium">Technical Errors:</Text>
-                <List spacing={1}>
-                  {combinationResult.errors.map((error, index) => (
-                    <ListItem key={index} fontSize="sm">
-                      <ListIcon as={WarningIcon} color="red.500" />
-                      {error}
-                    </ListItem>
-                  ))}
-                </List>
-              </VStack>
+          {/* Warnings */}
+          {hasWarnings && (
+            <Alert status="warning" py={3} variant="left-accent" borderRadius="md">
+              <Box flex="1">
+                <Flex align="center">
+                  <AlertIcon />
+                  <AlertTitle fontSize="lg">Warnings</AlertTitle>
+                </Flex>
+                <AlertDescription display="block">
+                  <List spacing={2} mt={2}>
+                    {compatibilityCheck.warningIssues.map((warning, index) => (
+                      <ListItem key={index} fontSize="sm">
+                        <ListIcon as={ChevronRightIcon} />
+                        {warning}
+                      </ListItem>
+                    ))}
+                  </List>
+                </AlertDescription>
+              </Box>
             </Alert>
           )}
         </VStack>

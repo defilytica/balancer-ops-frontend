@@ -29,7 +29,8 @@ export default function ComposerPayloadViewer({
   hasManualEdits,
   setHasManualEdits,
 }: ComposerPayloadViewerProps) {
-  const { operations, isMounted, combinationResult, hasAnyErrors } = useComposer();
+  const { operations, isMounted, combinationResult, hasErrors, hasWarnings, compatibilityCheck } =
+    useComposer();
   const [editedPayload, setEditedPayload] = useState<string>("");
   const toast = useToast();
 
@@ -42,11 +43,11 @@ export default function ComposerPayloadViewer({
 
   // Format the payload for display
   const formattedPayload = useMemo(() => {
-    if (!combinationResult.success || !combinationResult.payload || hasAnyErrors) {
+    if (!combinationResult.success || !combinationResult.payload || hasErrors) {
       return null;
     }
     return JSON.stringify(combinationResult.payload, null, 2);
-  }, [combinationResult, hasAnyErrors]);
+  }, [combinationResult, hasErrors]);
 
   // Update edited payload when the base payload changes
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function ComposerPayloadViewer({
     );
   }
 
-  if (hasAnyErrors) {
+  if (hasErrors) {
     return (
       <Box p={6} bg={bgColor} borderRadius="lg" border="1px" borderColor={borderColor}>
         <VStack spacing={4} align="stretch">
@@ -126,7 +127,7 @@ export default function ComposerPayloadViewer({
             <AlertIcon />
             <VStack align="start" spacing={2} flex="1">
               <Text fontWeight="medium">Cannot Construct Payload</Text>
-              <Text fontSize="sm">Please resolve the validation errors.</Text>
+              <Text fontSize="sm">Please resolve the errors.</Text>
             </VStack>
           </Alert>
         </VStack>

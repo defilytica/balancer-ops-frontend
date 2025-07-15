@@ -43,31 +43,35 @@ export interface PayloadCombinationResult {
   };
 }
 
-export function validatePayloadCompatibility(operations: PayloadOperation[]): {
+export interface ValidationResult {
   isCompatible: boolean;
-  issues: string[];
-} {
-  const issues: string[] = [];
+  blockingIssues: string[];
+  warningIssues: string[];
+}
+
+export function validatePayloadCompatibility(operations: PayloadOperation[]): ValidationResult {
+  const blockingIssues: string[] = [];
+  const warningIssues: string[] = [];
 
   // Basic validation
   if (operations.length === 0) {
-    issues.push("No operations provided");
-    return { isCompatible: false, issues };
+    blockingIssues.push("No operations provided");
+    return { isCompatible: false, blockingIssues, warningIssues };
   }
 
   // Check if operations have valid payloads
   for (const operation of operations) {
     if (!operation.payload) {
-      issues.push(`Operation "${operation.title}" has no payload`);
+      blockingIssues.push(`Operation "${operation.title}" has no payload`);
       continue;
     }
 
     if (!operation.payload.transactions || operation.payload.transactions.length === 0) {
-      issues.push(`Operation "${operation.title}" has no transactions`);
+      blockingIssues.push(`Operation "${operation.title}" has no transactions`);
     }
   }
 
-  // Check network consistency
+  // Check network consistency - BLOCKING ERROR
   const networks = new Set(
     operations.map(op => getNetworkString(Number(op.payload?.chainId))).filter(Boolean),
   );
@@ -77,23 +81,26 @@ export function validatePayloadCompatibility(operations: PayloadOperation[]): {
   if (networks.size > 1) {
     const networkList = Array.from(networks).join(", ");
     const chainIdList = Array.from(chainIds).join(" vs ");
-    issues.push(`Operations target different networks: ${networkList} (Chain IDs: ${chainIdList})`);
+    blockingIssues.push(
+      `Operations target different networks: ${networkList} (Chain IDs: ${chainIdList})`,
+    );
   }
 
-  // Check Safe address consistency
+  // Check Safe address consistency - WARNING ONLY (allows manual editing)
   const safeAddresses = new Set(
     operations.map(op => op.payload?.meta?.createdFromSafeAddress).filter(Boolean),
   );
 
   if (safeAddresses.size > 1) {
-    issues.push(
-      `Operations reference different Safe addresses: ${Array.from(safeAddresses).join(", ")}`,
+    warningIssues.push(
+      `Operations reference different Safe addresses: ${Array.from(safeAddresses).join(", ")}. You can manually edit the final payload to use the correct Safe address.`,
     );
   }
 
   return {
-    isCompatible: issues.length === 0,
-    issues,
+    isCompatible: blockingIssues.length === 0,
+    blockingIssues,
+    warningIssues,
   };
 }
 
@@ -132,6 +139,12 @@ export function combinePayloadOperations(operations: PayloadOperation[]): Payloa
       allTransactions.push(...individualPayload.transactions);
     }
 
+    // Check if there are multiple Safe addresses (indicating a conflict)
+    const safeAddresses = new Set(
+      operations.map(op => op.payload?.meta?.createdFromSafeAddress).filter(Boolean),
+    );
+    const hasMultipleSafeAddresses = safeAddresses.size > 1;
+
     // Create combined payload
     const combinedPayload: SafeBatchFile = {
       version: "1.0",
@@ -140,7 +153,7 @@ export function combinePayloadOperations(operations: PayloadOperation[]): Payloa
       meta: {
         name: `Combined Transactions Batch (${operations.length} operations)`,
         description: `Composed from: ${operations.map(op => op.title).join(", ")}`,
-        createdFromSafeAddress: safeAddress || "0x0000000000000000000000000000000000000000",
+        createdFromSafeAddress: hasMultipleSafeAddresses ? "" : safeAddress || "",
       },
       transactions: allTransactions,
     };
