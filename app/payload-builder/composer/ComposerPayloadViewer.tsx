@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
@@ -13,12 +13,17 @@ import {
   Flex,
   useColorModeValue,
   Skeleton,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { CopyIcon, DownloadIcon, InfoIcon, EditIcon } from "@chakra-ui/icons";
 import { useComposer } from "./PayloadComposerContext";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import OpenPRButton from "@/components/btns/OpenPRButton";
+import { PRCreationModal } from "@/components/modal/PRModal";
 import { copyJsonToClipboard, handleDownloadClick } from "../payloadHelperFunctions";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import { getNetworkString } from "@/lib/utils/getNetworkString";
 
 interface ComposerPayloadViewerProps {
   hasManualEdits: boolean;
@@ -32,6 +37,7 @@ export default function ComposerPayloadViewer({
   const { operations, isMounted, combinationResult, hasErrors, hasWarnings, compatibilityCheck } =
     useComposer();
   const [editedPayload, setEditedPayload] = useState<string>("");
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
   // Color mode values
@@ -58,6 +64,64 @@ export default function ComposerPayloadViewer({
 
   // Get the current payload to use (edited version or original)
   const currentPayload = hasManualEdits ? editedPayload : formattedPayload || "";
+
+  // Get primary network for PR creation
+  const primaryNetwork = useMemo(() => {
+    if (!combinationResult.payload?.chainId) return "";
+    return getNetworkString(Number(combinationResult.payload.chainId));
+  }, [combinationResult.payload?.chainId]);
+
+  const getPrefillValues = useCallback(() => {
+    if (!currentPayload || operations.length === 0) {
+      return {
+        prefillBranchName: "",
+        prefillPrName: "",
+        prefillDescription: "",
+        prefillFilename: "",
+      };
+    }
+
+    // Generate a unique ID for the branch and file
+    const uniqueId = generateUniqueId();
+
+    // Get network name for path
+    const networkName = combinationResult.metadata.networks[0] || "Unknown";
+    const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
+
+    // Create descriptive title based on operations
+    const operationTitles = operations.map(op => op.title || op.type).slice(0, 3);
+    const titleSuffix = operations.length > 3 ? ` (+${operations.length - 3} more)` : "";
+    const combinedTitle = operationTitles.join(", ") + titleSuffix;
+
+    // Create description
+    const operationsList = operations
+      .map(
+        (op, index) =>
+          `${index + 1}. ${op.title || op.type}: ${op.description || "No description"}`,
+      )
+      .join("\n");
+
+    return {
+      prefillBranchName: `feature/combined-operations-${uniqueId}`,
+      prefillPrName: `Combined Payload: ${combinedTitle}`,
+      prefillDescription: `This PR combines ${operations.length} operations into a single transaction on ${networkName}:\n\n${operationsList}`,
+      prefillFilename: `${networkPath}/combined-operations-${uniqueId}.json`,
+    };
+  }, [currentPayload, operations, combinationResult.metadata.networks]);
+
+  const handleOpenPRModal = () => {
+    if (currentPayload) {
+      onOpen();
+    } else {
+      toast({
+        title: "No payload generated",
+        description: "Please add operations to generate a payload first",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   const handleJsonChange = (newJson: string | any) => {
     const jsonString = typeof newJson === "string" ? newJson : JSON.stringify(newJson, null, 2);
@@ -162,27 +226,8 @@ export default function ComposerPayloadViewer({
         </Alert>
       )}
 
-      {/* Action Buttons */}
-      <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap={4}>
-        <HStack spacing={2}>
-          <Button
-            variant="secondary"
-            leftIcon={<CopyIcon />}
-            onClick={handleCopy}
-            isDisabled={!currentPayload}
-          >
-            Copy Payload
-          </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<DownloadIcon />}
-            onClick={handleDownload}
-            isDisabled={!currentPayload}
-          >
-            Download Payload
-          </Button>
-        </HStack>
-
+      {/* Simulate Transaction Button - moved to top */}
+      <Flex justifyContent="flex-end">
         {currentPayload && <SimulateTransactionButton batchFile={JSON.parse(currentPayload)} />}
       </Flex>
 
@@ -191,6 +236,32 @@ export default function ComposerPayloadViewer({
       {/* Payload JSON Viewer */}
       {currentPayload && (
         <JsonViewerEditor jsonData={currentPayload} onJsonChange={handleJsonChange} />
+      )}
+
+      {/* Action Buttons - moved below JSON viewer */}
+      {currentPayload && (
+        <Box display="flex" alignItems="center" mt="20px">
+          <Button
+            variant="secondary"
+            mr="10px"
+            leftIcon={<DownloadIcon />}
+            onClick={handleDownload}
+          >
+            Download Payload
+          </Button>
+          <Button variant="secondary" mr="10px" leftIcon={<CopyIcon />} onClick={handleCopy}>
+            Copy Payload to Clipboard
+          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} network={primaryNetwork} />
+          <PRCreationModal
+            type="payload-composer"
+            isOpen={isOpen}
+            onClose={onClose}
+            network={primaryNetwork}
+            payload={currentPayload ? JSON.parse(currentPayload) : null}
+            {...getPrefillValues()}
+          />
+        </Box>
       )}
     </VStack>
   );
