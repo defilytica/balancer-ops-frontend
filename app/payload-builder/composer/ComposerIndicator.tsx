@@ -12,7 +12,8 @@ const ComposerIndicator = ({ onClick }: ComposerIndicatorProps) => {
   const { operationCount, isMounted } = useComposer();
   const router = useRouter();
 
-  const borderColor = useColorModeValue("gray.600", "gray.500");
+  const baseBorderColor = useColorModeValue("gray.500", "gray.500");
+  const activeBorderColor = useColorModeValue("gray.400", "gray.400");
   const hoverBg = useColorModeValue("gray.100", "gray.700");
   const hoverBorderColor = useColorModeValue("brown.100", "brown.300");
   const hoverColor = useColorModeValue("brown.700", "brown.200");
@@ -57,7 +58,8 @@ const ComposerIndicator = ({ onClick }: ComposerIndicatorProps) => {
           colorScheme="gray"
           size="md"
           width="full"
-          borderColor={borderColor}
+          borderColor={operationCount > 0 ? activeBorderColor : baseBorderColor}
+          boxShadow={operationCount > 0 ? `inset 0px 1px 2px rgba(0,0,0,0.08)` : "none"}
           _hover={{
             bg: hoverBg,
             borderColor: hoverBorderColor,

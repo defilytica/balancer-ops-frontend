@@ -60,6 +60,8 @@ import { DollarSign } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -215,15 +217,51 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Assuming the payload structure has the necessary data at a predictable path
+    const poolAddress = payload.transactions[0]?.to;
+    const newSwapFeePercentage = payload.transactions[0]?.contractInputsValues.swapFeePercentage;
+
+    if (!poolAddress || !newSwapFeePercentage) return null;
+
+    return {
+      type: "fee-setter",
+      title: "Change Swap Fee (v2)",
+      description: payload.meta.description,
+      payload: payload,
+      params: {
+        poolAddress: poolAddress,
+        swapFeePercentage: newSwapFeePercentage,
+      },
+      builderPath: "fee-setter",
+    };
+  }, [generatedPayload]);
+
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
   const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;
   const feeChange = newFee - currentFee;
 
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        Create Swap Fee Change Payload (Balancer v2)
-      </Heading>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Heading as="h2" size="lg" variant="special">
+          Create Swap Fee Change Payload (Balancer v2)
+        </Heading>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -358,13 +396,17 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         </>
       )}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={!selectedPool || !isAuthorizedPool || !newSwapFee}
-        >
-          Generate Payload
-        </Button>
+        <Flex alignItems="center" gap={2}>
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!selectedPool || !isAuthorizedPool || !newSwapFee}
+          >
+            Generate Payload
+          </Button>
+          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+        </Flex>
+
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />

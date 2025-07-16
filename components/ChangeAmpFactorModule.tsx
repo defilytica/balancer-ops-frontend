@@ -285,22 +285,21 @@ export default function ChangeAmpFactorModule({
       typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
 
     // Extract relevant parameters from the payload
-    let endValue = payload.transactions[0].contractInputsValues.rawEndValue;
-    let endTime = payload.transactions[0].contractInputsValues.endTime;
+    const { rawEndValue, endTime } = payload.transactions[0].contractInputsValues;
 
     return {
-      type: `amp-factor-update-v3`,
-      title: `Update Amplification Factor (V3)`,
+      type: config.prType,
+      title: config.title,
       description: payload.meta.description,
       payload: payload,
       params: {
-        pool: payload.transactions[0].to,
-        rawEndValue: endValue,
-        endTime: endTime,
+        poolAddress: payload.transactions[0].to,
+        rawEndValue,
+        endTime,
       },
-      builderPath: `amp-factor-update-v3`,
+      builderPath: config.prType,
     };
-  }, [generatedPayload]);
+  }, [generatedPayload, config]);
 
   const getPrefillValues = useCallback(() => {
     if (!selectedPool || !debouncedAmpFactor || !debouncedEndDateTime) return {};

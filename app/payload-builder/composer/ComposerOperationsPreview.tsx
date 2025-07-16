@@ -99,8 +99,8 @@ const ComposerOperationsPreview = ({ hasManualEdits }: ComposerOperationsPreview
 
   const renderOperationParams = (params: Record<string, any>, payload?: any) => {
     const filteredParams = Object.entries(params).filter(([, value]) => {
-      // Filter out empty, null, or undefined values
-      return value !== null && value !== undefined && value !== "" && value !== "0";
+      // Filter out empty, null, or undefined values, but allow "0"
+      return value !== null && value !== undefined && value !== "";
     });
 
     return (

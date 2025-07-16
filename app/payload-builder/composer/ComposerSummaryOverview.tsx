@@ -36,6 +36,10 @@ export default function ComposerSummaryOverview() {
   const mutedText = useColorModeValue("gray.600", "font.secondary");
   const lightText = useColorModeValue("gray.500", "gray.400");
   const iconColor = useColorModeValue("gray.400", "gray.500");
+  const errorBg = useColorModeValue("red.50", "rgba(229, 62, 62, 0.1)");
+  const errorBorder = useColorModeValue("red.200", "rgba(229, 62, 62, 0.3)");
+  const warningBg = useColorModeValue("yellow.50", "rgba(213, 163, 31, 0.1)");
+  const warningBorder = useColorModeValue("yellow.300", "rgba(213, 163, 31, 0.4)");
 
   // Show loading skeleton during hydration to prevent mismatches
   if (!isMounted) {
@@ -72,10 +76,10 @@ export default function ComposerSummaryOverview() {
   };
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={4} align="stretch">
       {/* Status Overview */}
-      <Box p={6} bg={bgColor} borderRadius="lg" border="1px" borderColor={borderColor}>
-        <VStack spacing={4} align="stretch">
+      <Box p={4} bg={bgColor} borderRadius="lg" border="1px" borderColor={borderColor}>
+        <VStack spacing={3} align="stretch">
           <HStack justify="space-between" align="center">
             <HStack spacing={2}>
               <AiOutlineDashboard size={20} />
@@ -171,7 +175,15 @@ export default function ComposerSummaryOverview() {
         <VStack spacing={3} align="stretch">
           {/* Errors */}
           {hasErrors && (
-            <Alert status="error" py={3} variant="left-accent" borderRadius="md">
+            <Alert
+              status="error"
+              py={3}
+              variant="subtle"
+              borderRadius="md"
+              bg={errorBg}
+              borderColor={errorBorder}
+              borderWidth="1px"
+            >
               <Box flex="1">
                 <Flex align="center">
                   <AlertIcon />
@@ -199,7 +211,15 @@ export default function ComposerSummaryOverview() {
 
           {/* Warnings */}
           {hasWarnings && (
-            <Alert status="warning" py={3} variant="left-accent" borderRadius="md">
+            <Alert
+              status="warning"
+              py={3}
+              variant="subtle"
+              borderRadius="md"
+              bg={warningBg}
+              borderColor={warningBorder}
+              borderWidth="1px"
+            >
               <Box flex="1">
                 <Flex align="center">
                   <AlertIcon />
