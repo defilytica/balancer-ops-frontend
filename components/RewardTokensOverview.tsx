@@ -873,6 +873,16 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
                 <Divider />
 
+                {/* Distribution Info */}
+                <Alert status="info" variant="left-accent">
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontSize="sm">
+                      Rewards are distributed over the next 7 days.
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+
                 {/* Amount Input */}
                 <FormControl>
                   <FormLabel fontSize="sm" fontWeight="medium">
