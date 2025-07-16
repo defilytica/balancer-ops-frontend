@@ -368,7 +368,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
     try {
       writeDeposit({
-        address: selectedPool.gaugeAddress,
+        address: selectedPool.gaugeAddress as `0x${string}`,
         abi: gaugeABI,
         functionName: "deposit_reward_token",
         args: [selectedToken.address, amountWei],
@@ -802,11 +802,11 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                       <Box flexShrink="0">
                         <StepTitle>
                           {shouldSkipApproval ? "✓ Approval Sufficient" : 
-                           (tokenAllowance !== undefined && tokenAllowance > 0n ? "Re-approve Tokens" : "Approve Tokens")}
+                           (tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? "Re-approve Tokens" : "Approve Tokens")}
                         </StepTitle>
                         <StepDescription>
                           {shouldSkipApproval ? "Allowance already covers amount" : 
-                           (tokenAllowance !== undefined && tokenAllowance > 0n ? "Increase allowance for this amount" : "Allow gauge to spend tokens")}
+                           (tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? "Increase allowance for this amount" : "Allow gauge to spend tokens")}
                         </StepDescription>
                       </Box>
                       <StepSeparator />
@@ -937,7 +937,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                           setRewardAmount(formatTokenBalance(tokenBalance, selectedToken.decimals));
                         }
                       }}
-                      isDisabled={tokenBalance === undefined || tokenBalance === 0n}
+                      isDisabled={tokenBalance === undefined || tokenBalance === BigInt(0)}
                     >
                       Max
                     </Button>
@@ -992,7 +992,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         Step 1: Approve Tokens
                       </Text>
                       <Text>
-                        {tokenAllowance !== undefined && tokenAllowance > 0n ? 
+                        {tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? 
                           `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens. Your current allowance of ${formatTokenBalance(tokenAllowance, selectedToken.decimals)} ${selectedToken.symbol} is insufficient for this amount.` :
                           `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens from your wallet before depositing them as rewards.`
                         }
