@@ -2499,6 +2499,8 @@ export type GqlToken = {
   isErc4626: Scalars['Boolean']['output'];
   /** The logo URI of the token */
   logoURI?: Maybe<Scalars['String']['output']>;
+  /** If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault. */
+  maxDeposit?: Maybe<Scalars['String']['output']>;
   /** The name of the token */
   name: Scalars['String']['output'];
   /** The rate provider data for the token */
