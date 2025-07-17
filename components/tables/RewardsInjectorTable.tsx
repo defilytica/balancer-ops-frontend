@@ -43,6 +43,8 @@ export interface RewardsInjectorData {
   isRewardTokenSetup: boolean;
   lastInjectionTimeStamp: string;
   doNotStartBeforeTimestamp?: string;
+  isEdited?: boolean;
+  id?: string;
 }
 
 interface RewardsInjectorTableProps {
