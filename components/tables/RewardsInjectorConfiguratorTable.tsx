@@ -18,14 +18,11 @@ import {
   useColorModeValue,
   useMediaQuery,
   TableContainer,
-  Alert,
-  AlertIcon,
   Input,
   Card,
   CardBody,
   Divider,
   FormLabel,
-  Stack,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";

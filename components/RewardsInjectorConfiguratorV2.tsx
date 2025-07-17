@@ -25,9 +25,11 @@ import {
   Spinner,
   Switch,
   Text,
+  useColorModeValue,
   useDisclosure,
   useMediaQuery,
   useToast,
+  VStack,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, CopyIcon, DownloadIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { AddressOption } from "@/types/interfaces";
@@ -453,7 +455,7 @@ function RewardsInjectorConfiguratorV2({
           <Text mb={6}>Manage reward emissions configuration for the selected injector.</Text>
         </Box>
 
-        <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
+        <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={6}>
           <Menu>
             <MenuButton
               as={Button}
@@ -548,51 +550,76 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <>
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={6}>
-              <Card>
-                <CardBody>
-                  <Heading size="md">Contract Balance</Heading>
-                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
-                    {formatAmount(contractBalance)} {tokenSymbol}
-                  </Text>
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <Heading size="md">Current Total Distribution</Heading>
-                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
-                    {formatAmount(currentDistribution.total)} {tokenSymbol}
-                  </Text>
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <Heading size="md">New Total Distribution</Heading>
-                  <Text fontSize="2xl" fontWeight="bold" mt={2}>
-                    {formatAmount(newDistribution.total)} {tokenSymbol}
-                  </Text>
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <Heading size="md">Future Distribution Delta</Heading>
-                  <Text
-                    fontSize="2xl"
-                    fontWeight="bold"
-                    color={
-                      distributionDelta > 0
-                        ? "green.400"
-                        : distributionDelta < 0
-                          ? "red.400"
-                          : "gray.600"
-                    }
-                    mt={2}
-                  >
-                    {distributionDelta >= 0 ? "+" : ""}
-                    {formatAmount(distributionDelta)} {tokenSymbol}
-                  </Text>
-                </CardBody>
-              </Card>
+            <SimpleGrid
+              columns={{ base: 2, md: 4 }}
+              spacing={4}
+              p={4}
+              bg="background.level1"
+              borderRadius="lg"
+              shadow="md"
+              borderWidth="1px"
+              borderColor="transparent"
+              mb={6}
+            >
+              <VStack spacing={1}>
+                <Text
+                  fontSize="xs"
+                  color={useColorModeValue("gray.600", "gray.400")}
+                  textAlign="center"
+                >
+                  Contract Balance
+                </Text>
+                <Text fontSize="xl" fontWeight="semibold">
+                  {formatAmount(contractBalance)} {tokenSymbol}
+                </Text>
+              </VStack>
+              <VStack spacing={1}>
+                <Text
+                  fontSize="xs"
+                  color={useColorModeValue("gray.600", "gray.400")}
+                  textAlign="center"
+                >
+                  Current Distribution
+                </Text>
+                <Text fontSize="xl" fontWeight="semibold">
+                  {formatAmount(currentDistribution.total)} {tokenSymbol}
+                </Text>
+              </VStack>
+              <VStack spacing={1}>
+                <Text
+                  fontSize="xs"
+                  color={useColorModeValue("gray.600", "gray.400")}
+                  textAlign="center"
+                >
+                  New Distribution
+                </Text>
+                <Text fontSize="xl" fontWeight="semibold">
+                  {formatAmount(newDistribution.total)} {tokenSymbol}
+                </Text>
+              </VStack>
+              <VStack spacing={1}>
+                <Text
+                  fontSize="xs"
+                  color={useColorModeValue("gray.600", "gray.400")}
+                  textAlign="center"
+                >
+                  Distribution Delta
+                </Text>
+                <Text
+                  fontSize="xl"
+                  fontWeight="semibold"
+                  color={
+                    distributionDelta > 0
+                      ? "green.400"
+                      : distributionDelta < 0
+                        ? "red.400"
+                        : "gray.600"
+                  }
+                >
+                  {distributionDelta >= 0 ? "+" : ""}
+                  {formatAmount(distributionDelta)} {tokenSymbol}
+                </Text>
+              </VStack>
             </SimpleGrid>
 
             {distributionDelta > contractBalance && (
@@ -608,9 +635,7 @@ function RewardsInjectorConfiguratorV2({
 
             <Box mt={6}>
               <Box mb={4}>
-                <Heading as="h2" size="lg">
-                  Current Configuration
-                </Heading>
+                <Heading size="lg">Current Configuration</Heading>
                 <Text fontSize="sm" color="gray.500" mt={1}>
                   {gauges.length} recipient{gauges.length !== 1 ? "s" : ""} configured
                   {(editedGauges.size > 0 ||
