@@ -24,7 +24,6 @@ import {
   PopoverBody,
   PopoverContent,
   PopoverTrigger,
-  SimpleGrid,
   Spinner,
   Tag,
   TagCloseButton,
@@ -1282,7 +1281,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
               type={"permissions"}
               isOpen={isOpen}
               onClose={onClose}
-              payload={generatedPayload ? JSON.stringify(generatedPayload) : null}
+              payload={generatedPayload}
               {...getPrefillValues()}
             />
           </Box>

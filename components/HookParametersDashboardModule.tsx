@@ -16,7 +16,7 @@ import {
   AlertDescription,
 } from "@chakra-ui/react";
 import { HookParametersTable } from "@/components/tables/HookParametersTable";
-import { NetworkSelector } from "@/components/NetworkSelector";
+import { HookFilters } from "@/components/HookFilters";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetV3PoolsWithHooksQuery,
@@ -53,6 +53,7 @@ export default function HookParametersDashboardModule({
   addressBook,
 }: HookParametersDashboardModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("ALL");
+  const [minTvl, setMinTvl] = useState<number | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -144,12 +145,16 @@ export default function HookParametersDashboardModule({
           <Text>View all {hookType.name} parameters for Balancer v3 pools</Text>
         </Box>
 
-        <Box minW="250px">
-          <NetworkSelector
-            networks={networksWithAll}
-            networkOptions={networkOptionsWithAll}
+        <Box>
+          <HookFilters
             selectedNetwork={selectedNetwork}
-            handleNetworkChange={handleNetworkChange}
+            onNetworkChange={handleNetworkChange}
+            minTvl={minTvl}
+            onMinTvlChange={setMinTvl}
+            networkOptions={networkOptionsWithAll}
+            networks={networksWithAll}
+            hookType={hookType.type}
+            addressBook={addressBook}
           />
         </Box>
       </Flex>
@@ -180,6 +185,7 @@ export default function HookParametersDashboardModule({
           pools={data.poolGetPools as unknown as Pool[]}
           selectedHookType={hookType.type}
           addressBook={addressBook}
+          minTvl={minTvl}
         />
       )}
     </Container>

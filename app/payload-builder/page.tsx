@@ -17,6 +17,7 @@ const CATEGORIZED_PAYLOADS = {
     "fee-setter-v3",
     "amp-factor-update-v3",
   ],
+  "Emergency Operations": ["emergency"],
   "Financial Operations": ["create-payment", "cctp-bridge"],
   "Pool Management (v2)": ["fee-setter", "amp-factor-update-v2"],
   "Permissions and Operations": ["permissions"],
