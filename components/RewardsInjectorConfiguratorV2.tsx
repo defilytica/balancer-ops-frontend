@@ -51,6 +51,8 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfiguratorTable } from "./tables/RewardsInjectorConfiguratorTable";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -445,15 +447,51 @@ function RewardsInjectorConfiguratorV2({
     removedGauges.length,
   ]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Extract key parameters from the payload
+    const injectorAddress = selectedAddress?.address;
+    const operationCount = editedGauges.size + newlyAddedGauges.length + removedGauges.length;
+
+    return {
+      type: "injector-configurator",
+      title: "Update Rewards Injector Configuration (V2)",
+      description: `Update rewards injector configurations with ${operationCount} change${operationCount !== 1 ? "s" : ""}.`,
+      payload: payload,
+      params: {
+        injectorAddress: injectorAddress,
+        addedGauges: newlyAddedGauges.length,
+        removedGauges: removedGauges.length,
+        modifiedGauges: editedGauges.size,
+      },
+      builderPath: "injector-configurator",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.xl">
       <Box>
-        <Box mb="10px">
-          <Heading as="h2" size="lg" variant="special">
-            Injector Configuration Manager
-          </Heading>
-          <Text mb={6}>Manage reward emissions configuration for the selected injector.</Text>
-        </Box>
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          mb={6}
+          direction={{ base: "column", md: "row" }}
+          gap={4}
+        >
+          <Box>
+            <Heading as="h2" size="lg" variant="special">
+              Injector Configuration Manager
+            </Heading>
+            <Text>Manage reward emissions configuration for the selected injector.</Text>
+          </Box>
+          <Box width={{ base: "full", md: "auto" }}>
+            <ComposerIndicator />
+          </Box>
+        </Flex>
 
         <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={6}>
           <Menu>
@@ -674,9 +712,12 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <Flex justifyContent="space-between" mt={6} mb={6}>
-            <Button variant="primary" onClick={generatePayload}>
-              Generate Payload
-            </Button>
+            <Flex gap={2} alignItems="center">
+              <Button variant="primary" onClick={generatePayload}>
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </Flex>
             {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
           </Flex>
         )}

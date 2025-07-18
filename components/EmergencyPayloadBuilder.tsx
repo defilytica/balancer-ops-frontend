@@ -76,6 +76,8 @@ import {
   DeprecatedPoolFactory,
   getDeprecatedPoolFactoriesForNetwork,
 } from "@/lib/utils/getDeprecatedPoolFactories";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 interface SelectedPool extends Pool {
   selectedActions: ("pause" | "enableRecoveryMode")[];
@@ -515,17 +517,57 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     protocolVersion,
   ]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Count total actions
+    const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
+    const totalActions =
+      poolActions +
+      vaultActions.length +
+      selectedFactories.length +
+      selectedDeprecatedFactories.length;
+
+    return {
+      type: "emergency",
+      title: `Emergency actions for ${protocolVersion?.toUpperCase()}`,
+      description: `Emergency actions: ${totalActions} total action${totalActions !== 1 ? "s" : ""}`,
+      payload: payload,
+      params: {
+        poolActions: poolActions,
+        vaultActions: vaultActions.length,
+        totalActions: totalActions,
+      },
+      builderPath: "emergency",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={4}>
-        Emergency Actions Payload Builder
-      </Heading>
-
-      <Text fontSize="md" color="font.secondary" mb={6}>
-        Create emergency payloads for pool pausing, recovery mode, vault actions, and factory
-        disabling. These actions can be executed by the Emergency SubDAO wallet during critical
-        situations.
-      </Text>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Box>
+          <Heading as="h2" size="lg" variant="special" mb={4}>
+            Emergency Actions Payload Builder
+          </Heading>
+          <Text fontSize="md" color="font.secondary">
+            Create emergency payloads for pool pausing, recovery mode, vault actions, and factory
+            disabling. These actions can be executed by the Emergency SubDAO wallet during critical
+            situations.
+          </Text>
+        </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Alert status="warning" mb={6} py={4} variant="left-accent" borderRadius="md">
         <Box flex="1">
@@ -873,8 +915,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
               <Alert status="success" mt={4}>
                 <AlertIcon />
                 <AlertDescription>
-                  ✓ {selectedFactories.length + selectedDeprecatedFactories.length} factory
-                  {selectedFactories.length + selectedDeprecatedFactories.length !== 1
+                  ✓ {selectedFactories.length + selectedDeprecatedFactories.length} factor
+                  {selectedFactories.length + selectedDeprecatedFactories.length > 1
                     ? "ies"
                     : "y"}{" "}
                   selected for disable action
@@ -1125,27 +1167,30 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       )}
 
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPools.length &&
-        !vaultActions.length &&
-        !selectedFactories.length &&
-        !selectedDeprecatedFactories.length ? (
-          <Button variant="primary" isDisabled={true} colorScheme="red">
-            {!protocolVersion
-              ? "Select Protocol Version"
-              : !selectedNetwork
-                ? "Select Network"
-                : "Select Actions"}
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={!emergencyWallet || !protocolVersion}
-            colorScheme="red"
-          >
-            Generate Emergency Payload
-          </Button>
-        )}
+        <Flex gap={2} alignItems="center">
+          {!selectedPools.length &&
+          !vaultActions.length &&
+          !selectedFactories.length &&
+          !selectedDeprecatedFactories.length ? (
+            <Button variant="primary" isDisabled={true} colorScheme="red">
+              {!protocolVersion
+                ? "Select Protocol Version"
+                : !selectedNetwork
+                  ? "Select Network"
+                  : "Select Actions"}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={handleGenerateClick}
+              isDisabled={!emergencyWallet || !protocolVersion}
+              colorScheme="red"
+            >
+              Generate Emergency Payload
+            </Button>
+          )}
+          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+        </Flex>
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
 

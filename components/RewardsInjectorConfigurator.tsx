@@ -49,6 +49,8 @@ import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 type RewardsInjectorConfiguratorProps = {
   addresses: AddressOption[];
@@ -189,33 +191,24 @@ function RewardsInjectorConfigurator({
     const networkName = selectedAddress.network;
 
     // Determine what changed between original and current config
-    const addedGauges = currentConfig.filter(
-      gauge => !gauges.some(g => g.gaugeAddress === gauge.gaugeAddress),
-    ).length;
-
-    const removedGauges = gauges.filter(
-      gauge => !currentConfig.some(g => g.gaugeAddress === gauge.gaugeAddress),
-    ).length;
-
-    const modifiedGauges = currentConfig.filter(gauge => {
-      const original = gauges.find(g => g.gaugeAddress === gauge.gaugeAddress);
-      return (
-        original &&
-        (original.amountPerPeriod !== gauge.amountPerPeriod ||
-          original.maxPeriods !== gauge.maxPeriods)
-      );
-    }).length;
+    const changes = calculateConfigChanges(gauges, currentConfig);
 
     // Create a descriptive summary
     let changeDescription = [];
-    if (addedGauges > 0) {
-      changeDescription.push(`added ${addedGauges} gauge${addedGauges !== 1 ? "s" : ""}`);
+    if (changes.addedGauges > 0) {
+      changeDescription.push(
+        `added ${changes.addedGauges} gauge${changes.addedGauges !== 1 ? "s" : ""}`,
+      );
     }
-    if (removedGauges > 0) {
-      changeDescription.push(`removed ${removedGauges} gauge${removedGauges !== 1 ? "s" : ""}`);
+    if (changes.removedGauges > 0) {
+      changeDescription.push(
+        `removed ${changes.removedGauges} gauge${changes.removedGauges !== 1 ? "s" : ""}`,
+      );
     }
-    if (modifiedGauges > 0) {
-      changeDescription.push(`modified ${modifiedGauges} gauge${modifiedGauges !== 1 ? "s" : ""}`);
+    if (changes.modifiedGauges > 0) {
+      changeDescription.push(
+        `modified ${changes.modifiedGauges} gauge${changes.modifiedGauges !== 1 ? "s" : ""}`,
+      );
     }
 
     // Join the changes with appropriate punctuation
@@ -238,16 +231,83 @@ function RewardsInjectorConfigurator({
     };
   };
 
+  const calculateConfigChanges = (
+    originalConfig: RewardsInjectorData[],
+    newConfig: RewardsInjectorData[],
+  ) => {
+    const addedGauges = newConfig.filter(
+      gauge => !originalConfig.some(g => g.gaugeAddress === gauge.gaugeAddress),
+    ).length;
+
+    const removedGauges = originalConfig.filter(
+      gauge => !newConfig.some(g => g.gaugeAddress === gauge.gaugeAddress),
+    ).length;
+
+    const modifiedGauges = newConfig.filter(gauge => {
+      const original = originalConfig.find(g => g.gaugeAddress === gauge.gaugeAddress);
+      return (
+        original &&
+        (original.amountPerPeriod !== gauge.amountPerPeriod ||
+          original.maxPeriods !== gauge.maxPeriods)
+      );
+    }).length;
+
+    return {
+      addedGauges,
+      removedGauges,
+      modifiedGauges,
+      totalChanges: addedGauges + removedGauges + modifiedGauges,
+    };
+  };
+
+  const generateComposerData = () => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Determine what changed between original and current config
+    const changes = calculateConfigChanges(gauges, currentConfig);
+
+    // Extract key parameters from the payload
+    const injectorAddress = selectedAddress?.address;
+
+    return {
+      type: "injector-configurator",
+      title: "Update Rewards Injector Configuration",
+      description: `Update rewards injector configurations with ${changes.totalChanges} change${changes.totalChanges !== 1 ? "s" : ""}.`,
+      payload: payload,
+      params: {
+        injectorAddress: injectorAddress,
+        addedGauges: changes.addedGauges,
+        removedGauges: changes.removedGauges,
+        modifiedGauges: changes.modifiedGauges,
+      },
+      builderPath: "injector-configurator",
+    };
+  };
+
   return (
     <Container maxW="container.xl">
-      <Box mb="10px">
-        <Heading as="h2" size="lg" variant="special">
-          Injector Schedule Payload Configurator
-        </Heading>
-        <Text mb={6}>
-          Build a injector schedule payload to configure reward emissions on a gauge set.
-        </Text>
-      </Box>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Box>
+          <Heading as="h2" size="lg" variant="special">
+            Injector Schedule Payload Configurator
+          </Heading>
+          <Text>
+            Build a injector schedule payload to configure reward emissions on a gauge set.
+          </Text>
+        </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
       <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={4}>
         <Menu>
           <MenuButton
@@ -416,9 +476,12 @@ function RewardsInjectorConfigurator({
 
       {selectedAddress && !isLoading && (
         <Flex justifyContent="space-between" mt={6} mb={6}>
-          <Button colorScheme="blue" onClick={generatePayload}>
-            Generate Payload
-          </Button>
+          <Flex gap={2} alignItems="center">
+            <Button colorScheme="blue" onClick={generatePayload}>
+              Generate Payload
+            </Button>
+            <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+          </Flex>
           {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
         </Flex>
       )}
