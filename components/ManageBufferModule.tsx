@@ -56,6 +56,8 @@ import { isAddress } from "viem";
 import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
@@ -443,12 +445,64 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     toast,
   ]);
 
+  // Generate composer data only when button is clicked
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Check if this is a remove operation by looking at contractMethod.name
+    const isRemoveOperation =
+      payload.transactions[payload.transactions.length - 1].contractMethod.name ===
+      "removeLiquidityFromBuffer";
+
+    if (isRemoveOperation) {
+      // For remove operations, we only have encoded data, so minimal params
+      return {
+        type: "manage-buffer",
+        title: "Remove Buffer Liquidity",
+        description: payload.meta.description,
+        payload: payload,
+        params: {
+          operation: "remove",
+        },
+        builderPath: "manage-buffer",
+      };
+    } else {
+      // For add operations, we have contractInputsValues
+      let wrappedToken =
+        payload.transactions[payload.transactions.length - 1].contractInputsValues.wrappedToken;
+      let exactSharesToIssue =
+        payload.transactions[payload.transactions.length - 1].contractInputsValues
+          .exactSharesToIssue;
+
+      return {
+        type: "manage-buffer",
+        title: "Add Buffer Liquidity",
+        description: payload.meta.description,
+        payload: payload,
+        params: {
+          operation: "add",
+          wrappedToken: wrappedToken,
+          exactSharesToIssue: exactSharesToIssue,
+        },
+        builderPath: "manage-buffer",
+      };
+    }
+  }, [generatedPayload, selectedToken]);
+
   return (
     <Container maxW="container.lg" mx="auto" p={4}>
       <VStack spacing={4} align="stretch">
-        <Heading as="h2" size="lg" variant="special">
-          Manage Liquidity Buffer
-        </Heading>
+        <Flex justifyContent="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+          <Heading as="h2" size="lg" variant="special">
+            Manage Liquidity Buffer
+          </Heading>
+          <Box width={{ base: "full", md: "auto" }}>
+            <ComposerIndicator />
+          </Box>
+        </Flex>
         <Alert status="info" mb={4} py={3} variant="left-accent" borderRadius="md">
           <Box flex="1">
             <Flex align="center">
@@ -775,14 +829,17 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           </Alert>
         )}
 
-        <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2">
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={isGenerateButtonDisabled}
-          >
-            Generate Payload
-          </Button>
+        <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2" wrap="wrap" gap={2}>
+          <Flex gap={2} align="center">
+            <Button
+              variant="primary"
+              onClick={handleGenerateClick}
+              isDisabled={isGenerateButtonDisabled}
+            >
+              Generate Payload
+            </Button>
+            <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+          </Flex>
           {generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}

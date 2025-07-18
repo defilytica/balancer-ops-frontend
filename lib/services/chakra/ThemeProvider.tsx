@@ -2,7 +2,6 @@
 
 import { ChakraProvider, ThemeTypings } from "@chakra-ui/react";
 import { ReactNode } from "react";
-import { useParams } from "next/navigation";
 import { theme as balTheme } from "./themes/bal/bal.theme";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

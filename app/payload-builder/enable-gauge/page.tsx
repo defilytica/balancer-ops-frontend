@@ -24,7 +24,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -40,6 +40,8 @@ import OpenPRButton from "@/components/btns/OpenPRButton";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { GaugeNetworkId } from "@/types/types";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 export default function EnableGaugePage() {
   const [gauges, setGauges] = useState<{ id: string; network: string }[]>([
@@ -61,6 +63,35 @@ export default function EnableGaugePage() {
     setGeneratedPayload(JSON.stringify(payload, null, 4)); // Beautify JSON string
     setHumanReadableText(text);
   };
+
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    const gaugeIds = payload.transactions
+      .map((tx: any) => tx.contractInputsValues.gauge)
+      .filter((g: any) => g.trim());
+
+    const gaugesList = gaugeIds.map((g: any) => g.substring(0, 8)).join(", ");
+
+    const networks = payload.transactions.map((tx: any) => tx.contractInputsValues.gaugeType);
+    const uniqueNetworks = [...new Set(networks)];
+    const networkText = uniqueNetworks.length === 1 ? uniqueNetworks[0] : "multiple networks";
+
+    return {
+      type: "enable-gauge",
+      title: `Enable ${payload.transactions.length} Gauge${payload.transactions.length > 1 ? "s" : ""}`,
+      description: humanReadableText || "Enables one or more gauges for BAL rewards.",
+      payload: payload,
+      params: {
+        gaugeIds: gaugesList,
+        network: networkText,
+      },
+      builderPath: "enable-gauge",
+    };
+  }, [generatedPayload, humanReadableText]);
 
   // Simplified network options to handle gauge adder special use-case
   const networkOptions = Object.entries(GAUGE_NETWORK_MAP)
@@ -86,12 +117,8 @@ export default function EnableGaugePage() {
     const gaugeIdsList = validGauges.map(g => g.id.substring(0, 8)).join(", ");
 
     // Get the network(s)
-    const networksMap: Record<string, boolean> = {};
-    validGauges.forEach(g => {
-      networksMap[g.network] = true;
-    });
-    const networks = Object.keys(networksMap);
-    const networkText = networks.length === 1 ? networks[0] : "multiple networks";
+    const uniqueNetworks = [...new Set(validGauges.map(g => g.network))];
+    const networkText = uniqueNetworks.length === 1 ? uniqueNetworks[0] : "multiple networks";
 
     return {
       prefillBranchName: `feature/enable-gauge-${firstGaugeId}-${uniqueId}`,
@@ -117,11 +144,19 @@ export default function EnableGaugePage() {
 
   return (
     <Container maxW="container.lg">
-      <Box mb="10px">
+      <Flex
+        justifyContent="space-between"
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+        mb="10px"
+      >
         <Heading as="h2" size="lg" variant="special">
           Enable Gauge Payload Builder
         </Heading>
-      </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
       <Alert status="info" mt={4} mb={4}>
         <Box flex="1">
           <Flex align={"center"}>
@@ -240,9 +275,12 @@ export default function EnableGaugePage() {
       </>
       <>
         <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-          <Button variant="primary" onClick={handleGenerateClick}>
-            Generate Payload
-          </Button>
+          <Flex gap={2}>
+            <Button variant="primary" onClick={handleGenerateClick}>
+              Generate Payload
+            </Button>
+            <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+          </Flex>
           {generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}

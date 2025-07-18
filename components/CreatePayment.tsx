@@ -32,6 +32,9 @@ import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBoo
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { getNetworkString } from "@/lib/utils/getNetworkString";
 
 interface CreatePaymentProps {
   addressBook: AddressBook;
@@ -153,6 +156,27 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     setHumanReadableText(text);
   };
 
+  // Generate composer data only when button is clicked
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    let network = getNetworkString(Number(payload.chainId));
+    return {
+      type: "create-payment",
+      title: "DAO Payment on " + network,
+      description: humanReadableText || "DAO Payment",
+      payload: payload,
+      params: {
+        network: network,
+        sourceWallet: payload.meta.createdFromSafeAddress,
+      },
+      builderPath: "create-payment",
+    };
+  }, [generatedPayload]);
+
   const handleDownloadClick = (payload: any) => {
     if (typeof window !== "undefined" && window.document) {
       const payloadString = JSON.stringify(JSON.parse(payload), null, 2);
@@ -205,15 +229,25 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
 
   return (
     <Container maxW="container.lg">
-      <Box mb="10px">
-        <Heading as="h2" size="lg" variant="special">
-          Create DAO Payment
-        </Heading>
-        <Text mb={4}>
-          Build a payment payload to send tokens from the DAO multi-sig to a destination address of
-          your choosing.
-        </Text>
-      </Box>
+      <Flex
+        justifyContent="space-between"
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+        mb="10px"
+      >
+        <Box>
+          <Heading as="h2" size="lg" variant="special">
+            Create DAO Payment
+          </Heading>
+          <Text mb={4}>
+            Build a payment payload to send tokens from the DAO multi-sig to a destination address
+            of your choosing.
+          </Text>
+        </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
       <Box>
         <Box mb={2} mt={2}>
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
@@ -319,10 +353,20 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
           Add Payment
         </Button>
       </Box>
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        <Button variant="primary" onClick={handleGenerateClick}>
-          Generate Payload
-        </Button>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
+        <Flex gap={2} align="center">
+          <Button variant="primary" onClick={handleGenerateClick}>
+            Generate Payload
+          </Button>
+          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+        </Flex>
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />

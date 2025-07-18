@@ -46,6 +46,8 @@ import { useQuery as useTanStackQuery } from "@tanstack/react-query";
 import { isZeroAddress } from "@ethereumjs/util";
 import { isAddress } from "viem";
 import { useDebounce } from "use-debounce";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -195,6 +197,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   });
 
   const handleGenerateClick = useCallback(() => {
+    // Validation
     if (!selectedNetwork || !selectedToken || !minIssuedShares) {
       toast({
         title: "Missing information",
@@ -315,6 +318,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       }
     }
 
+    // Generate the payload
     const payload = generateInitializeBufferPayload(
       {
         wrappedToken: selectedToken.address,
@@ -329,6 +333,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       bufferRouterAddress,
       permit2Address,
     );
+
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   }, [
     selectedNetwork,
@@ -342,15 +347,44 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     toast,
     addressBook,
     isInitialized,
-    bufferAsset,
   ]);
+
+  // Generate composer data only when button is clicked
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    let wrappedToken =
+      payload.transactions[payload.transactions.length - 1].contractInputsValues.wrappedToken;
+    let minIssuedShares =
+      payload.transactions[payload.transactions.length - 1].contractInputsValues.minIssuedShares;
+
+    return {
+      type: "initialize-buffer",
+      title: "Initialize Liquidity Buffer",
+      description: payload.meta.description,
+      payload: payload,
+      params: {
+        wrappedToken: wrappedToken,
+        minIssuedShares: minIssuedShares,
+      },
+      builderPath: "initialize-buffer",
+    };
+  }, [generatedPayload]);
 
   return (
     <Container maxW="container.lg" mx="auto" p={4}>
       <VStack spacing={4} align="stretch">
-        <Heading as="h2" size="lg" variant="special">
-          Initialize Liquidity Buffer
-        </Heading>
+        <Flex justifyContent="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+          <Heading as="h2" size="lg" variant="special">
+            Initialize Liquidity Buffer
+          </Heading>
+          <Box width={{ base: "full", md: "auto" }}>
+            <ComposerIndicator />
+          </Box>
+        </Flex>
         <Alert status="info" mt={4} mb={4}>
           <Flex align="center">
             <AlertIcon />
@@ -492,14 +526,20 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Alert>
         )}
 
-        <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2">
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={isGenerateButtonDisabled}
-          >
-            Generate Payload
-          </Button>
+        <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2" wrap="wrap" gap={2}>
+          <Flex gap={2} align="center">
+            <Button
+              variant="primary"
+              onClick={handleGenerateClick}
+              isDisabled={isGenerateButtonDisabled}
+            >
+              Generate Payload
+            </Button>
+            <ComposerButton
+              generateData={generateComposerData}
+              isDisabled={!generatedPayload || isInitialized}
+            />
+          </Flex>
           {generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}

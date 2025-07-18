@@ -53,6 +53,8 @@ import OpenPRButton from "@/components/btns/OpenPRButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { PermissionsAction } from "@/types/types";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 export interface PermissionsPayloadBuilderProps {
   addressBook: AddressBook;
@@ -978,6 +980,31 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     toast,
   ]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    const walletName =
+      Object.entries(availableWallets).find(([_, address]) => address === selectedWallet)?.[0] ||
+      selectedWallet;
+    const readableWalletName = transformToHumanReadable(walletName);
+
+    return {
+      type: "permissions",
+      title: "Manage Permissions",
+      description: "Manage Permissions for " + readableWalletName,
+      payload: payload,
+      params: {
+        grants: permissionsState.selectedPermissions.length,
+        revokes: permissionsToRevoke.length,
+        wallet: selectedWallet,
+      },
+      builderPath: "permissions",
+    };
+  }, [generatedPayload, permissionsState.selectedPermissions, permissionsToRevoke, selectedWallet]);
+
   // Handle search input change
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchTerm(e.target.value);
@@ -993,12 +1020,23 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
   return (
     <Container maxW="container.xl">
-      <Box mb="10px">
-        <Heading as="h2" size="lg" variant="special">
-          Create Permissions Payload
-        </Heading>
-        <Text mb={4}>Build a payload to grant permissions to a wallet address.</Text>
-      </Box>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Box>
+          <Heading as="h2" size="lg" variant="special">
+            Create Permissions Payload
+          </Heading>
+          <Text mb={4}>Build a payload to grant permissions to a wallet address.</Text>
+        </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Box>
         <Grid templateColumns="repeat(12, 1fr)" gap={4} mt={2} mb={6}>
@@ -1168,17 +1206,21 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
 
       {selectedWallet && (
         <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-          <Button
-            variant="primary"
-            onClick={generatePayload}
-            isDisabled={
-              permissionsState.loading ||
-              (permissionsState.selectedPermissions.length === 0 &&
-                permissionsToRevoke.length === 0)
-            }
-          >
-            Generate Payload
-          </Button>
+          <Flex alignItems="center" gap={2}>
+            <Button
+              variant="primary"
+              onClick={generatePayload}
+              isDisabled={
+                permissionsState.loading ||
+                (permissionsState.selectedPermissions.length === 0 &&
+                  permissionsToRevoke.length === 0)
+              }
+            >
+              Generate Payload
+            </Button>
+            <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+          </Flex>
+
           {generatedPayload && (
             <SimulateTransactionButton
               batchFile={

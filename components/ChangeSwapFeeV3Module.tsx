@@ -59,6 +59,8 @@ import {
 } from "@/lib/hooks/validation/useValidateSwapFee";
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -319,11 +321,44 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     };
   }, [selectedPool, debouncedSwapFee, selectedNetwork]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    let pool = payload.transactions[0].contractInputsValues.pool;
+    let swapFeePercentage = payload.transactions[0].contractInputsValues.swapFeePercentage;
+
+    return {
+      type: "fee-setter-v3",
+      title: "Change Swap Fee (v3)",
+      description: payload.meta.description,
+      payload: payload,
+      params: {
+        pool: pool,
+        swapFeePercentage: swapFeePercentage,
+      },
+      builderPath: "fee-setter-v3",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        Balancer v3: Create Swap Fee Change Payload
-      </Heading>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Heading as="h2" size="lg" variant="special">
+          Balancer v3: Create Swap Fee Change Payload
+        </Heading>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -438,32 +473,44 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         />
       )}
 
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPool ? (
-          <Button variant="primary" isDisabled={true}>
-            Select a Pool
-          </Button>
-        ) : isCurrentWalletManager ? (
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={!debouncedSwapFee || !isSwapFeeValid}
-          >
-            Execute Fee Change
-          </Button>
-        ) : isAuthorizedPool ? (
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={!debouncedSwapFee || !isSwapFeeValid}
-          >
-            Generate Payload
-          </Button>
-        ) : (
-          <Button variant="primary" isDisabled={true}>
-            Not Authorized
-          </Button>
-        )}
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
+        <Flex gap={2} alignItems="center">
+          {!selectedPool ? (
+            <Button variant="primary" isDisabled={true}>
+              Select a Pool
+            </Button>
+          ) : isCurrentWalletManager ? (
+            <Button
+              variant="primary"
+              onClick={handleGenerateClick}
+              isDisabled={!debouncedSwapFee || !isSwapFeeValid}
+            >
+              Execute Fee Change
+            </Button>
+          ) : isAuthorizedPool ? (
+            <>
+              <Button
+                variant="primary"
+                onClick={handleGenerateClick}
+                isDisabled={!debouncedSwapFee || !isSwapFeeValid}
+              >
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </>
+          ) : (
+            <Button variant="primary" isDisabled={true}>
+              Not Authorized
+            </Button>
+          )}
+        </Flex>
 
         {generatedPayload && !isCurrentWalletManager && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
