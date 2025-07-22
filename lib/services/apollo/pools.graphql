@@ -26,13 +26,14 @@ query GetPools($chainIn: [GqlChain!]){
     }
 }
 
-query GetV3Pools($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [String!]) {
+query GetV3Pools($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [String!], $poolTypeIn: [GqlPoolType!]) {
   poolGetPools(
     where: {
       chainIn: $chainIn
       chainNotIn: $chainNotIn
       protocolVersionIn: [3]
       tagIn: $tagIn
+      poolTypeIn: $poolTypeIn
     }
     orderBy: totalLiquidity
     orderDirection: desc
@@ -67,6 +68,8 @@ query GetV3Pools($chainIn: [GqlChain!], $chainNotIn: [GqlChain!], $tagIn: [Strin
       isErc4626
       logoURI
       useUnderlyingForAddRemove
+      balance
+      balanceUSD
       underlyingToken {
         chainId
         address
