@@ -16,6 +16,7 @@ import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
+import hyperEVMLogo from "@/public/imgs/hyperevm.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
@@ -346,6 +347,14 @@ export const NETWORK_OPTIONS = [
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "",
   },
+  {
+    label: "HyperEVM",
+    apiID: "HYPEREVM",
+    chainId: "999",
+    maxiSafe: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    omniSig: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -432,6 +441,12 @@ export const networks: Record<string, NetworkInfo> = {
     rpc: "https://lb.drpc.org/ogrpc?network=sonic&dkey=",
     explorer: "https://sonicscan.org/",
     chainId: "146",
+  },
+  hyperevm: {
+    logo: hyperEVMLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=hyperliquid&dkey=",
+    explorer: "https://hyperevmscan.io/",
+    chainId: "999",
   },
 };
 

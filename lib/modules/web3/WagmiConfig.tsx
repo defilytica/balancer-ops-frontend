@@ -25,6 +25,7 @@ import {
   sepolia,
   sonic,
 } from "wagmi/chains";
+import { hyperEvm } from "@/lib/modules/chains/custom/hyperevm";
 import { http } from "viem";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
@@ -38,6 +39,7 @@ import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
 import modeLogo from "@/public/imgs/mode.svg";
+import hyperEVMILogo from "@/public/imgs/hyperevm.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
 
@@ -91,6 +93,10 @@ const customChains = {
     ...sonic,
     iconUrl: sonicLogo.src,
   },
+  hyperevm: {
+    ...hyperEvm,
+    iconUrl: hyperEVMILogo.src,
+  },
 };
 
 // Create connectors lazily to prevent multiple initializations
@@ -140,6 +146,7 @@ export function getWagmiConfig(): Config {
         customChains.mode,
         customChains.fraxtal,
         customChains.sonic,
+        customChains.hyperevm,
       ],
       transports: {
         [mainnet.id]: http("https://eth.drpc.org"),
@@ -154,6 +161,7 @@ export function getWagmiConfig(): Config {
         [mode.id]: http("https://mode.drpc.org"),
         [fraxtal.id]: http("https://fraxtal.drpc.org"),
         [sonic.id]: http("https://sonic.drpc.org"),
+        [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
       },
       connectors: getConnectors(),
       ssr: true,
