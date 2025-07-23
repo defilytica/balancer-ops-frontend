@@ -179,6 +179,12 @@ enum GqlHookType {
   VEBAL_DISCOUNT
 }
 
+type GqlLBPTopTrade {
+  address: String!
+  timestamp: String!
+  value: String!
+}
+
 type GqlLatestSyncedBlocks {
   poolSyncBlock: BigInt!
   userStakeSyncBlock: BigInt!
@@ -1346,6 +1352,7 @@ type GqlPoolLiquidityBootstrappingV3 implements GqlPoolBase {
   symbol: String!
   tags: [String]
   telegram: String
+  topTrades: [GqlLBPTopTrade!]
   type: GqlPoolType!
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
@@ -2831,6 +2838,11 @@ type GqlToken {
   """The logo URI of the token"""
   logoURI: String
 
+  """
+  If it is an ERC4626 token, this  defines how much can be deposited into the ERC4626 vault.
+  """
+  maxDeposit: String
+
   """The name of the token"""
   name: String!
 
@@ -2980,10 +2992,12 @@ type GqlTokenPriceChartDataItem {
 }
 
 enum GqlTokenType {
+  BLOCKED_V2
+  BLOCKED_V3
   BPT
   ERC4626
   PHANTOM_BPT
-  WHITE_LISTED
+  WHITE_LISTED @deprecated(reason: "Use BLOCKED instead")
 }
 
 type GqlUserFbeetsBalance {
@@ -3201,6 +3215,7 @@ type LiquidityBootstrappingPoolV3Params {
   reserveTokenStartWeight: Float!
   startTime: Int!
   telegram: String
+  topTrades: [GqlLBPTopTrade!]
   website: String
   x: String
 }
