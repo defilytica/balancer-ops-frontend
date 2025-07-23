@@ -55,6 +55,8 @@ import { useValidateMevCapture } from "@/lib/hooks/validation/useValidateMevCapt
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -471,11 +473,54 @@ export default function MevCaptureHookConfigurationModule({
     );
   }, [selectedPool, selectedMultisig]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Extract parameters from transactions based on contract method names
+    const extractedParams: { [key: string]: any } = {};
+    
+    payload.transactions?.forEach((transaction: any) => {
+      const methodName = transaction.contractMethod?.name;
+      const contractInputsValues = transaction.contractInputsValues;
+      
+      if (methodName === "setPoolMevTaxThreshold" && contractInputsValues) {
+        extractedParams.pool = contractInputsValues.pool;
+        extractedParams.newPoolMevTaxThreshold = contractInputsValues.newPoolMevTaxThreshold;
+      } else if (methodName === "setPoolMevTaxMultiplier" && contractInputsValues) {
+        extractedParams.pool = contractInputsValues.pool;
+        extractedParams.newPoolMevTaxMultiplier = contractInputsValues.newPoolMevTaxMultiplier;
+      }
+    });
+
+    return {
+      type: "hook-mev-capture",
+      title: "Configure MEV Capture Hook",
+      description: payload.meta.description,
+      payload: payload,
+      params: extractedParams,
+      builderPath: "hook-mev-capture",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        Configure MEV Capture Hook
-      </Heading>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Heading as="h2" size="lg" variant="special">
+          Configure MEV Capture Hook
+        </Heading>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -635,32 +680,37 @@ export default function MevCaptureHookConfigurationModule({
             ]}
           />
         )}
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPool ? (
-          <Button variant="primary" isDisabled={true}>
-            Select a Pool
-          </Button>
-        ) : isCurrentWalletManager ? (
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
-          >
-            Execute Parameter Change
-          </Button>
-        ) : isAuthorizedPool ? (
-          <Button
-            variant="primary"
-            onClick={handleGenerateClick}
-            isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
-          >
-            Generate Payload
-          </Button>
-        ) : (
-          <Button variant="primary" isDisabled={true}>
-            Not Authorized
-          </Button>
-        )}
+      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px" wrap="wrap" gap={2}>
+        <Flex gap={2} alignItems="center">
+          {!selectedPool ? (
+            <Button variant="primary" isDisabled={true}>
+              Select a Pool
+            </Button>
+          ) : isCurrentWalletManager ? (
+            <Button
+              variant="primary"
+              onClick={handleGenerateClick}
+              isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
+            >
+              Execute Parameter Change
+            </Button>
+          ) : isAuthorizedPool ? (
+            <>
+              <Button
+                variant="primary"
+                onClick={handleGenerateClick}
+                isDisabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
+              >
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </>
+          ) : (
+            <Button variant="primary" isDisabled={true}>
+              Not Authorized
+            </Button>
+          )}
+        </Flex>
 
         {generatedPayload && !isCurrentWalletManager && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
