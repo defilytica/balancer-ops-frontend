@@ -1,0 +1,27 @@
+query GetPoolsWithGauges($chainIn: [GqlChain!]) {
+  poolGetPools(
+    where: { chainIn: $chainIn }
+    orderBy: totalLiquidity
+    orderDirection: desc
+  ) {
+    chain
+    protocolVersion
+    address
+    id
+    name
+    symbol
+    type
+    version
+    createTime
+    swapFeeManager
+    staking {
+      gauge {
+        id
+      }
+    }
+    dynamicData {
+      swapFee
+      poolId
+    }
+  }
+}

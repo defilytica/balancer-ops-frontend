@@ -4,6 +4,8 @@ import { networks } from "@/constants/constants";
 import { gaugeABI } from "@/abi/gauge";
 import { ERC20 } from "@/abi/erc20";
 import { RewardTokenData, RewardToken } from "@/types/rewardTokenTypes";
+import { createApolloClient } from "@/lib/services/apollo/apollo-client";
+import { gql } from "@apollo/client";
 
 const CACHE_DURATION = 300;
 
@@ -34,8 +36,8 @@ export async function GET(request: NextRequest) {
     };
 
     // GraphQL query to fetch pools with gauges
-    const query = `
-      query GetPools($chainIn: [GqlChain!]) {
+    const GET_POOLS_WITH_GAUGES = gql`
+      query GetPoolsWithGauges($chainIn: [GqlChain!]) {
         poolGetPools(
           where: { chainIn: $chainIn }
           orderBy: totalLiquidity
@@ -64,24 +66,13 @@ export async function GET(request: NextRequest) {
       }
     `;
 
-    const response = await fetch(process.env.NEXT_PUBLIC_BALANCER_API_URL!, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const apolloClient = createApolloClient();
+    const { data: poolsData } = await apolloClient.query({
+      query: GET_POOLS_WITH_GAUGES,
+      variables: {
+        chainIn: [chainMapping[networkParam]],
       },
-      body: JSON.stringify({
-        query,
-        variables: {
-          chainIn: [chainMapping[networkParam]],
-        },
-      }),
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const { data: poolsData } = await response.json();
 
     const poolsWithGauges = poolsData.poolGetPools.filter(
       (pool: any) => pool.staking?.gauge?.id
