@@ -1352,7 +1352,7 @@ type GqlPoolLiquidityBootstrappingV3 implements GqlPoolBase {
   symbol: String!
   tags: [String]
   telegram: String
-  topTrades: [GqlLBPTopTrade]
+  topTrades: [GqlLBPTopTrade!]
   type: GqlPoolType!
   userBalance: GqlPoolUserBalance
   vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
@@ -2992,10 +2992,12 @@ type GqlTokenPriceChartDataItem {
 }
 
 enum GqlTokenType {
+  BLOCKED_V2
+  BLOCKED_V3
   BPT
   ERC4626
   PHANTOM_BPT
-  WHITE_LISTED
+  WHITE_LISTED @deprecated(reason: "Use BLOCKED instead")
 }
 
 type GqlUserFbeetsBalance {
@@ -3213,7 +3215,7 @@ type LiquidityBootstrappingPoolV3Params {
   reserveTokenStartWeight: Float!
   startTime: Int!
   telegram: String
-  topTrades: [GqlLBPTopTrade]
+  topTrades: [GqlLBPTopTrade!]
   website: String
   x: String
 }

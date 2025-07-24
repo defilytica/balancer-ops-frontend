@@ -1,73 +1,57 @@
-import React, { useState, useEffect, useMemo } from "react";
-import NextLink from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Text,
-  Badge,
-  Link,
-  Spinner,
   Alert,
-  AlertIcon,
   AlertDescription,
-  VStack,
-  HStack,
+  AlertIcon,
+  Box,
   Button,
-  TableContainer,
-  Wrap,
-  WrapItem,
-  Select,
-  Card,
-  CardHeader,
-  CardBody,
-  Heading,
-  Center,
+  Checkbox,
+  Divider,
+  FormControl,
+  FormLabel,
+  HStack,
   Input,
   InputGroup,
   InputLeftElement,
-  Checkbox,
-  useToast,
-  FormControl,
-  FormLabel,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Skeleton,
+  Spinner,
   Step,
   StepDescription,
   StepIcon,
   StepIndicator,
   StepNumber,
+  Stepper,
   StepSeparator,
   StepStatus,
   StepTitle,
-  Stepper,
-  useSteps,
-  Divider,
-  Flex,
-  Skeleton,
-  Avatar,
+  Text,
+  useDisclosure,
+  useToast,
+  VStack,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon, SearchIcon } from "@chakra-ui/icons";
+import { SearchIcon } from "@chakra-ui/icons";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { useRewardTokenData } from "@/lib/hooks/useRewardTokenData";
 import { RewardTokenData } from "@/types/rewardTokenTypes";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { ethers } from "ethers";
 import { gaugeABI } from "@/abi/gauge";
 import { ERC20 } from "@/abi/erc20";
 import { useQuery } from "@apollo/client";
-import { GetTokensDocument, GetTokensQuery, GetTokensQueryVariables } from "@/lib/services/apollo/generated/graphql";
+import {
+  GetTokensDocument,
+  GetTokensQuery,
+  GetTokensQueryVariables,
+} from "@/lib/services/apollo/generated/graphql";
+import RewardTokensTable from "@/components/tables/RewardTokensTable";
 
 interface RewardTokensOverviewProps {}
 
@@ -82,6 +66,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [shouldSkipApproval, setShouldSkipApproval] = useState<boolean>(false);
   const [injectorAddresses, setInjectorAddresses] = useState<Set<string>>(new Set());
+  const [v2InjectorAddresses, setV2InjectorAddresses] = useState<Set<string>>(new Set());
 
   const { data, loading, error, refetch } = useRewardTokenData(selectedNetwork);
   const { address } = useAccount();
@@ -101,74 +86,144 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   }, [data]);
 
   // Query for token images
-  const { data: tokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
-    GetTokensDocument,
-    {
-      variables: {
-        chainIn: [selectedNetwork as any],
-        tokensIn: tokenAddresses,
-      },
-      skip: !selectedNetwork || tokenAddresses.length === 0,
-    }
-  );
+  const { data: tokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(GetTokensDocument, {
+    variables: {
+      chainIn: [selectedNetwork as any],
+      tokensIn: tokenAddresses,
+    },
+    skip: !selectedNetwork || tokenAddresses.length === 0,
+  });
 
   // Create a map of token address to logoURI for quick lookup
   const tokenLogos = useMemo(() => {
     if (!tokenData) return {};
     const logoMap: { [address: string]: string } = {};
     tokenData.tokenGetTokens.forEach(token => {
-      logoMap[token.address.toLowerCase()] = token.logoURI || '';
+      logoMap[token.address.toLowerCase()] = token.logoURI || "";
     });
     return logoMap;
   }, [tokenData]);
 
   // Fetch injector addresses when component mounts
   useEffect(() => {
-    const fetchInjectorAddresses = async () => {
+    const fetchV1InjectorsData = async () => {
       try {
-        // Fetch both V1 and V2 injectors
-        const [v1Response, v2Response] = await Promise.all([
-          fetch('/api/injector/v1/all'),
-          fetch('/api/injector/v2/all')
-        ]);
+        const url = `/api/injector/v1/all`;
+        const response = await fetch(url);
 
-        const addresses = new Set<string>();
-        
-        if (v1Response.ok) {
-          const v1Data = await v1Response.json();
-          v1Data.forEach((injector: any) => {
-            addresses.add(injector.address.toLowerCase());
-          });
+        if (response.status === 429) {
+          console.warn(`Rate limited for v1 injectors. Please try again later.`);
+          return [];
         }
 
-        if (v2Response.ok) {
-          const v2Data = await v2Response.json();
-          v2Data.forEach((injector: any) => {
-            addresses.add(injector.address.toLowerCase());
-          });
+        if (!response.ok) {
+          console.warn(`Failed to fetch v1 injectors:`, response.status);
+          return [];
         }
 
-        setInjectorAddresses(addresses);
+        const data = await response.json();
+        return data || [];
       } catch (error) {
-        console.error('Error fetching injector addresses:', error);
+        console.warn(`Error fetching v1 injector addresses:`, error);
+        return [];
       }
     };
 
-    fetchInjectorAddresses();
+    const fetchV2InjectorsData = async () => {
+      try {
+        // First fetch the factories (same pattern as RewardsInjectorContainer)
+        const factoryResponse = await fetch(`/api/injector/v2/factory`);
+
+        if (!factoryResponse.ok) {
+          console.warn(`Failed to fetch v2 factory data:`, factoryResponse.status);
+          return [];
+        }
+
+        const factoryData = await factoryResponse.json();
+
+        if (!Array.isArray(factoryData)) {
+          console.warn("V2 factory data is not an array:", factoryData);
+          return [];
+        }
+
+        // Then fetch individual injectors for each address (same as RewardsInjectorContainer)
+        const injectorPromises = [];
+        for (const item of factoryData) {
+          const network = item.network;
+          // Create promises for each injector
+          for (const address of item.deployedInjectors) {
+            injectorPromises.push(
+              fetch(`/api/injector/v2/single?address=${address}&network=${network}`)
+                .then(response => response.json())
+                .then(tokenData => ({
+                  network: network,
+                  address: address,
+                  token: tokenData.tokenInfo?.symbol || "",
+                  tokenAddress: tokenData.tokenInfo?.address || "",
+                }))
+                .catch(error => {
+                  console.warn(`Error fetching v2 injector info for ${address}:`, error);
+                  return {
+                    network: network,
+                    address: address,
+                    token: "",
+                    tokenAddress: "",
+                  };
+                }),
+            );
+          }
+        }
+
+        // Wait for all promises to resolve
+        const results = await Promise.all(injectorPromises);
+        return results;
+      } catch (error) {
+        console.warn(`Error fetching v2 injector addresses:`, error);
+        return [];
+      }
+    };
+
+    const fetchAllInjectorAddresses = async () => {
+      const addresses = new Set<string>();
+      const v2Addresses = new Set<string>();
+
+      // Fetch both versions independently
+      const [v1Data, v2Data] = await Promise.all([fetchV1InjectorsData(), fetchV2InjectorsData()]);
+
+      // Process V1 data
+      v1Data.forEach((injector: any) => {
+        if (injector?.address) {
+          addresses.add(injector.address.toLowerCase());
+        }
+      });
+
+      // Process V2 data
+      v2Data.forEach((injector: any) => {
+        if (injector?.address) {
+          addresses.add(injector.address.toLowerCase());
+          v2Addresses.add(injector.address.toLowerCase());
+        }
+      });
+
+      setInjectorAddresses(addresses);
+      setV2InjectorAddresses(v2Addresses);
+    };
+
+    fetchAllInjectorAddresses();
   }, []);
 
   // Check if a distributor address is a reward injector
   const isRewardInjector = (distributorAddress: string) => {
     return injectorAddresses.has(distributorAddress.toLowerCase());
   };
-  
+
   const { writeContract: writeApprove, data: approveHash } = useWriteContract();
   const { writeContract: writeDeposit, data: depositHash } = useWriteContract();
-  
+
   const { isLoading: isApproving, isSuccess: approveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
   });
-  
+
   const { isLoading: isDepositing, isSuccess: depositSuccess } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
@@ -207,8 +262,8 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
-  const isDistributor = (tokenDistributor: string) => {
-    return address && address.toLowerCase() === tokenDistributor.toLowerCase();
+  const isDistributor = (tokenDistributor: string): boolean => {
+    return !!(address && address.toLowerCase() === tokenDistributor.toLowerCase());
   };
 
   const isDistributorForPool = (pool: RewardTokenData) => {
@@ -237,12 +292,12 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     if (rewardAmount && tokenAllowance !== undefined && selectedToken) {
       const sufficient = checkAllowanceSufficient(rewardAmount);
       setShouldSkipApproval(sufficient);
-      
+
       // If allowance is sufficient and we're on step 1, move to step 2
       if (sufficient && currentStep === 1) {
         setCurrentStep(2);
       }
-      
+
       // If allowance is insufficient and we're on step 2, go back to step 1
       if (!sufficient && currentStep === 2) {
         setCurrentStep(1);
@@ -323,7 +378,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         duration: 5000,
         isClosable: true,
       });
-
     } catch (error) {
       toast({
         title: "Approval failed",
@@ -381,7 +435,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         duration: 5000,
         isClosable: true,
       });
-
     } catch (error) {
       toast({
         title: "Deposit failed",
@@ -430,30 +483,29 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       const rate = parseFloat(token.rate);
       const periodFinish = parseInt(token.period_finish);
       const currentTime = Math.floor(Date.now() / 1000);
-      
+
       // Active if rate > 0 and period hasn't finished
       return rate > 0 && (periodFinish === 0 || periodFinish > currentTime);
     });
   };
 
   // Filter and search logic
-  const filteredAndSearchedData = useMemo(() => {
+  // Just use filtered data without sorting
+  const sortedData = useMemo(() => {
     if (!data) return [];
-    
+
     return data.filter(pool => {
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch =
+        searchTerm === "" ||
         pool.poolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pool.poolSymbol.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesActiveFilter = !showActiveOnly || hasActiveRewards(pool);
       const matchesDistributorFilter = !showDistributorOnly || isDistributorForPool(pool);
-      
+
       return matchesSearch && matchesActiveFilter && matchesDistributorFilter;
     });
   }, [data, searchTerm, showActiveOnly, showDistributorOnly, address]);
-
-  // Just use filtered data without sorting
-  const sortedData = filteredAndSearchedData;
 
   const getExplorerUrl = (address: string) => {
     const explorers: { [key: string]: string } = {
@@ -472,12 +524,24 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   // Show network selector first if no network is selected
   if (!selectedNetwork) {
     return (
-      <Card>
-        <CardHeader>
-          <Heading size="md">Select Network</Heading>
-        </CardHeader>
-        <CardBody>
-          <Text mb={4}>Please select a network to view reward tokens for pools and gauges.</Text>
+      <VStack spacing={4} align="start">
+        <Box maxW="300px">
+          <NetworkSelector
+            networks={networks}
+            networkOptions={NETWORK_OPTIONS}
+            selectedNetwork={selectedNetwork}
+            handleNetworkChange={handleNetworkChange}
+            label="Network"
+          />
+        </Box>
+      </VStack>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box>
+        <HStack spacing={4} mb={6} alignItems="end">
           <Box maxW="300px">
             <NetworkSelector
               networks={networks}
@@ -487,36 +551,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
               label="Network"
             />
           </Box>
-        </CardBody>
-      </Card>
-    );
-  }
+          <Button onClick={() => refetch()}>Refresh</Button>
+        </HStack>
 
-  if (loading) {
-    return (
-      <Box>
-        <Card mb={6}>
-          <CardHeader>
-            <Heading size="md">Reward Tokens Management</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4}>
-              <HStack spacing={4} width="100%" alignItems="end">
-                <Box maxW="300px">
-                  <NetworkSelector
-                    networks={networks}
-                    networkOptions={NETWORK_OPTIONS}
-                    selectedNetwork={selectedNetwork}
-                    handleNetworkChange={handleNetworkChange}
-                    label="Network"
-                  />
-                </Box>
-                <Button onClick={() => refetch()}>Refresh</Button>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-        
         <Box display="flex" justifyContent="center" alignItems="center" minH="200px">
           <VStack spacing={4}>
             <Spinner size="xl" />
@@ -530,28 +567,19 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   if (error) {
     return (
       <Box>
-        <Card mb={6}>
-          <CardHeader>
-            <Heading size="md">Reward Tokens Management</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4}>
-              <HStack spacing={4} width="100%" alignItems="end">
-                <Box maxW="300px">
-                  <NetworkSelector
-                    networks={networks}
-                    networkOptions={NETWORK_OPTIONS}
-                    selectedNetwork={selectedNetwork}
-                    handleNetworkChange={handleNetworkChange}
-                    label="Network"
-                  />
-                </Box>
-                <Button onClick={() => refetch()}>Refresh</Button>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-        
+        <HStack spacing={4} mb={6} alignItems="end">
+          <Box maxW="300px">
+            <NetworkSelector
+              networks={networks}
+              networkOptions={NETWORK_OPTIONS}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+              label="Network"
+            />
+          </Box>
+          <Button onClick={() => refetch()}>Refresh</Button>
+        </HStack>
+
         <Alert status="error">
           <AlertIcon />
           Error loading reward token data: {error}
@@ -562,28 +590,19 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
   return (
     <Box>
-      <Card mb={6}>
-        <CardHeader>
-          <Heading size="md">Reward Tokens Management</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={4}>
-            <HStack spacing={4} width="100%" alignItems="end">
-              <Box maxW="300px">
-                <NetworkSelector
-                  networks={networks}
-                  networkOptions={NETWORK_OPTIONS}
-                  selectedNetwork={selectedNetwork}
-                  handleNetworkChange={handleNetworkChange}
-                  label="Network"
-                />
-              </Box>
-              <Button onClick={() => refetch()}>Refresh</Button>
-            </HStack>
-          </VStack>
-        </CardBody>
-      </Card>
-      
+      <HStack spacing={4} mb={6} alignItems="end">
+        <Box maxW="300px">
+          <NetworkSelector
+            networks={networks}
+            networkOptions={NETWORK_OPTIONS}
+            selectedNetwork={selectedNetwork}
+            handleNetworkChange={handleNetworkChange}
+            label="Network"
+          />
+        </Box>
+        <Button onClick={() => refetch()}>Refresh</Button>
+      </HStack>
+
       <VStack spacing={4} mb={6}>
         <VStack spacing={3} width="100%" align="start">
           <InputGroup maxW="400px">
@@ -593,197 +612,57 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
             <Input
               placeholder="Search pools by name or symbol..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </InputGroup>
           <HStack spacing={6}>
             <Checkbox
               isChecked={showActiveOnly}
-              onChange={(e) => setShowActiveOnly(e.target.checked)}
+              onChange={e => setShowActiveOnly(e.target.checked)}
               colorScheme="green"
             >
-              Show only pools with active rewards
+              Pools with active rewards
             </Checkbox>
             <Checkbox
               isChecked={showDistributorOnly}
-              onChange={(e) => setShowDistributorOnly(e.target.checked)}
+              onChange={e => setShowDistributorOnly(e.target.checked)}
               colorScheme="blue"
               isDisabled={!address}
             >
-              Show only pools where I'm a distributor
+              Pools with connected wallet as distributor
             </Checkbox>
           </HStack>
         </VStack>
       </VStack>
 
-      <TableContainer>
-        <Table variant="simple" size="md">
-          <Thead>
-            <Tr>
-              <Th>Pool Name</Th>
-              <Th>Pool Address</Th>
-              <Th>Gauge Address</Th>
-              <Th>Reward Tokens & Rates</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {sortedData?.map((pool) => (
-              <Tr key={pool.poolAddress}>
-                <Td>
-                  <Text fontWeight="medium">{pool.poolName}</Text>
-                  <Text fontSize="sm" color="font.secondary">
-                    {pool.poolSymbol}
-                  </Text>
-                </Td>
-                <Td>
-                  <Link
-                    href={`${getExplorerUrl(pool.poolAddress)}${pool.poolAddress}`}
-                    isExternal
-                    color="blue.500"
-                  >
-                    {pool.poolAddress.slice(0, 6)}...{pool.poolAddress.slice(-4)}
-                    <ExternalLinkIcon mx="2px" />
-                  </Link>
-                </Td>
-                <Td>
-                  <Link
-                    href={`${getExplorerUrl(pool.gaugeAddress)}${pool.gaugeAddress}`}
-                    isExternal
-                    color="blue.500"
-                  >
-                    {pool.gaugeAddress.slice(0, 6)}...{pool.gaugeAddress.slice(-4)}
-                    <ExternalLinkIcon mx="2px" />
-                  </Link>
-                </Td>
-                <Td>
-                  {pool.rewardTokens.length === 0 ? (
-                    <Text fontSize="sm" color="font.secondary">
-                      No reward tokens
-                    </Text>
-                  ) : (
-                    <Wrap spacing={2}>
-                      {pool.rewardTokens.map((token, index) => {
-                        const rate = parseFloat(token.rate);
-                        const periodFinish = parseInt(token.period_finish);
-                        const currentTime = Math.floor(Date.now() / 1000);
-                        const isActive = rate > 0 && (periodFinish === 0 || periodFinish > currentTime);
-                        const isUserDistributor = isDistributor(token.distributor);
-                        
-                        return (
-                          <WrapItem key={index}>
-                            <VStack spacing={1} align="start" p={2} border="1px" borderColor="gray.200" borderRadius="md">
-                              <HStack spacing={2}>
-                                <Avatar
-                                  src={tokenLogos[token.address.toLowerCase()]}
-                                  name={token.symbol}
-                                  size="xs"
-                                  bg="transparent"
-                                  border="none"
-                                  _before={{
-                                    content: '""',
-                                    display: "none",
-                                  }}
-                                />
-                                <HStack spacing={1}>
-                                  <Link
-                                    href={`${getExplorerUrl(token.address)}${token.address}`}
-                                    isExternal
-                                    color="blue.500"
-                                    fontSize="sm"
-                                    fontWeight="medium"
-                                  >
-                                    {token.symbol}
-                                    <ExternalLinkIcon mx="2px" />
-                                  </Link>
-                                  <Badge
-                                    size="sm"
-                                    colorScheme={isActive ? "green" : "gray"}
-                                    variant="subtle"
-                                  >
-                                    {isActive ? "Active" : "Inactive"}
-                                  </Badge>
-                                </HStack>
-                              </HStack>
-                              <Text fontSize="xs" color="font.secondary">
-                                {isActive ? `${parseFloat(token.rate).toFixed(6)} ${token.symbol}/sec` : "0 /sec"}
-                              </Text>
-                              <Text fontSize="xs" color="font.secondary">
-                                End: {formatEndDate(token.period_finish)}
-                              </Text>
-                              <HStack spacing={1}>
-                                <Text fontSize="xs" color="font.secondary">
-                                  Distributor:
-                                </Text>
-                                <HStack spacing={1}>
-                                  <Link
-                                    href={`${getExplorerUrl(token.distributor)}${token.distributor}`}
-                                    isExternal
-                                    color="blue.500"
-                                    fontSize="xs"
-                                  >
-                                    {token.distributor.slice(0, 6)}...{token.distributor.slice(-4)}
-                                    <ExternalLinkIcon mx="2px" />
-                                  </Link>
-                                  {isRewardInjector(token.distributor) && (
-                                    <NextLink
-                                      href={`/rewards-injector/${selectedNetwork.toLowerCase()}/${token.distributor}`}
-                                      passHref
-                                    >
-                                      <Link
-                                        color="green.500"
-                                        fontSize="xs"
-                                        fontWeight="medium"
-                                        textDecoration="underline"
-                                      >
-                                        (Injector)
-                                      </Link>
-                                    </NextLink>
-                                  )}
-                                </HStack>
-                              </HStack>
-                              
-                              {isUserDistributor && (
-                                <Button
-                                  size="xs"
-                                  colorScheme="green"
-                                  onClick={() => openAddRewardsModal(pool, token)}
-                                  mt={2}
-                                >
-                                  Add Rewards
-                                </Button>
-                              )}
-                            </VStack>
-                          </WrapItem>
-                        );
-                      })}
-                    </Wrap>
-                  )}
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </TableContainer>
+      <RewardTokensTable
+        data={sortedData || []}
+        selectedNetwork={selectedNetwork}
+        tokenLogos={tokenLogos}
+        injectorAddresses={injectorAddresses}
+        v2InjectorAddresses={v2InjectorAddresses}
+        isRewardInjector={isRewardInjector}
+        isDistributor={isDistributor}
+        onAddRewards={openAddRewardsModal}
+        getExplorerUrl={getExplorerUrl}
+        formatEndDate={formatEndDate}
+      />
 
       {(!sortedData || sortedData.length === 0) && (
         <Box textAlign="center" py={8}>
           <Text color="font.secondary">
             {searchTerm || showActiveOnly || showDistributorOnly
               ? `No pools found${searchTerm ? ` matching "${searchTerm}"` : ""}${showActiveOnly ? " with active rewards" : ""}${showDistributorOnly ? " where you're a distributor" : ""} on ${selectedNetwork}`
-              : `No pools with gauges found for ${selectedNetwork}`
-            }
+              : `No pools with gauges found for ${selectedNetwork}`}
           </Text>
         </Box>
       )}
-
 
       {/* Add Rewards Modal */}
       <Modal isOpen={isOpen} onClose={closeAddRewardsModal} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            Add Rewards
-          </ModalHeader>
+          <ModalHeader>Add Rewards</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             {selectedPool && selectedToken && (
@@ -794,19 +673,33 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                     <Step>
                       <StepIndicator>
                         <StepStatus
-                          complete={shouldSkipApproval ? <StepIcon /> : currentStep > 1 ? <StepIcon /> : <StepNumber />}
+                          complete={
+                            shouldSkipApproval ? (
+                              <StepIcon />
+                            ) : currentStep > 1 ? (
+                              <StepIcon />
+                            ) : (
+                              <StepNumber />
+                            )
+                          }
                           incomplete={<StepNumber />}
                           active={<StepNumber />}
                         />
                       </StepIndicator>
                       <Box flexShrink="0">
                         <StepTitle>
-                          {shouldSkipApproval ? "✓ Approval Sufficient" : 
-                           (tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? "Re-approve Tokens" : "Approve Tokens")}
+                          {shouldSkipApproval
+                            ? "✓ Approval Sufficient"
+                            : tokenAllowance !== undefined && tokenAllowance > BigInt(0)
+                              ? "Re-approve Tokens"
+                              : "Approve Tokens"}
                         </StepTitle>
                         <StepDescription>
-                          {shouldSkipApproval ? "Allowance already covers amount" : 
-                           (tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? "Increase allowance for this amount" : "Allow gauge to spend tokens")}
+                          {shouldSkipApproval
+                            ? "Allowance already covers amount"
+                            : tokenAllowance !== undefined && tokenAllowance > BigInt(0)
+                              ? "Increase allowance for this amount"
+                              : "Allow gauge to spend tokens"}
                         </StepDescription>
                       </Box>
                       <StepSeparator />
@@ -839,7 +732,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         {selectedPool.poolSymbol}
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text fontSize="sm" fontWeight="medium" mb={1}>
                         Token: {selectedToken.symbol}
@@ -877,9 +770,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                 <Alert status="info" variant="left-accent">
                   <AlertIcon />
                   <AlertDescription>
-                    <Text fontSize="sm">
-                      Rewards are distributed over the next 7 days.
-                    </Text>
+                    <Text fontSize="sm">Rewards are distributed over the next 7 days.</Text>
                   </AlertDescription>
                 </Alert>
 
@@ -891,7 +782,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                   <HStack spacing={2}>
                     <Input
                       value={rewardAmount}
-                      onChange={(e) => setRewardAmount(e.target.value)}
+                      onChange={e => setRewardAmount(e.target.value)}
                       placeholder="0.0"
                       type="number"
                       min="0"
@@ -910,7 +801,10 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         borderColor: (() => {
                           if (!rewardAmount || !tokenBalance) return "blue.500";
                           try {
-                            const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
+                            const amountWei = ethers.parseUnits(
+                              rewardAmount,
+                              selectedToken.decimals,
+                            );
                             return amountWei > tokenBalance ? "red.500" : "blue.500";
                           } catch {
                             return "red.500";
@@ -919,8 +813,13 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         boxShadow: (() => {
                           if (!rewardAmount || !tokenBalance) return "0 0 0 1px #3182ce";
                           try {
-                            const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
-                            return amountWei > tokenBalance ? "0 0 0 1px #e53e3e" : "0 0 0 1px #3182ce";
+                            const amountWei = ethers.parseUnits(
+                              rewardAmount,
+                              selectedToken.decimals,
+                            );
+                            return amountWei > tokenBalance
+                              ? "0 0 0 1px #e53e3e"
+                              : "0 0 0 1px #3182ce";
                           } catch {
                             return "0 0 0 1px #e53e3e";
                           }
@@ -930,7 +829,10 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         borderColor: (() => {
                           if (!rewardAmount || !tokenBalance) return "gray.400";
                           try {
-                            const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
+                            const amountWei = ethers.parseUnits(
+                              rewardAmount,
+                              selectedToken.decimals,
+                            );
                             return amountWei > tokenBalance ? "red.400" : "gray.400";
                           } catch {
                             return "red.400";
@@ -958,15 +860,16 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                     </Text>
                     {tokenBalance !== undefined ? (
                       <Text fontSize="xs" color="font.secondary" fontWeight="medium">
-                        {formatTokenBalance(tokenBalance, selectedToken.decimals)} {selectedToken.symbol}
+                        {formatTokenBalance(tokenBalance, selectedToken.decimals)}{" "}
+                        {selectedToken.symbol}
                       </Text>
                     ) : (
                       <Skeleton height="16px" width="80px" />
                     )}
                   </HStack>
                   {rewardAmount && tokenBalance !== undefined && (
-                    <Text 
-                      fontSize="xs" 
+                    <Text
+                      fontSize="xs"
                       color={(() => {
                         try {
                           const amountBig = ethers.parseUnits(rewardAmount, selectedToken.decimals);
@@ -974,7 +877,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         } catch {
                           return "red.500";
                         }
-                      })()} 
+                      })()}
                       mt={1}
                     >
                       {(() => {
@@ -1002,10 +905,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         Step 1: Approve Tokens
                       </Text>
                       <Text>
-                        {tokenAllowance !== undefined && tokenAllowance > BigInt(0) ? 
-                          `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens. Your current allowance of ${formatTokenBalance(tokenAllowance, selectedToken.decimals)} ${selectedToken.symbol} is insufficient for this amount.` :
-                          `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens from your wallet before depositing them as rewards.`
-                        }
+                        {tokenAllowance !== undefined && tokenAllowance > BigInt(0)
+                          ? `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens. Your current allowance of ${formatTokenBalance(tokenAllowance, selectedToken.decimals)} ${selectedToken.symbol} is insufficient for this amount.`
+                          : `You need to approve the gauge to spend ${rewardAmount || "0"} ${selectedToken.symbol} tokens from your wallet before depositing them as rewards.`}
                       </Text>
                     </AlertDescription>
                   </Alert>
@@ -1019,7 +921,8 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         ✓ Approval Already Sufficient
                       </Text>
                       <Text>
-                        Your current allowance covers this amount. You can proceed directly to deposit the rewards.
+                        Your current allowance covers this amount. You can proceed directly to
+                        deposit the rewards.
                       </Text>
                     </AlertDescription>
                   </Alert>
@@ -1033,10 +936,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                         Step 2: Deposit Rewards
                       </Text>
                       <Text>
-                        {shouldSkipApproval ? 
-                          `Ready to deposit ${rewardAmount} ${selectedToken.symbol} tokens as rewards to the gauge.` :
-                          `Approval complete! Now you can deposit the ${rewardAmount} ${selectedToken.symbol} tokens as rewards to the gauge.`
-                        }
+                        {shouldSkipApproval
+                          ? `Ready to deposit ${rewardAmount} ${selectedToken.symbol} tokens as rewards to the gauge.`
+                          : `Approval complete! Now you can deposit the ${rewardAmount} ${selectedToken.symbol} tokens as rewards to the gauge.`}
                       </Text>
                     </AlertDescription>
                   </Alert>
@@ -1049,7 +951,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
             <Button variant="ghost" mr={3} onClick={closeAddRewardsModal}>
               Cancel
             </Button>
-            
+
             {currentStep === 1 && !shouldSkipApproval && (
               <Button
                 colorScheme="blue"
@@ -1057,7 +959,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                 isLoading={isApproving}
                 loadingText="Approving..."
                 isDisabled={
-                  !rewardAmount || 
+                  !rewardAmount ||
                   parseFloat(rewardAmount) <= 0 ||
                   (() => {
                     if (!tokenBalance) return false;
@@ -1080,7 +982,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                 colorScheme="green"
                 onClick={() => setCurrentStep(2)}
                 isDisabled={
-                  !rewardAmount || 
+                  !rewardAmount ||
                   parseFloat(rewardAmount) <= 0 ||
                   (() => {
                     if (!tokenBalance) return false;
@@ -1104,17 +1006,15 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
                 onClick={handleDeposit}
                 isLoading={isDepositing}
                 loadingText="Depositing..."
-                isDisabled={
-                  (() => {
-                    if (!tokenBalance) return false;
-                    try {
-                      const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
-                      return amountWei > tokenBalance;
-                    } catch {
-                      return true;
-                    }
-                  })()
-                }
+                isDisabled={(() => {
+                  if (!tokenBalance) return false;
+                  try {
+                    const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
+                    return amountWei > tokenBalance;
+                  } catch {
+                    return true;
+                  }
+                })()}
                 size="lg"
               >
                 Deposit Rewards
