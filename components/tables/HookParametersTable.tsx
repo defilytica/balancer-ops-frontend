@@ -108,10 +108,13 @@ export const HookParametersTable = ({
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
   }, []);
 
-  const getPoolUrl = useCallback((pool: Pool) => {
-    const networkName = getNetworkNameForUrl(pool.chain);
-    return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
-  }, [getNetworkNameForUrl]);
+  const getPoolUrl = useCallback(
+    (pool: Pool) => {
+      const networkName = getNetworkNameForUrl(pool.chain);
+      return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
+    },
+    [getNetworkNameForUrl],
+  );
 
   const handleSort = useCallback(
     (field: SortField) => {
@@ -129,12 +132,12 @@ export const HookParametersTable = ({
   const filteredPools = useMemo(() => {
     let filtered = pools.filter(pool => {
       // Filter by hook type
-      const hookTypeMatch = 
-        selectedHookType === "STABLE_SURGE" 
+      const hookTypeMatch =
+        selectedHookType === "STABLE_SURGE"
           ? isStableSurgeHookParams(pool.hook?.params)
-          : selectedHookType === "MEV_TAX" 
-          ? isMevTaxHookParams(pool.hook?.params)
-          : false;
+          : selectedHookType === "MEV_TAX"
+            ? isMevTaxHookParams(pool.hook?.params)
+            : false;
 
       if (!hookTypeMatch) return false;
 
@@ -290,8 +293,8 @@ export const HookParametersTable = ({
             };
 
             return (
-              <Tr 
-                key={pool.address} 
+              <Tr
+                key={pool.address}
                 _hover={{ bg: "whiteAlpha.50", cursor: "pointer" }}
                 onClick={handleRowClick}
               >
@@ -334,7 +337,8 @@ export const HookParametersTable = ({
                                 />
                               )}
                               <Text fontSize="sm">
-                                {token.symbol}: {formatTokenAmount(token.balance || "0")} ({percentage}%)
+                                {token.symbol}: {formatTokenAmount(token.balance || "0")} (
+                                {percentage}%)
                               </Text>
                             </HStack>
                           );
@@ -368,9 +372,7 @@ export const HookParametersTable = ({
                           )}
                         </Box>
                       ))}
-                      <Text>
-                        {pool.name || pool.symbol}
-                      </Text>
+                      <Text>{pool.name || pool.symbol}</Text>
                     </HStack>
                   </Tooltip>
                 </Td>
@@ -393,7 +395,7 @@ export const HookParametersTable = ({
                   </Badge>
                 </Td>
                 <Td px={3}>
-                  <Link href={getConfigRoute(pool)} onClick={(e) => e.stopPropagation()}>
+                  <Link href={getConfigRoute(pool)} onClick={e => e.stopPropagation()}>
                     <Button
                       size="xs"
                       leftIcon={<Icon as={Settings} boxSize="3" />}

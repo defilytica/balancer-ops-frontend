@@ -122,18 +122,22 @@ export async function GET(request: NextRequest) {
 
           return {
             poolAddress: pool.address,
+            poolId: pool.id,
             poolName: pool.name,
             poolSymbol: pool.symbol,
             gaugeAddress,
+            version: `v${pool.protocolVersion}`,
             rewardTokens,
           };
         } catch (gaugeError) {
           console.error(`Error fetching gauge data for ${gaugeAddress}:`, gaugeError);
           return {
             poolAddress: pool.address,
+            poolId: pool.id,
             poolName: pool.name,
             poolSymbol: pool.symbol,
             gaugeAddress,
+            version: `v${pool.protocolVersion}`,
             rewardTokens: [],
           };
         }

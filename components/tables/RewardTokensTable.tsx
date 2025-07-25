@@ -215,7 +215,13 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
   const getPoolUrl = useCallback(
     (pool: RewardTokenData) => {
       const networkName = getNetworkNameForUrl(selectedNetwork);
-      return `https://balancer.fi/pools/${networkName}/v3/${pool.poolAddress}`;
+      const domain = selectedNetwork.toLowerCase() === 'sonic' ? 'beets.fi' : 'balancer.fi';
+      
+      // Use the protocolVersion field from the API to determine the correct URL structure
+      // For v2 pools, use poolId; for v3 pools, use poolAddress  
+      const poolIdentifier = pool.version === 'v3' ? pool.poolAddress : pool.poolId;
+      
+      return `https://${domain}/pools/${networkName}/${pool.version}/${poolIdentifier}`;
     },
     [getNetworkNameForUrl, selectedNetwork],
   );
@@ -255,23 +261,51 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
             const isExpanded = expandedRows.has(pool.poolAddress);
             const hasRewardTokens = pool.rewardTokens.length > 0;
             const poolUrl = getPoolUrl(pool);
+            const hasActiveRewards = pool.rewardTokens.some(token => {
+              const rate = parseFloat(token.rate);
+              const periodFinish = parseInt(token.period_finish);
+              const currentTime = Math.floor(Date.now() / 1000);
+              return rate > 0 && (periodFinish === 0 || periodFinish > currentTime);
+            });
 
             const handleRowClick = (e: React.MouseEvent) => {
-              // Don't navigate if clicking on the expand button
-              if ((e.target as HTMLElement).closest("button")) {
+              // Don't navigate if clicking on a link or button
+              if ((e.target as HTMLElement).closest("a, button")) {
                 return;
               }
-              window.open(poolUrl, "_blank", "noopener,noreferrer");
+              // Only toggle row if there are reward tokens
+              if (hasRewardTokens) {
+                toggleRow(pool.poolAddress);
+              }
             };
 
             return (
               <React.Fragment key={pool.poolAddress}>
-                <Tr _hover={{ bg: "whiteAlpha.50", cursor: "pointer" }} onClick={handleRowClick}>
+                <Tr _hover={{ bg: "whiteAlpha.50", cursor: hasRewardTokens ? "pointer" : "default" }} onClick={handleRowClick}>
                   <Td>
                     <VStack align="start" spacing={1}>
-                      <Text fontWeight="semibold" fontSize="sm">
-                        {pool.poolName}
-                      </Text>
+                      <HStack spacing={2}>
+                        <Link
+                          href={poolUrl}
+                          fontWeight="semibold"
+                          fontSize="sm"
+                          color="inherit"
+                          _hover={{ opacity: 0.8 }}
+                          isExternal
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {pool.poolName}
+                        </Link>
+                        {hasRewardTokens && (
+                          <Badge
+                            size="sm"
+                            colorScheme={hasActiveRewards ? "green" : "gray"}
+                            variant="subtle"
+                          >
+                            {hasActiveRewards ? "Active" : "Inactive"}
+                          </Badge>
+                        )}
+                      </HStack>
                       <AddressCopyButton
                         address={pool.poolAddress}
                         displayText={`${pool.poolAddress.slice(0, 8)}...${pool.poolAddress.slice(-6)}`}

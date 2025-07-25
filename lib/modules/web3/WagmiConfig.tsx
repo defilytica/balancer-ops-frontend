@@ -160,7 +160,7 @@ export function getWagmiConfig(): Config {
         [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
         [mode.id]: http("https://mode.drpc.org"),
         [fraxtal.id]: http("https://fraxtal.drpc.org"),
-        [sonic.id]: http("https://sonic.drpc.org"),
+        [sonic.id]: http("https://sonic-rpc.publicnode.com"),
         [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
       },
       connectors: getConnectors(),
