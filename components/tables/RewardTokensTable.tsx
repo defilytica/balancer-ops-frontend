@@ -182,11 +182,14 @@ const RewardTokenCard: React.FC<{
           </VStack>
         </VStack>
 
-        {isUserDistributor && (
-          <Button size="sm" colorScheme="green" onClick={() => onAddRewards(pool, token)} w="full">
-            Add Rewards
-          </Button>
-        )}
+        <Button 
+          size="sm" 
+          colorScheme={isUserDistributor ? "green" : "gray"} 
+          onClick={() => onAddRewards(pool, token)} 
+          w="full"
+        >
+          Add Rewards
+        </Button>
       </VStack>
     </Box>
   );
