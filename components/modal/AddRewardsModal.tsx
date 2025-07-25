@@ -33,7 +33,13 @@ import {
   Grid,
   GridItem,
 } from "@chakra-ui/react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useChainId,
+} from "wagmi";
 import { ethers } from "ethers";
 import { gaugeABI } from "@/abi/gauge";
 import { ERC20 } from "@/abi/erc20";
@@ -81,7 +87,9 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   };
 
   // Check if user is on correct network
-  const isCorrectNetwork = selectedNetwork ? chainId === getExpectedChainId(selectedNetwork) : false;
+  const isCorrectNetwork = selectedNetwork
+    ? chainId === getExpectedChainId(selectedNetwork)
+    : false;
 
   // Read token balance
   const {
@@ -267,7 +275,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
           <VStack spacing={6} align="start">
             {/* Step Indicator */}
             <Box width="100%">
-              <Stepper index={currentStep - 1} colorScheme="green" size={{ base: "sm", md: "md" }}>
+              <Stepper index={currentStep - 1} colorScheme="green" size="md">
                 <Step>
                   <StepIndicator>
                     <StepStatus
@@ -285,14 +293,14 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     />
                   </StepIndicator>
                   <Box flexShrink="0">
-                    <StepTitle fontSize={{ base: "sm", md: "md" }}>
+                    <StepTitle>
                       {shouldSkipApproval
                         ? "✓ Approval Sufficient"
                         : tokenAllowance !== undefined && tokenAllowance > BigInt(0)
                           ? "Re-approve Tokens"
                           : "Approve Tokens"}
                     </StepTitle>
-                    <StepDescription fontSize={{ base: "xs", md: "sm" }}>
+                    <StepDescription>
                       {shouldSkipApproval
                         ? "Allowance already covers amount"
                         : tokenAllowance !== undefined && tokenAllowance > BigInt(0)
@@ -312,19 +320,15 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     />
                   </StepIndicator>
                   <Box flexShrink="0">
-                    <StepTitle fontSize={{ base: "sm", md: "md" }}>Deposit Rewards</StepTitle>
-                    <StepDescription fontSize={{ base: "xs", md: "sm" }}>Add tokens to gauge</StepDescription>
+                    <StepTitle>Deposit Rewards</StepTitle>
+                    <StepDescription>Add tokens to gauge</StepDescription>
                   </Box>
                 </Step>
               </Stepper>
             </Box>
 
             {/* Pool and Token Info - Responsive Grid */}
-            <Grid
-              templateColumns={{ base: "1fr", md: "1fr 1fr" }}
-              gap={6}
-              width="100%"
-            >
+            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6} width="100%">
               <GridItem>
                 <VStack align="start" spacing={3}>
                   <Box>
@@ -382,8 +386,8 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                   </Text>
                   <Text fontSize="sm">
                     Please switch to {selectedNetwork} network (Chain ID:{" "}
-                    {getExpectedChainId(selectedNetwork)}) to load balance and perform
-                    transactions. Currently connected to Chain ID: {chainId}
+                    {getExpectedChainId(selectedNetwork)}) to load balance and perform transactions.
+                    Currently connected to Chain ID: {chainId}
                   </Text>
                 </AlertDescription>
               </Alert>
@@ -424,10 +428,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     borderColor: (() => {
                       if (!rewardAmount || !tokenBalance) return "blue.500";
                       try {
-                        const amountWei = ethers.parseUnits(
-                          rewardAmount,
-                          selectedToken.decimals,
-                        );
+                        const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
                         return amountWei > tokenBalance ? "red.500" : "blue.500";
                       } catch {
                         return "red.500";
@@ -436,13 +437,8 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     boxShadow: (() => {
                       if (!rewardAmount || !tokenBalance) return "0 0 0 1px #3182ce";
                       try {
-                        const amountWei = ethers.parseUnits(
-                          rewardAmount,
-                          selectedToken.decimals,
-                        );
-                        return amountWei > tokenBalance
-                          ? "0 0 0 1px #e53e3e"
-                          : "0 0 0 1px #3182ce";
+                        const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
+                        return amountWei > tokenBalance ? "0 0 0 1px #e53e3e" : "0 0 0 1px #3182ce";
                       } catch {
                         return "0 0 0 1px #e53e3e";
                       }
@@ -452,10 +448,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     borderColor: (() => {
                       if (!rewardAmount || !tokenBalance) return "gray.400";
                       try {
-                        const amountWei = ethers.parseUnits(
-                          rewardAmount,
-                          selectedToken.decimals,
-                        );
+                        const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
                         return amountWei > tokenBalance ? "red.400" : "gray.400";
                       } catch {
                         return "red.400";
@@ -473,9 +466,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     }
                   }}
                   isDisabled={
-                    !isCorrectNetwork ||
-                    tokenBalance === undefined ||
-                    tokenBalance === BigInt(0)
+                    !isCorrectNetwork || tokenBalance === undefined || tokenBalance === BigInt(0)
                   }
                 >
                   Max
@@ -568,8 +559,8 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     ✓ Approval Already Sufficient
                   </Text>
                   <Text>
-                    Your current allowance covers this amount. You can proceed directly to
-                    deposit the rewards.
+                    Your current allowance covers this amount. You can proceed directly to deposit
+                    the rewards.
                   </Text>
                 </AlertDescription>
               </Alert>
