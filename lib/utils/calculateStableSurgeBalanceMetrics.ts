@@ -75,9 +75,10 @@ export const calculateStableSurgeBalanceMetrics = (
     // For more tokens, calculate actual median
     const sortedPercentages = [...percentages].sort((a, b) => a - b);
     const mid = Math.floor(sortedPercentages.length / 2);
-    median = sortedPercentages.length % 2 === 0
-      ? (sortedPercentages[mid - 1] + sortedPercentages[mid]) / 2
-      : sortedPercentages[mid];
+    median =
+      sortedPercentages.length % 2 === 0
+        ? (sortedPercentages[mid - 1] + sortedPercentages[mid]) / 2
+        : sortedPercentages[mid];
   }
 
   // Calculate total imbalance as sum of absolute deviations from median
@@ -88,9 +89,9 @@ export const calculateStableSurgeBalanceMetrics = (
   // Calculate ideal distribution (equal for each token) for display purposes
   const idealPercentage = 100 / tokenCount;
 
-  // Get surge threshold from hook params
-  const surgeThreshold = parseFloat(pool.hook.params.surgeThresholdPercentage || "0");
-  const maxSurgeFee = parseFloat(pool.hook.params.maxSurgeFeePercentage || "0");
+  // Get surge threshold from hook params - convert from decimal to percentage
+  const surgeThreshold = parseFloat(pool.hook.params.surgeThresholdPercentage || "0") * 100;
+  const maxSurgeFee = parseFloat(pool.hook.params.maxSurgeFeePercentage || "0") * 100;
 
   // Determine if pool is in surge pricing mode using total imbalance
   const isInSurgeMode = totalImbalance > surgeThreshold;
