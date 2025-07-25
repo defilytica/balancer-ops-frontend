@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   VStack,
-  HStack,
   Alert,
   AlertIcon,
   Text,
@@ -24,6 +23,7 @@ import { PRCreationModal } from "@/components/modal/PRModal";
 import { copyJsonToClipboard, handleDownloadClick } from "../payloadHelperFunctions";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { getNetworkString } from "@/lib/utils/getNetworkString";
+import { NETWORK_OPTIONS } from "@/constants/constants";
 
 interface ComposerPayloadViewerProps {
   hasManualEdits: boolean;
@@ -85,7 +85,8 @@ export default function ComposerPayloadViewer({
     const uniqueId = generateUniqueId();
 
     // Get network name for path
-    const networkName = combinationResult.metadata.networks[0] || "Unknown";
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === primaryNetwork);
+    const networkName = networkOption?.label;
     const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
     // Create descriptive title based on operations

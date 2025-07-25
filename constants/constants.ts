@@ -19,6 +19,7 @@ import sonicLogo from "@/public/imgs/sonic.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
+import { IoLayers } from "react-icons/io5";
 
 export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
 
@@ -253,6 +254,18 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "feature/emergency-payload",
     prNamePlaceholder: "Create emergency payload for pool XYZ",
     prTypePath: "MaxiOps/Emergency-Multisigs/",
+  },
+  {
+    href: "/payload-builder/composer",
+    key: "payload-composer",
+    label: "Payload Composer",
+    button_label: "",
+    description: "",
+    icon: IoLayers,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/combined-operations",
+    prNamePlaceholder: "Combined Operations",
+    prTypePath: "MaxiOps/CompositePayloads/",
   },
 ];
 
