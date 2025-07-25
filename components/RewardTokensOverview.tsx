@@ -399,6 +399,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         selectedNetwork={selectedNetwork}
         formatEndDate={formatEndDate}
         onSuccess={handleModalSuccess}
+        isDistributor={isDistributor}
       />
     </Box>
   );

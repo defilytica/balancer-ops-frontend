@@ -29,7 +29,6 @@ import {
   StepTitle,
   Text,
   VStack,
-  useColorModeValue,
   Grid,
   GridItem,
 } from "@chakra-ui/react";
@@ -53,6 +52,7 @@ interface AddRewardsModalProps {
   selectedNetwork: string;
   formatEndDate: (periodFinish: string) => string;
   onSuccess: () => void;
+  isDistributor: (address: string) => boolean;
 }
 
 const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
@@ -63,6 +63,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   selectedNetwork,
   formatEndDate,
   onSuccess,
+  isDistributor,
 }) => {
   const [rewardAmount, setRewardAmount] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -90,6 +91,10 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   const isCorrectNetwork = selectedNetwork
     ? chainId === getExpectedChainId(selectedNetwork)
     : false;
+
+  // Check if connected wallet is the distributor
+  const isUserDistributor =
+    selectedToken?.distributor && address ? isDistributor(selectedToken.distributor) : false;
 
   // Read token balance
   const {
@@ -138,9 +143,6 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   const { isLoading: isDepositing, isSuccess: depositSuccess } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
-
-  // Colors for theme consistency
-  const borderColor = useColorModeValue("gray.200", "gray.600");
 
   // Helper function to format token balance
   const formatTokenBalance = (balance: bigint | undefined, decimals: number) => {
@@ -213,7 +215,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
         if (amountWei > tokenBalance) {
           return;
         }
-      } catch (error) {
+      } catch {
         return;
       }
     }
@@ -242,7 +244,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
         if (amountWei > tokenBalance) {
           return;
         }
-      } catch (error) {
+      } catch {
         return;
       }
     }
@@ -388,6 +390,22 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                     Please switch to {selectedNetwork} network (Chain ID:{" "}
                     {getExpectedChainId(selectedNetwork)}) to load balance and perform transactions.
                     Currently connected to Chain ID: {chainId}
+                  </Text>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Distributor Check */}
+            {!isUserDistributor && address && (
+              <Alert status="error" variant="left-accent">
+                <AlertIcon />
+                <AlertDescription>
+                  <Text fontSize="sm" fontWeight="bold">
+                    You are not the distributor of this token
+                  </Text>
+                  <Text fontSize="sm">
+                    Only the distributor ({selectedToken?.distributor?.slice(0, 8)}...
+                      {selectedToken?.distributor?.slice(-6)}) can add rewards for this token.
                   </Text>
                 </AlertDescription>
               </Alert>
@@ -597,6 +615,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               loadingText="Approving..."
               isDisabled={
                 !isCorrectNetwork ||
+                !isUserDistributor ||
                 !rewardAmount ||
                 parseFloat(rewardAmount) <= 0 ||
                 (() => {
@@ -611,7 +630,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               }
               size="lg"
             >
-              Approve Tokens
+              {!isUserDistributor ? "Not Distributor" : "Approve Tokens"}
             </Button>
           )}
 
@@ -621,6 +640,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               onClick={() => setCurrentStep(2)}
               isDisabled={
                 !isCorrectNetwork ||
+                !isUserDistributor ||
                 !rewardAmount ||
                 parseFloat(rewardAmount) <= 0 ||
                 (() => {
@@ -635,7 +655,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               }
               size="lg"
             >
-              Proceed to Deposit
+              {!isUserDistributor ? "Not Distributor" : "Proceed to Deposit"}
             </Button>
           )}
 
@@ -647,6 +667,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               loadingText="Depositing..."
               isDisabled={
                 !isCorrectNetwork ||
+                !isUserDistributor ||
                 (() => {
                   if (!tokenBalance) return false;
                   try {
@@ -659,7 +680,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
               }
               size="lg"
             >
-              Deposit Rewards
+              {!isUserDistributor ? "Not Distributor" : "Deposit Rewards"}
             </Button>
           )}
         </ModalFooter>
