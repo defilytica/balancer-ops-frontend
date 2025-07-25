@@ -215,12 +215,12 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
   const getPoolUrl = useCallback(
     (pool: RewardTokenData) => {
       const networkName = getNetworkNameForUrl(selectedNetwork);
-      const domain = selectedNetwork.toLowerCase() === 'sonic' ? 'beets.fi' : 'balancer.fi';
-      
+      const domain = selectedNetwork.toLowerCase() === "sonic" ? "beets.fi" : "balancer.fi";
+
       // Use the protocolVersion field from the API to determine the correct URL structure
-      // For v2 pools, use poolId; for v3 pools, use poolAddress  
-      const poolIdentifier = pool.version === 'v3' ? pool.poolAddress : pool.poolId;
-      
+      // For v2 pools, use poolId; for v3 pools, use poolAddress
+      const poolIdentifier = pool.version === "v3" ? pool.poolAddress : pool.poolId;
+
       return `https://${domain}/pools/${networkName}/${pool.version}/${poolIdentifier}`;
     },
     [getNetworkNameForUrl, selectedNetwork],
@@ -281,7 +281,10 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
 
             return (
               <React.Fragment key={pool.poolAddress}>
-                <Tr _hover={{ bg: "whiteAlpha.50", cursor: hasRewardTokens ? "pointer" : "default" }} onClick={handleRowClick}>
+                <Tr
+                  _hover={{ bg: "whiteAlpha.50", cursor: hasRewardTokens ? "pointer" : "default" }}
+                  onClick={handleRowClick}
+                >
                   <Td>
                     <VStack align="start" spacing={1}>
                       <HStack spacing={2}>
@@ -292,7 +295,7 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                           color="inherit"
                           _hover={{ opacity: 0.8 }}
                           isExternal
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
                         >
                           {pool.poolName}
                         </Link>
