@@ -19,6 +19,7 @@ import {
   TbGaugeFilled,
   TbHeartRateMonitor,
   TbFishHook,
+  TbCoins,
 } from "react-icons/tb";
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
@@ -72,6 +73,12 @@ const LinkItems = [
     icon: TbGaugeFilled,
     target: "/gauge-creator",
     description: "Create a staking gauge for Balancer pools",
+  },
+  {
+    name: "Reward Tokens",
+    icon: TbCoins,
+    target: "/reward-tokens",
+    description: "Manage reward tokens on gauges",
   },
   {
     name: "Chainlink Automation",
