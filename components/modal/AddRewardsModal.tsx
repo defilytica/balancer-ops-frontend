@@ -405,7 +405,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                   </Text>
                   <Text fontSize="sm">
                     Only the distributor ({selectedToken?.distributor?.slice(0, 8)}...
-                      {selectedToken?.distributor?.slice(-6)}) can add rewards for this token.
+                    {selectedToken?.distributor?.slice(-6)}) can add rewards for this token.
                   </Text>
                 </AlertDescription>
               </Alert>
