@@ -11,9 +11,11 @@ export interface RewardToken {
 
 export interface RewardTokenData {
   poolAddress: string;
+  poolId: string;
   poolName: string;
   poolSymbol: string;
   gaugeAddress: string;
+  version: string;
   rewardTokens: RewardToken[];
 }
 
