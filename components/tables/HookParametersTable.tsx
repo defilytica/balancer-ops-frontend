@@ -32,7 +32,10 @@ import Link from "next/link";
 import { isZeroAddress } from "@ethereumjs/util";
 import { HookType } from "@/components/HookParametersDashboardModule";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
-import { calculateStableSurgeBalanceMetrics, calculateTokenPercentage } from "@/lib/utils/calculateStableSurgeBalanceMetrics";
+import {
+  calculateStableSurgeBalanceMetrics,
+  calculateTokenPercentage,
+} from "@/lib/utils/calculateStableSurgeBalanceMetrics";
 
 interface HookTableProps {
   pools: Pool[];
@@ -88,7 +91,6 @@ export const HookParametersTable = ({
     },
     [addressBook],
   );
-
 
   const getNetworkNameForUrl = useCallback((chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
@@ -320,7 +322,7 @@ export const HookParametersTable = ({
                 <Td>
                   <HStack spacing={2}>
                     <Image
-                      src={networks[pool.chain.toLowerCase()].logo}
+                      src={networks[pool.chain.toLowerCase()]?.logo || ""}
                       alt={pool.chain.toLowerCase()}
                       boxSize="5"
                     />
