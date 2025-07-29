@@ -16,6 +16,7 @@ import {
   Button,
   Badge,
   Spinner,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { CheckCircleIcon, WarningIcon } from "@chakra-ui/icons";
 import { Pool, AddressBook } from "@/types/interfaces";
@@ -28,7 +29,7 @@ import {
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { formatTokenAmount } from "@/lib/utils/formatTokenAmount";
-import { Globe } from "react-feather";
+import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { ArrowUp, ArrowDown } from "react-feather";
 import { useCallback, useMemo, useState } from "react";
@@ -37,6 +38,7 @@ import { isZeroAddress } from "@ethereumjs/util";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { fetchReclammRangeStatus } from "@/lib/services/fetchReclammRangeStatus";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
+import Link from "next/link";
 
 interface ReClammPoolsTableProps {
   pools: Pool[];
@@ -49,6 +51,7 @@ interface ReClammRowProps {
   getPoolUrl: (pool: Pool) => string;
   getOwnerType: (pool: Pool) => string;
   calculateTokenPercentage: (token: Pool["poolTokens"][0], pool: Pool) => string;
+  getConfigRoute: (pool: Pool) => string;
 }
 
 enum Sorting {
@@ -63,7 +66,11 @@ const ReClammRow = ({
   getPoolUrl,
   getOwnerType,
   calculateTokenPercentage,
+  getConfigRoute,
 }: ReClammRowProps) => {
+  const configButtonColor = useColorModeValue("gray.500", "gray.400");
+  const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
+
   // Fetch pool details
   const { loading, data } = useQuery<GetPoolQuery, GetPoolQueryVariables>(GetPoolDocument, {
     variables: { id: pool.id, chain: pool.chain as GqlChain },
@@ -82,13 +89,15 @@ const ReClammRow = ({
     window.open(poolUrl, "_blank", "noopener,noreferrer");
   };
 
-  const formatDailyPriceShift = (value: string | number | null | undefined) => {
+  const formatDailyPriceShiftBase = (value: string | number | null | undefined) => {
     if (!value || value === "-") return { formatted: "-", full: "-" };
     const numValue = Number(value);
     if (isNaN(numValue)) return { formatted: "-", full: "-" };
 
-    const formatted = numValue.toFixed(7);
-    return { formatted, full: value.toString() };
+    // Convert to percentage (multiply by 100)
+    const percentage = numValue * 100;
+    const formatted = `${percentage.toFixed(2)}%`;
+    return { formatted, full: `${percentage.toFixed(7)}%` };
   };
 
   return (
@@ -181,7 +190,7 @@ const ReClammRow = ({
           <Spinner size="sm" />
         ) : (
           (() => {
-            const priceShift = formatDailyPriceShift(
+            const priceShift = formatDailyPriceShiftBase(
               data?.pool && "dailyPriceShiftBase" in data.pool
                 ? data.pool.dailyPriceShiftBase
                 : null,
@@ -202,7 +211,7 @@ const ReClammRow = ({
         ) : (
           <Text>
             {data?.pool && "centerednessMargin" in data.pool
-              ? data.pool.centerednessMargin || "-"
+              ? `${(parseFloat(data.pool.centerednessMargin || "0") * 100).toFixed(2)}%`
               : "-"}
           </Text>
         )}
@@ -226,6 +235,23 @@ const ReClammRow = ({
         <Badge colorScheme="purple" size="sm" px={3} py={1}>
           {getOwnerType(pool)}
         </Badge>
+      </Td>
+      <Td px={3}>
+        <Link href={getConfigRoute(pool)} onClick={e => e.stopPropagation()}>
+          <Button
+            size="xs"
+            leftIcon={<Icon as={Settings} boxSize="3" />}
+            variant="outline"
+            borderColor={configButtonColor}
+            color={configButtonColor}
+            _hover={{
+              color: configButtonHoverColor,
+              borderColor: configButtonHoverColor,
+            }}
+          >
+            Config
+          </Button>
+        </Link>
       </Td>
     </Tr>
   );
@@ -281,6 +307,11 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
     },
     [getNetworkNameForUrl],
   );
+
+  const getConfigRoute = useCallback((pool: Pool) => {
+    const network = pool.chain.toLowerCase();
+    return `/payload-builder/reclamm?network=${network}&pool=${pool.address}`;
+  }, []);
 
   const handleSort = useCallback(
     (field: SortField) => {
@@ -391,7 +422,7 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
               </Button>
             </Th>
             <Th w="120px" px={3}>
-              Daily Price Shift
+              Daily Price Shift Base
             </Th>
             <Th w="120px" px={3}>
               Centeredness Margin
@@ -401,6 +432,9 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
             </Th>
             <Th w="80px" px={3}>
               Owner
+            </Th>
+            <Th w="120px" px={3}>
+              Configure
             </Th>
           </Tr>
         </Thead>
@@ -412,6 +446,7 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
               getPoolUrl={getPoolUrl}
               getOwnerType={getOwnerType}
               calculateTokenPercentage={calculateTokenPercentage}
+              getConfigRoute={getConfigRoute}
             />
           ))}
         </Tbody>

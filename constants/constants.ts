@@ -254,6 +254,18 @@ export const PAYLOAD_OPTIONS = [
     prNamePlaceholder: "Create emergency payload for pool XYZ",
     prTypePath: "MaxiOps/Emergency-Multisigs/",
   },
+  {
+    href: "/payload-builder/reclamm",
+    key: "reclamm",
+    label: "Configure ReCLAMM pool parameters",
+    description: "Create ReCLAMM specific payloads to configure ReCLAMM parameters of v3 pools",
+    button_label: "Configure ReCLAMM",
+    icon: FaRegChartBar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/reclamm-config",
+    prNamePlaceholder: "Configure ReCLAMM parameters for pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/ReClammParams/",
+  },
 ];
 
 //TODO: refactor to reference address book

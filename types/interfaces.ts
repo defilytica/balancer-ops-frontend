@@ -59,6 +59,35 @@ export interface Pool {
   hook?: Hook;
 }
 
+export interface ReClammPool extends Pool {
+  centerednessMargin: string;
+  currentFourthRootPriceRatio: string;
+  dailyPriceShiftBase: string;
+  endFourthRootPriceRatio: string;
+  hasAnyAllowedBuffer: boolean;
+  lastTimestamp: string;
+  lastVirtualBalances: string[];
+  priceRatioUpdateEndTime: string;
+  priceRatioUpdateStartTime: string;
+  startFourthRootPriceRatio: string;
+}
+
+export interface ReClammContractData {
+  priceRange: string[];
+  virtualBalances: {
+    virtualBalanceA: string;
+    virtualBalanceB: string;
+  };
+  liveBalances: {
+    liveBalanceA: string;
+    liveBalanceB: string;
+  };
+  centerednessMargin: string;
+  isPoolWithinTargetRange: boolean;
+  dailyPriceShiftExponent: string;
+  currentPriceRatio: string;
+}
+
 export interface TokenInfo {
   symbol: string;
   address: string;
