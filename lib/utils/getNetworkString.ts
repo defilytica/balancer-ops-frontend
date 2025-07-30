@@ -18,6 +18,8 @@ export const getNetworkString = (chainId?: number) => {
       return "MODE";
     case 100:
       return "GNOSIS";
+    case 999:
+      return "HYPEREVM";
     case 11155111:
       return "SEPOLIA";
     default:
