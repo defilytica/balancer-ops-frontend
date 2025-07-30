@@ -311,3 +311,8 @@ export interface FormattedDeployment {
   date: string;
   version: string;
 }
+
+export interface AddressTypeData {
+  address: string;
+  type: "EOA" | "SafeProxy" | "Contract";
+}

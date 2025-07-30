@@ -51,6 +51,7 @@ import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import { isZeroAddress } from "@ethereumjs/util";
 import { useValidateReclamm } from "@/lib/hooks/validation/useValidateReclamm";
 import { useSearchParams } from "next/navigation";
 import {
@@ -60,6 +61,7 @@ import {
   GqlChain,
 } from "@/lib/services/apollo/generated/graphql";
 import { fetchReclammContractData } from "@/lib/services/fetchReclammContractData";
+import { fetchAddressType } from "@/lib/services/fetchAddressType";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 
 export default function ReClammModule({ addressBook }: { addressBook: AddressBook }) {
@@ -149,6 +151,34 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     [addressBook],
   );
 
+  // Check if the pool is authorized for DAO governance (zero address or matches the multisig)
+  const isAuthorizedPool = useMemo(() => {
+    if (!selectedPool?.swapFeeManager) return false;
+    return (
+      isZeroAddress(selectedPool.swapFeeManager) ||
+      selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
+    );
+  }, [selectedPool, selectedMultisig]);
+
+  // Determine if we need to check the address type
+  const shouldCheckAddressType = useMemo(() => {
+    return (
+      selectedPool?.swapFeeManager &&
+      selectedNetwork &&
+      selectedMultisig &&
+      !isZeroAddress(selectedPool.swapFeeManager) &&
+      selectedPool.swapFeeManager.toLowerCase() !== selectedMultisig.toLowerCase()
+    );
+  }, [selectedPool, selectedNetwork, selectedMultisig]);
+
+  // React Query for address type checking
+  const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
+    queryKey: ["addressType", selectedPool?.swapFeeManager, selectedNetwork],
+    queryFn: () => fetchAddressType(selectedPool!.swapFeeManager, selectedNetwork),
+    enabled: !!shouldCheckAddressType,
+    staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
+  });
+
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(
@@ -179,7 +209,6 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
   // Effect to handle URL parameters and auto-select pool
   useEffect(() => {
     const networkParam = searchParams.get("network");
-    const poolParam = searchParams.get("pool");
 
     if (networkParam && !initialNetworkSetRef.current) {
       // Find the network option that matches the network parameter
@@ -249,6 +278,17 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
         title: "No parameters to change",
         description: "Please enter at least one valid parameter to change",
         status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!isAuthorizedPool) {
+      toast({
+        title: "Not authorized",
+        description: "This pool can only be modified by the DAO multisig or authorized addresses",
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -411,12 +451,28 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               />
             </Box>
           )}
-          <Alert status="info" mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              This ReCLAMM pool's parameters can be modified through the DAO multisig.
-            </AlertDescription>
-          </Alert>
+          {isAuthorizedPool ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This ReCLAMM pool's parameters can be modified through the DAO multisig.
+              </AlertDescription>
+            </Alert>
+          ) : isCheckingAddress ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>Checking pool authorization...</AlertDescription>
+            </Alert>
+          ) : addressTypeData ? (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {addressTypeData.type === "SafeProxy"
+                  ? `This pool's parameters are managed by a Safe: ${selectedPool.swapFeeManager}`
+                  : `This pool's parameters can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+          ) : null}
         </Box>
       )}
 

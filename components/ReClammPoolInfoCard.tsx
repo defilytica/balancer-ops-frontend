@@ -110,11 +110,11 @@ export const ReClammPoolInfoCard: React.FC<ReClammPoolInfoCardProps> = ({ pool, 
             <HStack spacing={{ base: "0", md: "xl" }} width="full">
               <Box minWidth="160px">
                 <Heading variant="h6" fontSize="1rem">
-                  Parameter
+                  Attribute
                 </Heading>
               </Box>
               <Heading variant="h6" fontSize="1rem">
-                Value
+                Details
               </Heading>
             </HStack>
           </Show>
