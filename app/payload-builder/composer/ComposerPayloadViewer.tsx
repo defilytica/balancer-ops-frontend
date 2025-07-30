@@ -89,10 +89,20 @@ export default function ComposerPayloadViewer({
     const networkName = networkOption?.label;
     const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
-    // Create descriptive title based on operations
-    const operationTitles = operations.map(op => op.title || op.type).slice(0, 3);
-    const titleSuffix = operations.length > 3 ? ` (+${operations.length - 3} more)` : "";
-    const combinedTitle = operationTitles.join(", ") + titleSuffix;
+    // Create descriptive title based on operations, grouping duplicates
+    const operationCounts = new Map<string, number>();
+    operations.forEach(op => {
+      const title = op.title || op.type;
+      operationCounts.set(title, (operationCounts.get(title) || 0) + 1);
+    });
+    
+    const uniqueTitles = Array.from(operationCounts.entries())
+      .map(([title, count]) => count > 1 ? `${title} (${count}x)` : title)
+      .slice(0, 3);
+    
+    const remainingCount = Math.max(0, operationCounts.size - 3);
+    const titleSuffix = remainingCount > 0 ? ` (+${remainingCount} more)` : "";
+    const combinedTitle = uniqueTitles.join(", ") + titleSuffix;
 
     // Create description
     const operationsList = operations
