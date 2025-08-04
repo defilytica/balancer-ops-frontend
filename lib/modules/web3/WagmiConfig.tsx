@@ -99,76 +99,63 @@ const customChains = {
   },
 };
 
-// Create connectors lazily to prevent multiple initializations
-let connectors: ReturnType<typeof connectorsForWallets>;
-const getConnectors = () => {
-  if (!connectors) {
-    connectors = connectorsForWallets(
-      [
-        {
-          groupName: "Recommended",
-          wallets: [
-            // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
-            metaMaskWallet,
-            safeWallet,
-            walletConnectWallet,
-            rabbyWallet,
-            coinbaseWallet,
-            rainbowWallet,
-            injectedWallet,
-          ],
-        },
+// Create connectors once at module level for stable references (important for Safe apps)
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [
+        // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
+        metaMaskWallet,
+        safeWallet,
+        walletConnectWallet,
+        rabbyWallet,
+        coinbaseWallet,
+        rainbowWallet,
+        injectedWallet,
       ],
-      { appName, projectId },
-    );
-  }
-  return connectors;
-};
+    },
+  ],
+  { appName, projectId },
+);
 
 export type WagmiConfig = Config;
 
-// Create the config just once and export it
-let wagmiConfigInstance: Config | null = null;
+// Create config directly for stable references (important for Safe app compatibility)
+export const wagmiConfig: Config = createConfig({
+  chains: [
+    customChains.mainnet,
+    customChains.arbitrum,
+    customChains.base,
+    customChains.avalanche,
+    customChains.gnosis,
+    customChains.optimism,
+    customChains.polygon,
+    customChains.polygonZkEvm,
+    customChains.sepolia,
+    customChains.mode,
+    customChains.fraxtal,
+    customChains.sonic,
+  ],
+  transports: {
+    [mainnet.id]: http("https://eth.drpc.org"),
+    [arbitrum.id]: http("https://arbitrum.drpc.org"),
+    [base.id]: http("https://base.drpc.org"),
+    [avalanche.id]: http("https://avalanche.drpc.org"),
+    [gnosis.id]: http("https://gnosis.drpc.org"),
+    [optimism.id]: http("https://optimism.drpc.org"),
+    [polygon.id]: http("https://polygon.llamarpc.com"),
+    [polygonZkEvm.id]: http("https://polygon-zkevm.drpc.org"),
+    [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
+    [mode.id]: http("https://mode.drpc.org"),
+    [fraxtal.id]: http("https://fraxtal.drpc.org"),
+    [sonic.id]: http("https://sonic-rpc.publicnode.com"),
+  },
+  connectors,
+  ssr: true,
+});
 
+// For compatibility - export the same config
 export function getWagmiConfig(): Config {
-  if (!wagmiConfigInstance) {
-    wagmiConfigInstance = createConfig({
-      chains: [
-        customChains.mainnet,
-        customChains.arbitrum,
-        customChains.base,
-        customChains.avalanche,
-        customChains.gnosis,
-        customChains.optimism,
-        customChains.polygon,
-        customChains.polygonZkEvm,
-        customChains.sepolia,
-        customChains.mode,
-        customChains.fraxtal,
-        customChains.sonic,
-        customChains.hyperevm,
-      ],
-      transports: {
-        [mainnet.id]: http("https://eth.drpc.org"),
-        [arbitrum.id]: http("https://arbitrum.drpc.org"),
-        [base.id]: http("https://base.drpc.org"),
-        [avalanche.id]: http("https://avalanche.drpc.org"),
-        [gnosis.id]: http("https://gnosis.drpc.org"),
-        [optimism.id]: http("https://optimism.drpc.org"),
-        [polygon.id]: http("https://polygon.llamarpc.com"),
-        [polygonZkEvm.id]: http("https://polygon-zkevm.drpc.org"),
-        [sepolia.id]: http("https://sepolia.gateway.tenderly.co"),
-        [mode.id]: http("https://mode.drpc.org"),
-        [fraxtal.id]: http("https://fraxtal.drpc.org"),
-        [sonic.id]: http("https://sonic-rpc.publicnode.com"),
-        [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
-      },
-      connectors: getConnectors(),
-      ssr: true,
-    });
-  }
-  return wagmiConfigInstance;
+  return wagmiConfig;
 }
-
-// For compatibility with existing code
-export const wagmiConfig = getWagmiConfig();

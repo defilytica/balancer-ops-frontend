@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  AlertDescription,
   AlertIcon,
   Box,
   Button,
@@ -30,6 +29,7 @@ import {
 } from "@/lib/services/apollo/generated/graphql";
 import RewardTokensTable from "@/components/tables/RewardTokensTable";
 import AddRewardsModal from "@/components/modal/AddRewardsModal";
+import { getExplorerUrl } from "@/lib/utils/getExplorerUrl";
 
 interface RewardTokensOverviewProps {}
 
@@ -44,7 +44,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const [v2InjectorAddresses, setV2InjectorAddresses] = useState<Set<string>>(new Set());
 
   const { data, loading, error, refetch } = useRewardTokenData(selectedNetwork);
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -86,6 +86,13 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   }, [tokenData]);
 
   // Optimized injector address fetching
+  // Reset distributor filter when wallet disconnects
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setShowDistributorOnly(false);
+    }
+  }, [isConnected, address]);
+
   useEffect(() => {
     const fetchAllInjectorAddresses = async () => {
       try {
@@ -199,8 +206,12 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       return pool.rewardTokens.some(token => {
         const rate = parseFloat(token.rate);
         const periodFinish = parseInt(token.period_finish);
-        // Active if rate > 0 and period hasn't finished
-        return rate > 0 && (periodFinish === 0 || periodFinish > currentTime);
+        // Active if rate > 0 and period hasn't finished (or is indefinite with periodFinish = 0)
+        // Fix: If periodFinish > 0 and < currentTime, reward is expired regardless of rate
+        if (periodFinish > 0 && periodFinish <= currentTime) {
+          return false; // Expired reward
+        }
+        return rate > 0;
       });
     };
   }, []);
@@ -235,20 +246,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       return true;
     });
   }, [data, searchTerm, showActiveOnly, showDistributorOnly, address, hasActiveRewards]);
-
-  const getExplorerUrl = (address: string) => {
-    const explorers: { [key: string]: string } = {
-      mainnet: "https://etherscan.io/address/",
-      polygon: "https://polygonscan.com/address/",
-      arbitrum: "https://arbiscan.io/address/",
-      optimism: "https://optimistic.etherscan.io/address/",
-      gnosis: "https://gnosisscan.io/address/",
-      avalanche: "https://snowtrace.io/address/",
-      base: "https://basescan.org/address/",
-      sonic: "https://sonicscan.org/address/",
-    };
-    return explorers[selectedNetwork.toLowerCase()] || explorers["mainnet"];
-  };
 
   // Show network selector first if no network is selected
   if (!selectedNetwork) {
@@ -360,7 +357,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
               isChecked={showDistributorOnly}
               onChange={e => setShowDistributorOnly(e.target.checked)}
               colorScheme="blue"
-              isDisabled={!address}
+              isDisabled={!isConnected || !address}
             >
               Pools with connected wallet as distributor
             </Checkbox>
@@ -377,7 +374,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         isRewardInjector={isRewardInjector}
         isDistributor={isDistributor}
         onAddRewards={openAddRewardsModal}
-        getExplorerUrl={getExplorerUrl}
+        getExplorerUrl={(address: string) => getExplorerUrl(selectedNetwork, address)}
         formatEndDate={formatEndDate}
       />
 
