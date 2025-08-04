@@ -7,7 +7,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
@@ -51,13 +51,16 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useQuery as useTanStackQuery } from "@tanstack/react-query";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { isAddress } from "viem";
 import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { useAccount, useSwitchChain } from "wagmi";
+import { ethers } from "ethers";
+import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
@@ -78,7 +81,45 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const [ownerSafe, setOwnerSafe] = useState("");
   const [includePermit2, setIncludePermit2] = useState(false);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
+  const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
+
+  // Chain state switch
+  const { switchChain } = useSwitchChain();
+
+  // Add wallet connection hook
+  const { address: walletAddress } = useAccount();
+
+  // Add effect to check if current wallet can manage buffer
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!selectedToken || !walletAddress) {
+        setIsCurrentWalletManager(false);
+        return;
+      }
+
+      try {
+        // For buffer operations:
+        // - ADD: Anyone can add liquidity (no specific manager needed)
+        // - REMOVE: Only if the connected wallet owns shares or matches ownerSafe
+        if (operationType === BufferOperation.ADD) {
+          setIsCurrentWalletManager(true);
+        } else {
+          // For REMOVE operations, check if connected wallet owns shares
+          // or if it matches the owner safe address
+          const hasPermission =
+            (ownerShares && ownerShares.ownerShares > BigInt(0)) ||
+            (isAddress(ownerSafe) && walletAddress.toLowerCase() === ownerSafe.toLowerCase());
+          setIsCurrentWalletManager(hasPermission);
+        }
+      } catch (error) {
+        console.error("Error checking buffer manager status:", error);
+        setIsCurrentWalletManager(false);
+      }
+    };
+
+    checkManagerStatus();
+  }, [selectedToken, walletAddress, operationType, ownerShares, ownerSafe]);
 
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
@@ -241,6 +282,23 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     setOwnerSafe("");
     setIncludePermit2(false);
     setGeneratedPayload(null);
+    setIsCurrentWalletManager(false);
+
+    // Find the corresponding chain ID for the selected network and switch
+    const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+    if (networkOption && newNetwork) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
   };
 
   const handleTokenSelect = (token: TokenListToken) => {
@@ -367,7 +425,130 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     ],
   );
 
-  const handleGenerateClick = useCallback(() => {
+  // Direct transaction execution for EOA
+  const handleDirectAddLiquidity = useCallback(async () => {
+    try {
+      if (!selectedToken || !underlyingTokenAmount || !wrappedTokenAmount || !sharesAmount) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+
+      const underlyingTokenAddress = selectedToken.isManual
+        ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
+          ? bufferAsset.underlyingToken
+          : selectedToken.underlyingTokenAddress
+        : selectedToken.underlyingTokenAddress;
+
+      const tx = await contract.addLiquidityToBuffer(
+        selectedToken.address,
+        underlyingTokenAddress,
+        underlyingTokenAmount,
+        wrappedTokenAmount,
+        sharesAmount,
+        walletAddress, // shares owner is the connected wallet
+      );
+
+      toast.promise(tx.wait(), {
+        success: {
+          title: "Success",
+          description: `Liquidity added to buffer successfully. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Adding liquidity to buffer",
+          description: "Waiting for transaction confirmation... Please wait.",
+        },
+        error: (error: any) => ({
+          title: "Error",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error executing transaction",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [
+    selectedToken,
+    underlyingTokenAmount,
+    wrappedTokenAmount,
+    sharesAmount,
+    walletAddress,
+    bufferAsset,
+    toast,
+  ]);
+
+  const handleDirectRemoveLiquidity = useCallback(async () => {
+    try {
+      if (!selectedToken || !sharesAmount) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+
+      const tx = await contract.removeLiquidityFromBuffer(
+        selectedToken.address,
+        sharesAmount,
+        underlyingTokenAmount || "0",
+        wrappedTokenAmount || "0",
+      );
+
+      toast.promise(tx.wait(), {
+        success: {
+          title: "Success",
+          description: `Liquidity removed from buffer successfully. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Removing liquidity from buffer",
+          description: "Waiting for transaction confirmation... Please wait.",
+        },
+        error: (error: any) => ({
+          title: "Error",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error executing transaction",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [selectedToken, sharesAmount, underlyingTokenAmount, wrappedTokenAmount, toast]);
+
+  const handleGenerateClick = useCallback(async () => {
     if (!selectedNetwork || !selectedToken || !sharesAmount) {
       toast({
         title: "Missing information",
@@ -425,13 +606,23 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       return;
     }
 
-    const payload =
-      operationType === BufferOperation.REMOVE
-        ? handleRemoveLiquidity(networkInfo.chainId)
-        : handleAddLiquidity(networkInfo.chainId);
+    // If current wallet can manage buffer, execute directly
+    if (isCurrentWalletManager) {
+      if (operationType === BufferOperation.ADD) {
+        await handleDirectAddLiquidity();
+      } else {
+        await handleDirectRemoveLiquidity();
+      }
+    } else {
+      // Generate payload for Safe
+      const payload =
+        operationType === BufferOperation.REMOVE
+          ? handleRemoveLiquidity(networkInfo.chainId)
+          : handleAddLiquidity(networkInfo.chainId);
 
-    if (payload) {
-      setGeneratedPayload(JSON.stringify(payload, null, 2));
+      if (payload) {
+        setGeneratedPayload(JSON.stringify(payload, null, 2));
+      }
     }
   }, [
     selectedNetwork,
@@ -440,6 +631,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     underlyingTokenAmount,
     wrappedTokenAmount,
     operationType,
+    isCurrentWalletManager,
+    handleDirectAddLiquidity,
+    handleDirectRemoveLiquidity,
     handleRemoveLiquidity,
     handleAddLiquidity,
     toast,
@@ -807,6 +1001,29 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             </Checkbox>
           </Box>
         </Flex>
+
+        {/* EOA/Wallet status alerts */}
+        {selectedToken && isCurrentWalletManager && (
+          <Alert status="info" mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              {operationType === BufferOperation.ADD
+                ? "You can add liquidity to this buffer directly through your connected wallet."
+                : "You can remove liquidity from this buffer directly through your connected wallet."}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {selectedToken && !isCurrentWalletManager && operationType === BufferOperation.REMOVE && (
+          <Alert status="warning" mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              You cannot remove liquidity from this buffer directly. You either don&apos;t own
+              shares in this buffer or the owner address doesn&apos;t match your connected wallet.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {operationType === BufferOperation.REMOVE &&
           ownerShares?.ownerShares === BigInt(0) &&
           isAddress(ownerSafe) &&
@@ -831,22 +1048,41 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
         <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2" wrap="wrap" gap={2}>
           <Flex gap={2} align="center">
-            <Button
-              variant="primary"
-              onClick={handleGenerateClick}
-              isDisabled={isGenerateButtonDisabled}
-            >
-              Generate Payload
-            </Button>
-            <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            {!selectedToken ? (
+              <Button variant="primary" isDisabled={true}>
+                Select a Token
+              </Button>
+            ) : isCurrentWalletManager ? (
+              <Button
+                variant="primary"
+                onClick={handleGenerateClick}
+                isDisabled={isGenerateButtonDisabled}
+              >
+                Execute {operationType === BufferOperation.ADD ? "Add" : "Remove"} Liquidity
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  onClick={handleGenerateClick}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Generate Payload
+                </Button>
+                <ComposerButton
+                  generateData={generateComposerData}
+                  isDisabled={!generatedPayload}
+                />
+              </>
+            )}
           </Flex>
-          {generatedPayload && (
+          {generatedPayload && !isCurrentWalletManager && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
         <Divider />
 
-        {generatedPayload && (
+        {generatedPayload && !isCurrentWalletManager && (
           <>
             <JsonViewerEditor
               jsonData={generatedPayload}

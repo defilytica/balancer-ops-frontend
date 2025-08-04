@@ -33,7 +33,7 @@ import {
   generateInitializeBufferPayload,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
@@ -48,6 +48,9 @@ import { isAddress } from "viem";
 import { useDebounce } from "use-debounce";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { useAccount, useSwitchChain } from "wagmi";
+import { ethers } from "ethers";
+import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -63,7 +66,25 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const [seedingSafe, setSeedingSafe] = useState("");
   const [includePermit2, setIncludePermit2] = useState(false);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
+  const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
+
+  // Chain state switch
+  const { switchChain } = useSwitchChain();
+
+  // Add wallet connection hook
+  const { address: walletAddress } = useAccount();
+
+  // Add effect to check if current wallet can initialize buffer
+  useEffect(() => {
+    // For buffer initialization, anyone with a connected wallet can initialize
+    // The connected wallet becomes the shares owner
+    if (walletAddress && selectedToken && !isInitialized) {
+      setIsCurrentWalletManager(true);
+    } else {
+      setIsCurrentWalletManager(false);
+    }
+  }, [walletAddress, selectedToken, isInitialized]);
 
   const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
 
@@ -159,6 +180,23 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     setSeedingSafe("");
     setIncludePermit2(false);
     setGeneratedPayload(null);
+    setIsCurrentWalletManager(false);
+
+    // Find the corresponding chain ID for the selected network and switch
+    const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+    if (networkOption && newNetwork) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
   };
 
   const handleTokenSelect = (token: TokenListToken) => {
@@ -196,7 +234,81 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       !!selectedToken?.address && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
   });
 
-  const handleGenerateClick = useCallback(() => {
+  // Direct transaction execution for EOA
+  const handleDirectBufferInitialization = useCallback(async () => {
+    try {
+      if (!selectedToken || !minIssuedShares) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (!exactAmountUnderlyingIn && !exactAmountWrappedIn) {
+        toast({
+          title: "Missing amount",
+          description:
+            "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+
+      const tx = await contract.initializeBuffer(
+        selectedToken.address,
+        exactAmountUnderlyingIn || "0",
+        exactAmountWrappedIn || "0",
+        minIssuedShares,
+        walletAddress, // shares owner is the connected wallet
+      );
+
+      toast.promise(tx.wait(), {
+        success: {
+          title: "Success",
+          description: `Buffer initialized successfully. Changes will appear in the UI in the next few minutes after the block is indexed.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Initializing buffer",
+          description: "Waiting for transaction confirmation... Please wait.",
+        },
+        error: (error: any) => ({
+          title: "Error",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error executing transaction",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [
+    selectedToken,
+    minIssuedShares,
+    exactAmountUnderlyingIn,
+    exactAmountWrappedIn,
+    walletAddress,
+    toast,
+  ]);
+
+  const handleGenerateClick = useCallback(async () => {
     // Validation
     if (!selectedNetwork || !selectedToken || !minIssuedShares) {
       toast({
@@ -318,23 +430,28 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       }
     }
 
-    // Generate the payload
-    const payload = generateInitializeBufferPayload(
-      {
-        wrappedToken: selectedToken.address,
-        underlyingToken: debouncedUnderlyingTokenAddress,
-        exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
-        exactAmountWrappedIn: exactAmountWrappedIn || "0",
-        minIssuedShares,
-        seedingSafe,
-        includePermit2,
-      },
-      networkInfo.chainId,
-      bufferRouterAddress,
-      permit2Address,
-    );
+    // If current wallet can initialize buffer, execute directly
+    if (isCurrentWalletManager) {
+      await handleDirectBufferInitialization();
+    } else {
+      // Generate the payload for Safe
+      const payload = generateInitializeBufferPayload(
+        {
+          wrappedToken: selectedToken.address,
+          underlyingToken: debouncedUnderlyingTokenAddress,
+          exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
+          exactAmountWrappedIn: exactAmountWrappedIn || "0",
+          minIssuedShares,
+          seedingSafe,
+          includePermit2,
+        },
+        networkInfo.chainId,
+        bufferRouterAddress,
+        permit2Address,
+      );
 
-    setGeneratedPayload(JSON.stringify(payload, null, 2));
+      setGeneratedPayload(JSON.stringify(payload, null, 2));
+    }
   }, [
     selectedNetwork,
     selectedToken,
@@ -344,6 +461,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     exactAmountWrappedIn,
     includePermit2,
     seedingSafe,
+    isCurrentWalletManager,
+    handleDirectBufferInitialization,
     toast,
     addressBook,
     isInitialized,
@@ -516,6 +635,24 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Box>
         </Flex>
 
+        {/* EOA/Wallet status alerts */}
+        {selectedToken && isCurrentWalletManager && !isInitialized && (
+          <Alert status="info" mt={4}>
+            <AlertIcon />
+            <Text>You can initialize this buffer directly through your connected wallet.</Text>
+          </Alert>
+        )}
+
+        {selectedToken && !isCurrentWalletManager && !isInitialized && (
+          <Alert status="info" mt={4}>
+            <AlertIcon />
+            <Text>
+              Connect a wallet to initialize this buffer directly, or generate a payload for Safe
+              execution.
+            </Text>
+          </Alert>
+        )}
+
         {/* Display error if buffer is already initialized */}
         {selectedToken && selectedNetwork && isInitialized && (
           <Alert status="error" alignItems="center">
@@ -528,26 +665,46 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
         <Flex justifyContent="space-between" alignItems="center" mt="5" mb="2" wrap="wrap" gap={2}>
           <Flex gap={2} align="center">
-            <Button
-              variant="primary"
-              onClick={handleGenerateClick}
-              isDisabled={isGenerateButtonDisabled}
-            >
-              Generate Payload
-            </Button>
-            <ComposerButton
-              generateData={generateComposerData}
-              isDisabled={!generatedPayload || isInitialized}
-            />
+            {!selectedToken ? (
+              <Button variant="primary" isDisabled={true}>
+                Select a Token
+              </Button>
+            ) : isInitialized ? (
+              <Button variant="primary" isDisabled={true}>
+                Already Initialized
+              </Button>
+            ) : isCurrentWalletManager ? (
+              <Button
+                variant="primary"
+                onClick={handleGenerateClick}
+                isDisabled={isGenerateButtonDisabled}
+              >
+                Execute Initialize Buffer
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  onClick={handleGenerateClick}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Generate Payload
+                </Button>
+                <ComposerButton
+                  generateData={generateComposerData}
+                  isDisabled={!generatedPayload || isInitialized}
+                />
+              </>
+            )}
           </Flex>
-          {generatedPayload && (
+          {generatedPayload && !isCurrentWalletManager && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
 
         <Divider />
 
-        {generatedPayload && (
+        {generatedPayload && !isCurrentWalletManager && (
           <>
             <JsonViewerEditor
               jsonData={generatedPayload}
