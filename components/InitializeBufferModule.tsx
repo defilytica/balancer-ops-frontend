@@ -75,6 +75,21 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
 
+  const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
+
+  // Fetch buffer initialization status - needed early for useEffect
+  const {
+    data: isInitialized,
+    isLoading: isLoadingInitialized,
+    isError: isInitializedError,
+  } = useTanStackQuery({
+    queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
+    queryFn: () =>
+      fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
+    enabled:
+      !!selectedToken?.address && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
+  });
+
   // Add effect to check if current wallet can initialize buffer
   useEffect(() => {
     // For buffer initialization, anyone with a connected wallet can initialize
@@ -85,8 +100,6 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       setIsCurrentWalletManager(false);
     }
   }, [walletAddress, selectedToken, isInitialized]);
-
-  const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
 
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
@@ -220,19 +233,6 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       setUnderlyingTokenAddress(bufferAsset.underlyingToken);
     }
   }, [bufferAsset, selectedToken]);
-
-  // Fetch buffer initialization status
-  const {
-    data: isInitialized,
-    isLoading: isLoadingInitialized,
-    isError: isInitializedError,
-  } = useTanStackQuery({
-    queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
-    queryFn: () =>
-      fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
-    enabled:
-      !!selectedToken?.address && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
-  });
 
   // Direct transaction execution for EOA
   const handleDirectBufferInitialization = useCallback(async () => {
