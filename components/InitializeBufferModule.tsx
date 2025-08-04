@@ -78,11 +78,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
 
   // Fetch buffer initialization status - needed early for useEffect
-  const {
-    data: isInitialized,
-    isLoading: isLoadingInitialized,
-    isError: isInitializedError,
-  } = useTanStackQuery({
+  const { data: isInitialized, isLoading: isLoadingInitialized } = useTanStackQuery({
     queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
     queryFn: () =>
       fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
@@ -129,11 +125,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   );
 
   // Fetch buffer asset (underlying token) for manually added token
-  const {
-    data: bufferAsset,
-    isLoading: isLoadingBufferAsset,
-    isError: isBufferAssetError,
-  } = useTanStackQuery({
+  const { data: bufferAsset } = useTanStackQuery({
     queryKey: ["bufferAsset", selectedToken?.address, selectedNetwork],
     queryFn: () => fetchBufferAsset(selectedToken!.address, selectedNetwork.toLowerCase()),
     enabled:
@@ -200,7 +192,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     if (networkOption && newNetwork) {
       try {
         switchChain({ chainId: Number(networkOption.chainId) });
-      } catch (error) {
+      } catch {
         toast({
           title: "Error switching network",
           description: "Please switch network manually in your wallet",
@@ -308,7 +300,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     toast,
   ]);
 
-  const handleGenerateClick = useCallback(async () => {
+  const handleGeneratePayload = useCallback(async () => {
     // Validation
     if (!selectedNetwork || !selectedToken || !minIssuedShares) {
       toast({
@@ -430,28 +422,23 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       }
     }
 
-    // If current wallet can initialize buffer, execute directly
-    if (isCurrentWalletManager) {
-      await handleDirectBufferInitialization();
-    } else {
-      // Generate the payload for Safe
-      const payload = generateInitializeBufferPayload(
-        {
-          wrappedToken: selectedToken.address,
-          underlyingToken: debouncedUnderlyingTokenAddress,
-          exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
-          exactAmountWrappedIn: exactAmountWrappedIn || "0",
-          minIssuedShares,
-          seedingSafe,
-          includePermit2,
-        },
-        networkInfo.chainId,
-        bufferRouterAddress,
-        permit2Address,
-      );
+    // Always generate payload
+    const payload = generateInitializeBufferPayload(
+      {
+        wrappedToken: selectedToken.address,
+        underlyingToken: debouncedUnderlyingTokenAddress,
+        exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
+        exactAmountWrappedIn: exactAmountWrappedIn || "0",
+        minIssuedShares,
+        seedingSafe,
+        includePermit2,
+      },
+      networkInfo.chainId,
+      bufferRouterAddress,
+      permit2Address,
+    );
 
-      setGeneratedPayload(JSON.stringify(payload, null, 2));
-    }
+    setGeneratedPayload(JSON.stringify(payload, null, 2));
   }, [
     selectedNetwork,
     selectedToken,
@@ -461,11 +448,100 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     exactAmountWrappedIn,
     includePermit2,
     seedingSafe,
-    isCurrentWalletManager,
-    handleDirectBufferInitialization,
     toast,
     addressBook,
     isInitialized,
+  ]);
+
+  const handleDirectExecution = useCallback(async () => {
+    // Validation
+    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (isInitialized) {
+      toast({
+        title: "Buffer already initialized",
+        description: "This buffer is already initialized. You cannot initialize it again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!exactAmountUnderlyingIn && !exactAmountWrappedIn) {
+      toast({
+        title: "Missing amount",
+        description:
+          "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Underlying Token Amount must be greater than zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Wrapped Token Amount must be greater than zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Validate underlying token address when underlying amount is provided
+    if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) > 0) {
+      if (
+        !debouncedUnderlyingTokenAddress ||
+        isZeroAddress(debouncedUnderlyingTokenAddress) ||
+        !isAddress(debouncedUnderlyingTokenAddress)
+      ) {
+        toast({
+          title: "Invalid underlying token address",
+          description:
+            "When providing an underlying token amount, you must provide a valid underlying token address.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+    }
+
+    // Execute directly via wallet
+    await handleDirectBufferInitialization();
+  }, [
+    selectedNetwork,
+    selectedToken,
+    minIssuedShares,
+    exactAmountUnderlyingIn,
+    exactAmountWrappedIn,
+    debouncedUnderlyingTokenAddress,
+    isInitialized,
+    handleDirectBufferInitialization,
+    toast,
   ]);
 
   // Generate composer data only when button is clicked
@@ -674,18 +750,31 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
                 Already Initialized
               </Button>
             ) : isCurrentWalletManager ? (
-              <Button
-                variant="primary"
-                onClick={handleGenerateClick}
-                isDisabled={isGenerateButtonDisabled}
-              >
-                Execute Initialize Buffer
-              </Button>
+              <>
+                <Button
+                  variant="primary"
+                  onClick={handleDirectExecution}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Execute Initialize Buffer
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleGeneratePayload}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Generate Payload
+                </Button>
+                <ComposerButton
+                  generateData={generateComposerData}
+                  isDisabled={!generatedPayload || isInitialized}
+                />
+              </>
             ) : (
               <>
                 <Button
                   variant="primary"
-                  onClick={handleGenerateClick}
+                  onClick={handleGeneratePayload}
                   isDisabled={isGenerateButtonDisabled}
                 >
                   Generate Payload
@@ -697,14 +786,14 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               </>
             )}
           </Flex>
-          {generatedPayload && !isCurrentWalletManager && (
+          {generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
 
         <Divider />
 
-        {generatedPayload && !isCurrentWalletManager && (
+        {generatedPayload && (
           <>
             <JsonViewerEditor
               jsonData={generatedPayload}

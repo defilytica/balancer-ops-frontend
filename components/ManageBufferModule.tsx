@@ -90,37 +90,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
 
-  // Add effect to check if current wallet can manage buffer
-  useEffect(() => {
-    const checkManagerStatus = async () => {
-      if (!selectedToken || !walletAddress) {
-        setIsCurrentWalletManager(false);
-        return;
-      }
-
-      try {
-        // For buffer operations:
-        // - ADD: Anyone can add liquidity (no specific manager needed)
-        // - REMOVE: Only if the connected wallet owns shares or matches ownerSafe
-        if (operationType === BufferOperation.ADD) {
-          setIsCurrentWalletManager(true);
-        } else {
-          // For REMOVE operations, check if connected wallet owns shares
-          // or if it matches the owner safe address
-          const hasPermission =
-            (ownerShares && ownerShares.ownerShares > BigInt(0)) ||
-            (isAddress(ownerSafe) && walletAddress.toLowerCase() === ownerSafe.toLowerCase());
-          setIsCurrentWalletManager(hasPermission);
-        }
-      } catch (error) {
-        console.error("Error checking buffer manager status:", error);
-        setIsCurrentWalletManager(false);
-      }
-    };
-
-    checkManagerStatus();
-  }, [selectedToken, walletAddress, operationType, ownerShares, ownerSafe]);
-
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
     {
@@ -192,11 +161,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   });
 
   // Fetch buffer initialization status
-  const {
-    data: isInitialized,
-    isLoading: isLoadingInitialized,
-    isError: isInitializedError,
-  } = useTanStackQuery({
+  const { data: isInitialized, isLoading: isLoadingInitialized } = useTanStackQuery({
     queryKey: ["bufferInitialized", selectedToken?.address, selectedNetwork],
     queryFn: () =>
       fetchBufferInitializationStatus(selectedToken!.address, selectedNetwork.toLowerCase()),
@@ -204,11 +169,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   });
 
   // Fetch buffer asset (underlying token) for manually added token
-  const {
-    data: bufferAsset,
-    isLoading: isLoadingBufferAsset,
-    isError: isBufferAssetError,
-  } = useTanStackQuery({
+  const { data: bufferAsset } = useTanStackQuery({
     queryKey: ["bufferAsset", selectedToken?.address, selectedNetwork],
     queryFn: () => fetchBufferAsset(selectedToken!.address, selectedNetwork.toLowerCase()),
     enabled:
@@ -217,6 +178,37 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       !!networks[selectedNetwork.toLowerCase()] &&
       selectedToken.isManual,
   });
+
+  // Add effect to check if current wallet can manage buffer
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!selectedToken || !walletAddress) {
+        setIsCurrentWalletManager(false);
+        return;
+      }
+
+      try {
+        // For buffer operations:
+        // - ADD: Anyone can add liquidity (no specific manager needed)
+        // - REMOVE: Only if the connected wallet owns shares or matches ownerSafe
+        if (operationType === BufferOperation.ADD) {
+          setIsCurrentWalletManager(true);
+        } else {
+          // For REMOVE operations, check if connected wallet owns shares
+          // or if it matches the owner safe address
+          const hasPermission =
+            (ownerShares && ownerShares.ownerShares > BigInt(0)) ||
+            (isAddress(ownerSafe) && walletAddress.toLowerCase() === ownerSafe.toLowerCase());
+          setIsCurrentWalletManager(hasPermission);
+        }
+      } catch (error) {
+        console.error("Error checking buffer manager status:", error);
+        setIsCurrentWalletManager(false);
+      }
+    };
+
+    void checkManagerStatus();
+  }, [selectedToken, walletAddress, operationType, ownerShares, ownerSafe]);
 
   const isGenerateButtonDisabled = useMemo(() => {
     return (
@@ -289,7 +281,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     if (networkOption && newNetwork) {
       try {
         switchChain({ chainId: Number(networkOption.chainId) });
-      } catch (error) {
+      } catch {
         toast({
           title: "Error switching network",
           description: "Please switch network manually in your wallet",
@@ -548,7 +540,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     }
   }, [selectedToken, sharesAmount, underlyingTokenAmount, wrappedTokenAmount, toast]);
 
-  const handleGenerateClick = useCallback(async () => {
+  const handleGeneratePayload = useCallback(async () => {
     if (!selectedNetwork || !selectedToken || !sharesAmount) {
       toast({
         title: "Missing information",
@@ -606,23 +598,14 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       return;
     }
 
-    // If current wallet can manage buffer, execute directly
-    if (isCurrentWalletManager) {
-      if (operationType === BufferOperation.ADD) {
-        await handleDirectAddLiquidity();
-      } else {
-        await handleDirectRemoveLiquidity();
-      }
-    } else {
-      // Generate payload for Safe
-      const payload =
-        operationType === BufferOperation.REMOVE
-          ? handleRemoveLiquidity(networkInfo.chainId)
-          : handleAddLiquidity(networkInfo.chainId);
+    // Always generate payload
+    const payload =
+      operationType === BufferOperation.REMOVE
+        ? handleRemoveLiquidity(networkInfo.chainId)
+        : handleAddLiquidity(networkInfo.chainId);
 
-      if (payload) {
-        setGeneratedPayload(JSON.stringify(payload, null, 2));
-      }
+    if (payload) {
+      setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
   }, [
     selectedNetwork,
@@ -631,11 +614,72 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     underlyingTokenAmount,
     wrappedTokenAmount,
     operationType,
-    isCurrentWalletManager,
-    handleDirectAddLiquidity,
-    handleDirectRemoveLiquidity,
     handleRemoveLiquidity,
     handleAddLiquidity,
+    toast,
+  ]);
+
+  const handleDirectExecution = useCallback(async () => {
+    if (!selectedNetwork || !selectedToken || !sharesAmount) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!underlyingTokenAmount && !wrappedTokenAmount) {
+      toast({
+        title: "Missing amount",
+        description:
+          "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (underlyingTokenAmount && parseFloat(underlyingTokenAmount) < 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Underlying Token Amount must be greater than zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) < 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Wrapped Token Amount must be greater than zero",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Execute directly via wallet
+    if (operationType === BufferOperation.ADD) {
+      await handleDirectAddLiquidity();
+    } else {
+      await handleDirectRemoveLiquidity();
+    }
+  }, [
+    selectedNetwork,
+    selectedToken,
+    sharesAmount,
+    underlyingTokenAmount,
+    wrappedTokenAmount,
+    operationType,
+    handleDirectAddLiquidity,
+    handleDirectRemoveLiquidity,
     toast,
   ]);
 
@@ -1053,18 +1097,31 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                 Select a Token
               </Button>
             ) : isCurrentWalletManager ? (
-              <Button
-                variant="primary"
-                onClick={handleGenerateClick}
-                isDisabled={isGenerateButtonDisabled}
-              >
-                Execute {operationType === BufferOperation.ADD ? "Add" : "Remove"} Liquidity
-              </Button>
+              <>
+                <Button
+                  variant="primary"
+                  onClick={handleDirectExecution}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Execute {operationType === BufferOperation.ADD ? "Add" : "Remove"} Liquidity
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleGeneratePayload}
+                  isDisabled={isGenerateButtonDisabled}
+                >
+                  Generate Payload
+                </Button>
+                <ComposerButton
+                  generateData={generateComposerData}
+                  isDisabled={!generatedPayload}
+                />
+              </>
             ) : (
               <>
                 <Button
                   variant="primary"
-                  onClick={handleGenerateClick}
+                  onClick={handleGeneratePayload}
                   isDisabled={isGenerateButtonDisabled}
                 >
                   Generate Payload
@@ -1076,13 +1133,13 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               </>
             )}
           </Flex>
-          {generatedPayload && !isCurrentWalletManager && (
+          {generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
         <Divider />
 
-        {generatedPayload && !isCurrentWalletManager && (
+        {generatedPayload && (
           <>
             <JsonViewerEditor
               jsonData={generatedPayload}
