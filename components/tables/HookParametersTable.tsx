@@ -32,6 +32,10 @@ import Link from "next/link";
 import { isZeroAddress } from "@ethereumjs/util";
 import { HookType } from "@/components/HookParametersDashboardModule";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import {
+  calculateStableSurgeBalanceMetrics,
+  calculateTokenPercentage,
+} from "@/lib/utils/calculateStableSurgeBalanceMetrics";
 
 interface HookTableProps {
   pools: Pool[];
@@ -87,22 +91,6 @@ export const HookParametersTable = ({
     },
     [addressBook],
   );
-
-  const calculateTokenPercentage = useCallback((token: Pool["poolTokens"][0], pool: Pool) => {
-    if (!token.balanceUSD || !pool.dynamicData?.totalLiquidity) {
-      return "0.0";
-    }
-
-    const tokenUSDValue = parseFloat(token.balanceUSD);
-    const totalLiquidity = parseFloat(pool.dynamicData.totalLiquidity);
-
-    if (totalLiquidity === 0) {
-      return "0.0";
-    }
-
-    const percentage = (tokenUSDValue / totalLiquidity) * 100;
-    return percentage.toFixed(1);
-  }, []);
 
   const getNetworkNameForUrl = useCallback((chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
@@ -162,6 +150,12 @@ export const HookParametersTable = ({
         } else if (sortField === "volume24h") {
           aValue = Number(a.dynamicData?.volume24h || 0);
           bValue = Number(b.dynamicData?.volume24h || 0);
+        } else if (sortField === "balance_status") {
+          // Handle StableSurge balance status sorting
+          const aMetrics = calculateStableSurgeBalanceMetrics(a);
+          const bMetrics = calculateStableSurgeBalanceMetrics(b);
+          aValue = aMetrics ? parseFloat(aMetrics.balanceRatio) : 0;
+          bValue = bMetrics ? parseFloat(bMetrics.balanceRatio) : 0;
         } else {
           // Handle hook parameter sorting
           const aParams = formatHookAttributes(a, false);
@@ -275,6 +269,32 @@ export const HookParametersTable = ({
                 </Button>
               </Th>
             ))}
+            {selectedHookType === "STABLE_SURGE" && (
+              <Th isNumeric w="140px" px={3}>
+                <Button
+                  variant="unstyled"
+                  size="sm"
+                  fontWeight="medium"
+                  color={sortField === "balance_status" ? "green.500" : "inherit"}
+                  rightIcon={
+                    <Icon
+                      as={
+                        sortField === "balance_status" && sortDirection === Sorting.Asc
+                          ? ArrowUp
+                          : ArrowDown
+                      }
+                      boxSize={3}
+                      opacity={sortField === "balance_status" ? 1 : 0.4}
+                      color={sortField === "balance_status" ? "green.500" : "inherit"}
+                    />
+                  }
+                  onClick={() => handleSort("balance_status")}
+                  _hover={{ bg: "whiteAlpha.100" }}
+                >
+                  Balance Status
+                </Button>
+              </Th>
+            )}
             <Th w="80px" px={3}>
               Owner
             </Th>
@@ -287,6 +307,7 @@ export const HookParametersTable = ({
           {filteredPools.map(pool => {
             const parameters = formatHookAttributes(pool, false);
             const poolUrl = getPoolUrl(pool);
+            const stableSurgeMetrics = calculateStableSurgeBalanceMetrics(pool);
 
             const handleRowClick = () => {
               window.open(poolUrl, "_blank", "noopener,noreferrer");
@@ -301,7 +322,7 @@ export const HookParametersTable = ({
                 <Td>
                   <HStack spacing={2}>
                     <Image
-                      src={networks[pool.chain.toLowerCase()].logo}
+                      src={networks[pool.chain.toLowerCase()]?.logo || ""}
                       alt={pool.chain.toLowerCase()}
                       boxSize="5"
                     />
@@ -343,6 +364,38 @@ export const HookParametersTable = ({
                             </HStack>
                           );
                         })}
+                        {stableSurgeMetrics && selectedHookType === "STABLE_SURGE" && (
+                          <>
+                            <Box borderTop="1px solid" borderColor="gray.600" mt={3} pt={2}>
+                              <Text fontWeight="bold" mb={2} fontSize="sm">
+                                StableSurge Balance Analysis:
+                              </Text>
+                              <Text fontSize="xs" mb={1}>
+                                Ideal Balance: {stableSurgeMetrics.idealPercentage}% each
+                              </Text>
+                              <Text fontSize="xs" mb={1}>
+                                Balance Deviation: {stableSurgeMetrics.balanceRatio}%
+                              </Text>
+                              <Text fontSize="xs" mb={1}>
+                                Surge Threshold: {stableSurgeMetrics.surgeThreshold}%
+                              </Text>
+                              <HStack spacing={2} mb={1}>
+                                <Text fontSize="xs">Surge Mode:</Text>
+                                <Badge
+                                  size="xs"
+                                  colorScheme={stableSurgeMetrics.isInSurgeMode ? "red" : "green"}
+                                >
+                                  {stableSurgeMetrics.isInSurgeMode ? "ACTIVE" : "INACTIVE"}
+                                </Badge>
+                              </HStack>
+                              {stableSurgeMetrics.isInSurgeMode && (
+                                <Text fontSize="xs" color="red.300">
+                                  Est. Surge Fee: {stableSurgeMetrics.estimatedSurgeFee}%
+                                </Text>
+                              )}
+                            </Box>
+                          </>
+                        )}
                       </Box>
                     }
                   >
@@ -389,6 +442,32 @@ export const HookParametersTable = ({
                     <Text>{param.value}</Text>
                   </Td>
                 ))}
+                {selectedHookType === "STABLE_SURGE" && (
+                  <Td isNumeric px={3}>
+                    {stableSurgeMetrics ? (
+                      <Box textAlign="center">
+                        <Text fontSize="xs" mb={1}>
+                          {stableSurgeMetrics.balanceRatio}% dev
+                        </Text>
+                        <Badge
+                          size="xs"
+                          colorScheme={stableSurgeMetrics.isInSurgeMode ? "red" : "green"}
+                        >
+                          {stableSurgeMetrics.isInSurgeMode ? "SURGE" : "NORMAL"}
+                        </Badge>
+                        {stableSurgeMetrics.isInSurgeMode && (
+                          <Text fontSize="xs" color="red.300" mt={1}>
+                            +{stableSurgeMetrics.estimatedSurgeFee}%
+                          </Text>
+                        )}
+                      </Box>
+                    ) : (
+                      <Text fontSize="xs" color="gray.500">
+                        N/A
+                      </Text>
+                    )}
+                  </Td>
+                )}
                 <Td px={3}>
                   <Badge colorScheme="purple" size="sm" px={3} py={1}>
                     {getOwnerType(pool)}
