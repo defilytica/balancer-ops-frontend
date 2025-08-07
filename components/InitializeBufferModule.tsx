@@ -51,6 +51,8 @@ import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator"
 import { useAccount, useSwitchChain } from "wagmi";
 import { ethers } from "ethers";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
+import { ERC20 } from "@/abi/erc20";
+import { addDays } from "date-fns";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -258,7 +260,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     return bufferRouterAddress;
   }, [selectedNetwork, addressBook, toast]);
 
-  // Direct transaction execution for EOA
+  // Direct transaction execution for EOA with proper permit2 flow
   const handleDirectBufferInitialization = useCallback(async () => {
     try {
       if (!selectedToken || !minIssuedShares) {
@@ -289,8 +291,132 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
 
+      // Step 1: Handle permit2 approvals if needed
+      if (includePermit2) {
+        const permit2Address = getAddress(
+          addressBook,
+          selectedNetwork.toLowerCase(),
+          "uniswap",
+          "permit2",
+        );
+        if (!permit2Address) {
+          toast({
+            title: "Permit2 not found",
+            description: "Permit2 contract is not deployed on the selected network",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
+
+        const expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000);
+
+        // Handle underlying token permit2 approval
+        if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) > 0) {
+          if (!debouncedUnderlyingTokenAddress) {
+            toast({
+              title: "Missing underlying token address",
+              description: "Underlying token address is required for permit2 approval",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+            return;
+          }
+
+          const underlyingTokenContract = new ethers.Contract(
+            debouncedUnderlyingTokenAddress,
+            ERC20,
+            signer,
+          );
+
+          // Check current ERC20 allowance to Permit2
+          const currentAllowance = await underlyingTokenContract.allowance(
+            walletAddress,
+            permit2Address,
+          );
+
+          // Only approve if current allowance is insufficient
+          if (currentAllowance < BigInt(exactAmountUnderlyingIn)) {
+            const approveTx1 = await underlyingTokenContract.approve(
+              permit2Address,
+              exactAmountUnderlyingIn,
+            );
+            await approveTx1.wait();
+          }
+
+          // Check current Permit2 allowance to BufferRouter
+          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
+          const currentPermit2Allowance = await permit2Contract.allowance(
+            walletAddress,
+            debouncedUnderlyingTokenAddress,
+            bufferRouterAddress,
+          );
+
+          // Only approve if current permit2 allowance is insufficient or expired
+          if (
+            !currentPermit2Allowance ||
+            currentPermit2Allowance.amount < BigInt(exactAmountUnderlyingIn) ||
+            currentPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
+          ) {
+            const permit2Tx1 = await permit2Contract.approve(
+              debouncedUnderlyingTokenAddress,
+              bufferRouterAddress,
+              exactAmountUnderlyingIn,
+              expiration,
+            );
+            await permit2Tx1.wait();
+          }
+        }
+
+        // Handle wrapped token permit2 approval
+        if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) > 0) {
+          const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+
+          // Check current ERC20 allowance to Permit2
+          const currentWrappedAllowance = await wrappedTokenContract.allowance(
+            walletAddress,
+            permit2Address,
+          );
+
+          // Only approve if current allowance is insufficient
+          if (currentWrappedAllowance < BigInt(exactAmountWrappedIn)) {
+            const approveTx2 = await wrappedTokenContract.approve(
+              permit2Address,
+              exactAmountWrappedIn,
+            );
+            await approveTx2.wait();
+          }
+
+          // Check current Permit2 allowance to BufferRouter
+          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
+          const currentWrappedPermit2Allowance = await permit2Contract.allowance(
+            walletAddress,
+            selectedToken.address,
+            bufferRouterAddress,
+          );
+
+          // Only approve if current permit2 allowance is insufficient or expired
+          if (
+            !currentWrappedPermit2Allowance ||
+            currentWrappedPermit2Allowance.amount < BigInt(exactAmountWrappedIn) ||
+            currentWrappedPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
+          ) {
+            const permit2Tx2 = await permit2Contract.approve(
+              selectedToken.address,
+              bufferRouterAddress,
+              exactAmountWrappedIn,
+              expiration,
+            );
+            await permit2Tx2.wait();
+          }
+        }
+      }
+
+      // Step 2: Execute buffer initialization
+      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
       const tx = await contract.initializeBuffer(
         selectedToken.address,
         exactAmountUnderlyingIn || "0",
@@ -334,7 +460,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     walletAddress,
     selectedNetwork,
     addressBook,
+    includePermit2,
+    debouncedUnderlyingTokenAddress,
     toast,
+    getBufferRouterAddress,
   ]);
 
   const handleGeneratePayload = useCallback(async () => {
@@ -773,9 +902,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           <Alert status="error" alignItems="center">
             <AlertIcon />
             <AlertDescription>
-              <Text fontWeight="semibold">
-                This buffer is already initialized.
-              </Text>
+              <Text fontWeight="semibold">This buffer is already initialized.</Text>
               <Text fontSize="sm" mt={1}>
                 You cannot initialize it again. Use the "Manage Buffer" tool to add or remove
                 liquidity.

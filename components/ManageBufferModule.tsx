@@ -61,6 +61,8 @@ import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator"
 import { useAccount, useSwitchChain } from "wagmi";
 import { ethers } from "ethers";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
+import { ERC20 } from "@/abi/erc20";
+import { addDays } from "date-fns";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
@@ -440,7 +442,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     ],
   );
 
-  // Direct transaction execution for EOA
+  // Direct transaction execution for EOA with proper permit2 flow
   const handleDirectAddLiquidity = useCallback(async () => {
     try {
       if (!selectedToken || !underlyingTokenAmount || !wrappedTokenAmount || !sharesAmount) {
@@ -459,7 +461,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
 
       const underlyingTokenAddress = selectedToken.isManual
         ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
@@ -467,6 +468,124 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           : selectedToken.underlyingTokenAddress
         : selectedToken.underlyingTokenAddress;
 
+      // Step 1: Handle permit2 approvals if needed
+      if (includePermit2) {
+        const permit2Address = getAddress(
+          addressBook,
+          selectedNetwork.toLowerCase(),
+          "uniswap",
+          "permit2",
+        );
+        if (!permit2Address) {
+          toast({
+            title: "Permit2 not found",
+            description: "Permit2 contract is not deployed on the selected network",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
+
+        const expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000);
+
+        // Handle underlying token permit2 approval
+        if (
+          underlyingTokenAmount &&
+          parseFloat(underlyingTokenAmount) > 0 &&
+          underlyingTokenAddress
+        ) {
+          const underlyingTokenContract = new ethers.Contract(
+            underlyingTokenAddress,
+            ERC20,
+            signer,
+          );
+
+          // Check current ERC20 allowance to Permit2
+          const currentAllowance = await underlyingTokenContract.allowance(
+            walletAddress,
+            permit2Address,
+          );
+
+          // Only approve if current allowance is insufficient
+          if (currentAllowance < BigInt(underlyingTokenAmount)) {
+            const approveTx1 = await underlyingTokenContract.approve(
+              permit2Address,
+              underlyingTokenAmount,
+            );
+            await approveTx1.wait();
+          }
+
+          // Check current Permit2 allowance to BufferRouter
+          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
+          const currentPermit2Allowance = await permit2Contract.allowance(
+            walletAddress,
+            underlyingTokenAddress,
+            bufferRouterAddress,
+          );
+
+          // Only approve if current permit2 allowance is insufficient or expired
+          if (
+            !currentPermit2Allowance ||
+            currentPermit2Allowance.amount < BigInt(underlyingTokenAmount) ||
+            currentPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
+          ) {
+            const permit2Tx1 = await permit2Contract.approve(
+              underlyingTokenAddress,
+              bufferRouterAddress,
+              underlyingTokenAmount,
+              expiration,
+            );
+            await permit2Tx1.wait();
+          }
+        }
+
+        // Handle wrapped token permit2 approval
+        if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) > 0) {
+          const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+
+          // Check current ERC20 allowance to Permit2
+          const currentWrappedAllowance = await wrappedTokenContract.allowance(
+            walletAddress,
+            permit2Address,
+          );
+
+          // Only approve if current allowance is insufficient
+          if (currentWrappedAllowance < BigInt(wrappedTokenAmount)) {
+            const approveTx2 = await wrappedTokenContract.approve(
+              permit2Address,
+              wrappedTokenAmount,
+            );
+            await approveTx2.wait();
+          }
+
+          // Check current Permit2 allowance to BufferRouter
+          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
+          const currentWrappedPermit2Allowance = await permit2Contract.allowance(
+            walletAddress,
+            selectedToken.address,
+            bufferRouterAddress,
+          );
+
+          // Only approve if current permit2 allowance is insufficient or expired
+          if (
+            !currentWrappedPermit2Allowance ||
+            currentWrappedPermit2Allowance.amount < BigInt(wrappedTokenAmount) ||
+            currentWrappedPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
+          ) {
+            const permit2Tx2 = await permit2Contract.approve(
+              selectedToken.address,
+              bufferRouterAddress,
+              wrappedTokenAmount,
+              expiration,
+            );
+            await permit2Tx2.wait();
+          }
+        }
+      }
+
+      // Step 2: Execute add liquidity to buffer
+      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
       const tx = await contract.addLiquidityToBuffer(
         selectedToken.address,
         underlyingTokenAddress,
@@ -511,6 +630,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     walletAddress,
     getBufferRouterAddress,
     bufferAsset,
+    includePermit2,
+    addressBook,
+    selectedNetwork,
     toast,
   ]);
 
