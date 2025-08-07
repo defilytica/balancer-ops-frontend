@@ -86,15 +86,22 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       !!selectedToken?.address && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
   });
 
-  // Add effect to check if current wallet can initialize buffer
+  // Check if connected wallet can directly execute buffer initialization (EOA scenario)
   useEffect(() => {
-    // For buffer initialization, anyone with a connected wallet can initialize
-    // The connected wallet becomes the shares owner
-    if (walletAddress && selectedToken && !isInitialized) {
-      setIsCurrentWalletManager(true);
-    } else {
+    if (!selectedToken) {
       setIsCurrentWalletManager(false);
+      return;
     }
+
+    if (isInitialized) {
+      // Buffer already initialized - no direct execution possible
+      setIsCurrentWalletManager(false);
+      return;
+    }
+
+    // For buffer initialization: anyone with a connected wallet can initialize directly
+    // The connected wallet automatically becomes the initial shares owner
+    setIsCurrentWalletManager(!!walletAddress);
   }, [walletAddress, selectedToken, isInitialized]);
 
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
@@ -226,6 +233,31 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     }
   }, [bufferAsset, selectedToken]);
 
+  // Get buffer router address with validation
+  const getBufferRouterAddress = useCallback(() => {
+    if (!selectedNetwork) return null;
+
+    const bufferRouterAddress = getAddress(
+      addressBook,
+      selectedNetwork.toLowerCase(),
+      "20241205-v3-buffer-router",
+      "BufferRouter",
+    );
+
+    if (!bufferRouterAddress) {
+      toast({
+        title: "BufferRouter not found",
+        description: "BufferRouter is not deployed on the selected network",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    return bufferRouterAddress;
+  }, [selectedNetwork, addressBook, toast]);
+
   // Direct transaction execution for EOA
   const handleDirectBufferInitialization = useCallback(async () => {
     try {
@@ -252,9 +284,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         return;
       }
 
+      const bufferRouterAddress = getBufferRouterAddress();
+      if (!bufferRouterAddress) return;
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
 
       const tx = await contract.initializeBuffer(
         selectedToken.address,
@@ -297,6 +332,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
     walletAddress,
+    selectedNetwork,
+    addressBook,
     toast,
   ]);
 
@@ -389,23 +426,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       return;
     }
 
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
-
-    if (!bufferRouterAddress) {
-      toast({
-        title: "BufferRouter not found",
-        description: "BufferRouter is not deployed on the selected network",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
+    const bufferRouterAddress = getBufferRouterAddress();
+    if (!bufferRouterAddress) return;
 
     let permit2Address;
     if (includePermit2) {
@@ -691,12 +713,18 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
         <Flex direction="column" width={{ base: "100%", md: "50%" }} minW={{ md: "300px" }}>
           <FormControl>
-            <FormLabel>Seeding Safe</FormLabel>
+            <FormLabel>
+              Seeding Safe Address
+              <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={1}>
+                Required for Safe payload generation. Leave empty for direct wallet execution
+                (wallet becomes shares owner).
+              </Text>
+            </FormLabel>
             <Input
               name="seedingSafe"
               value={seedingSafe}
               onChange={e => setSeedingSafe(e.target.value)}
-              placeholder="Seeding Safe address"
+              placeholder="Safe address for payload generation"
               isDisabled={!selectedToken}
             />
           </FormControl>
@@ -711,21 +739,32 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           </Box>
         </Flex>
 
-        {/* EOA/Wallet status alerts */}
+        {/* Scenario 1: Direct wallet execution (EOA) */}
         {selectedToken && isCurrentWalletManager && !isInitialized && (
-          <Alert status="info" mt={4}>
+          <Alert status="success" mt={4}>
             <AlertIcon />
-            <Text>You can initialize this buffer directly through your connected wallet.</Text>
+            <AlertDescription>
+              <Text fontWeight="semibold" mb={1}>
+                ✓ Direct Execution Available
+              </Text>
+              You can initialize this buffer directly with your connected wallet. Your wallet will
+              become the initial shares owner.
+            </AlertDescription>
           </Alert>
         )}
 
+        {/* Scenario 2: Safe payload generation or wallet not connected */}
         {selectedToken && !isCurrentWalletManager && !isInitialized && (
           <Alert status="info" mt={4}>
             <AlertIcon />
-            <Text>
-              Connect a wallet to initialize this buffer directly, or generate a payload for Safe
-              execution.
-            </Text>
+            <AlertDescription>
+              <Text fontWeight="semibold" mb={1}>
+                {walletAddress ? "Safe payload generation" : "Connect a wallet to execute directly"}
+              </Text>
+              {walletAddress
+                ? "Use 'Seeding Safe Address' field to generate a payload for Safe execution, or leave empty for direct wallet execution."
+                : "Connect a wallet to initialize this buffer directly, or generate a payload for Safe execution."}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -733,9 +772,15 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         {selectedToken && selectedNetwork && isInitialized && (
           <Alert status="error" alignItems="center">
             <AlertIcon />
-            <Text>
-              <b>This buffer is already initialized.</b> You cannot initialize it again.
-            </Text>
+            <AlertDescription>
+              <Text fontWeight="semibold">
+                This buffer is already initialized.
+              </Text>
+              <Text fontSize="sm" mt={1}>
+                You cannot initialize it again. Use the "Manage Buffer" tool to add or remove
+                liquidity.
+              </Text>
+            </AlertDescription>
           </Alert>
         )}
 

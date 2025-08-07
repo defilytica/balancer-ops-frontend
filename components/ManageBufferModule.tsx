@@ -7,7 +7,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
-import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
@@ -144,7 +144,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     enabled: !!selectedToken && !!selectedNetwork && !!networks[selectedNetwork.toLowerCase()],
   });
 
-  // Fetch buffer owner shares
+  // Fetch buffer owner shares (for Safe payload generation)
   const {
     data: ownerShares,
     isLoading: isLoadingOwnerShares,
@@ -158,6 +158,23 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       !!selectedNetwork &&
       !!networks[selectedNetwork.toLowerCase()] &&
       isAddress(ownerSafe),
+  });
+
+  // Fetch connected wallet shares (for EOA direct execution)
+  const {
+    data: walletShares,
+    isLoading: isLoadingWalletShares,
+    isError: isWalletSharesError,
+  } = useTanStackQuery({
+    queryKey: ["walletShares", selectedToken?.address, walletAddress, selectedNetwork],
+    queryFn: () =>
+      fetchBufferOwnerShares(selectedToken!.address, walletAddress!, selectedNetwork.toLowerCase()),
+    enabled:
+      !!selectedToken &&
+      !!selectedNetwork &&
+      !!networks[selectedNetwork.toLowerCase()] &&
+      !!walletAddress &&
+      isAddress(walletAddress),
   });
 
   // Fetch buffer initialization status
@@ -179,36 +196,73 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       selectedToken.isManual,
   });
 
-  // Add effect to check if current wallet can manage buffer
+  // Check if connected wallet can directly execute operations (EOA scenario)
   useEffect(() => {
-    const checkManagerStatus = async () => {
-      if (!selectedToken || !walletAddress) {
-        setIsCurrentWalletManager(false);
-        return;
-      }
+    if (!selectedToken || !walletAddress) {
+      setIsCurrentWalletManager(false);
+      return;
+    }
 
-      try {
-        // For buffer operations:
-        // - ADD: Anyone can add liquidity (no specific manager needed)
-        // - REMOVE: Only if the connected wallet owns shares or matches ownerSafe
-        if (operationType === BufferOperation.ADD) {
-          setIsCurrentWalletManager(true);
-        } else {
-          // For REMOVE operations, check if connected wallet owns shares
-          // or if it matches the owner safe address
-          const hasPermission =
-            (ownerShares && ownerShares.ownerShares > BigInt(0)) ||
-            (isAddress(ownerSafe) && walletAddress.toLowerCase() === ownerSafe.toLowerCase());
-          setIsCurrentWalletManager(hasPermission);
-        }
-      } catch (error) {
-        console.error("Error checking buffer manager status:", error);
-        setIsCurrentWalletManager(false);
-      }
-    };
+    if (operationType === BufferOperation.ADD) {
+      // Anyone with a connected wallet can add liquidity directly
+      setIsCurrentWalletManager(true);
+    } else {
+      // For REMOVE: only if the connected wallet actually owns shares in the buffer
+      // This is independent of the "owner safe" field, which is used for Safe payload generation
+      const walletOwnsShares = walletShares && walletShares.ownerShares > BigInt(0);
+      setIsCurrentWalletManager(!!walletOwnsShares);
+    }
+  }, [selectedToken, walletAddress, operationType, walletShares]);
 
-    void checkManagerStatus();
-  }, [selectedToken, walletAddress, operationType, ownerShares, ownerSafe]);
+  // Get buffer router address with validation
+  const getBufferRouterAddress = useCallback(() => {
+    if (!selectedNetwork) return null;
+
+    const bufferRouterAddress = getAddress(
+      addressBook,
+      selectedNetwork.toLowerCase(),
+      "20241205-v3-buffer-router",
+      "BufferRouter",
+    );
+
+    if (!bufferRouterAddress) {
+      toast({
+        title: "BufferRouter not found",
+        description: "BufferRouter is not deployed on the selected network",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    return bufferRouterAddress;
+  }, [selectedNetwork, addressBook, toast]);
+
+  // Get vault address with validation
+  const getVaultAddress = useCallback(() => {
+    if (!selectedNetwork) return null;
+
+    const vaultAddress = getAddress(
+      addressBook,
+      selectedNetwork.toLowerCase(),
+      "20241204-v3-vault",
+      "Vault",
+    );
+
+    if (!vaultAddress) {
+      toast({
+        title: "Vault not found",
+        description: "Vault is not deployed on the selected network",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    return vaultAddress;
+  }, [selectedNetwork, addressBook, toast]);
 
   const isGenerateButtonDisabled = useMemo(() => {
     return (
@@ -302,23 +356,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
   const handleRemoveLiquidity = useCallback(
     (chainId: string) => {
-      const vaultAddress = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "20241204-v3-vault",
-        "Vault",
-      );
-
-      if (!vaultAddress) {
-        toast({
-          title: "Vault not found",
-          description: "Vault is not deployed on the selected network",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return null;
-      }
+      const vaultAddress = getVaultAddress();
+      if (!vaultAddress) return null;
 
       return generateRemoveLiquidityPayload(
         {
@@ -333,36 +372,19 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       );
     },
     [
-      addressBook,
-      selectedNetwork,
+      getVaultAddress,
       selectedToken,
       sharesAmount,
       underlyingTokenAmount,
       wrappedTokenAmount,
       ownerSafe,
-      toast,
     ],
   );
 
   const handleAddLiquidity = useCallback(
     (chainId: string) => {
-      const bufferRouterAddress = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "20241205-v3-buffer-router",
-        "BufferRouter",
-      );
-
-      if (!bufferRouterAddress) {
-        toast({
-          title: "BufferRouter not found",
-          description: "BufferRouter is not deployed on the selected network",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return null;
-      }
+      const bufferRouterAddress = getBufferRouterAddress();
+      if (!bufferRouterAddress) return null;
 
       let permit2Address;
       if (includePermit2) {
@@ -404,8 +426,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       );
     },
     [
-      addressBook,
-      selectedNetwork,
+      getBufferRouterAddress,
       selectedToken,
       underlyingTokenAmount,
       wrappedTokenAmount,
@@ -413,6 +434,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       ownerSafe,
       includePermit2,
       bufferAsset,
+      addressBook,
+      selectedNetwork,
       toast,
     ],
   );
@@ -431,9 +454,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         return;
       }
 
+      const bufferRouterAddress = getBufferRouterAddress();
+      if (!bufferRouterAddress) return;
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
 
       const underlyingTokenAddress = selectedToken.isManual
         ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
@@ -483,6 +509,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     wrappedTokenAmount,
     sharesAmount,
     walletAddress,
+    getBufferRouterAddress,
     bufferAsset,
     toast,
   ]);
@@ -500,9 +527,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         return;
       }
 
+      const vaultAddress = getVaultAddress();
+      if (!vaultAddress) return;
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(V3_VAULT_ADDRESS, V3vaultAdmin, signer);
+      const contract = new ethers.Contract(vaultAddress, V3vaultAdmin, signer);
 
       const tx = await contract.removeLiquidityFromBuffer(
         selectedToken.address,
@@ -538,7 +568,14 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         isClosable: true,
       });
     }
-  }, [selectedToken, sharesAmount, underlyingTokenAmount, wrappedTokenAmount, toast]);
+  }, [
+    selectedToken,
+    sharesAmount,
+    underlyingTokenAmount,
+    wrappedTokenAmount,
+    getVaultAddress,
+    toast,
+  ]);
 
   const handleGeneratePayload = useCallback(async () => {
     if (!selectedNetwork || !selectedToken || !sharesAmount) {
@@ -984,7 +1021,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
         <Flex direction="column" width={{ base: "100%", md: "50%" }} minW={{ md: "300px" }}>
           <FormControl>
-            <FormLabel>Shares Owner Safe Address</FormLabel>
+            <FormLabel>
+              Shares Owner Safe Address
+              <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={1}>
+                Required for Safe payload generation. Leave empty for direct wallet execution.
+              </Text>
+            </FormLabel>
             <InputGroup>
               <Input
                 name="ownerSafe"
@@ -1046,36 +1088,76 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           </Box>
         </Flex>
 
-        {/* EOA/Wallet status alerts */}
+        {/* Scenario 1: Direct wallet execution (EOA) */}
         {selectedToken && isCurrentWalletManager && (
+          <Alert status="success" mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              <Text fontWeight="semibold" mb={1}>
+                ✓ Direct Execution Available
+              </Text>
+              {operationType === BufferOperation.ADD
+                ? "You can add liquidity directly with your connected wallet."
+                : `You own shares in this buffer and can remove liquidity directly with your connected wallet.`}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Scenario 2: Safe payload generation or wallet cannot execute directly */}
+        {selectedToken && !isCurrentWalletManager && (
           <Alert status="info" mt={4}>
             <AlertIcon />
             <AlertDescription>
+              <Text fontWeight="semibold" mb={1}>
+                {operationType === BufferOperation.ADD
+                  ? "Connect a wallet to execute directly"
+                  : "Safe payload generation"}
+              </Text>
               {operationType === BufferOperation.ADD
-                ? "You can add liquidity to this buffer directly through your connected wallet."
-                : "You can remove liquidity from this buffer directly through your connected wallet."}
+                ? "Connect a wallet to add liquidity directly, or generate a payload for Safe execution."
+                : "Your connected wallet doesn't own shares in this buffer. Use 'Shares Owner Safe Address' field to generate a payload for Safe execution."}
             </AlertDescription>
           </Alert>
         )}
 
-        {selectedToken && !isCurrentWalletManager && operationType === BufferOperation.REMOVE && (
-          <Alert status="warning" mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              You cannot remove liquidity from this buffer directly. You either don&apos;t own
-              shares in this buffer or the owner address doesn&apos;t match your connected wallet.
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Show wallet shares status for remove operations */}
+        {operationType === BufferOperation.REMOVE &&
+          selectedToken &&
+          walletAddress &&
+          !isLoadingWalletShares && (
+            <Alert
+              status={walletShares && walletShares.ownerShares > BigInt(0) ? "info" : "warning"}
+              mt={2}
+            >
+              <AlertIcon />
+              <AlertDescription fontSize="sm">
+                <Text>
+                  <Text as="span" fontWeight="semibold">
+                    Your wallet shares:
+                  </Text>{" "}
+                  {isWalletSharesError
+                    ? "Failed to load"
+                    : walletShares
+                      ? walletShares.ownerShares.toString()
+                      : "0"}
+                </Text>
+              </AlertDescription>
+            </Alert>
+          )}
 
+        {/* Show safe address shares status */}
         {operationType === BufferOperation.REMOVE &&
           ownerShares?.ownerShares === BigInt(0) &&
           isAddress(ownerSafe) &&
           selectedToken && (
-            <Alert status="error" alignItems="center">
+            <Alert status="error" alignItems="center" mt={2}>
               <AlertIcon />
-              <Text>
-                <b>No shares found.</b> This address has no shares in this buffer.
+              <Text fontSize="sm">
+                <Text as="span" fontWeight="semibold">
+                  Safe address shares:
+                </Text>{" "}
+                This address ({ownerSafe.slice(0, 6)}...{ownerSafe.slice(-4)}) has no shares in this
+                buffer.
               </Text>
             </Alert>
           )}
