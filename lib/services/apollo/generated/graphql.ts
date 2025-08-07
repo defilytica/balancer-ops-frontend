@@ -61,17 +61,12 @@ export type FeeTakingHookParams = {
 
 export type GqlAggregatorPoolFilter = {
   chainIn?: InputMaybe<Array<GqlChain>>;
-  chainNotIn?: InputMaybe<Array<GqlChain>>;
-  createTime?: InputMaybe<GqlPoolTimePeriod>;
   idIn?: InputMaybe<Array<Scalars['String']['input']>>;
-  idNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
   includeHooks?: InputMaybe<Array<GqlHookType>>;
   minTvl?: InputMaybe<Scalars['Float']['input']>;
   poolTypeIn?: InputMaybe<Array<GqlPoolType>>;
-  poolTypeNotIn?: InputMaybe<Array<GqlPoolType>>;
   protocolVersionIn?: InputMaybe<Array<Scalars['Int']['input']>>;
   tokensIn?: InputMaybe<Array<Scalars['String']['input']>>;
-  tokensNotIn?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type GqlBalancePoolAprItem = {

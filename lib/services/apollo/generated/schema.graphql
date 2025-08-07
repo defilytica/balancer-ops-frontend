@@ -54,17 +54,12 @@ type FeeTakingHookParams {
 
 input GqlAggregatorPoolFilter {
   chainIn: [GqlChain!]
-  chainNotIn: [GqlChain!]
-  createTime: GqlPoolTimePeriod
   idIn: [String!]
-  idNotIn: [String!]
   includeHooks: [GqlHookType!]
   minTvl: Float
   poolTypeIn: [GqlPoolType!]
-  poolTypeNotIn: [GqlPoolType!]
   protocolVersionIn: [Int!]
   tokensIn: [String!]
-  tokensNotIn: [String!]
 }
 
 type GqlBalancePoolAprItem {

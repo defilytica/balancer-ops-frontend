@@ -62,7 +62,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { ethers } from "ethers";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { ERC20 } from "@/abi/erc20";
-import { addDays } from "date-fns";
+import BufferRouterABI from "@/abi/BufferRouter.json";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
@@ -73,7 +73,13 @@ enum BufferOperation {
   REMOVE = "remove",
 }
 
+enum ExecutionMode {
+  SAFE = "safe",
+  EOA = "eoa",
+}
+
 export default function ManageBufferModule({ addressBook }: ManageBufferModuleProps) {
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedToken, setSelectedToken] = useState<TokenListToken | undefined>();
   const [operationType, setOperationType] = useState<BufferOperation>(BufferOperation.ADD);
@@ -83,7 +89,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const [ownerSafe, setOwnerSafe] = useState("");
   const [includePermit2, setIncludePermit2] = useState(false);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
 
   // Chain state switch
@@ -198,23 +203,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       selectedToken.isManual,
   });
 
-  // Check if connected wallet can directly execute operations (EOA scenario)
+  // Auto-switch to Safe mode when wallet is not connected
   useEffect(() => {
-    if (!selectedToken || !walletAddress) {
-      setIsCurrentWalletManager(false);
-      return;
+    if (!walletAddress && executionMode === ExecutionMode.EOA) {
+      setExecutionMode(ExecutionMode.SAFE);
     }
-
-    if (operationType === BufferOperation.ADD) {
-      // Anyone with a connected wallet can add liquidity directly
-      setIsCurrentWalletManager(true);
-    } else {
-      // For REMOVE: only if the connected wallet actually owns shares in the buffer
-      // This is independent of the "owner safe" field, which is used for Safe payload generation
-      const walletOwnsShares = walletShares && walletShares.ownerShares > BigInt(0);
-      setIsCurrentWalletManager(!!walletOwnsShares);
-    }
-  }, [selectedToken, walletAddress, operationType, walletShares]);
+  }, [walletAddress, executionMode]);
 
   // Get buffer router address with validation
   const getBufferRouterAddress = useCallback(() => {
@@ -330,7 +324,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     setOwnerSafe("");
     setIncludePermit2(false);
     setGeneratedPayload(null);
-    setIsCurrentWalletManager(false);
 
     // Find the corresponding chain ID for the selected network and switch
     const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
@@ -445,12 +438,30 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   // Direct transaction execution for EOA with proper permit2 flow
   const handleDirectAddLiquidity = useCallback(async () => {
     try {
-      if (!selectedToken || !underlyingTokenAmount || !wrappedTokenAmount || !sharesAmount) {
+      if (!selectedToken || !sharesAmount) {
         toast({
           title: "Missing information",
           description: "Please fill in all required fields",
           status: "warning",
           duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Buffers require proportional liquidity (both underlying and wrapped tokens)
+      if (
+        !underlyingTokenAmount ||
+        parseFloat(underlyingTokenAmount) === 0 ||
+        !wrappedTokenAmount ||
+        parseFloat(wrappedTokenAmount) === 0
+      ) {
+        toast({
+          title: "Proportional liquidity required",
+          description:
+            "Buffers require both underlying and wrapped tokens in proportion. You need to wrap some underlying tokens first using the ERC4626 token's deposit function, then try again with both token types.",
+          status: "error",
+          duration: 10000,
           isClosable: true,
         });
         return;
@@ -468,131 +479,108 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           : selectedToken.underlyingTokenAddress
         : selectedToken.underlyingTokenAddress;
 
-      // Step 1: Handle permit2 approvals if needed
-      if (includePermit2) {
-        const permit2Address = getAddress(
-          addressBook,
-          selectedNetwork.toLowerCase(),
-          "uniswap",
-          "permit2",
+      // Step 1: Handle token approvals (direct ERC20 approvals to BufferRouter)
+      // Handle underlying token approval
+      if (
+        underlyingTokenAmount &&
+        parseFloat(underlyingTokenAmount) > 0 &&
+        underlyingTokenAddress
+      ) {
+        const underlyingTokenContract = new ethers.Contract(underlyingTokenAddress, ERC20, signer);
+
+        // Check user's token balance
+        const balance = await underlyingTokenContract.balanceOf(walletAddress);
+        console.log(
+          `Underlying token balance: ${balance.toString()}, needed: ${underlyingTokenAmount}`,
         );
-        if (!permit2Address) {
+
+        if (balance < BigInt(underlyingTokenAmount)) {
           toast({
-            title: "Permit2 not found",
-            description: "Permit2 contract is not deployed on the selected network",
+            title: "Insufficient underlying token balance",
+            description: `You have ${balance.toString()} but need ${underlyingTokenAmount}`,
             status: "error",
-            duration: 5000,
+            duration: 7000,
             isClosable: true,
           });
           return;
         }
 
-        const expiration = Math.floor(addDays(Date.now(), 1).getTime() / 1000);
+        // Check current ERC20 allowance to BufferRouter
+        const currentAllowance = await underlyingTokenContract.allowance(
+          walletAddress,
+          bufferRouterAddress,
+        );
+        console.log(
+          `Underlying token allowance: ${currentAllowance.toString()}, needed: ${underlyingTokenAmount}`,
+        );
 
-        // Handle underlying token permit2 approval
-        if (
-          underlyingTokenAmount &&
-          parseFloat(underlyingTokenAmount) > 0 &&
-          underlyingTokenAddress
-        ) {
-          const underlyingTokenContract = new ethers.Contract(
-            underlyingTokenAddress,
-            ERC20,
-            signer,
-          );
-
-          // Check current ERC20 allowance to Permit2
-          const currentAllowance = await underlyingTokenContract.allowance(
-            walletAddress,
-            permit2Address,
-          );
-
-          // Only approve if current allowance is insufficient
-          if (currentAllowance < BigInt(underlyingTokenAmount)) {
-            const approveTx1 = await underlyingTokenContract.approve(
-              permit2Address,
-              underlyingTokenAmount,
-            );
-            await approveTx1.wait();
-          }
-
-          // Check current Permit2 allowance to BufferRouter
-          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
-          const currentPermit2Allowance = await permit2Contract.allowance(
-            walletAddress,
-            underlyingTokenAddress,
+        // Only approve if current allowance is insufficient
+        if (currentAllowance < BigInt(underlyingTokenAmount)) {
+          const approveTx1 = await underlyingTokenContract.approve(
             bufferRouterAddress,
+            underlyingTokenAmount,
           );
+          await approveTx1.wait();
+          console.log(`Approved underlying token: ${underlyingTokenAmount}`);
+        }
+      }
 
-          // Only approve if current permit2 allowance is insufficient or expired
-          if (
-            !currentPermit2Allowance ||
-            currentPermit2Allowance.amount < BigInt(underlyingTokenAmount) ||
-            currentPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
-          ) {
-            const permit2Tx1 = await permit2Contract.approve(
-              underlyingTokenAddress,
-              bufferRouterAddress,
-              underlyingTokenAmount,
-              expiration,
-            );
-            await permit2Tx1.wait();
-          }
+      // Handle wrapped token approval
+      if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) > 0) {
+        const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+
+        // Check user's wrapped token balance
+        const wrappedBalance = await wrappedTokenContract.balanceOf(walletAddress);
+        console.log(
+          `Wrapped token balance: ${wrappedBalance.toString()}, needed: ${wrappedTokenAmount}`,
+        );
+
+        if (wrappedBalance < BigInt(wrappedTokenAmount)) {
+          toast({
+            title: "Insufficient wrapped token balance",
+            description: `You have ${wrappedBalance.toString()} but need ${wrappedTokenAmount}`,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+          return;
         }
 
-        // Handle wrapped token permit2 approval
-        if (wrappedTokenAmount && parseFloat(wrappedTokenAmount) > 0) {
-          const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+        // Check current ERC20 allowance to BufferRouter
+        const currentWrappedAllowance = await wrappedTokenContract.allowance(
+          walletAddress,
+          bufferRouterAddress,
+        );
+        console.log(
+          `Wrapped token allowance: ${currentWrappedAllowance.toString()}, needed: ${wrappedTokenAmount}`,
+        );
 
-          // Check current ERC20 allowance to Permit2
-          const currentWrappedAllowance = await wrappedTokenContract.allowance(
-            walletAddress,
-            permit2Address,
-          );
-
-          // Only approve if current allowance is insufficient
-          if (currentWrappedAllowance < BigInt(wrappedTokenAmount)) {
-            const approveTx2 = await wrappedTokenContract.approve(
-              permit2Address,
-              wrappedTokenAmount,
-            );
-            await approveTx2.wait();
-          }
-
-          // Check current Permit2 allowance to BufferRouter
-          const permit2Contract = new ethers.Contract(permit2Address, V3vaultAdmin, signer);
-          const currentWrappedPermit2Allowance = await permit2Contract.allowance(
-            walletAddress,
-            selectedToken.address,
+        // Only approve if current allowance is insufficient
+        if (currentWrappedAllowance < BigInt(wrappedTokenAmount)) {
+          const approveTx2 = await wrappedTokenContract.approve(
             bufferRouterAddress,
+            wrappedTokenAmount,
           );
-
-          // Only approve if current permit2 allowance is insufficient or expired
-          if (
-            !currentWrappedPermit2Allowance ||
-            currentWrappedPermit2Allowance.amount < BigInt(wrappedTokenAmount) ||
-            currentWrappedPermit2Allowance.expiration < Math.floor(Date.now() / 1000)
-          ) {
-            const permit2Tx2 = await permit2Contract.approve(
-              selectedToken.address,
-              bufferRouterAddress,
-              wrappedTokenAmount,
-              expiration,
-            );
-            await permit2Tx2.wait();
-          }
+          await approveTx2.wait();
+          console.log(`Approved wrapped token: ${wrappedTokenAmount}`);
         }
       }
 
       // Step 2: Execute add liquidity to buffer
-      const contract = new ethers.Contract(bufferRouterAddress, V3vaultAdmin, signer);
+      const contract = new ethers.Contract(bufferRouterAddress, BufferRouterABI, signer);
+
+      console.log(`Calling addLiquidityToBuffer with:`);
+      console.log(`  wrappedToken: ${selectedToken.address}`);
+      console.log(`  maxAmountUnderlyingIn: ${underlyingTokenAmount || "0"}`);
+      console.log(`  maxAmountWrappedIn: ${wrappedTokenAmount || "0"}`);
+      console.log(`  exactSharesToIssue: ${sharesAmount}`);
+      console.log(`  BufferRouter address: ${bufferRouterAddress}`);
+
       const tx = await contract.addLiquidityToBuffer(
-        selectedToken.address,
-        underlyingTokenAddress,
-        underlyingTokenAmount,
-        wrappedTokenAmount,
-        sharesAmount,
-        walletAddress, // shares owner is the connected wallet
+        selectedToken.address, // wrappedToken
+        underlyingTokenAmount || "0", // maxAmountUnderlyingIn
+        wrappedTokenAmount || "0", // maxAmountWrappedIn
+        sharesAmount, // exactSharesToIssue
       );
 
       toast.promise(tx.wait(), {
@@ -635,6 +623,98 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     selectedNetwork,
     toast,
   ]);
+
+  // Function to wrap underlying tokens to wrapped tokens
+  const handleWrapTokens = useCallback(async () => {
+    try {
+      if (!selectedToken || !underlyingTokenAmount) {
+        toast({
+          title: "Missing information",
+          description: "Please select a token and enter an underlying token amount to wrap",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const underlyingTokenAddress = selectedToken.isManual
+        ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
+          ? bufferAsset.underlyingToken
+          : selectedToken.underlyingTokenAddress
+        : selectedToken.underlyingTokenAddress;
+
+      if (!underlyingTokenAddress) {
+        toast({
+          title: "Missing underlying token address",
+          description: "Cannot determine underlying token address",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Step 1: Approve wrapped token to spend underlying tokens
+      const underlyingTokenContract = new ethers.Contract(underlyingTokenAddress, ERC20, signer);
+
+      const currentAllowance = await underlyingTokenContract.allowance(
+        walletAddress,
+        selectedToken.address, // wrapped token address
+      );
+
+      if (currentAllowance < BigInt(underlyingTokenAmount)) {
+        const approveTx = await underlyingTokenContract.approve(
+          selectedToken.address, // wrapped token address
+          underlyingTokenAmount,
+        );
+        await approveTx.wait();
+        console.log(`Approved wrapped token to spend underlying tokens: ${underlyingTokenAmount}`);
+      }
+
+      // Step 2: Deposit/wrap the tokens
+      const wrappedTokenContract = new ethers.Contract(
+        selectedToken.address,
+        ["function deposit(uint256 assets, address receiver) external returns (uint256 shares)"],
+        signer,
+      );
+
+      const wrapTx = await wrappedTokenContract.deposit(
+        underlyingTokenAmount,
+        walletAddress, // recipient
+      );
+
+      toast.promise(wrapTx.wait(), {
+        success: {
+          title: "Success",
+          description: `Tokens wrapped successfully! You now have wrapped tokens.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Wrapping tokens",
+          description: "Converting underlying tokens to wrapped tokens... Please wait.",
+        },
+        error: (error: any) => ({
+          title: "Error wrapping tokens",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error wrapping tokens",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [selectedToken, underlyingTokenAmount, walletAddress, bufferAsset, toast]);
 
   const handleDirectRemoveLiquidity = useCallback(async () => {
     try {
@@ -959,6 +1039,27 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           </FormControl>
         </Box>
 
+        {/* Execution Mode Selector */}
+        <Box width="calc(50% - 8px)">
+          <FormControl>
+            <FormLabel>Execution Mode</FormLabel>
+            <Select
+              value={executionMode}
+              onChange={e => setExecutionMode(e.target.value as ExecutionMode)}
+              variant="outline"
+              shadow="none"
+            >
+              <option value={ExecutionMode.EOA}>Direct Wallet Execution (EOA)</option>
+              <option value={ExecutionMode.SAFE}>Safe Payload Generation</option>
+            </Select>
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              {executionMode === ExecutionMode.EOA
+                ? "Execute buffer operations directly with your connected wallet"
+                : "Generate transaction payloads for Safe multisig execution"}
+            </Text>
+          </FormControl>
+        </Box>
+
         <Flex direction={{ base: "column", md: "row" }} gap={4}>
           <Box flex="1">
             <NetworkSelector
@@ -1142,102 +1243,94 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         </Flex>
 
         <Flex direction="column" width={{ base: "100%", md: "50%" }} minW={{ md: "300px" }}>
-          <FormControl>
-            <FormLabel>
-              Shares Owner Safe Address
-              <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={1}>
-                Required for Safe payload generation. Leave empty for direct wallet execution.
-              </Text>
-            </FormLabel>
-            <InputGroup>
-              <Input
-                name="ownerSafe"
-                value={ownerSafe}
-                onChange={e => setOwnerSafe(e.target.value)}
-                placeholder="Shares Owner Safe address"
-                isDisabled={!selectedToken}
-              />
-              {ownerSafe.length >= 42 && (
-                <InputRightElement>
-                  <Text fontSize="sm" color={isAddress(ownerSafe) ? "green.500" : "red.500"}>
-                    {isAddress(ownerSafe) ? "✓" : "✗"}
-                  </Text>
-                </InputRightElement>
-              )}
-            </InputGroup>
-            {isAddress(ownerSafe) && selectedToken && (
-              <>
-                {isLoadingOwnerShares ? (
-                  <Text fontSize="sm" mt={1} color="gray.400">
-                    Loading owner shares...
-                  </Text>
-                ) : isOwnerSharesError ? (
-                  <Text fontSize="sm" mt={1} color="gray.400">
-                    Failed to load owner shares
-                  </Text>
-                ) : (
-                  ownerShares && (
-                    <>
-                      <Flex direction="column" gap={1} mt={1}>
-                        <Text fontSize="sm" color="gray.400">
-                          Address balance: {ownerShares.ownerShares.toString()}
-                        </Text>
-                        {!selectedToken?.isManual && (
-                          <Text fontSize="xs" color="gray.500">
-                            ≈{" "}
-                            {formatValue(
-                              ownerShares.ownerShares,
-                              underlyingToken?.decimals ?? selectedToken.decimals,
-                            )}
-                          </Text>
-                        )}
-                      </Flex>
-                    </>
-                  )
+          {/* Safe Address - only show in Safe mode */}
+          {executionMode === ExecutionMode.SAFE && (
+            <FormControl mb={6}>
+              <FormLabel>
+                Shares Owner Safe Address
+                <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={1}>
+                  Required for Safe payload generation. The Safe will be the shares owner/manager.
+                </Text>
+              </FormLabel>
+              <InputGroup>
+                <Input
+                  name="ownerSafe"
+                  value={ownerSafe}
+                  onChange={e => setOwnerSafe(e.target.value)}
+                  placeholder="Safe multisig address"
+                  isDisabled={!selectedToken}
+                  isRequired={executionMode === ExecutionMode.SAFE}
+                />
+                {ownerSafe.length >= 42 && (
+                  <InputRightElement>
+                    <Text fontSize="sm" color={isAddress(ownerSafe) ? "green.500" : "red.500"}>
+                      {isAddress(ownerSafe) ? "✓" : "✗"}
+                    </Text>
+                  </InputRightElement>
                 )}
-              </>
-            )}
-          </FormControl>
-          <Box mt={6}>
-            <Checkbox
-              size="lg"
-              onChange={e => setIncludePermit2(e.target.checked)}
-              isDisabled={!selectedToken || operationType === BufferOperation.REMOVE}
-              isChecked={operationType === BufferOperation.REMOVE ? false : includePermit2}
-            >
-              <FormLabel mb="0">Include Permit2 approvals</FormLabel>
-            </Checkbox>
-          </Box>
+              </InputGroup>
+              {isAddress(ownerSafe) && selectedToken && (
+                <>
+                  {isLoadingOwnerShares ? (
+                    <Text fontSize="sm" mt={1} color="gray.400">
+                      Loading owner shares...
+                    </Text>
+                  ) : isOwnerSharesError ? (
+                    <Text fontSize="sm" mt={1} color="gray.400">
+                      Failed to load owner shares
+                    </Text>
+                  ) : (
+                    ownerShares && (
+                      <>
+                        <Flex direction="column" gap={1} mt={1}>
+                          <Text fontSize="sm" color="gray.400">
+                            Safe balance: {ownerShares.ownerShares.toString()}
+                          </Text>
+                          {!selectedToken?.isManual && (
+                            <Text fontSize="xs" color="gray.500">
+                              ≈{" "}
+                              {formatValue(
+                                ownerShares.ownerShares,
+                                underlyingToken?.decimals ?? selectedToken.decimals,
+                              )}
+                            </Text>
+                          )}
+                        </Flex>
+                      </>
+                    )
+                  )}
+                </>
+              )}
+            </FormControl>
+          )}
+
+          {/* Permit2 - only show in Safe mode for ADD operations */}
+          {executionMode === ExecutionMode.SAFE && operationType === BufferOperation.ADD && (
+            <Box>
+              <Checkbox
+                size="lg"
+                onChange={e => setIncludePermit2(e.target.checked)}
+                isDisabled={!selectedToken}
+              >
+                <FormLabel mb="0">Include Permit2 approvals</FormLabel>
+              </Checkbox>
+            </Box>
+          )}
         </Flex>
 
-        {/* Scenario 1: Direct wallet execution (EOA) */}
-        {selectedToken && isCurrentWalletManager && (
-          <Alert status="success" mt={4}>
+        {/* Mode-specific alerts */}
+        {selectedToken && (
+          <Alert status={executionMode === ExecutionMode.EOA ? "success" : "info"} mt={4}>
             <AlertIcon />
             <AlertDescription>
               <Text fontWeight="semibold" mb={1}>
-                ✓ Direct Execution Available
+                {executionMode === ExecutionMode.EOA
+                  ? "🔗 Direct Wallet Execution Mode"
+                  : "🔐 Safe Payload Generation Mode"}
               </Text>
-              {operationType === BufferOperation.ADD
-                ? "You can add liquidity directly with your connected wallet."
-                : `You own shares in this buffer and can remove liquidity directly with your connected wallet.`}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Scenario 2: Safe payload generation or wallet cannot execute directly */}
-        {selectedToken && !isCurrentWalletManager && (
-          <Alert status="info" mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              <Text fontWeight="semibold" mb={1}>
-                {operationType === BufferOperation.ADD
-                  ? "Connect a wallet to execute directly"
-                  : "Safe payload generation"}
-              </Text>
-              {operationType === BufferOperation.ADD
-                ? "Connect a wallet to add liquidity directly, or generate a payload for Safe execution."
-                : "Your connected wallet doesn't own shares in this buffer. Use 'Shares Owner Safe Address' field to generate a payload for Safe execution."}
+              {executionMode === ExecutionMode.EOA
+                ? `Buffer ${operationType === BufferOperation.ADD ? "liquidity will be added" : "liquidity will be removed"} directly with your connected wallet.`
+                : `A transaction payload will be generated for Safe multisig execution. ${operationType === BufferOperation.REMOVE ? "Ensure the Safe address owns shares in this buffer." : ""}`}
             </AlertDescription>
           </Alert>
         )}
@@ -1300,7 +1393,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               <Button variant="primary" isDisabled={true}>
                 Select a Token
               </Button>
-            ) : isCurrentWalletManager ? (
+            ) : executionMode === ExecutionMode.EOA && walletAddress ? (
+              // EOA Mode: Show Execute and Wrap Tokens buttons
               <>
                 <Button
                   variant="primary"
@@ -1309,19 +1403,20 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                 >
                   Execute {operationType === BufferOperation.ADD ? "Add" : "Remove"} Liquidity
                 </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleGeneratePayload}
-                  isDisabled={isGenerateButtonDisabled}
-                >
-                  Generate Payload
-                </Button>
-                <ComposerButton
-                  generateData={generateComposerData}
-                  isDisabled={!generatedPayload}
-                />
+                {operationType === BufferOperation.ADD &&
+                  underlyingTokenAmount &&
+                  parseFloat(underlyingTokenAmount) > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={handleWrapTokens}
+                      isDisabled={!selectedToken || !underlyingTokenAmount}
+                    >
+                      Wrap Tokens
+                    </Button>
+                  )}
               </>
             ) : (
+              // Safe Mode: Show only Generate Payload button
               <>
                 <Button
                   variant="primary"
@@ -1337,7 +1432,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               </>
             )}
           </Flex>
-          {generatedPayload && (
+          {executionMode === ExecutionMode.SAFE && generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
         </Flex>
