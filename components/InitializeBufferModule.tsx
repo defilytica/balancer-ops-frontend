@@ -54,6 +54,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { ethers } from "ethers";
 import { ERC20 } from "@/abi/erc20";
 import BufferRouterABI from "@/abi/BufferRouter.json";
+import Permit2ABI from "@/abi/Permit2.json";
 
 interface InitializeBufferModuleProps {
   addressBook: AddressBook;
@@ -383,66 +384,187 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       const bufferRouterAddress = getBufferRouterAddress();
       if (!bufferRouterAddress) return;
 
+      // Get permit2 address
+      const permit2Address = getAddress(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "uniswap",
+        "permit2",
+      );
+
+      if (!permit2Address) {
+        toast({
+          title: "Permit2 not found",
+          description: "Permit2 contract is not deployed on the selected network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // Step 1: Handle token approvals (direct ERC20 approvals to BufferRouter)
-      // Handle underlying token approval
-      if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) > 0) {
-        if (!debouncedUnderlyingTokenAddress) {
+      // Step 1: Check token balances first - fail fast if insufficient
+
+      if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) > 0) {
+        const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+        const wrappedBalance = await wrappedTokenContract.balanceOf(walletAddress);
+        console.log(
+          `Wrapped token balance: ${wrappedBalance.toString()}, needed: ${exactAmountWrappedIn}`,
+        );
+
+        if (wrappedBalance < BigInt(exactAmountWrappedIn)) {
           toast({
-            title: "Missing underlying token address",
-            description: "Underlying token address is required for token approval",
+            title: "Insufficient wrapped token balance",
+            description: `You have ${wrappedBalance.toString()} but need ${exactAmountWrappedIn}`,
             status: "error",
-            duration: 5000,
+            duration: 7000,
             isClosable: true,
           });
           return;
         }
+      }
 
+      if (
+        exactAmountUnderlyingIn &&
+        parseFloat(exactAmountUnderlyingIn) > 0 &&
+        debouncedUnderlyingTokenAddress
+      ) {
+        const underlyingTokenContract = new ethers.Contract(
+          debouncedUnderlyingTokenAddress,
+          ERC20,
+          signer,
+        );
+        const balance = await underlyingTokenContract.balanceOf(walletAddress);
+        console.log(
+          `Underlying token balance: ${balance.toString()}, needed: ${exactAmountUnderlyingIn}`,
+        );
+
+        if (balance < BigInt(exactAmountUnderlyingIn)) {
+          toast({
+            title: "Insufficient underlying token balance",
+            description: `You have ${balance.toString()} but need ${exactAmountUnderlyingIn}`,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+          return;
+        }
+      }
+
+      // Step 2: Handle token approvals to Permit2 (actual amounts)
+
+      if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) > 0) {
+        const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+
+        // Check current ERC20 allowance to Permit2
+        const currentWrappedAllowance = await wrappedTokenContract.allowance(
+          walletAddress,
+          permit2Address,
+        );
+        console.log(`Wrapped token allowance to Permit2: ${currentWrappedAllowance.toString()}`);
+
+        // Approve to Permit2 with actual amount if needed
+        if (currentWrappedAllowance < BigInt(exactAmountWrappedIn)) {
+          const approveTx2 = await wrappedTokenContract.approve(
+            permit2Address,
+            exactAmountWrappedIn,
+          );
+          await approveTx2.wait();
+          console.log(`Approved wrapped token to Permit2: ${exactAmountWrappedIn}`);
+        }
+      }
+
+      if (
+        exactAmountUnderlyingIn &&
+        parseFloat(exactAmountUnderlyingIn) > 0 &&
+        debouncedUnderlyingTokenAddress
+      ) {
         const underlyingTokenContract = new ethers.Contract(
           debouncedUnderlyingTokenAddress,
           ERC20,
           signer,
         );
 
-        // Check current ERC20 allowance to BufferRouter
+        // Check current ERC20 allowance to Permit2
         const currentAllowance = await underlyingTokenContract.allowance(
           walletAddress,
-          bufferRouterAddress,
+          permit2Address,
         );
+        console.log(`Underlying token allowance to Permit2: ${currentAllowance.toString()}`);
 
-        // Only approve if current allowance is insufficient
+        // Approve to Permit2 with actual amount if needed
         if (currentAllowance < BigInt(exactAmountUnderlyingIn)) {
           const approveTx1 = await underlyingTokenContract.approve(
-            bufferRouterAddress,
+            permit2Address,
             exactAmountUnderlyingIn,
           );
           await approveTx1.wait();
+          console.log(`Approved underlying token to Permit2: ${exactAmountUnderlyingIn}`);
         }
       }
 
-      // Handle wrapped token approval
-      if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) > 0) {
-        const wrappedTokenContract = new ethers.Contract(selectedToken.address, ERC20, signer);
+      // Step 3: Permit2 approvals to BufferRouter (actual amounts)
+      const permit2Contract = new ethers.Contract(permit2Address, Permit2ABI, signer);
 
-        // Check current ERC20 allowance to BufferRouter
-        const currentWrappedAllowance = await wrappedTokenContract.allowance(
+      // Calculate expiration (far in the future)
+      const expiration = Math.floor(Date.now() / 1000) + 86400 * 365; // 1 year
+
+      // Approve underlying token via Permit2 to BufferRouter
+      if (
+        debouncedUnderlyingTokenAddress &&
+        exactAmountUnderlyingIn &&
+        parseFloat(exactAmountUnderlyingIn) > 0
+      ) {
+        const permit2AllowanceUnderlying = await permit2Contract.allowance(
           walletAddress,
+          debouncedUnderlyingTokenAddress,
           bufferRouterAddress,
         );
+        console.log(
+          `Permit2 allowance for underlying to BufferRouter: ${permit2AllowanceUnderlying.amount.toString()}`,
+        );
 
-        // Only approve if current allowance is insufficient
-        if (currentWrappedAllowance < BigInt(exactAmountWrappedIn)) {
-          const approveTx2 = await wrappedTokenContract.approve(
+        if (permit2AllowanceUnderlying.amount < BigInt(exactAmountUnderlyingIn)) {
+          const permit2ApproveTx1 = await permit2Contract.approve(
+            debouncedUnderlyingTokenAddress,
             bufferRouterAddress,
-            exactAmountWrappedIn,
+            exactAmountUnderlyingIn,
+            expiration,
           );
-          await approveTx2.wait();
+          await permit2ApproveTx1.wait();
+          console.log(
+            `Permit2 approved underlying token to BufferRouter: ${exactAmountUnderlyingIn}`,
+          );
         }
       }
 
-      // Step 2: Execute buffer initialization
+      // Approve wrapped token via Permit2 to BufferRouter
+      if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) > 0) {
+        const permit2AllowanceWrapped = await permit2Contract.allowance(
+          walletAddress,
+          selectedToken.address,
+          bufferRouterAddress,
+        );
+        console.log(
+          `Permit2 allowance for wrapped to BufferRouter: ${permit2AllowanceWrapped.amount.toString()}`,
+        );
+
+        if (permit2AllowanceWrapped.amount < BigInt(exactAmountWrappedIn)) {
+          const permit2ApproveTx2 = await permit2Contract.approve(
+            selectedToken.address,
+            bufferRouterAddress,
+            exactAmountWrappedIn,
+            expiration,
+          );
+          await permit2ApproveTx2.wait();
+          console.log(`Permit2 approved wrapped token to BufferRouter: ${exactAmountWrappedIn}`);
+        }
+      }
+
+      // Step 4: Execute buffer initialization
       const contract = new ethers.Contract(bufferRouterAddress, BufferRouterABI, signer);
       const tx = await contract.initializeBuffer(
         selectedToken.address, // wrappedToken
