@@ -35,24 +35,28 @@ export default function DisclaimerModal({ isOpen, onClose }: DisclaimerModalProp
               <AlertIcon />
               <Text fontWeight="bold">Self-Custody Application</Text>
             </Alert>
-            
+
             <Text>
-              This is a self-custody application that interfaces with decentralized protocols. 
-              By using this application, you acknowledge and agree that:
+              This is a self-custody application that interfaces with decentralized protocols. By
+              using this application, you acknowledge and agree that:
             </Text>
 
             <UnorderedList spacing={2}>
               <ListItem>
-                <strong>You are solely responsible</strong> for all transactions and actions performed through this application
+                <strong>You are solely responsible</strong> for all transactions and actions
+                performed through this application
               </ListItem>
               <ListItem>
-                <strong>You maintain full custody</strong> of your private keys and digital assets at all times
+                <strong>You maintain full custody</strong> of your private keys and digital assets
+                at all times
               </ListItem>
               <ListItem>
-                <strong>No liability is assumed</strong> by the developers or maintainers of this application for any losses, errors, or damages
+                <strong>No liability is assumed</strong> by the developers or maintainers of this
+                application for any losses, errors, or damages
               </ListItem>
               <ListItem>
-                <strong>Smart contract risks exist</strong> - always verify transactions and understand the protocols you interact with
+                <strong>Smart contract risks exist</strong> - always verify transactions and
+                understand the protocols you interact with
               </ListItem>
               <ListItem>
                 <strong>This software is provided "as is"</strong> without warranties of any kind
@@ -60,8 +64,9 @@ export default function DisclaimerModal({ isOpen, onClose }: DisclaimerModalProp
             </UnorderedList>
 
             <Text fontSize="sm" color="gray.500">
-              Please ensure you understand the risks involved with DeFi protocols and blockchain transactions 
-              before proceeding. Always double-check transaction details before confirming.
+              Please ensure you understand the risks involved with DeFi protocols and blockchain
+              transactions before proceeding. Always double-check transaction details before
+              confirming.
             </Text>
           </VStack>
         </ModalBody>

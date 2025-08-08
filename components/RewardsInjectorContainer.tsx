@@ -62,7 +62,9 @@ export default function RewardsInjectorContainer({
           if (isDirectUrlAccess) {
             // Check if the address is blacklisted before loading
             if (isAddressBlacklisted(addressFromPath, networkFromPath)) {
-              console.log(`Direct access to blacklisted injector: ${addressFromPath} on ${networkFromPath}`);
+              console.log(
+                `Direct access to blacklisted injector: ${addressFromPath} on ${networkFromPath}`,
+              );
               // Don't load blacklisted addresses, even if accessed directly
             } else {
               try {
@@ -141,13 +143,13 @@ export default function RewardsInjectorContainer({
                 for (const [token, address] of Object.entries(injectors)) {
                   // Skip the _deprecated field
                   if (token === "_deprecated") continue;
-                  
+
                   // Skip blacklisted addresses (consistent with V2)
                   if (isAddressBlacklisted(address, network)) {
                     console.log(`Skipping blacklisted V1 injector: ${address} on ${network}`);
                     continue;
                   }
-                  
+
                   allAddressesWithOptions.push({
                     network,
                     address,

@@ -50,11 +50,13 @@ export async function GET(request: NextRequest) {
                 const filteredInjectors = deployedInjectors.filter((address: string) => {
                   const isBlacklisted = isAddressBlacklisted(address, network);
                   if (isBlacklisted) {
-                    console.log(`API: Filtering out blacklisted injector: ${address} on ${network}`);
+                    console.log(
+                      `API: Filtering out blacklisted injector: ${address} on ${network}`,
+                    );
                   }
                   return !isBlacklisted;
                 });
-                
+
                 return {
                   factory: factoryAddress,
                   network,

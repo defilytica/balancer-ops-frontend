@@ -17,14 +17,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     // Check if user has already seen the disclaimer
-    const hasSeenDisclaimer = localStorage.getItem('hasSeenDisclaimer');
+    const hasSeenDisclaimer = localStorage.getItem("hasSeenDisclaimer");
     if (!hasSeenDisclaimer) {
       setShowDisclaimer(true);
     }
   }, []);
 
   const handleDisclaimerClose = () => {
-    localStorage.setItem('hasSeenDisclaimer', 'true');
+    localStorage.setItem("hasSeenDisclaimer", "true");
     setShowDisclaimer(false);
   };
 

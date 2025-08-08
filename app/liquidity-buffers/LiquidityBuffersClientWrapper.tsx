@@ -8,8 +8,8 @@ interface LiquidityBuffersClientWrapperProps {
   addressBook: AddressBook;
 }
 
-export default function LiquidityBuffersClientWrapper({ 
-  addressBook 
+export default function LiquidityBuffersClientWrapper({
+  addressBook,
 }: LiquidityBuffersClientWrapperProps) {
   return (
     <Box minH="100vh" bg="gray.950" color="gray.100" p={6}>
