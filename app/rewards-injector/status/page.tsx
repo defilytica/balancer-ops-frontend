@@ -33,6 +33,11 @@ const RewardsInjectorStatusPage = () => {
   const [isV2, setIsV2] = useState(true);
   const toast = useToast();
 
+  // Move useColorModeValue hooks to the top to avoid conditional hook calls
+  const statsHeaderTextColor = useColorModeValue("gray.600", "gray.400");
+  const statsBgColor = useColorModeValue("gray.50", "background.level2");
+  const statsBorderColor = useColorModeValue("gray.100", "whiteAlpha.100");
+
   const processInjectorData = (injector: any) => {
     // Get decimals from tokenInfo if available (v2), otherwise use default handling
     const tokenDecimals = injector.tokenInfo?.decimals || 18;
@@ -280,10 +285,6 @@ const RewardsInjectorStatusPage = () => {
       .length,
     stale: injectorsData.filter((injector: any) => injector.isStale).length,
   };
-
-  const statsHeaderTextColor = useColorModeValue("gray.600", "gray.400");
-  const statsBgColor = useColorModeValue("gray.50", "background.level2");
-  const statsBorderColor = useColorModeValue("gray.100", "whiteAlpha.100");
 
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">

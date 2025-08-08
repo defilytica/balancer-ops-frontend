@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { networks } from "@/constants/constants";
+import { networks, INJECTOR_BLACKLIST } from "@/constants/constants";
 import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 
 // 5 min caching for factory
@@ -19,6 +19,15 @@ const FACTORY_ABI = [
   },
 ];
 
+// Helper function to check if an injector address is blacklisted for a network
+const isAddressBlacklisted = (address: string, network: string): boolean => {
+  const networkBlacklist = INJECTOR_BLACKLIST[network.toLowerCase()];
+  if (!networkBlacklist) return false;
+
+  const lowerAddress = address.toLowerCase();
+  return networkBlacklist.some(blacklistedAddr => blacklistedAddr.toLowerCase() === lowerAddress);
+};
+
 export async function GET(request: NextRequest) {
   try {
     const addressBook = await fetchAddressBook();
@@ -36,12 +45,23 @@ export async function GET(request: NextRequest) {
           if (token === "factory") {
             console.log(`Fetching data for factory ${factoryAddress} on ${network}...`);
             factoryPromises.push(
-              fetchDeployedInjectors(factoryAddress, network).then(deployedInjectors => ({
-                factory: factoryAddress,
-                network,
-                token,
-                deployedInjectors,
-              })),
+              fetchDeployedInjectors(factoryAddress, network).then(deployedInjectors => {
+                // Filter out blacklisted addresses
+                const filteredInjectors = deployedInjectors.filter((address: string) => {
+                  const isBlacklisted = isAddressBlacklisted(address, network);
+                  if (isBlacklisted) {
+                    console.log(`API: Filtering out blacklisted injector: ${address} on ${network}`);
+                  }
+                  return !isBlacklisted;
+                });
+                
+                return {
+                  factory: factoryAddress,
+                  network,
+                  token,
+                  deployedInjectors: filteredInjectors,
+                };
+              }),
             );
           }
         }

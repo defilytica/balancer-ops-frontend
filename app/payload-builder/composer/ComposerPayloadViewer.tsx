@@ -95,11 +95,11 @@ export default function ComposerPayloadViewer({
       const title = op.title || op.type;
       operationCounts.set(title, (operationCounts.get(title) || 0) + 1);
     });
-    
+
     const uniqueTitles = Array.from(operationCounts.entries())
-      .map(([title, count]) => count > 1 ? `${title} (${count}x)` : title)
+      .map(([title, count]) => (count > 1 ? `${title} (${count}x)` : title))
       .slice(0, 3);
-    
+
     const remainingCount = Math.max(0, operationCounts.size - 3);
     const titleSuffix = remainingCount > 0 ? ` (+${remainingCount} more)` : "";
     const combinedTitle = uniqueTitles.join(", ") + titleSuffix;

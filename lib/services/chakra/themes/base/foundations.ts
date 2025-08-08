@@ -1,6 +1,6 @@
 export const DEFAULT_THEME_COLOR_MODE = "dark";
 
-export const config = {
+export const colorModeConfig = {
   initialColorMode: "light",
   useSystemColorMode: false,
 };

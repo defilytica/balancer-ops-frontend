@@ -481,11 +481,11 @@ export default function MevCaptureHookConfigurationModule({
 
     // Extract parameters from transactions based on contract method names
     const extractedParams: { [key: string]: any } = {};
-    
+
     payload.transactions?.forEach((transaction: any) => {
       const methodName = transaction.contractMethod?.name;
       const contractInputsValues = transaction.contractInputsValues;
-      
+
       if (methodName === "setPoolMevTaxThreshold" && contractInputsValues) {
         extractedParams.pool = contractInputsValues.pool;
         extractedParams.newPoolMevTaxThreshold = contractInputsValues.newPoolMevTaxThreshold;
@@ -680,7 +680,14 @@ export default function MevCaptureHookConfigurationModule({
             ]}
           />
         )}
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px" wrap="wrap" gap={2}>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
         <Flex gap={2} alignItems="center">
           {!selectedPool ? (
             <Button variant="primary" isDisabled={true}>

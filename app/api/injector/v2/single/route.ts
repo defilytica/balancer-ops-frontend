@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { InjectorABIV2 } from "@/abi/InjectorV2";
 import { NextRequest, NextResponse } from "next/server";
-import { networks } from "@/constants/constants";
+import { networks, INJECTOR_BLACKLIST } from "@/constants/constants";
 import {
   fetchGaugeInfoV2,
   fetchPoolName,
@@ -16,6 +16,15 @@ const CACHE_DURATION = 300;
 // Configure route segment caching
 export const revalidate = 300;
 
+// Helper function to check if an injector address is blacklisted for a network
+const isAddressBlacklisted = (address: string, network: string): boolean => {
+  const networkBlacklist = INJECTOR_BLACKLIST[network.toLowerCase()];
+  if (!networkBlacklist) return false;
+
+  const lowerAddress = address.toLowerCase();
+  return networkBlacklist.some(blacklistedAddr => blacklistedAddr.toLowerCase() === lowerAddress);
+};
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get("address");
@@ -23,6 +32,12 @@ export async function GET(request: NextRequest) {
 
   if (!address || !network) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
+  }
+
+  // Check if the address is blacklisted
+  if (isAddressBlacklisted(address, network)) {
+    console.log(`API: Blocked request for blacklisted injector: ${address} on ${network}`);
+    return NextResponse.json({ error: "Injector not available" }, { status: 404 });
   }
 
   const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;

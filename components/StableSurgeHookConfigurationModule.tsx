@@ -472,17 +472,19 @@ export default function StableSurgeHookConfigurationModule({
 
     // Extract parameters from transactions based on contract method names
     const extractedParams: { [key: string]: any } = {};
-    
+
     payload.transactions?.forEach((transaction: any) => {
       const methodName = transaction.contractMethod?.name;
       const contractInputsValues = transaction.contractInputsValues;
-      
+
       if (methodName === "setMaxSurgeFeePercentage" && contractInputsValues) {
         extractedParams.pool = contractInputsValues.pool;
-        extractedParams.newMaxSurgeSurgeFeePercentage = contractInputsValues.newMaxSurgeSurgeFeePercentage;
+        extractedParams.newMaxSurgeSurgeFeePercentage =
+          contractInputsValues.newMaxSurgeSurgeFeePercentage;
       } else if (methodName === "setSurgeThresholdPercentage" && contractInputsValues) {
         extractedParams.pool = contractInputsValues.pool;
-        extractedParams.newSurgeThresholdPercentage = contractInputsValues.newSurgeThresholdPercentage;
+        extractedParams.newSurgeThresholdPercentage =
+          contractInputsValues.newSurgeThresholdPercentage;
       }
     });
 
@@ -674,7 +676,14 @@ export default function StableSurgeHookConfigurationModule({
             ]}
           />
         )}
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px" wrap="wrap" gap={2}>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
         <Flex gap={2} alignItems="center">
           {!selectedPool ? (
             <Button variant="primary" isDisabled={true}>
@@ -696,7 +705,8 @@ export default function StableSurgeHookConfigurationModule({
                 variant="primary"
                 onClick={handleGenerateClick}
                 isDisabled={
-                  (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
+                  (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) ||
+                  !isValid
                 }
               >
                 Generate Payload

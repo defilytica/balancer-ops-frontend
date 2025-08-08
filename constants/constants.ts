@@ -463,6 +463,14 @@ export const networks: Record<string, NetworkInfo> = {
   },
 };
 
+// Injector blacklist - addresses to exclude from injector listings per network
+export const INJECTOR_BLACKLIST: Record<string, string[]> = {
+  avalanche: [
+    "0xfa7b21B30325DBbd4A71ee2B2EDE74A7d8A2c0E4", // Blacklisted injector address
+  ],
+  // Add more networks and addresses as needed
+};
+
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
   mainnet: [
     {

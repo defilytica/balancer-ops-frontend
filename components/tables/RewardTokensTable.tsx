@@ -168,24 +168,24 @@ const RewardTokenCard: React.FC<{
               explorerUrl={`${getExplorerUrl(token.distributor)}${token.distributor}`}
             />
             {isInjector && injectorPath && (
-              <NextLink href={injectorPath} passHref>
-                <Link
-                  color="green.500"
-                  fontSize="xs"
-                  fontWeight="medium"
-                  textDecoration="underline"
-                >
-                  (Injector {injectorVersion.toUpperCase()})
-                </Link>
-              </NextLink>
+              <Link
+                as={NextLink}
+                href={injectorPath}
+                color="green.500"
+                fontSize="xs"
+                fontWeight="medium"
+                textDecoration="underline"
+              >
+                (Injector {injectorVersion.toUpperCase()})
+              </Link>
             )}
           </VStack>
         </VStack>
 
-        <Button 
-          size="sm" 
-          colorScheme={isUserDistributor ? "green" : "gray"} 
-          onClick={() => onAddRewards(pool, token)} 
+        <Button
+          size="sm"
+          colorScheme={isUserDistributor ? "green" : "gray"}
+          onClick={() => onAddRewards(pool, token)}
           w="full"
         >
           Add Rewards
