@@ -58,7 +58,7 @@ import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain, useBalance } from "wagmi";
 import { ethers } from "ethers";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { ERC20 } from "@/abi/erc20";
@@ -202,6 +202,33 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       !!selectedNetwork &&
       !!networks[selectedNetwork.toLowerCase()] &&
       selectedToken.isManual,
+  });
+
+  const underlyingTokenAddress = useMemo(() => {
+    if (!selectedToken) return undefined;
+    return selectedToken.isManual
+      ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
+        ? bufferAsset.underlyingToken
+        : selectedToken.underlyingTokenAddress
+      : selectedToken.underlyingTokenAddress;
+  }, [selectedToken, bufferAsset]);
+
+  // Fetch wallet balance for underlying token
+  const { data: walletUnderlyingBalance } = useBalance({
+    address: walletAddress as `0x${string}` | undefined,
+    token: underlyingTokenAddress as `0x${string}` | undefined,
+    query: {
+      enabled: !!walletAddress && !!underlyingTokenAddress,
+    },
+  });
+
+  // Fetch wallet balance for wrapped token
+  const { data: walletWrappedBalance } = useBalance({
+    address: walletAddress as `0x${string}` | undefined,
+    token: selectedToken?.address as `0x${string}` | undefined,
+    query: {
+      enabled: !!walletAddress && !!selectedToken?.address,
+    },
   });
 
   // Auto-switch to Safe mode when wallet is not connected
@@ -490,16 +517,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         return;
       }
 
-      console.log("permit2Address", permit2Address);
-
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
-      const underlyingTokenAddress = selectedToken.isManual
-        ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
-          ? bufferAsset.underlyingToken
-          : selectedToken.underlyingTokenAddress
-        : selectedToken.underlyingTokenAddress;
 
       // Step 1: Check token balances first - fail fast if insufficient
 
@@ -704,6 +723,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     addressBook,
     selectedNetwork,
     toast,
+    underlyingTokenAddress,
   ]);
 
   // Function to wrap underlying tokens to wrapped tokens
@@ -722,12 +742,6 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
-      const underlyingTokenAddress = selectedToken.isManual
-        ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
-          ? bufferAsset.underlyingToken
-          : selectedToken.underlyingTokenAddress
-        : selectedToken.underlyingTokenAddress;
 
       if (!underlyingTokenAddress) {
         toast({
@@ -796,7 +810,14 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         isClosable: true,
       });
     }
-  }, [selectedToken, underlyingTokenAmount, walletAddress, bufferAsset, toast]);
+  }, [
+    selectedToken,
+    underlyingTokenAmount,
+    walletAddress,
+    bufferAsset,
+    toast,
+    underlyingTokenAddress,
+  ]);
 
   const handleDirectRemoveLiquidity = useCallback(async () => {
     try {
@@ -1209,15 +1230,36 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                   bufferBalance && (
                     <Flex direction="column" gap={1} mt={1}>
                       <Text fontSize="sm" color="gray.400">
-                        Balance: {bufferBalance.wrappedBalance.toString()}
+                        Buffer: {bufferBalance.wrappedBalance.toString()}
+                        {!selectedToken?.isManual && (
+                          <Text fontSize="sm" as="span" color="gray.450">
+                            {" "}
+                            ≈ {formatValue(
+                              bufferBalance.wrappedBalance,
+                              selectedToken.decimals,
+                            )}{" "}
+                            {selectedToken.symbol}
+                          </Text>
+                        )}
                       </Text>
-                      {/* don't show scaled balance for manual inputs */}
-                      {!selectedToken?.isManual && (
-                        <Text fontSize="xs" color="gray.500">
-                          ≈ {formatValue(bufferBalance.wrappedBalance, selectedToken.decimals)}{" "}
-                          {selectedToken.symbol}
-                        </Text>
-                      )}
+                      {/* Show wallet balance if connected and in EOA mode */}
+                      {walletAddress &&
+                        walletWrappedBalance &&
+                        executionMode === ExecutionMode.EOA && (
+                          <Text fontSize="sm">
+                            Wallet: {walletWrappedBalance.value.toString()}
+                            {!selectedToken?.isManual && (
+                              <Text fontSize="sm" as="span">
+                                {" "}
+                                ≈ {formatValue(
+                                  walletWrappedBalance.value,
+                                  selectedToken.decimals,
+                                )}{" "}
+                                {selectedToken.symbol}
+                              </Text>
+                            )}
+                          </Text>
+                        )}
                     </Flex>
                   )
                 )}
@@ -1253,19 +1295,38 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                   bufferBalance && (
                     <Flex direction="column" gap={1} mt={1.5}>
                       <Text fontSize="sm" color="gray.400">
-                        Balance: {bufferBalance.underlyingBalance.toString()}
+                        Buffer: {bufferBalance.underlyingBalance.toString()}
+                        {!selectedToken?.isManual && (
+                          <Text fontSize="sm" as="span" color="gray.450">
+                            {" "}
+                            ≈{" "}
+                            {formatValue(
+                              bufferBalance.underlyingBalance,
+                              underlyingToken?.decimals ?? selectedToken.decimals,
+                            )}{" "}
+                            {underlyingToken?.symbol ?? "tokens"}
+                          </Text>
+                        )}
                       </Text>
-                      {/* don't show scaled balance for manual inputs */}
-                      {!selectedToken?.isManual && (
-                        <Text fontSize="xs" color="gray.500">
-                          ≈{" "}
-                          {formatValue(
-                            bufferBalance.underlyingBalance,
-                            underlyingToken?.decimals ?? selectedToken.decimals,
-                          )}{" "}
-                          {underlyingToken?.symbol ?? "tokens"}
-                        </Text>
-                      )}
+                      {/* Show wallet balance if connected and in EOA mode */}
+                      {walletAddress &&
+                        walletUnderlyingBalance &&
+                        executionMode === ExecutionMode.EOA && (
+                          <Text fontSize="sm">
+                            Wallet: {walletUnderlyingBalance.value.toString()}
+                            {!selectedToken?.isManual && (
+                              <Text as="span" fontSize="sm">
+                                {" "}
+                                ≈{" "}
+                                {formatValue(
+                                  walletUnderlyingBalance.value,
+                                  underlyingToken?.decimals ?? selectedToken.decimals,
+                                )}{" "}
+                                {underlyingToken?.symbol ?? "tokens"}
+                              </Text>
+                            )}
+                          </Text>
+                        )}
                     </Flex>
                   )
                 )}
@@ -1306,16 +1367,17 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                     <Flex direction="column" gap={1} mt={1}>
                       <Text fontSize="sm" color="gray.400">
                         Balance: {bufferShares.shares.toString()}
+                        {!selectedToken?.isManual && (
+                          <Text fontSize="sm" as="span" color="gray.450">
+                            {" "}
+                            ≈{" "}
+                            {formatValue(
+                              bufferShares.shares,
+                              underlyingToken?.decimals ?? selectedToken.decimals,
+                            )}
+                          </Text>
+                        )}
                       </Text>
-                      {!selectedToken?.isManual && (
-                        <Text fontSize="xs" color="gray.500">
-                          ≈{" "}
-                          {formatValue(
-                            bufferShares.shares,
-                            underlyingToken?.decimals ?? selectedToken.decimals,
-                          )}
-                        </Text>
-                      )}
                     </Flex>
                   )
                 )}
@@ -1407,8 +1469,8 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
             <AlertDescription>
               <Text fontWeight="semibold" mb={1}>
                 {executionMode === ExecutionMode.EOA
-                  ? "🔗 Direct Wallet Execution Mode"
-                  : "🔐 Safe Payload Generation Mode"}
+                  ? "Direct Wallet Execution Mode"
+                  : "Safe Payload Generation Mode"}
               </Text>
               {executionMode === ExecutionMode.EOA
                 ? `Buffer ${operationType === BufferOperation.ADD ? "liquidity will be added" : "liquidity will be removed"} directly with your connected wallet.`

@@ -1063,8 +1063,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             <AlertDescription>
               <Text fontWeight="semibold" mb={1}>
                 {executionMode === ExecutionMode.EOA
-                  ? "🔗 Direct Wallet Execution Mode"
-                  : "🔐 Safe Payload Generation Mode"}
+                  ? "Direct Wallet Execution Mode"
+                  : "Safe Payload Generation Mode"}
               </Text>
               {executionMode === ExecutionMode.EOA
                 ? "Buffer will be initialized directly with your connected wallet. Your wallet will become the initial shares owner."
