@@ -31,7 +31,7 @@ export default function DisclaimerModal({ isOpen, onClose }: DisclaimerModalProp
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">
-            <Alert status="warning">
+            <Alert alignItems="center" status="warning">
               <AlertIcon />
               <Text fontWeight="bold">Self-Custody Application</Text>
             </Alert>
