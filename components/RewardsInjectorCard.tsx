@@ -109,18 +109,17 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
             )}
             <VStack align="start" spacing={0}>
               <HStack spacing={2} align="center">
-                <Link href={`rewards-injector/${address}`} passHref legacyBehavior>
-                  <Text
-                    as="a"
-                    variant="secondary"
-                    fontWeight="bold"
-                    fontSize="lg"
-                    noOfLines={2}
-                    _hover={{ color: "gray.300", textDecoration: "none", cursor: "pointer" }}
-                  >
-                    {formatTokenName(token)}
-                  </Text>
-                </Link>
+                <Text
+                  as={Link}
+                  href={`rewards-injector/${address}`}
+                  variant="secondary"
+                  fontWeight="bold"
+                  fontSize="lg"
+                  noOfLines={2}
+                  _hover={{ color: "gray.300", textDecoration: "none", cursor: "pointer" }}
+                >
+                  {formatTokenName(token)}
+                </Text>
               </HStack>
             </VStack>
           </HStack>
@@ -245,46 +244,43 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
 
       <CardFooter>
         {incorrectlySetupGauges.length > 0 ? (
-          <Link href={`rewards-injector/${address}`} legacyBehavior>
-            {/* Create a separate style if needed anywhere else */}
-            <Button
-              as="a"
-              variant="outline"
-              borderColor={useColorModeValue("gray.400", "brown.200")}
-              color={useColorModeValue("gray.700", "brown.100")}
-              rightIcon={<ExternalLinkIcon />}
-              target="_blank"
-              rel="noopener noreferrer"
-              _hover={{
-                bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
-                borderColor: useColorModeValue("gray.600", "brown.100"),
-                color: useColorModeValue("black", "brown.200"),
-              }}
-              size="md"
-            >
-              More Information
-            </Button>
-          </Link>
+          <Button
+            as={Link}
+            href={`rewards-injector/${address}`}
+            variant="outline"
+            borderColor={useColorModeValue("gray.400", "brown.200")}
+            color={useColorModeValue("gray.700", "brown.100")}
+            rightIcon={<ExternalLinkIcon />}
+            target="_blank"
+            rel="noopener noreferrer"
+            _hover={{
+              bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
+              borderColor: useColorModeValue("gray.600", "brown.100"),
+              color: useColorModeValue("black", "brown.200"),
+            }}
+            size="md"
+          >
+            More Information
+          </Button>
         ) : (
-          <Link href={explorerUrl} passHref legacyBehavior>
-            <Button
-              as="a"
-              variant="outline"
-              borderColor={useColorModeValue("gray.400", "brown.200")}
-              color={useColorModeValue("gray.700", "brown.100")}
-              rightIcon={<ExternalLinkIcon />}
-              target="_blank"
-              rel="noopener noreferrer"
-              _hover={{
-                bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
-                borderColor: useColorModeValue("gray.600", "brown.100"),
-                color: useColorModeValue("black", "brown.200"),
-              }}
-              size="md"
-            >
-              View Details
-            </Button>
-          </Link>
+          <Button
+            as={Link}
+            href={explorerUrl}
+            variant="outline"
+            borderColor={useColorModeValue("gray.400", "brown.200")}
+            color={useColorModeValue("gray.700", "brown.100")}
+            rightIcon={<ExternalLinkIcon />}
+            target="_blank"
+            rel="noopener noreferrer"
+            _hover={{
+              bg: useColorModeValue("gray.100", "rgba(230, 198, 160, 0.10)"),
+              borderColor: useColorModeValue("gray.600", "brown.100"),
+              color: useColorModeValue("black", "brown.200"),
+            }}
+            size="md"
+          >
+            View Details
+          </Button>
         )}
       </CardFooter>
     </Card>

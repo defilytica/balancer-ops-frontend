@@ -7,6 +7,7 @@ import { AddressBook, AddressOption } from "@/types/interfaces";
 import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 import RewardsInjectorConfigurator from "@/components/RewardsInjectorConfigurator";
 import RewardsInjectorConfiguratorV2 from "./RewardsInjectorConfiguratorV2";
+import { INJECTOR_BLACKLIST } from "@/constants/constants";
 
 type RewardsInjectorContainerProps = {
   addressBook: AddressBook;
@@ -27,7 +28,16 @@ export default function RewardsInjectorContainer({
   const [addresses, setAddresses] = useState<AddressOption[]>([]);
   const [owner, setOwner] = useState<string>("");
 
-  const isV2 = searchParams.get("version") === "v2";
+  const isV2 = searchParams.get("version") !== "v1"; // Default to v2 unless explicitly set to v1
+
+  // Helper function to check if an injector address is blacklisted for a network
+  const isAddressBlacklisted = useCallback((address: string, network: string): boolean => {
+    const networkBlacklist = INJECTOR_BLACKLIST[network.toLowerCase()];
+    if (!networkBlacklist) return false;
+
+    const lowerAddress = address.toLowerCase();
+    return networkBlacklist.some(blacklistedAddr => blacklistedAddr.toLowerCase() === lowerAddress);
+  }, []);
 
   const loadAddresses = useCallback(
     async (isV2: boolean) => {
@@ -50,24 +60,32 @@ export default function RewardsInjectorContainer({
         if (isV2) {
           // If we have a direct URL to a specific address, just load that one
           if (isDirectUrlAccess) {
-            try {
-              const tokenResponse = await fetch(
-                `/api/injector/v2/single?address=${addressFromPath}&network=${networkFromPath}`,
+            // Check if the address is blacklisted before loading
+            if (isAddressBlacklisted(addressFromPath, networkFromPath)) {
+              console.log(
+                `Direct access to blacklisted injector: ${addressFromPath} on ${networkFromPath}`,
               );
-              const tokenData = await tokenResponse.json();
+              // Don't load blacklisted addresses, even if accessed directly
+            } else {
+              try {
+                const tokenResponse = await fetch(
+                  `/api/injector/v2/single?address=${addressFromPath}&network=${networkFromPath}`,
+                );
+                const tokenData = await tokenResponse.json();
 
-              if (!tokenData.error) {
-                allAddressesWithOptions.push({
-                  network: networkFromPath,
-                  address: addressFromPath,
-                  token: tokenData.tokenInfo.symbol || "",
-                  tokenAddress: tokenData.tokenInfo.address || "",
-                  // Add a unique identifier
-                  id: `${networkFromPath}-${addressFromPath}`,
-                });
+                if (!tokenData.error) {
+                  allAddressesWithOptions.push({
+                    network: networkFromPath,
+                    address: addressFromPath,
+                    token: tokenData.tokenInfo.symbol || "",
+                    tokenAddress: tokenData.tokenInfo.address || "",
+                    // Add a unique identifier
+                    id: `${networkFromPath}-${addressFromPath}`,
+                  });
+                }
+              } catch (error) {
+                console.error(`Error fetching token info for ${addressFromPath}:`, error);
               }
-            } catch (error) {
-              console.error(`Error fetching token info for ${addressFromPath}:`, error);
             }
           } else {
             // Load all if we don't have a specific address
@@ -78,8 +96,14 @@ export default function RewardsInjectorContainer({
               const injectorPromises = [];
               for (const item of data) {
                 const network = item.network;
-                // Create promises for each injector
+                // Create promises for each injector (excluding blacklisted ones)
                 for (const address of item.deployedInjectors) {
+                  // Skip blacklisted addresses
+                  if (isAddressBlacklisted(address, network)) {
+                    console.log(`Skipping blacklisted injector: ${address} on ${network}`);
+                    continue;
+                  }
+
                   injectorPromises.push(
                     fetch(`/api/injector/v2/single?address=${address}&network=${network}`)
                       .then(response => response.json())
@@ -119,6 +143,13 @@ export default function RewardsInjectorContainer({
                 for (const [token, address] of Object.entries(injectors)) {
                   // Skip the _deprecated field
                   if (token === "_deprecated") continue;
+
+                  // Skip blacklisted addresses (consistent with V2)
+                  if (isAddressBlacklisted(address, network)) {
+                    console.log(`Skipping blacklisted V1 injector: ${address} on ${network}`);
+                    continue;
+                  }
+
                   allAddressesWithOptions.push({
                     network,
                     address,
@@ -132,6 +163,7 @@ export default function RewardsInjectorContainer({
           }
         }
 
+        console.log("Setting addresses after filtering:", allAddressesWithOptions);
         setAddresses(allAddressesWithOptions);
       } catch (error) {
         console.error("Error loading addresses:", error);
@@ -139,7 +171,7 @@ export default function RewardsInjectorContainer({
         setIsInitialLoading(false);
       }
     },
-    [addressBook, pathname],
+    [addressBook, pathname, isAddressBlacklisted],
   );
 
   useEffect(() => {

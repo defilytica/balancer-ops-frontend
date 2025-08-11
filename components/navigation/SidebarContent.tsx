@@ -234,15 +234,12 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
       <Flex
         position="absolute"
-        bottom="5"
+        bottom="20"
         width="100%"
         justifyContent="center"
         flexDirection="column"
         alignItems="center"
       >
-        <Badge colorScheme="purple" mb={4} fontSize="0.8em" borderRadius="full" px={2}>
-          Beta release
-        </Badge>
         <DRPCBanner />
         <DefilyticaBanner />
       </Flex>

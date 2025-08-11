@@ -9,6 +9,7 @@ import {
   getInjectTokenBalanceForAddress,
 } from "@/lib/data/injector/helpers";
 import { RateLimiter } from "@/lib/services/rateLimiter";
+import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
 
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
@@ -16,6 +17,64 @@ const rateLimiter = new RateLimiter({
   windowSize: 3600 * 1000, // 1 hour
   maxRequests: 1,
 });
+
+const FACTORY_ABI = [
+  {
+    inputs: [],
+    name: "getDeployedInjectors",
+    outputs: [{ internalType: "address[]", name: "", type: "address[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+async function fetchFactoryData() {
+  const addressBook = await fetchAddressBook();
+  const networksList = getNetworks(addressBook);
+
+  // Collect all factory promises
+  const factoryPromises = [];
+
+  for (const network of networksList) {
+    const maxiKeepers = getCategoryData(addressBook, network, "maxiKeepers");
+    if (maxiKeepers && maxiKeepers.injectorV2) {
+      const factories = maxiKeepers.injectorV2;
+
+      for (const [token, factoryAddress] of Object.entries(factories)) {
+        if (token === "factory") {
+          console.log(`Fetching data for factory ${factoryAddress} on ${network}...`);
+          factoryPromises.push(
+            fetchDeployedInjectors(factoryAddress, network).then(deployedInjectors => ({
+              factory: factoryAddress,
+              network,
+              token,
+              deployedInjectors,
+            })),
+          );
+        }
+      }
+    }
+  }
+
+  // Wait for all factory queries to complete
+  return await Promise.all(factoryPromises);
+}
+
+async function fetchDeployedInjectors(factoryAddress: string, network: string) {
+  const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const contract = new ethers.Contract(factoryAddress, FACTORY_ABI, provider);
+
+  try {
+    return await contract.getDeployedInjectors();
+  } catch (error) {
+    console.error(
+      `Error fetching deployed injectors for factory ${factoryAddress} on ${network}:`,
+      error,
+    );
+    return [];
+  }
+}
 
 export async function GET(request: NextRequest) {
   const ip =
@@ -30,19 +89,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch all injectors from the factory
-    const factoryResponse = await fetch(
-      `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`,
-    );
-    console.log(
-      `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}/api/injector/v2/factory`,
-    );
-    console.log(factoryResponse);
-    if (!factoryResponse.ok) {
-      throw new Error("Failed to fetch injectors from factory");
-    }
-    const factoryData = await factoryResponse.json();
-    console.log(factoryData);
+    // Fetch all injectors from the factory directly (avoid self-referencing API call)
+    const factoryData = await fetchFactoryData();
+    console.log("Factory data:", factoryData);
 
     // Process all injectors in parallel
     const injectorPromises = factoryData.flatMap(

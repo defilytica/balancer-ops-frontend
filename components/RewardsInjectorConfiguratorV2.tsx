@@ -195,7 +195,7 @@ function RewardsInjectorConfiguratorV2({
     return gauges.reduce((total, gauge) => {
       const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
       const maxPeriods = parseInt(gauge.maxPeriods) || 0;
-      return total + (amountPerPeriod * maxPeriods);
+      return total + amountPerPeriod * maxPeriods;
     }, 0);
   };
 
@@ -204,7 +204,7 @@ function RewardsInjectorConfiguratorV2({
       const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
       const maxPeriods = parseInt(gauge.maxPeriods) || 0;
       const periodNumber = parseInt(gauge.periodNumber) || 0;
-      const gaugeRemaining = (amountPerPeriod * maxPeriods) - (amountPerPeriod * periodNumber);
+      const gaugeRemaining = amountPerPeriod * maxPeriods - amountPerPeriod * periodNumber;
       return remaining + gaugeRemaining;
     }, 0);
   };
@@ -225,7 +225,7 @@ function RewardsInjectorConfiguratorV2({
         newRemaining += futureDistribution;
       } else {
         // For non-edited gauges (original or newly added): use standard calculation
-        const gaugeRemaining = (newAmountPerPeriod * maxPeriods) - (newAmountPerPeriod * periodNumber);
+        const gaugeRemaining = newAmountPerPeriod * maxPeriods - newAmountPerPeriod * periodNumber;
         newRemaining += gaugeRemaining;
       }
     });

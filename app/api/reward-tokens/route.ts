@@ -38,11 +38,7 @@ export async function GET(request: NextRequest) {
     // GraphQL query to fetch pools with gauges
     const GET_POOLS_WITH_GAUGES = gql`
       query GetPoolsWithGauges($chainIn: [GqlChain!]) {
-        poolGetPools(
-          where: { chainIn: $chainIn }
-          orderBy: totalLiquidity
-          orderDirection: desc
-        ) {
+        poolGetPools(where: { chainIn: $chainIn }, orderBy: totalLiquidity, orderDirection: desc) {
           chain
           protocolVersion
           address
@@ -74,9 +70,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const poolsWithGauges = poolsData.poolGetPools.filter(
-      (pool: any) => pool.staking?.gauge?.id
-    );
+    const poolsWithGauges = poolsData.poolGetPools.filter((pool: any) => pool.staking?.gauge?.id);
 
     const rewardTokensData: RewardTokenData[] = await Promise.all(
       poolsWithGauges.map(async (pool: any) => {
@@ -91,10 +85,10 @@ export async function GET(request: NextRequest) {
             try {
               const tokenAddress = await gaugeContract.reward_tokens(i);
               const rewardData = await gaugeContract.reward_data(tokenAddress);
-              
+
               if (tokenAddress && tokenAddress !== ethers.ZeroAddress) {
                 const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
-                
+
                 const [symbol, name, decimals] = await Promise.all([
                   tokenContract.symbol().catch(() => "UNKNOWN"),
                   tokenContract.name().catch(() => "Unknown Token"),
@@ -116,7 +110,10 @@ export async function GET(request: NextRequest) {
                 });
               }
             } catch (tokenError) {
-              console.error(`Error fetching reward token ${i} for gauge ${gaugeAddress}:`, tokenError);
+              console.error(
+                `Error fetching reward token ${i} for gauge ${gaugeAddress}:`,
+                tokenError,
+              );
             }
           }
 
@@ -141,7 +138,7 @@ export async function GET(request: NextRequest) {
             rewardTokens: [],
           };
         }
-      })
+      }),
     );
 
     const apiResponse = NextResponse.json({
@@ -154,9 +151,6 @@ export async function GET(request: NextRequest) {
     return apiResponse;
   } catch (error) {
     console.error("Error fetching reward tokens:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch reward token data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch reward token data" }, { status: 500 });
   }
 }
