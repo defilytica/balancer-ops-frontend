@@ -150,19 +150,20 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
   const isGenerateButtonDisabled = useMemo(() => {
     // Check if required fields are missing
-    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
+    if (!selectedNetwork || !selectedToken) {
       return true;
     }
 
-    // Check if both amounts are empty
-    if (!exactAmountUnderlyingIn.trim() && !exactAmountWrappedIn.trim()) {
+    // Check if both amounts are empty or zero
+    const underlyingAmount = parseFloat(exactAmountUnderlyingIn) || 0;
+    const wrappedAmount = parseFloat(exactAmountWrappedIn) || 0;
+    if (underlyingAmount <= 0 && wrappedAmount <= 0) {
       return true;
     }
 
     // Check if underlying amount is provided but underlying token address is invalid
     if (
-      exactAmountUnderlyingIn.trim() &&
-      parseFloat(exactAmountUnderlyingIn) > 0 &&
+      underlyingAmount > 0 &&
       (!debouncedUnderlyingTokenAddress ||
         isZeroAddress(debouncedUnderlyingTokenAddress) ||
         !isAddress(debouncedUnderlyingTokenAddress))
@@ -174,7 +175,6 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   }, [
     selectedNetwork,
     selectedToken,
-    minIssuedShares,
     exactAmountUnderlyingIn,
     exactAmountWrappedIn,
     debouncedUnderlyingTokenAddress,
@@ -358,10 +358,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   // Direct transaction execution for EOA
   const handleDirectBufferInitialization = useCallback(async () => {
     try {
-      if (!selectedToken || !minIssuedShares) {
+      if (!selectedToken) {
         toast({
           title: "Missing information",
-          description: "Please fill in all required fields",
+          description: "Please select a wrapped token",
           status: "warning",
           duration: 5000,
           isClosable: true,
@@ -369,11 +369,36 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         return;
       }
 
-      if (!exactAmountUnderlyingIn && !exactAmountWrappedIn) {
+      const underlyingAmount = parseFloat(exactAmountUnderlyingIn) || 0;
+      const wrappedAmount = parseFloat(exactAmountWrappedIn) || 0;
+      if (underlyingAmount <= 0 && wrappedAmount <= 0) {
         toast({
           title: "Missing amount",
           description:
-            "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
+            "At least one of Underlying Token Amount or Wrapped Token Amount must be greater than 0",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Check minimum amounts
+      if (underlyingAmount > 0 && underlyingAmount < 10000) {
+        toast({
+          title: "Amount too small",
+          description: "Underlying Token Amount must be at least 10000",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (wrappedAmount > 0 && wrappedAmount < 10000) {
+        toast({
+          title: "Amount too small",
+          description: "Wrapped Token Amount must be at least 10000",
           status: "warning",
           duration: 5000,
           isClosable: true,
@@ -570,7 +595,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         selectedToken.address, // wrappedToken
         exactAmountUnderlyingIn || "0", // exactAmountUnderlyingIn
         exactAmountWrappedIn || "0", // exactAmountWrappedIn
-        minIssuedShares, // minIssuedShares
+        minIssuedShares || "0", // minIssuedShares
       );
 
       toast.promise(tx.wait(), {
@@ -616,10 +641,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
   const handleGeneratePayload = useCallback(async () => {
     // Validation
-    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
+    if (!selectedNetwork || !selectedToken) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please select a network and wrapped token",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -638,11 +663,13 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       return;
     }
 
-    if (!exactAmountUnderlyingIn && !exactAmountWrappedIn) {
+    const underlyingAmount = parseFloat(exactAmountUnderlyingIn) || 0;
+    const wrappedAmount = parseFloat(exactAmountWrappedIn) || 0;
+    if (underlyingAmount <= 0 && wrappedAmount <= 0) {
       toast({
         title: "Missing amount",
         description:
-          "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
+          "At least one of Underlying Token Amount or Wrapped Token Amount must be greater than 0",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -728,7 +755,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         underlyingToken: debouncedUnderlyingTokenAddress,
         exactAmountUnderlyingIn: exactAmountUnderlyingIn || "0",
         exactAmountWrappedIn: exactAmountWrappedIn || "0",
-        minIssuedShares,
+        minIssuedShares: minIssuedShares || "0",
         seedingSafe,
         includePermit2,
       },
@@ -750,97 +777,6 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     toast,
     addressBook,
     isInitialized,
-  ]);
-
-  const handleDirectExecution = useCallback(async () => {
-    // Validation
-    if (!selectedNetwork || !selectedToken || !minIssuedShares) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (isInitialized) {
-      toast({
-        title: "Buffer already initialized",
-        description: "This buffer is already initialized. You cannot initialize it again.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!exactAmountUnderlyingIn && !exactAmountWrappedIn) {
-      toast({
-        title: "Missing amount",
-        description:
-          "At least one of Underlying Token Amount or Wrapped Token Amount must be non-zero",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Underlying Token Amount must be greater than zero",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (exactAmountWrappedIn && parseFloat(exactAmountWrappedIn) <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Wrapped Token Amount must be greater than zero",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Validate underlying token address when underlying amount is provided
-    if (exactAmountUnderlyingIn && parseFloat(exactAmountUnderlyingIn) > 0) {
-      if (
-        !debouncedUnderlyingTokenAddress ||
-        isZeroAddress(debouncedUnderlyingTokenAddress) ||
-        !isAddress(debouncedUnderlyingTokenAddress)
-      ) {
-        toast({
-          title: "Invalid underlying token address",
-          description:
-            "When providing an underlying token amount, you must provide a valid underlying token address.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return;
-      }
-    }
-
-    // Execute directly via wallet
-    await handleDirectBufferInitialization();
-  }, [
-    selectedNetwork,
-    selectedToken,
-    minIssuedShares,
-    exactAmountUnderlyingIn,
-    exactAmountWrappedIn,
-    debouncedUnderlyingTokenAddress,
-    isInitialized,
-    handleDirectBufferInitialization,
-    toast,
   ]);
 
   // Generate composer data only when button is clicked
@@ -1007,7 +943,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             />
           </FormControl>
 
-          <FormControl isRequired>
+          <FormControl>
             <FormLabel>Minimum Issued Shares</FormLabel>
             <Input
               name="minIssuedShares"
@@ -1102,7 +1038,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               <>
                 <Button
                   variant="primary"
-                  onClick={handleDirectExecution}
+                  onClick={handleDirectBufferInitialization}
                   isDisabled={isGenerateButtonDisabled}
                 >
                   Execute Initialize Buffer
