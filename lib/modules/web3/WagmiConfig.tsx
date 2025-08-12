@@ -136,6 +136,7 @@ export const wagmiConfig: Config = createConfig({
     customChains.mode,
     customChains.fraxtal,
     customChains.sonic,
+    customChains.hyperevm,
   ],
   transports: {
     [mainnet.id]: http("https://eth.drpc.org"),
@@ -150,6 +151,7 @@ export const wagmiConfig: Config = createConfig({
     [mode.id]: http("https://mode.drpc.org"),
     [fraxtal.id]: http("https://fraxtal.drpc.org"),
     [sonic.id]: http("https://sonic-rpc.publicnode.com"),
+    [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
   },
   connectors,
   ssr: true,

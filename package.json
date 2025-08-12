@@ -47,7 +47,6 @@
     "date-fns": "^3.6.0",
     "encoding": "^0.1.13",
     "ethers": "^6.15.0",
-    "ethers-multicall": "^0.2.3",
     "framer-motion": "^11.3.0",
     "graphql": "^16.7.1",
     "graphql-request": "^6.1.0",
