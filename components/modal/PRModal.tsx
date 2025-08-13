@@ -27,7 +27,7 @@ import {
 } from "@chakra-ui/react";
 import { PAYLOAD_OPTIONS } from "@/constants/constants";
 import { createPR } from "@/lib/services/createPR";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ChevronLeftIcon, ChevronRightIcon, RepeatIcon } from "@chakra-ui/icons";
 import {
   format,
   startOfWeek,
@@ -291,6 +291,45 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
     window.open(url, "_blank");
   };
 
+  const handleRefreshForkStatus = async () => {
+    if (!prRepo) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/github/check-status?repo=${prRepo}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const status = await response.json();
+      setForkStatus(status);
+
+      toast({
+        title: "Fork status refreshed",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Error checking fork status:", error);
+      toast({
+        title: "Error checking fork status",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleFilePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDisplayPath(e.target.value);
     setUserEditedPath(true);
@@ -311,9 +350,20 @@ export const PRCreationModal: React.FC<PRCreationModalProps> = ({
                 Your fork is {forkStatus.behindBy} commits behind the main repository. Please update
                 your fork before creating a PR.
               </AlertDescription>
-              <Button size="sm" colorScheme="orange" mt={2} onClick={handleUpdateFork}>
-                Update Fork
-              </Button>
+              <Flex mt={2} gap={2}>
+                <Button size="sm" colorScheme="orange" onClick={handleUpdateFork}>
+                  Update Fork
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<RepeatIcon />}
+                  onClick={handleRefreshForkStatus}
+                  isLoading={isLoading}
+                >
+                  Refresh
+                </Button>
+              </Flex>
             </Box>
           </Alert>
         )}
