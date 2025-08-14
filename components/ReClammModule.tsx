@@ -54,6 +54,9 @@ import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { isZeroAddress } from "@ethereumjs/util";
 import { useValidateReclamm } from "@/lib/hooks/validation/useValidateReclamm";
 import { useSearchParams } from "next/navigation";
+import { useAccount, useSwitchChain } from "wagmi";
+import { ethers } from "ethers";
+import { reClammPoolAbi } from "@/abi/ReclammPool.js";
 import {
   GetPoolQuery,
   GetPoolQueryVariables,
@@ -63,6 +66,11 @@ import {
 import { fetchReclammContractData } from "@/lib/services/fetchReclammContractData";
 import { fetchAddressType } from "@/lib/services/fetchAddressType";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
+import {
+  convertTimestampToLocalDateTime,
+  getMinDateTime,
+  convertDateTimeToTimestamp,
+} from "@/lib/utils/datePickerUtils";
 
 export default function ReClammModule({ addressBook }: { addressBook: AddressBook }) {
   const searchParams = useSearchParams();
@@ -77,8 +85,13 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
   const [priceRatioUpdateEndTime, setPriceRatioUpdateEndTime] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
+  const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Wallet connection hooks
+  const { address: walletAddress } = useAccount();
+  const { switchChain } = useSwitchChain();
 
   const [debouncedCenterednessMargin] = useDebounce(newCenterednessMargin, 300);
   const [debouncedDailyPriceShiftExponent] = useDebounce(newDailyPriceShiftExponent, 300);
@@ -179,6 +192,30 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
   });
 
+  // Add effect to check manager status when wallet changes
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!selectedPool || !window.ethereum) {
+        setIsCurrentWalletManager(false);
+        return;
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const signerAddress = await signer.getAddress();
+
+        const isManager = selectedPool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
+        setIsCurrentWalletManager(isManager);
+      } catch (error) {
+        console.error("Error checking manager status:", error);
+        setIsCurrentWalletManager(false);
+      }
+    };
+
+    checkManagerStatus();
+  }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
+
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(
@@ -198,8 +235,24 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       setEndPriceRatio("");
       setPriceRatioUpdateStartTime("");
       setPriceRatioUpdateEndTime("");
+      setIsCurrentWalletManager(false);
+
+      // Find the corresponding chain ID for the selected network
+      const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+      if (networkOption) {
+        try {
+          switchChain({ chainId: Number(networkOption.chainId) });
+        } catch (error) {
+          toast({
+            title: "Error switching network",
+            description: "Please switch network manually in your wallet",
+            status: "error",
+            duration: 5000,
+          });
+        }
+      }
     },
-    [resolveMultisig],
+    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
   );
 
   const handlePoolSelection = useCallback((pool: Pool) => {
@@ -245,6 +298,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     setEndPriceRatio("");
     setPriceRatioUpdateStartTime("");
     setPriceRatioUpdateEndTime("");
+    setIsCurrentWalletManager(false);
   };
 
   const handleOpenPRModal = () => {
@@ -255,6 +309,155 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
         title: "No payload generated",
         description: "Please generate a payload first",
         status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleExecuteTransactions = async () => {
+    if (!selectedPool || !selectedNetwork) {
+      toast({
+        title: "Missing information",
+        description: "Please select a network and pool",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!isValid) {
+      toast({
+        title: "No parameters to change",
+        description: "Please enter at least one valid parameter to change",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!isCurrentWalletManager) {
+      toast({
+        title: "Not authorized",
+        description: "You are not the manager of this pool",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(selectedPool.address, reClammPoolAbi, signer);
+
+      // Collect all transactions to execute
+      const transactions = [];
+
+      if (hasCenterednessMargin) {
+        const centerednessMarginValue = (
+          (parseFloat(debouncedCenterednessMargin) / 100) *
+          1e18
+        ).toString();
+        transactions.push({
+          type: "centerednessMargin",
+          description: `centeredness margin to ${debouncedCenterednessMargin}%`,
+          execute: () => contract.setCenterednessMargin(centerednessMarginValue),
+        });
+      }
+
+      if (hasDailyPriceShiftExponent) {
+        const dailyPriceShiftExponentValue = (
+          (parseFloat(debouncedDailyPriceShiftExponent) / 100) *
+          1e18
+        ).toString();
+        transactions.push({
+          type: "dailyPriceShiftExponent",
+          description: `daily price shift exponent to ${debouncedDailyPriceShiftExponent}%`,
+          execute: () => contract.setDailyPriceShiftExponent(dailyPriceShiftExponentValue),
+        });
+      }
+
+      if (hasPriceRatioUpdate) {
+        const endPriceRatioValue = (parseFloat(debouncedEndPriceRatio) * 1e18).toString();
+        transactions.push({
+          type: "priceRatioUpdate",
+          description: `price ratio update`,
+          execute: () =>
+            contract.startPriceRatioUpdate(
+              endPriceRatioValue,
+              debouncedPriceRatioUpdateStartTime,
+              debouncedPriceRatioUpdateEndTime,
+            ),
+        });
+      }
+
+      // Execute transactions sequentially
+      for (let i = 0; i < transactions.length; i++) {
+        const transaction = transactions[i];
+
+        // Show loading toast
+        const loadingToastId = toast({
+          title:
+            transactions.length === 1
+              ? "Processing Transaction"
+              : `Processing Transaction ${i + 1} of ${transactions.length}`,
+          description: `Updating ${transaction.description}...`,
+          status: "loading",
+          duration: null,
+          isClosable: false,
+        });
+
+        try {
+          // Execute transaction and wait for completion
+          const tx = await transaction.execute();
+          await tx.wait();
+
+          // Close loading toast and show success
+          toast.close(loadingToastId);
+          toast({
+            title:
+              transaction.type === "centerednessMargin"
+                ? "Centeredness Margin Updated"
+                : transaction.type === "dailyPriceShiftExponent"
+                  ? "Daily Price Shift Exponent Updated"
+                  : "Price Ratio Update Started",
+            description:
+              transaction.type === "priceRatioUpdate"
+                ? `Started price ratio update from ${new Date(parseInt(debouncedPriceRatioUpdateStartTime) * 1000).toLocaleString()} to ${new Date(parseInt(debouncedPriceRatioUpdateEndTime) * 1000).toLocaleString()} with end ratio ${debouncedEndPriceRatio}`
+                : `Updated ${transaction.description}`,
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+          });
+        } catch (error: any) {
+          // Close loading toast first
+          toast.close(loadingToastId);
+
+          console.error(`Transaction ${i + 1} failed:`, error);
+          toast({
+            title:
+              transaction.type === "centeredness"
+                ? "Centeredness Margin Update Failed"
+                : transaction.type === "dailyShift"
+                  ? "Daily Price Shift Exponent Update Failed"
+                  : "Price Ratio Update Failed",
+            description: error.message,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+          break; // Stop executing remaining transactions on error
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error executing transactions",
+        description: error.message,
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -287,7 +490,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     if (!isAuthorizedPool) {
       toast({
         title: "Not authorized",
-        description: "This pool can only be modified by the DAO multisig or authorized addresses",
+        description: "This pool can only be modified by the DAO multisig",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -332,6 +535,14 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     );
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
+
+  const getParameterCount = useMemo(() => {
+    let count = 0;
+    if (hasCenterednessMargin) count++;
+    if (hasDailyPriceShiftExponent) count++;
+    if (hasPriceRatioUpdate) count++;
+    return count;
+  }, [hasCenterednessMargin, hasDailyPriceShiftExponent, hasPriceRatioUpdate]);
 
   const getPrefillValues = useCallback(() => {
     if (
@@ -451,7 +662,15 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               />
             </Box>
           )}
-          {isAuthorizedPool ? (
+          {isCurrentWalletManager ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is owned by the authorized delegate address that is currently connected.
+                You can now modify its parameters and execute through your connected EOA.
+              </AlertDescription>
+            </Alert>
+          ) : isAuthorizedPool ? (
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -472,7 +691,15 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
                   : `This pool's parameters can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
               </AlertDescription>
             </Alert>
-          ) : null}
+          ) : (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
         </Box>
       )}
 
@@ -526,7 +753,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               onChange={e => setNewDailyPriceShiftExponent(e.target.value)}
               placeholder={
                 currentDailyPriceShiftExponent
-                  ? `Current: ${currentDailyPriceShiftExponent}%`
+                  ? `Current: ${parseFloat(currentDailyPriceShiftExponent || "0").toFixed(2)}%`
                   : "Enter percentage (e.g., 5, 10, 15)"
               }
               onWheel={e => (e.target as HTMLInputElement).blur()}
@@ -582,14 +809,17 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
           >
             <FormLabel>Price Ratio Update Start Time</FormLabel>
             <Input
-              type="number"
-              value={priceRatioUpdateStartTime}
-              onChange={e => setPriceRatioUpdateStartTime(e.target.value)}
-              placeholder="Enter start timestamp"
-              onWheel={e => (e.target as HTMLInputElement).blur()}
+              type="datetime-local"
+              value={convertTimestampToLocalDateTime(priceRatioUpdateStartTime)}
+              onChange={e => {
+                const timestamp = convertDateTimeToTimestamp(e.target.value);
+                setPriceRatioUpdateStartTime(timestamp);
+              }}
+              min={getMinDateTime()}
+              placeholder="Select start date and time"
             />
             <FormHelperText>
-              Unix timestamp when the price ratio update should start (must be in the future).
+              Select when the price ratio update should start (must be in the future).
             </FormHelperText>
             {debouncedPriceRatioUpdateStartTime !== "" && !isPriceRatioUpdateStartTimeValid && (
               <FormErrorMessage>{priceRatioUpdateStartTimeError}</FormErrorMessage>
@@ -605,14 +835,17 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
           >
             <FormLabel>Price Ratio Update End Time</FormLabel>
             <Input
-              type="number"
-              value={priceRatioUpdateEndTime}
-              onChange={e => setPriceRatioUpdateEndTime(e.target.value)}
-              placeholder="Enter end timestamp"
-              onWheel={e => (e.target as HTMLInputElement).blur()}
+              type="datetime-local"
+              value={convertTimestampToLocalDateTime(priceRatioUpdateEndTime)}
+              onChange={e => {
+                const timestamp = convertDateTimeToTimestamp(e.target.value);
+                setPriceRatioUpdateEndTime(timestamp);
+              }}
+              min={getMinDateTime()}
+              placeholder="Select end date and time"
             />
             <FormHelperText>
-              Unix timestamp when the price ratio update should end (must be after start time).
+              Select when the price ratio update should end (must be after start time).
             </FormHelperText>
             {debouncedPriceRatioUpdateEndTime !== "" && !isPriceRatioUpdateEndTimeValid && (
               <FormErrorMessage>{priceRatioUpdateEndTimeError}</FormErrorMessage>
@@ -637,7 +870,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
                             parseFloat(poolData.pool.centerednessMargin?.toString() || "0") * 100
                           ).toFixed(2)
                         : "0",
-                    newValue: debouncedCenterednessMargin,
+                    newValue: parseFloat(debouncedCenterednessMargin).toFixed(2),
                     difference: poolLoading
                       ? "-"
                       : poolData?.pool && "centerednessMargin" in poolData.pool
@@ -654,8 +887,9 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               ? [
                   {
                     name: "Daily Price Shift Exponent",
-                    currentValue: currentDailyPriceShiftExponent || "Loading...",
-                    newValue: debouncedDailyPriceShiftExponent,
+                    currentValue:
+                      parseFloat(currentDailyPriceShiftExponent).toFixed(2) || "Loading...",
+                    newValue: parseFloat(debouncedDailyPriceShiftExponent).toFixed(2),
                     difference: currentDailyPriceShiftExponent
                       ? (
                           parseFloat(debouncedDailyPriceShiftExponent) -
@@ -690,24 +924,34 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
           <Button variant="primary" isDisabled={true}>
             Select a Pool
           </Button>
-        ) : (
+        ) : isCurrentWalletManager ? (
+          <Button variant="primary" onClick={handleExecuteTransactions} isDisabled={!isValid}>
+            Execute Parameter Changes ({getParameterCount})
+          </Button>
+        ) : isAuthorizedPool ? (
           <Button variant="primary" onClick={handleGenerateClick} isDisabled={!isValid}>
             Generate Payload
           </Button>
+        ) : (
+          <Button variant="primary" isDisabled={true}>
+            Not Authorized
+          </Button>
         )}
 
-        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
+        {generatedPayload && !isCurrentWalletManager && (
+          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
       </Flex>
       <Divider />
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 
-      {generatedPayload && (
+      {generatedPayload && !isCurrentWalletManager && (
         <Box display="flex" alignItems="center" mt="20px">
           <Button
             variant="secondary"

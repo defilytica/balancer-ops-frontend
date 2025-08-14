@@ -26,7 +26,7 @@ export const ReClammPoolInfoCard: React.FC<ReClammPoolInfoCardProps> = ({ pool, 
     try {
       // Convert from 18-decimal fixed point to percentage
       const percentage = (parseFloat(dailyPriceShiftBase) / 1e18) * 100;
-      return percentage.toString();
+      return percentage.toFixed(2);
     } catch {
       return "0";
     }
