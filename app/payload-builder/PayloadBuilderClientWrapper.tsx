@@ -18,6 +18,7 @@ const CATEGORIZED_PAYLOADS = {
     "manage-buffer",
     "fee-setter-v3",
     "amp-factor-update-v3",
+    "reclamm",
   ],
   "Emergency Operations": ["emergency"],
   "Financial Operations": ["create-payment", "cctp-bridge"],

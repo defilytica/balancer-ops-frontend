@@ -1,0 +1,55 @@
+query GetPool($id: String!, $chain: GqlChain!) {
+  pool: poolGetPool(id: $id, chain: $chain) {
+    address
+    chain
+    createTime
+    decimals
+    dynamicData {
+      aprItems {
+        apr
+        id
+        rewardTokenAddress
+        rewardTokenSymbol
+        title
+        type
+      }
+      fees24h
+      holdersCount
+      isInRecoveryMode
+      isPaused
+      poolId
+      surplus24h
+      swapEnabled
+      swapFee
+      totalLiquidity
+      totalShares
+      volume24h
+    }
+    factory
+    hasErc4626
+    hasNestedErc4626
+    id
+    name
+    owner
+    pauseManager
+    poolCreator
+    protocolVersion
+    swapFeeManager
+    symbol
+    tags
+    type
+    version
+    ... on GqlPoolReClamm {
+      centerednessMargin
+      currentFourthRootPriceRatio
+      dailyPriceShiftBase
+      endFourthRootPriceRatio
+      hasAnyAllowedBuffer
+      lastTimestamp
+      lastVirtualBalances
+      priceRatioUpdateEndTime
+      priceRatioUpdateStartTime
+      startFourthRootPriceRatio
+    }
+  }
+}

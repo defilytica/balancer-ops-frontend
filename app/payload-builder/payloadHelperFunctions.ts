@@ -1426,6 +1426,232 @@ export function generateAmpFactorUpdatePayload(
     transactions: [transaction],
   };
 }
+// --- RECLAMM POOL PARAMETERS ---
+
+export interface ReClammCenterednessMarginInput {
+  poolAddress: string;
+  newCenterednessMargin: string;
+  poolName: string;
+}
+
+export function generateReClammCenterednessMarginPayload(
+  input: ReClammCenterednessMarginInput,
+  chainId: string,
+  multisig: string,
+) {
+  const transaction = {
+    to: input.poolAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          name: "newCenterednessMargin",
+          type: "uint256",
+          internalType: "uint256",
+        },
+      ],
+      name: "setCenterednessMargin",
+      payable: false,
+    },
+    contractInputsValues: {
+      newCenterednessMargin: input.newCenterednessMargin,
+    },
+  };
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Set centeredness margin to ${input.newCenterednessMargin} for ${input.poolName}`,
+      createdFromSafeAddress: multisig,
+    },
+    transactions: [transaction],
+  };
+}
+
+export interface ReClammDailyPriceShiftExponentInput {
+  poolAddress: string;
+  newDailyPriceShiftExponent: string;
+  poolName: string;
+}
+
+export function generateReClammDailyPriceShiftExponentPayload(
+  input: ReClammDailyPriceShiftExponentInput,
+  chainId: string,
+  multisig: string,
+) {
+  const transaction = {
+    to: input.poolAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          name: "newDailyPriceShiftExponent",
+          type: "uint256",
+          internalType: "uint256",
+        },
+      ],
+      name: "setDailyPriceShiftExponent",
+      payable: false,
+    },
+    contractInputsValues: {
+      newDailyPriceShiftExponent: input.newDailyPriceShiftExponent,
+    },
+  };
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Set daily price shift exponent to ${input.newDailyPriceShiftExponent} for ${input.poolName}`,
+      createdFromSafeAddress: multisig,
+    },
+    transactions: [transaction],
+  };
+}
+
+export interface ReClammCombinedParametersInput {
+  poolAddress: string;
+  poolName: string;
+  newCenterednessMargin?: string;
+  newDailyPriceShiftExponent?: string;
+  endPriceRatio?: string;
+  priceRatioUpdateStartTime?: string;
+  priceRatioUpdateEndTime?: string;
+  stopPriceRatioUpdate?: boolean;
+}
+
+export function generateReClammCombinedParametersPayload(
+  input: ReClammCombinedParametersInput,
+  chainId: string,
+  multisig: string,
+) {
+  const transactions = [];
+  const descriptions = [];
+
+  // Add centeredness margin transaction if provided
+  if (input.newCenterednessMargin) {
+    transactions.push({
+      to: input.poolAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          {
+            name: "newCenterednessMargin",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+        name: "setCenterednessMargin",
+        payable: false,
+      },
+      contractInputsValues: {
+        newCenterednessMargin: input.newCenterednessMargin,
+      },
+    });
+    descriptions.push(`centeredness margin to ${input.newCenterednessMargin}`);
+  }
+
+  // Add daily price shift exponent transaction if provided
+  if (input.newDailyPriceShiftExponent) {
+    transactions.push({
+      to: input.poolAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          {
+            name: "newDailyPriceShiftExponent",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+        name: "setDailyPriceShiftExponent",
+        payable: false,
+      },
+      contractInputsValues: {
+        newDailyPriceShiftExponent: input.newDailyPriceShiftExponent,
+      },
+    });
+    descriptions.push(`daily price shift exponent to ${input.newDailyPriceShiftExponent}`);
+  }
+
+  // Add price ratio update transaction if all three parameters are provided
+  if (input.endPriceRatio && input.priceRatioUpdateStartTime && input.priceRatioUpdateEndTime) {
+    transactions.push({
+      to: input.poolAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          {
+            name: "endPriceRatio",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "priceRatioUpdateStartTime",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "priceRatioUpdateEndTime",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+        name: "startPriceRatioUpdate",
+        payable: false,
+      },
+      contractInputsValues: {
+        endPriceRatio: input.endPriceRatio,
+        priceRatioUpdateStartTime: input.priceRatioUpdateStartTime,
+        priceRatioUpdateEndTime: input.priceRatioUpdateEndTime,
+      },
+    });
+    descriptions.push(`price ratio update from ${new Date(parseInt(input.priceRatioUpdateStartTime) * 1000).toLocaleString()} to ${new Date(parseInt(input.priceRatioUpdateEndTime) * 1000).toLocaleString()} with end ratio ${input.endPriceRatio}`);
+  }
+
+  // Add stop price ratio update transaction if requested
+  if (input.stopPriceRatioUpdate) {
+    transactions.push({
+      to: input.poolAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [],
+        name: "stopPriceRatioUpdate",
+        payable: false,
+      },
+      contractInputsValues: {},
+    });
+    descriptions.push("stop price ratio update");
+  }
+
+  const description = descriptions.length > 1 
+    ? `Set ${descriptions.join(" and ")} for ${input.poolName}`
+    : `Set ${descriptions[0]} for ${input.poolName}`;
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: description,
+      createdFromSafeAddress: multisig,
+    },
+    transactions,
+  };
+}
+
 // --- Emergency payloads ---
 
 export interface EmergencyActionInput {
