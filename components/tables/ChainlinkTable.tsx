@@ -223,7 +223,7 @@ export const ChainlinkTable: React.FC<ChainlinkTableProps> = ({ data }) => {
             const balanceStatus = getBalanceStatus(row.estimated_actions_left, isActive);
 
             return (
-              <Box as="tr" key={index} >
+              <Box as="tr" key={index}>
                 <Box as="td" p={2}>
                   <Tooltip label={row.blockchain}>
                     <Image

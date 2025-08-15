@@ -12,14 +12,8 @@ import { useIsMounted } from "@/lib/shared/hooks/useIsMounted";
 import { useThemeColorMode } from "@/lib/services/chakra/useThemeColorMode";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Create singleton query client
-let queryClientInstance: QueryClient | null = null;
-const getQueryClient = () => {
-  if (!queryClientInstance) {
-    queryClientInstance = new QueryClient();
-  }
-  return queryClientInstance;
-};
+// Create query client at module level for stable references
+const queryClient = new QueryClient();
 
 // Use memo to prevent unnecessary re-renders
 const Web3ProviderComponent = ({
@@ -29,7 +23,6 @@ const Web3ProviderComponent = ({
   const isMounted = useIsMounted();
   const { colors, radii, shadows } = useTheme();
   const colorMode = useThemeColorMode();
-  const queryClient = getQueryClient();
 
   if (!isMounted) return null;
 

@@ -7,8 +7,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  Card,
-  CardBody,
   Container,
   Divider,
   Flex,
@@ -51,6 +49,8 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { getChainId } from "@/lib/utils/getChainId";
 import { RewardsInjectorConfiguratorTable } from "./tables/RewardsInjectorConfiguratorTable";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 type RewardsInjectorConfiguratorV2Props = {
   addresses: AddressOption[];
@@ -107,7 +107,21 @@ function RewardsInjectorConfiguratorV2({
     const newGauges = [...gauges];
     newGauges[index] = { ...updatedGauge, isEdited: true };
     setGauges(newGauges);
-    setEditedGauges(prev => new Set(prev).add(index));
+
+    // Check if this gauge is newly added
+    const isNewlyAdded = newlyAddedGauges.some(newGauge => newGauge.id === updatedGauge.id);
+
+    if (isNewlyAdded) {
+      // Update the gauge in newlyAddedGauges array instead of marking as edited
+      setNewlyAddedGauges(prev =>
+        prev.map(gauge =>
+          gauge.id === updatedGauge.id ? { ...updatedGauge, isEdited: true } : gauge,
+        ),
+      );
+    } else {
+      // Only mark as edited if it's an original gauge
+      setEditedGauges(prev => new Set(prev).add(index));
+    }
 
     toast({
       title: "Configuration Updated",
@@ -177,35 +191,26 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
-  const calculateCurrentDistribution = (gauges: RewardsInjectorData[]) => {
-    const distribution = gauges.reduce(
-      (acc, gauge) => {
-        const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
-        const maxPeriods = parseInt(gauge.maxPeriods) || 0;
-        const periodNumber = parseInt(gauge.periodNumber) || 0;
-
-        const gaugeTotal = amountPerPeriod * maxPeriods;
-        const gaugeDistributed = amountPerPeriod * periodNumber;
-        const gaugeRemaining = gaugeTotal - gaugeDistributed;
-
-        return {
-          total: acc.total + gaugeTotal,
-          distributed: acc.distributed + gaugeDistributed,
-          remaining: acc.remaining + gaugeRemaining,
-        };
-      },
-      {
-        total: 0,
-        distributed: 0,
-        remaining: 0,
-      },
-    );
-
-    return distribution;
+  const calculateCurrentTotal = (gauges: RewardsInjectorData[]) => {
+    return gauges.reduce((total, gauge) => {
+      const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+      const maxPeriods = parseInt(gauge.maxPeriods) || 0;
+      return total + amountPerPeriod * maxPeriods;
+    }, 0);
   };
 
-  const calculateNewDistribution = () => {
-    let newDistribution = { total: 0, distributed: 0, remaining: 0 };
+  const calculateCurrentRemaining = (gauges: RewardsInjectorData[]) => {
+    return gauges.reduce((remaining, gauge) => {
+      const amountPerPeriod = parseFloat(gauge.amountPerPeriod) || 0;
+      const maxPeriods = parseInt(gauge.maxPeriods) || 0;
+      const periodNumber = parseInt(gauge.periodNumber) || 0;
+      const gaugeRemaining = amountPerPeriod * maxPeriods - amountPerPeriod * periodNumber;
+      return remaining + gaugeRemaining;
+    }, 0);
+  };
+
+  const calculateNewRemaining = () => {
+    let newRemaining = 0;
 
     // Process each current gauge
     gauges.forEach((gauge, index) => {
@@ -215,50 +220,21 @@ function RewardsInjectorConfiguratorV2({
 
       // Check if this gauge was edited
       if (editedGauges.has(index)) {
-        // For edited gauges: preserve already distributed amount, apply new rate to remaining periods
-        const originalGauge = originalGauges.find(orig => orig.gaugeAddress === gauge.gaugeAddress);
-        if (originalGauge) {
-          const originalAmountPerPeriod = parseFloat(originalGauge.amountPerPeriod) || 0;
-          const originalPeriodNumber = parseInt(originalGauge.periodNumber) || 0;
-          const alreadyDistributed = originalAmountPerPeriod * originalPeriodNumber;
-          const futureDistribution = newAmountPerPeriod * maxPeriods; // New configuration starts fresh
-
-          newDistribution.distributed += alreadyDistributed;
-          newDistribution.remaining += futureDistribution;
-          newDistribution.total += alreadyDistributed + futureDistribution;
-        }
+        // For edited gauges: apply new rate to remaining periods only
+        const futureDistribution = newAmountPerPeriod * maxPeriods; // New configuration starts fresh
+        newRemaining += futureDistribution;
       } else {
         // For non-edited gauges (original or newly added): use standard calculation
-        const gaugeTotal = newAmountPerPeriod * maxPeriods;
-        const gaugeDistributed = newAmountPerPeriod * periodNumber;
-        const gaugeRemaining = gaugeTotal - gaugeDistributed;
-
-        newDistribution.total += gaugeTotal;
-        newDistribution.distributed += gaugeDistributed;
-        newDistribution.remaining += gaugeRemaining;
+        const gaugeRemaining = newAmountPerPeriod * maxPeriods - newAmountPerPeriod * periodNumber;
+        newRemaining += gaugeRemaining;
       }
     });
 
-    // For deleted gauges, we need to preserve the already distributed amount
-    // because those tokens were already distributed and can't be "undistributed"
-    // Use ORIGINAL values for calculating already distributed amount
-    removedGauges.forEach(gauge => {
-      // Find the original gauge to get the correct distributed amount
-      const originalGauge = originalGauges.find(orig => orig.gaugeAddress === gauge.gaugeAddress);
+    // Note: Removed gauges don't contribute to future distribution
+    // Their future distributions are cancelled, so we don't add anything for them
+    // This is correct - removedGauges only affect total distributed amount (not remaining)
 
-      if (originalGauge) {
-        // Use original values for calculating what was already distributed
-        const originalAmountPerPeriod = parseFloat(originalGauge.amountPerPeriod) || 0;
-        const periodNumber = parseInt(originalGauge.periodNumber) || 0;
-        const alreadyDistributed = originalAmountPerPeriod * periodNumber;
-
-        // Only add the distributed amount - future distributions are cancelled
-        newDistribution.distributed += alreadyDistributed;
-        newDistribution.total += alreadyDistributed;
-      }
-    });
-
-    return newDistribution;
+    return newRemaining;
   };
 
   const formatAmount = (amount: number) => {
@@ -268,9 +244,10 @@ function RewardsInjectorConfiguratorV2({
     });
   };
 
-  const currentDistribution = calculateCurrentDistribution(originalGauges);
-  const newDistribution = calculateNewDistribution();
-  const distributionDelta = newDistribution.remaining - currentDistribution.remaining;
+  const currentTotal = calculateCurrentTotal(originalGauges);
+  const currentRemaining = calculateCurrentRemaining(originalGauges);
+  const newRemaining = calculateNewRemaining();
+  const distributionDelta = newRemaining - currentRemaining;
 
   const generatePayload = () => {
     if (!selectedAddress) {
@@ -445,15 +422,51 @@ function RewardsInjectorConfiguratorV2({
     removedGauges.length,
   ]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    // Extract key parameters from the payload
+    const injectorAddress = selectedAddress?.address;
+    const operationCount = editedGauges.size + newlyAddedGauges.length + removedGauges.length;
+
+    return {
+      type: "injector-configurator",
+      title: "Update Rewards Injector Configuration (V2)",
+      description: `Update rewards injector configurations with ${operationCount} change${operationCount !== 1 ? "s" : ""}.`,
+      payload: payload,
+      params: {
+        injectorAddress: injectorAddress,
+        addedGauges: newlyAddedGauges.length,
+        removedGauges: removedGauges.length,
+        modifiedGauges: editedGauges.size,
+      },
+      builderPath: "injector-configurator",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.xl">
       <Box>
-        <Box mb="10px">
-          <Heading as="h2" size="lg" variant="special">
-            Injector Configuration Manager
-          </Heading>
-          <Text mb={6}>Manage reward emissions configuration for the selected injector.</Text>
-        </Box>
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          mb={6}
+          direction={{ base: "column", md: "row" }}
+          gap={4}
+        >
+          <Box>
+            <Heading as="h2" size="lg" variant="special">
+              Injector Configuration Manager
+            </Heading>
+            <Text>Manage reward emissions configuration for the selected injector.</Text>
+          </Box>
+          <Box width={{ base: "full", md: "auto" }}>
+            <ComposerIndicator />
+          </Box>
+        </Flex>
 
         <Flex justifyContent="space-between" alignItems="center" verticalAlign="center" mb={6}>
           <Menu>
@@ -582,7 +595,7 @@ function RewardsInjectorConfiguratorV2({
                   Current Distribution
                 </Text>
                 <Text fontSize="xl" fontWeight="semibold">
-                  {formatAmount(currentDistribution.total)} {tokenSymbol}
+                  {formatAmount(currentTotal)} {tokenSymbol}
                 </Text>
               </VStack>
               <VStack spacing={1}>
@@ -594,7 +607,7 @@ function RewardsInjectorConfiguratorV2({
                   New Distribution
                 </Text>
                 <Text fontSize="xl" fontWeight="semibold">
-                  {formatAmount(newDistribution.total)} {tokenSymbol}
+                  {formatAmount(newRemaining)} {tokenSymbol}
                 </Text>
               </VStack>
               <VStack spacing={1}>
@@ -674,9 +687,12 @@ function RewardsInjectorConfiguratorV2({
 
         {selectedAddress && !isLoading && (
           <Flex justifyContent="space-between" mt={6} mb={6}>
-            <Button variant="primary" onClick={generatePayload}>
-              Generate Payload
-            </Button>
+            <Flex gap={2} alignItems="center">
+              <Button variant="primary" onClick={generatePayload}>
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </Flex>
             {generatedPayload && <SimulateTransactionButton batchFile={generatedPayload} />}
           </Flex>
         )}

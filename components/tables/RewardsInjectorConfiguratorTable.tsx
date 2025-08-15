@@ -23,6 +23,7 @@ import {
   CardBody,
   Divider,
   FormLabel,
+  useToast,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { RewardsInjectorData } from "@/components/tables/RewardsInjectorTable";
@@ -48,6 +49,7 @@ export const RewardsInjectorConfiguratorTable = ({
   onAddRecipient,
   newlyAddedGauges = [],
 }: RewardsInjectorConfiguratorTableProps) => {
+  const toast = useToast();
   const configButtonColor = useColorModeValue("gray.500", "gray.400");
   const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
@@ -116,8 +118,31 @@ export const RewardsInjectorConfiguratorTable = ({
     setEditingData(updatedGauge);
   };
 
+  const validateGaugeData = (gauge: RewardsInjectorData): string | null => {
+    if (!gauge.gaugeAddress.trim()) {
+      return "Gauge address is required";
+    }
+    if (!gauge.maxPeriods || parseInt(gauge.maxPeriods) <= 0) {
+      return "Max periods must be greater than 0";
+    }
+    return null;
+  };
+
   const handleSave = (index: number) => {
     if (!editingData || !onSaveEdit) return;
+
+    const validationError = validateGaugeData(editingData);
+    if (validationError) {
+      toast({
+        title: "Invalid Input",
+        description: validationError,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     onSaveEdit(index, editingData);
     setEditingIndex(null);
     setEditingData(null);
@@ -151,22 +176,34 @@ export const RewardsInjectorConfiguratorTable = ({
   };
 
   const handleAddRecipient = () => {
-    if (onAddRecipient) {
-      onAddRecipient(newRecipientData);
-      // Reset form and exit add mode
-      setNewRecipientData({
-        gaugeAddress: "",
-        poolName: "",
-        amountPerPeriod: "",
-        rawAmountPerPeriod: "0",
-        periodNumber: "0",
-        maxPeriods: "",
-        isRewardTokenSetup: true,
-        lastInjectionTimeStamp: "0",
-        doNotStartBeforeTimestamp: "0",
+    if (!onAddRecipient) return;
+
+    const validationError = validateGaugeData(newRecipientData);
+    if (validationError) {
+      toast({
+        title: "Invalid Input",
+        description: validationError,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
       });
-      setIsAddingRecipient(false);
+      return;
     }
+
+    onAddRecipient(newRecipientData);
+    // Reset form and exit add mode
+    setNewRecipientData({
+      gaugeAddress: "",
+      poolName: "",
+      amountPerPeriod: "",
+      rawAmountPerPeriod: "0",
+      periodNumber: "0",
+      maxPeriods: "",
+      isRewardTokenSetup: true,
+      lastInjectionTimeStamp: "0",
+      doNotStartBeforeTimestamp: "0",
+    });
+    setIsAddingRecipient(false);
   };
 
   const handleCancelAdd = () => {

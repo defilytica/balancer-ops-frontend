@@ -49,11 +49,9 @@ export default function CustomCard({ title, description, button_label, icon, lin
         <Text>{description}</Text>
       </CardBody>
       <CardFooter>
-        <Link href={link} legacyBehavior>
-          <Button variant="secondary" rightIcon={icon}>
-            {button_label}
-          </Button>
-        </Link>
+        <Button as={Link} href={link} variant="secondary" rightIcon={icon}>
+          {button_label}
+        </Button>
       </CardFooter>
     </ChakraCard>
   );

@@ -81,7 +81,7 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
   };
 
   return (
-    <Box mt="20px">
+    <Box>
       <Flex justifyContent="space-between" alignItems="center" mb="10px">
         <Text fontSize="lg">JSON Payload</Text>
         <Button onClick={handleToggleEdit}>

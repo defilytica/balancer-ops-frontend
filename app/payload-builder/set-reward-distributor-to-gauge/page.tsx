@@ -24,7 +24,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -39,6 +39,8 @@ import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 export interface SetDistributorInput {
   targetGauge: string;
@@ -136,6 +138,23 @@ export default function SetRewardDistributorPage() {
     setHumanReadableText(text);
   };
 
+  // Generate composer data only when button is clicked
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    return {
+      type: "set-reward-distributor-to-gauge",
+      title: `Set Reward Distributor${payload.transactions.length > 1 ? "s" : ""} on Gauge${payload.transactions.length > 1 ? "s" : ""}.`,
+      description: humanReadableText || "",
+      payload: payload,
+      params: {},
+      builderPath: "set-reward-distributor-to-gauge",
+    };
+  }, [generatedPayload, humanReadableText]);
+
   const addRewardRow = () => {
     if (!uiState.isFormValid) {
       toast({
@@ -224,11 +243,19 @@ export default function SetRewardDistributorPage() {
 
   return (
     <Container maxW="container.lg">
-      <Box mb="10px">
+      <Flex
+        justifyContent="space-between"
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+        mb="10px"
+      >
         <Heading as="h2" size="lg" variant="special">
           Create Payload to Set Reward Distributor on a Gauge
         </Heading>
-      </Box>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Alert status="info" mt={4} mb={4} py={3} variant="left-accent" borderRadius="md">
         <Box flex="1">
@@ -383,13 +410,16 @@ export default function SetRewardDistributorPage() {
       )}
 
       <Flex justifyContent="space-between" alignItems="center" mt={4} mb={4}>
-        <Button
-          variant="primary"
-          onClick={handleGenerateClick}
-          isDisabled={!uiState.hasAddedReward || rewardAdds.length === 0}
-        >
-          Generate Payload
-        </Button>
+        <Flex gap={2} align="center">
+          <Button
+            variant="primary"
+            onClick={handleGenerateClick}
+            isDisabled={!uiState.hasAddedReward || rewardAdds.length === 0}
+          >
+            Generate Payload
+          </Button>
+          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+        </Flex>
         {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
 

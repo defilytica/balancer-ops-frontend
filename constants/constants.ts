@@ -16,9 +16,11 @@ import sepoliaLogo from "@/public/imgs/sepolia.svg";
 import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
+import hyperEVMLogo from "@/public/imgs/hyperevm.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
+import { IoLayers } from "react-icons/io5";
 
 export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
 
@@ -255,6 +257,18 @@ export const PAYLOAD_OPTIONS = [
     prTypePath: "MaxiOps/Emergency-Multisigs/",
   },
   {
+    href: "/payload-builder/composer",
+    key: "payload-composer",
+    label: "Payload Composer",
+    button_label: "",
+    description: "",
+    icon: IoLayers,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/combined-operations",
+    prNamePlaceholder: "Combined Operations",
+    prTypePath: "MaxiOps/CompositePayloads/",
+  },
+  {
     href: "/payload-builder/reclamm",
     key: "reclamm",
     label: "Configure ReCLAMM pool parameters",
@@ -358,6 +372,14 @@ export const NETWORK_OPTIONS = [
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "",
   },
+  {
+    label: "HyperEVM",
+    apiID: "HYPEREVM",
+    chainId: "999",
+    maxiSafe: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    omniSig: "0x97079F7E04B535FE7cD3f972Ce558412dFb33946",
+    entrypoint: "",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -445,6 +467,20 @@ export const networks: Record<string, NetworkInfo> = {
     explorer: "https://sonicscan.org/",
     chainId: "146",
   },
+  hyperevm: {
+    logo: hyperEVMLogo.src,
+    rpc: "https://lb.drpc.org/ogrpc?network=hyperliquid&dkey=",
+    explorer: "https://hyperevmscan.io/",
+    chainId: "999",
+  },
+};
+
+// Injector blacklist - addresses to exclude from injector listings per network
+export const INJECTOR_BLACKLIST: Record<string, string[]> = {
+  avalanche: [
+    "0xfa7b21B30325DBbd4A71ee2B2EDE74A7d8A2c0E4", // Blacklisted injector address
+  ],
+  // Add more networks and addresses as needed
 };
 
 export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
@@ -526,6 +562,7 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
   ],
 };
 
+// Constants for V2 Pool Creator
 // TODO: import from address book
 export const FactoryAddressWeighted = {
   MAINNET: "0x897888115Ada5773E02aA29F775430BFB5F34c51",
@@ -539,6 +576,7 @@ export const FactoryAddressWeighted = {
   FRAXTAL: "0x9dA18982a33FD0c7051B19F0d7C76F2d5E7e017c",
   MODE: "0xc3ccacE87f6d3A81724075ADcb5ddd85a8A1bB68",
   SEPOLIA: "0x7920BFa1b2041911b354747CA7A6cDD2dfC50Cfd",
+  HYPEREVM: "", // placeholder, V2 is not deployed on HyperEVM
 };
 export const FactoryAddressComposable = {
   MAINNET: "0x5B42eC6D40f7B7965BE5308c70e2603c0281C1E9",
@@ -552,6 +590,7 @@ export const FactoryAddressComposable = {
   FRAXTAL: "0x4bdCc2fb18AEb9e2d281b0278D946445070EAda7",
   MODE: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
   SEPOLIA: "0x05503B3aDE04aCA81c8D6F88eCB73Ba156982D2B",
+  HYPEREVM: "", // placeholder, V2 is not deployed on HyperEVM
 };
 
 // Single static factory, easier to store here than fetch from address book

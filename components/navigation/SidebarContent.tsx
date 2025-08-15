@@ -8,7 +8,6 @@ import {
   BoxProps,
   Link,
   Image,
-  Badge,
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import { FaRegChartBar } from "react-icons/fa6";
@@ -19,6 +18,7 @@ import {
   TbGaugeFilled,
   TbHeartRateMonitor,
   TbFishHook,
+  TbCoins,
   TbChartCovariate,
 } from "react-icons/tb";
 import { PiRocketLaunchBold } from "react-icons/pi";
@@ -74,6 +74,12 @@ const LinkItems = [
     icon: TbGaugeFilled,
     target: "/gauge-creator",
     description: "Create a staking gauge for Balancer pools",
+  },
+  {
+    name: "Reward Tokens",
+    icon: TbCoins,
+    target: "/reward-tokens",
+    description: "Manage reward tokens on gauges",
   },
   {
     name: "Chainlink Automation",
@@ -235,15 +241,12 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
       <Flex
         position="absolute"
-        bottom="5"
+        bottom="20"
         width="100%"
         justifyContent="center"
         flexDirection="column"
         alignItems="center"
       >
-        <Badge colorScheme="purple" mb={4} fontSize="0.8em" borderRadius="full" px={2}>
-          Beta release
-        </Badge>
         <DRPCBanner />
         <DefilyticaBanner />
       </Flex>
