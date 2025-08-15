@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   Container,
+  Checkbox,
   Divider,
   Flex,
   FormControl,
@@ -38,6 +39,7 @@ import {
 import { AddressBook, Pool, ReClammPool, ReClammContractData } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { ReClammPoolInfoCard } from "@/components/ReClammPoolInfoCard";
+import { ReClammPoolInfoCardSkeleton } from "./ReClammPoolInfoCardSkeleton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -83,6 +85,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
   const [endPriceRatio, setEndPriceRatio] = useState<string>("");
   const [priceRatioUpdateStartTime, setPriceRatioUpdateStartTime] = useState<string>("");
   const [priceRatioUpdateEndTime, setPriceRatioUpdateEndTime] = useState<string>("");
+  const [stopPriceRatioUpdate, setStopPriceRatioUpdate] = useState<boolean>(false);
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
   const [isCurrentWalletManager, setIsCurrentWalletManager] = useState(false);
@@ -121,7 +124,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
   );
 
   // Fetch ReClaMM compute data
-  const { data: reClammContractData } = useReactQuery({
+  const { isLoading: loadingContractData, data: reClammContractData } = useReactQuery({
     queryKey: ["reclammComputeData", selectedPool?.address, selectedPool?.chain],
     queryFn: () =>
       fetchReclammContractData(selectedPool!.address, selectedPool!.chain.toLowerCase()),
@@ -156,6 +159,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     endPriceRatio: debouncedEndPriceRatio,
     priceRatioUpdateStartTime: debouncedPriceRatioUpdateStartTime,
     priceRatioUpdateEndTime: debouncedPriceRatioUpdateEndTime,
+    stopPriceRatioUpdate: stopPriceRatioUpdate,
     reClammContractData,
   });
 
@@ -172,6 +176,23 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
     );
   }, [selectedPool, selectedMultisig]);
+
+  // Check if price ratio update is currently active
+  const isPriceRatioUpdateInProgress = useMemo(() => {
+    if (
+      !poolData?.pool ||
+      !("priceRatioUpdateStartTime" in poolData.pool) ||
+      !("priceRatioUpdateEndTime" in poolData.pool)
+    ) {
+      return false;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const startTime = parseInt(poolData.pool.priceRatioUpdateStartTime?.toString() || "0");
+    const endTime = parseInt(poolData.pool.priceRatioUpdateEndTime?.toString() || "0");
+
+    return startTime > 0 && endTime > 0 && now >= startTime && now <= endTime;
+  }, [poolData?.pool]);
 
   // Determine if we need to check the address type
   const shouldCheckAddressType = useMemo(() => {
@@ -235,6 +256,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       setEndPriceRatio("");
       setPriceRatioUpdateStartTime("");
       setPriceRatioUpdateEndTime("");
+      setStopPriceRatioUpdate(false);
       setIsCurrentWalletManager(false);
 
       // Find the corresponding chain ID for the selected network
@@ -298,6 +320,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     setEndPriceRatio("");
     setPriceRatioUpdateStartTime("");
     setPriceRatioUpdateEndTime("");
+    setStopPriceRatioUpdate(false);
     setIsCurrentWalletManager(false);
   };
 
@@ -526,6 +549,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
         ? debouncedPriceRatioUpdateStartTime
         : undefined,
       priceRatioUpdateEndTime: hasPriceRatioUpdate ? debouncedPriceRatioUpdateEndTime : undefined,
+      stopPriceRatioUpdate: stopPriceRatioUpdate,
     };
 
     const payload = generateReClammCombinedParametersPayload(
@@ -536,18 +560,86 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
+  const handleStopPriceRatioUpdate = async () => {
+    if (!selectedPool || !isCurrentWalletManager) {
+      toast({
+        title: "Not authorized",
+        description: "You are not the manager of this pool",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(selectedPool.address, reClammPoolAbi, signer);
+
+      const loadingToastId = toast({
+        title: "Stopping Price Ratio Update",
+        description: "Processing transaction...",
+        status: "loading",
+        duration: null,
+        isClosable: false,
+      });
+
+      try {
+        const tx = await contract.stopPriceRatioUpdate();
+        await tx.wait();
+
+        toast.close(loadingToastId);
+        toast({
+          title: "Price Ratio Update Stopped",
+          description: "The price ratio update has been successfully stopped",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error: any) {
+        toast.close(loadingToastId);
+        console.error("Stop price ratio update failed:", error);
+        toast({
+          title: "Stop Price Ratio Update Failed",
+          description: error.message,
+          status: "error",
+          duration: 7000,
+          isClosable: true,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error stopping price ratio update",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   const getParameterCount = useMemo(() => {
     let count = 0;
     if (hasCenterednessMargin) count++;
     if (hasDailyPriceShiftExponent) count++;
     if (hasPriceRatioUpdate) count++;
+    if (stopPriceRatioUpdate) count++;
     return count;
-  }, [hasCenterednessMargin, hasDailyPriceShiftExponent, hasPriceRatioUpdate]);
+  }, [
+    hasCenterednessMargin,
+    hasDailyPriceShiftExponent,
+    hasPriceRatioUpdate,
+    stopPriceRatioUpdate,
+  ]);
 
   const getPrefillValues = useCallback(() => {
     if (
       !selectedPool ||
-      (!debouncedCenterednessMargin && !debouncedDailyPriceShiftExponent && !hasPriceRatioUpdate)
+      (!debouncedCenterednessMargin &&
+        !debouncedDailyPriceShiftExponent &&
+        !hasPriceRatioUpdate &&
+        !stopPriceRatioUpdate)
     )
       return {
         prefillBranchName: "",
@@ -591,6 +683,9 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       descriptions.push(
         `price ratio update from ${new Date(parseInt(debouncedPriceRatioUpdateStartTime) * 1000).toLocaleString()} to ${new Date(parseInt(debouncedPriceRatioUpdateEndTime) * 1000).toLocaleString()} with end ratio ${debouncedEndPriceRatio}`,
       );
+    }
+    if (stopPriceRatioUpdate) {
+      descriptions.push("stop price ratio update");
     }
 
     if (descriptions.length === 1) {
@@ -654,12 +749,16 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       {selectedPool && (
         <Box mb={6}>
           <PoolInfoCard pool={selectedPool} />
-          {selectedPool.type === "RECLAMM" && poolData?.pool && reClammContractData && (
+          {selectedPool.type === "RECLAMM" && (
             <Box mt={4}>
-              <ReClammPoolInfoCard
-                pool={poolData.pool as unknown as ReClammPool}
-                contractData={reClammContractData}
-              />
+              {loadingContractData ? (
+                <ReClammPoolInfoCardSkeleton />
+              ) : poolData?.pool && reClammContractData ? (
+                <ReClammPoolInfoCard
+                  pool={poolData.pool as unknown as ReClammPool}
+                  contractData={reClammContractData}
+                />
+              ) : null}
             </Box>
           )}
           {isCurrentWalletManager ? (
@@ -776,7 +875,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
             mb={4}
             isInvalid={debouncedEndPriceRatio !== "" && !isEndPriceRatioValid}
           >
-            <FormLabel>End Price Ratio</FormLabel>
+            <FormLabel>New End Price Ratio</FormLabel>
             <Input
               type="number"
               step="0.01"
@@ -845,7 +944,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               placeholder="Select end date and time"
             />
             <FormHelperText>
-              Select when the price ratio update should end (must be after start time).
+              Select when the price ratio update should end (must be at least 24h after start time).
             </FormHelperText>
             {debouncedPriceRatioUpdateEndTime !== "" && !isPriceRatioUpdateEndTimeValid && (
               <FormErrorMessage>{priceRatioUpdateEndTimeError}</FormErrorMessage>
@@ -854,70 +953,114 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
         </GridItem>
       </Grid>
 
-      {selectedPool && isValid && (
-        <ParameterChangePreviewCard
-          title="ReCLAMM Parameters Change Preview"
-          icon={<Settings size={24} />}
-          parameters={[
-            ...(hasCenterednessMargin
-              ? [
-                  {
-                    name: "Centeredness Margin",
-                    currentValue: poolLoading
-                      ? "Loading..."
-                      : poolData?.pool && "centerednessMargin" in poolData.pool
+      {isPriceRatioUpdateInProgress &&
+        poolData?.pool &&
+        "priceRatioUpdateStartTime" in poolData.pool &&
+        "priceRatioUpdateEndTime" in poolData.pool && (
+          <Alert status="info" mb={4} justifyContent="center" alignItems="center">
+            <AlertIcon />
+            <Box flex="1">
+              <AlertDescription>
+                Price ratio update is currently active (Started:{" "}
+                {new Date(
+                  parseInt(poolData.pool.priceRatioUpdateStartTime?.toString() || "0") * 1000,
+                ).toLocaleString()}
+                , Ends:{" "}
+                {new Date(
+                  parseInt(poolData.pool.priceRatioUpdateEndTime?.toString() || "0") * 1000,
+                ).toLocaleString()}
+                )
+              </AlertDescription>
+            </Box>
+            {isCurrentWalletManager ? (
+              <Button
+                size="sm"
+                colorScheme="red"
+                variant="outline"
+                ml={4}
+                onClick={handleStopPriceRatioUpdate}
+              >
+                Stop Update
+              </Button>
+            ) : isAuthorizedPool ? (
+              <Box ml={4} display="flex" alignItems="center">
+                <Checkbox
+                  isChecked={stopPriceRatioUpdate}
+                  onChange={e => setStopPriceRatioUpdate(e.target.checked)}
+                >
+                  Include stop in payload
+                </Checkbox>
+              </Box>
+            ) : null}
+          </Alert>
+        )}
+
+      {selectedPool &&
+        isValid &&
+        (hasCenterednessMargin || hasDailyPriceShiftExponent || hasPriceRatioUpdate) && (
+          <ParameterChangePreviewCard
+            title="ReCLAMM Parameters Change Preview"
+            icon={<Settings size={24} />}
+            parameters={[
+              ...(hasCenterednessMargin
+                ? [
+                    {
+                      name: "Centeredness Margin",
+                      currentValue: poolLoading
+                        ? "Loading..."
+                        : poolData?.pool && "centerednessMargin" in poolData.pool
+                          ? (
+                              parseFloat(poolData.pool.centerednessMargin?.toString() || "0") * 100
+                            ).toFixed(2)
+                          : "0",
+                      newValue: parseFloat(debouncedCenterednessMargin).toFixed(2),
+                      difference: poolLoading
+                        ? "-"
+                        : poolData?.pool && "centerednessMargin" in poolData.pool
+                          ? (
+                              parseFloat(debouncedCenterednessMargin) -
+                              parseFloat(poolData.pool.centerednessMargin?.toString() || "0") * 100
+                            ).toFixed(2)
+                          : debouncedCenterednessMargin,
+                      formatValue: (value: string) => `${value}%`,
+                    },
+                  ]
+                : []),
+              ...(hasDailyPriceShiftExponent
+                ? [
+                    {
+                      name: "Daily Price Shift Exponent",
+                      currentValue:
+                        parseFloat(currentDailyPriceShiftExponent).toFixed(2) || "Loading...",
+                      newValue: parseFloat(debouncedDailyPriceShiftExponent).toFixed(2),
+                      difference: currentDailyPriceShiftExponent
                         ? (
-                            parseFloat(poolData.pool.centerednessMargin?.toString() || "0") * 100
+                            parseFloat(debouncedDailyPriceShiftExponent) -
+                            parseFloat(currentDailyPriceShiftExponent)
                           ).toFixed(2)
-                        : "0",
-                    newValue: parseFloat(debouncedCenterednessMargin).toFixed(2),
-                    difference: poolLoading
-                      ? "-"
-                      : poolData?.pool && "centerednessMargin" in poolData.pool
+                        : debouncedDailyPriceShiftExponent,
+                      formatValue: (value: string) => `${value}%`,
+                    },
+                  ]
+                : []),
+              ...(hasEndPriceRatioOnly
+                ? [
+                    {
+                      name: "Price Ratio",
+                      currentValue: currentPriceRatio || "Loading...",
+                      newValue: debouncedEndPriceRatio,
+                      difference: currentPriceRatio
                         ? (
-                            parseFloat(debouncedCenterednessMargin) -
-                            parseFloat(poolData.pool.centerednessMargin?.toString() || "0") * 100
-                          ).toFixed(2)
-                        : debouncedCenterednessMargin,
-                    formatValue: (value: string) => `${value}%`,
-                  },
-                ]
-              : []),
-            ...(hasDailyPriceShiftExponent
-              ? [
-                  {
-                    name: "Daily Price Shift Exponent",
-                    currentValue:
-                      parseFloat(currentDailyPriceShiftExponent).toFixed(2) || "Loading...",
-                    newValue: parseFloat(debouncedDailyPriceShiftExponent).toFixed(2),
-                    difference: currentDailyPriceShiftExponent
-                      ? (
-                          parseFloat(debouncedDailyPriceShiftExponent) -
-                          parseFloat(currentDailyPriceShiftExponent)
-                        ).toFixed(2)
-                      : debouncedDailyPriceShiftExponent,
-                    formatValue: (value: string) => `${value}%`,
-                  },
-                ]
-              : []),
-            ...(hasEndPriceRatioOnly
-              ? [
-                  {
-                    name: "Price Ratio",
-                    currentValue: currentPriceRatio || "Loading...",
-                    newValue: debouncedEndPriceRatio,
-                    difference: currentPriceRatio
-                      ? (
-                          parseFloat(debouncedEndPriceRatio) - parseFloat(currentPriceRatio)
-                        ).toFixed(6)
-                      : "N/A",
-                    formatValue: (value: string) => value,
-                  },
-                ]
-              : []),
-          ]}
-        />
-      )}
+                            parseFloat(debouncedEndPriceRatio) - parseFloat(currentPriceRatio)
+                          ).toFixed(6)
+                        : "N/A",
+                      formatValue: (value: string) => value,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
 
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         {!selectedPool ? (

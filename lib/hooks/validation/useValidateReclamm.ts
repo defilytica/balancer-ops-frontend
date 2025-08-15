@@ -7,6 +7,7 @@ export interface UseValidateReClammParams {
   endPriceRatio: string;
   priceRatioUpdateStartTime: string;
   priceRatioUpdateEndTime: string;
+  stopPriceRatioUpdate: boolean;
   reClammContractData?: ReClammContractData;
 }
 
@@ -17,6 +18,7 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
     endPriceRatio,
     priceRatioUpdateStartTime,
     priceRatioUpdateEndTime,
+    stopPriceRatioUpdate,
     reClammContractData,
   } = params;
 
@@ -140,7 +142,7 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
       }
     })();
 
-    const isValid = hasCenterednessMargin || hasDailyPriceShiftExponent || hasPriceRatioUpdate;
+    const isValid = hasCenterednessMargin || hasDailyPriceShiftExponent || hasPriceRatioUpdate || stopPriceRatioUpdate;
 
     return {
       // Validation states
@@ -176,6 +178,7 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
     endPriceRatio,
     priceRatioUpdateStartTime,
     priceRatioUpdateEndTime,
+    stopPriceRatioUpdate,
     reClammContractData,
   ]);
 
