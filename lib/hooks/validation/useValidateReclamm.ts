@@ -95,6 +95,8 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
         priceRatioUpdateEndTimeError = "End time must be positive";
       } else if (!isNaN(startTimestamp) && endTimestamp <= startTimestamp) {
         priceRatioUpdateEndTimeError = "End time must be after start time";
+      } else if (!isNaN(startTimestamp) && endTimestamp - startTimestamp < 86400) {
+        priceRatioUpdateEndTimeError = "End time must be at least 24 hours after start time";
       } else {
         isPriceRatioUpdateEndTimeValid = true;
       }
@@ -142,7 +144,11 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
       }
     })();
 
-    const isValid = hasCenterednessMargin || hasDailyPriceShiftExponent || hasPriceRatioUpdate || stopPriceRatioUpdate;
+    const isValid =
+      hasCenterednessMargin ||
+      hasDailyPriceShiftExponent ||
+      hasPriceRatioUpdate ||
+      stopPriceRatioUpdate;
 
     return {
       // Validation states

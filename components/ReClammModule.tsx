@@ -52,6 +52,8 @@ import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import PoolSelector from "./PoolSelector";
 import { useDebounce } from "use-debounce";
+import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
+import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { isZeroAddress } from "@ethereumjs/util";
 import { useValidateReclamm } from "@/lib/hooks/validation/useValidateReclamm";
@@ -197,13 +199,9 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
   // Determine if we need to check the address type
   const shouldCheckAddressType = useMemo(() => {
     return (
-      selectedPool?.swapFeeManager &&
-      selectedNetwork &&
-      selectedMultisig &&
-      !isZeroAddress(selectedPool.swapFeeManager) &&
-      selectedPool.swapFeeManager.toLowerCase() !== selectedMultisig.toLowerCase()
+      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
     );
-  }, [selectedPool, selectedNetwork, selectedMultisig]);
+  }, [selectedPool, selectedNetwork]);
 
   // React Query for address type checking
   const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
@@ -510,7 +508,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       return;
     }
 
-    if (!isAuthorizedPool) {
+    if (!isAuthorizedPool && addressTypeData?.type !== "SafeProxy") {
       toast({
         title: "Not authorized",
         description: "This pool can only be modified by the DAO multisig",
@@ -552,10 +550,14 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       stopPriceRatioUpdate: stopPriceRatioUpdate,
     };
 
+    // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
+    const multisigAddress =
+      addressTypeData?.type === "SafeProxy" ? selectedPool.swapFeeManager : selectedMultisig;
+
     const payload = generateReClammCombinedParametersPayload(
       input,
       network.chainId,
-      selectedMultisig,
+      multisigAddress,
     );
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
@@ -715,11 +717,59 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     selectedNetwork,
   ]);
 
+  const generateComposerData = useCallback(() => {
+    if (!generatedPayload) return null;
+
+    const payload =
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
+
+    const params: { [key: string]: any } = {
+      pool: selectedPool?.address,
+    };
+
+    payload.transactions?.forEach((transaction: any) => {
+      const methodName = transaction.contractMethod?.name;
+      const contractInputsValues = transaction.contractInputsValues;
+
+      if (methodName === "setCenterednessMargin" && contractInputsValues) {
+        params.newCenterednessMargin = contractInputsValues.newCenterednessMargin;
+      } else if (methodName === "setDailyPriceShiftExponent" && contractInputsValues) {
+        params.newDailyPriceShiftExponent = contractInputsValues.newDailyPriceShiftExponent;
+      } else if (methodName === "startPriceRatioUpdate" && contractInputsValues) {
+        params.endPriceRatio = contractInputsValues.endPriceRatio;
+        params.priceRatioUpdateStartTime = contractInputsValues.priceRatioUpdateStartTime;
+        params.priceRatioUpdateEndTime = contractInputsValues.priceRatioUpdateEndTime;
+      } else if (methodName === "stopPriceRatioUpdate") {
+        params.stopPriceRatioUpdate = true;
+      }
+    });
+
+    return {
+      type: "reclamm",
+      title: "Configure ReCLAMM pool",
+      description: payload.meta.description,
+      payload: payload,
+      params: params,
+      builderPath: "reclamm",
+    };
+  }, [generatedPayload]);
+
   return (
     <Container maxW="container.lg">
-      <Heading as="h2" size="lg" variant="special" mb={6}>
-        ReClaMM Pool: Parameter Management
-      </Heading>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={6}
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+      >
+        <Heading as="h2" size="lg" variant="special">
+          ReCLAMM Pool: Parameter Management
+        </Heading>
+        <Box width={{ base: "full", md: "auto" }}>
+          <ComposerIndicator />
+        </Box>
+      </Flex>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 4 }}>
@@ -803,7 +853,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       )}
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-        <GridItem colSpan={12}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
             isDisabled={!selectedPool}
             mb={4}
@@ -834,10 +884,8 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
             )}
           </FormControl>
         </GridItem>
-      </Grid>
 
-      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-        <GridItem colSpan={12}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
             isDisabled={!selectedPool}
             mb={4}
@@ -982,7 +1030,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               >
                 Stop Update
               </Button>
-            ) : isAuthorizedPool ? (
+            ) : isAuthorizedPool || addressTypeData?.type === "SafeProxy" ? (
               <Box ml={4} display="flex" alignItems="center">
                 <Checkbox
                   isChecked={stopPriceRatioUpdate}
@@ -1062,39 +1110,51 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
           />
         )}
 
-      <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
-        {!selectedPool ? (
-          <Button variant="primary" isDisabled={true}>
-            Select a Pool
-          </Button>
-        ) : isCurrentWalletManager ? (
-          <Button variant="primary" onClick={handleExecuteTransactions} isDisabled={!isValid}>
-            Execute Parameter Changes ({getParameterCount})
-          </Button>
-        ) : isAuthorizedPool ? (
-          <Button variant="primary" onClick={handleGenerateClick} isDisabled={!isValid}>
-            Generate Payload
-          </Button>
-        ) : (
-          <Button variant="primary" isDisabled={true}>
-            Not Authorized
-          </Button>
-        )}
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mt="20px"
+        mb="10px"
+        wrap="wrap"
+        gap={2}
+      >
+        <Flex gap={2} alignItems="center">
+          {!selectedPool ? (
+            <Button variant="primary" isDisabled={true}>
+              Select a Pool
+            </Button>
+          ) : isCurrentWalletManager && addressTypeData?.type !== "SafeProxy" ? (
+            <Button variant="primary" onClick={handleExecuteTransactions} isDisabled={!isValid}>
+              Execute Parameter Changes ({getParameterCount})
+            </Button>
+          ) : isAuthorizedPool || addressTypeData?.type === "SafeProxy" ? (
+            <>
+              <Button variant="primary" onClick={handleGenerateClick} isDisabled={!isValid}>
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </>
+          ) : (
+            <Button variant="primary" isDisabled={true}>
+              Not Authorized
+            </Button>
+          )}
+        </Flex>
 
-        {generatedPayload && !isCurrentWalletManager && (
+        {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
       </Flex>
       <Divider />
 
-      {generatedPayload && !isCurrentWalletManager && (
+      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 
-      {generatedPayload && !isCurrentWalletManager && (
+      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
         <Box display="flex" alignItems="center" mt="20px">
           <Button
             variant="secondary"
