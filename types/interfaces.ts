@@ -135,7 +135,6 @@ export interface UnderlyingToken {
   isErc4626: boolean;
 }
 
-//TODO: Refactor token interface!
 export interface TokenListToken {
   chainId: number;
   address: string;

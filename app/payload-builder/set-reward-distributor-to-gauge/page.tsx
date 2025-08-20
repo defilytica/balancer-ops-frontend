@@ -74,7 +74,7 @@ export default function SetRewardDistributorPage() {
   const [authorizerAdaptorEntrypoint, setEntrypoint] = useState(
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
-  const [safeAddress, setSafeAddress] = useState("0xc38c5f97B34E175FFd35407fc91a937300E33860");
+  const [safeAddress, setSafeAddress] = useState(NETWORK_OPTIONS.find(n => n.label === "Ethereum")?.omniSig || "");
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);

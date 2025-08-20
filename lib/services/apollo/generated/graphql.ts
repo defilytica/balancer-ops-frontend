@@ -875,14 +875,9 @@ export enum GqlPoolEventsDataRange {
 
 export type GqlPoolEventsFilter = {
   chainIn?: InputMaybe<Array<InputMaybe<GqlChain>>>;
-  poolIdIn?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  range?: InputMaybe<GqlPoolEventsDataRange>;
-  typeIn?: InputMaybe<Array<InputMaybe<GqlPoolEventType>>>;
+  poolId?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<GqlPoolEventType>;
   userAddress?: InputMaybe<Scalars['String']['input']>;
-  /** USD value of the event */
-  valueUSD_gt?: InputMaybe<Scalars['Float']['input']>;
-  /** USD value of the event */
-  valueUSD_gte?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type GqlPoolFeaturedPool = {
@@ -3047,20 +3042,8 @@ export type Query = {
    * @deprecated Use aggregatorPools instead
    */
   poolGetAggregatorPools: Array<GqlPoolAggregator>;
-  /**
-   * Will de deprecated in favor of poolEvents
-   * @deprecated Use poolEvents instead
-   */
-  poolGetBatchSwaps: Array<GqlPoolBatchSwap>;
-  /** Getting swap, add and remove events with range */
-  poolGetEvents: Array<GqlPoolEvent>;
   /** Returns the list of featured pools for chains */
   poolGetFeaturedPools: Array<GqlPoolFeaturedPool>;
-  /**
-   * Will de deprecated in favor of poolEvents
-   * @deprecated Use poolEvents instead
-   */
-  poolGetJoinExits: Array<GqlPoolJoinExit>;
   /** Returns one pool. If a user address is provided, the user balances for the given pool will also be returned. */
   poolGetPool: GqlPoolBase;
   /** Returns all pools for a given filter */
@@ -3069,11 +3052,6 @@ export type Query = {
   poolGetPoolsCount: Scalars['Int']['output'];
   /** Gets all the snapshots for a given pool on a chain for a certain range */
   poolGetSnapshots: Array<GqlPoolSnapshot>;
-  /**
-   * Will de deprecated in favor of poolEvents
-   * @deprecated Use poolEvents instead
-   */
-  poolGetSwaps: Array<GqlPoolSwap>;
   protocolMetricsAggregated: GqlProtocolMetricsAggregated;
   protocolMetricsChain: GqlProtocolMetricsChain;
   /** Get the staking data and status for sFTMx */
@@ -3186,31 +3164,8 @@ export type QueryPoolGetAggregatorPoolsArgs = {
 };
 
 
-export type QueryPoolGetBatchSwapsArgs = {
-  first?: InputMaybe<Scalars['Int']['input']>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  where?: InputMaybe<GqlPoolSwapFilter>;
-};
-
-
-export type QueryPoolGetEventsArgs = {
-  chain: GqlChain;
-  poolId: Scalars['String']['input'];
-  range: GqlPoolEventsDataRange;
-  typeIn: Array<GqlPoolEventType>;
-  userAddress?: InputMaybe<Scalars['String']['input']>;
-};
-
-
 export type QueryPoolGetFeaturedPoolsArgs = {
   chains: Array<GqlChain>;
-};
-
-
-export type QueryPoolGetJoinExitsArgs = {
-  first?: InputMaybe<Scalars['Int']['input']>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  where?: InputMaybe<GqlPoolJoinExitFilter>;
 };
 
 
@@ -3245,13 +3200,6 @@ export type QueryPoolGetSnapshotsArgs = {
   chain?: InputMaybe<GqlChain>;
   id: Scalars['String']['input'];
   range: GqlPoolSnapshotDataRange;
-};
-
-
-export type QueryPoolGetSwapsArgs = {
-  first?: InputMaybe<Scalars['Int']['input']>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  where?: InputMaybe<GqlPoolSwapFilter>;
 };
 
 

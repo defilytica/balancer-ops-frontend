@@ -13,13 +13,17 @@ import {
   ModalOverlay,
   Text,
   VStack,
+  Link,
+  HStack,
 } from "@chakra-ui/react";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
 
 interface LiquidityAddedModalProps {
   isOpen: boolean;
   onClose: () => void;
   poolId: string;
   poolAddress: string;
+  networkName?: string;
 }
 
 export const LiquidityAddedModal = ({
@@ -27,8 +31,41 @@ export const LiquidityAddedModal = ({
   onClose,
   poolId,
   poolAddress,
+  networkName,
 }: LiquidityAddedModalProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Convert network name to Balancer URL format
+  const getBalancerNetworkPath = (network?: string): string => {
+    if (!network) return "ethereum";
+    const networkLower = network.toLowerCase();
+    switch (networkLower) {
+      case "mainnet":
+        return "ethereum";
+      case "polygon":
+        return "polygon";
+      case "arbitrum":
+        return "arbitrum";
+      case "optimism":
+        return "optimism";
+      case "gnosis":
+        return "gnosis";
+      case "base":
+        return "base";
+      case "avalanche":
+        return "avalanche";
+      case "zkevm":
+        return "zkevm";
+      case "fraxtal":
+        return "fraxtal";
+      case "mode":
+        return "mode";
+      default:
+        return "ethereum";
+    }
+  };
+
+  const poolUrl = `https://balancer.fi/pools/${getBalancerNetworkPath(networkName)}/v2/${poolId}`;
 
   useEffect(() => {
     if (isOpen) {
@@ -80,6 +117,22 @@ export const LiquidityAddedModal = ({
                   <AlertIcon />
                   Save these details for future reference
                 </Alert>
+              </VStack>
+            </Box>
+            <Box borderWidth="1px" borderRadius="lg" p={4} bg="purple.50" _dark={{ bg: "purple.900" }}>
+              <VStack align="stretch" spacing={2}>
+                <Text fontWeight="semibold" fontSize="sm">
+                  View Your Pool
+                </Text>
+                <Link href={poolUrl} isExternal color="purple.600" _dark={{ color: "purple.300" }}>
+                  <HStack>
+                    <Text fontSize="sm">View on Balancer</Text>
+                    <ExternalLinkIcon />
+                  </HStack>
+                </Link>
+                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.400" }}>
+                  Network: {networkName || "Unknown"}
+                </Text>
               </VStack>
             </Box>
           </VStack>
