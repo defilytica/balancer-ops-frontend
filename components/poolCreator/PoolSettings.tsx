@@ -76,6 +76,7 @@ export const PoolSettingsComponent = ({
   const [isCreatingPool, setIsCreatingPool] = useState<boolean>(false);
   const [isJoiningPool, setIsJoiningPool] = useState<boolean>(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState<boolean>(false);
+  const [currentNetworkName, setCurrentNetworkName] = useState<string>("");
   const [settings, setSettings] = useState<PoolSettings>(() => ({
     swapFee: 0.1,
     name: "",
@@ -277,31 +278,43 @@ export const PoolSettingsComponent = ({
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
       const networkName = getNetworkString(Number(network.chainId));
+      setCurrentNetworkName(networkName);
 
       const newPoolId =
         config.type === "weighted"
           ? await createWeightedPool(provider, networkName, config)
           : await createComposableStablePool(provider, networkName, config);
 
-      toast({
-        title: "Success",
-        description: `Pool created successfully! Pool ID: ${newPoolId}`,
-        status: "success",
-        duration: 5000,
-      });
-
-      setIsJoinModalOpen(true);
-    } catch (error) {
+      // Only show success and open join modal if pool was actually created
+      if (newPoolId) {
+        toast({
+          title: "Success",
+          description: `Pool created successfully! Pool ID: ${newPoolId}`,
+          status: "success",
+          duration: 5000,
+        });
+        setIsJoinModalOpen(true);
+      }
+    } catch (error: any) {
       console.error("Pool creation error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create pool",
-        status: "error",
-        duration: 5000,
-      });
+      
+      if (error?.code === 'ACTION_REJECTED' || error?.code === 4001 || error?.message?.includes('user rejected')) {
+        toast({
+          title: "Transaction Cancelled",
+          description: "You cancelled the pool creation transaction.",
+          status: "warning",
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error?.message || "Failed to create pool",
+          status: "error",
+          duration: 5000,
+        });
+      }
     } finally {
       setIsCreatingPool(false);
-      setIsJoinModalOpen(true);
     }
   };
 
@@ -311,6 +324,11 @@ export const PoolSettingsComponent = ({
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
+      
+      // Get network for existing pools
+      const network = await provider.getNetwork();
+      const networkName = getNetworkString(Number(network.chainId));
+      setCurrentNetworkName(networkName);
 
       const vaultContract = new ethers.Contract(VAULT_ADDRESS, vaultABI, signer);
 
@@ -378,28 +396,77 @@ export const PoolSettingsComponent = ({
       console.log(userAddress);
       console.log(config.poolId);
       console.log(joinRequest);
-      const tx = await vaultContract.joinPool(
-        config.poolId!,
-        userAddress,
-        userAddress,
-        joinRequest,
-      );
+      
+      let tx;
+      try {
+        tx = await vaultContract.joinPool(
+          config.poolId!,
+          userAddress,
+          userAddress,
+          joinRequest,
+        );
+      } catch (error: any) {
+        // User rejected transaction or other error during transaction creation
+        console.error("Transaction rejected or failed:", error);
+        
+        if (error?.code === 'ACTION_REJECTED' || error?.code === 4001 || error?.message?.includes('user rejected')) {
+          toast({
+            title: "Transaction Cancelled",
+            description: "You cancelled the transaction. Please approve the transaction to add liquidity.",
+            status: "warning",
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title: "Transaction Failed",
+            description: error?.message || "Failed to create transaction",
+            status: "error",
+            duration: 5000,
+          });
+        }
+        setIsJoiningPool(false);
+        return;
+      }
 
-      await tx.wait();
-
-      toast({
-        title: "Success",
-        description: "Successfully joined the pool!",
-        status: "success",
-        duration: 5000,
-      });
-      setIsApprovalModalOpen(false);
-      setIsLiquidityAddedModalOpen(true);
+      // Wait for transaction confirmation
+      try {
+        const receipt = await tx.wait();
+        
+        if (receipt.status === 0) {
+          // Transaction failed on chain
+          toast({
+            title: "Transaction Failed",
+            description: "The transaction failed on chain. Please try again.",
+            status: "error",
+            duration: 5000,
+          });
+          setIsJoiningPool(false);
+          return;
+        }
+        
+        // Transaction succeeded
+        toast({
+          title: "Success",
+          description: "Successfully joined the pool!",
+          status: "success",
+          duration: 5000,
+        });
+        setIsApprovalModalOpen(false);
+        setIsLiquidityAddedModalOpen(true);
+      } catch (error: any) {
+        console.error("Transaction confirmation error:", error);
+        toast({
+          title: "Transaction Error",
+          description: "Error waiting for transaction confirmation. Check your wallet for status.",
+          status: "error",
+          duration: 5000,
+        });
+      }
     } catch (error) {
-      console.error("Join pool error:", error);
+      console.error("Unexpected error in join pool:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to join pool",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         status: "error",
         duration: 5000,
       });
@@ -445,23 +512,36 @@ export const PoolSettingsComponent = ({
 
     console.log(sortedTokens.map(t => t.address));
 
-    const tx = await factory.create(
-      config.settings?.name,
-      config.settings?.symbol,
-      sortedTokens.map(t => t.address),
-      config.settings?.stableSpecific?.amplificationParameter || 100,
-      rateProviders,
-      rateCacheDurations,
-      config.settings?.stableSpecific?.yieldFeeExempt || false,
-      swapFeePercentage,
-      config.settings?.stableSpecific?.feeManagement?.owner || (await signer.getAddress()),
-      salt,
-    );
+    let tx;
+    try {
+      tx = await factory.create(
+        config.settings?.name,
+        config.settings?.symbol,
+        sortedTokens.map(t => t.address),
+        config.settings?.stableSpecific?.amplificationParameter || 100,
+        rateProviders,
+        rateCacheDurations,
+        config.settings?.stableSpecific?.yieldFeeExempt || false,
+        swapFeePercentage,
+        config.settings?.stableSpecific?.feeManagement?.owner || (await signer.getAddress()),
+        salt,
+      );
+    } catch (error: any) {
+      // User rejected transaction or other error
+      console.error("Transaction rejected or failed:", error);
+      throw error; // Re-throw to be handled by handleCreatePool
+    }
 
+    // Wait for transaction confirmation
     const receipt = await tx.wait();
     console.log(receipt);
     console.log(receipt.logs);
     console.log(receipt.logs[0]);
+    
+    if (receipt.status === 0) {
+      throw new Error("Transaction failed on chain");
+    }
+    
     const poolAddress = receipt.logs[0].address;
 
     // Get pool ID
@@ -513,18 +593,31 @@ export const PoolSettingsComponent = ({
 
     const factory = new ethers.Contract(factoryAddress, CreateWeightedABI, signer);
 
-    const tx = await factory.create(
-      config.settings?.name,
-      config.settings?.symbol,
-      sortedTokens.map(t => t.address),
-      weights,
-      rateProviders,
-      swapFeePercentage,
-      config.settings?.weightedSpecific?.feeManagement?.owner || (await signer.getAddress()),
-      salt,
-    );
+    let tx;
+    try {
+      tx = await factory.create(
+        config.settings?.name,
+        config.settings?.symbol,
+        sortedTokens.map(t => t.address),
+        weights,
+        rateProviders,
+        swapFeePercentage,
+        config.settings?.weightedSpecific?.feeManagement?.owner || (await signer.getAddress()),
+        salt,
+      );
+    } catch (error: any) {
+      // User rejected transaction or other error
+      console.error("Transaction rejected or failed:", error);
+      throw error; // Re-throw to be handled by handleCreatePool
+    }
 
+    // Wait for transaction confirmation
     const receipt = await tx.wait();
+    
+    if (receipt.status === 0) {
+      throw new Error("Transaction failed on chain");
+    }
+
     const poolAddress = receipt.logs[0].address;
 
     // Get pool ID
@@ -714,6 +807,7 @@ export const PoolSettingsComponent = ({
       <LiquidityAddedModal
         poolId={config.poolId!}
         poolAddress={config.poolAddress!}
+        networkName={currentNetworkName}
         isOpen={isLiquidityAddedModalOpen}
         onClose={() => setIsLiquidityAddedModalOpen(false)}
       />

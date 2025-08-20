@@ -270,7 +270,6 @@ export const PAYLOAD_OPTIONS = [
   },
 ];
 
-//TODO: refactor to reference address book
 export const NETWORK_OPTIONS = [
   {
     label: "Ethereum",
@@ -551,7 +550,6 @@ export const WHITELISTED_PAYMENT_TOKENS: { [network: string]: TokenInfo[] } = {
 };
 
 // Constants for V2 Pool Creator
-// TODO: import from address book
 export const FactoryAddressWeighted = {
   MAINNET: "0x897888115Ada5773E02aA29F775430BFB5F34c51",
   POLYGON: "0xFc8a407Bba312ac761D8BFe04CE1201904842B76",
@@ -581,9 +579,10 @@ export const FactoryAddressComposable = {
   HYPEREVM: "", // placeholder, V2 is not deployed on HyperEVM
 };
 
-// Single static factory, easier to store here than fetch from address book
+// Gauge Factory
 export const MAINNET_GAUGE_FACTORY = "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65";
 
+// Commonly used veBAL gauge caps
 export const GAUGE_WEIGHT_CAPS = {
   TWO_PERCENT: "20000000000000000", // 2% cap
   FIVE_PERCENT: "50000000000000000", // 5% cap
@@ -591,7 +590,7 @@ export const GAUGE_WEIGHT_CAPS = {
   UNCAPPED: "1000000000000000000", // No cap
 } as const;
 
-// Define a consistent mapping of network IDs to display names
+// Mapping of network IDs to display names
 export const GAUGE_NETWORK_MAP: Record<GaugeNetworkId, string> = {
   mainnet: "Ethereum",
   arbitrum: "Arbitrum",

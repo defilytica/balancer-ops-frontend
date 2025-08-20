@@ -81,7 +81,7 @@ export default function AddRewardToGaugePage() {
   const [authorizerAdaptorEntrypoint, setEntrypoint] = useState(
     "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
   );
-  const [safeAddress, setSafeAddress] = useState("0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e");
+  const [safeAddress, setSafeAddress] = useState(NETWORK_OPTIONS.find(n => n.label === "Ethereum")?.omniSig || "");
   const [chainId, setChainId] = useState("1");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);

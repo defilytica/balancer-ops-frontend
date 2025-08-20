@@ -17,13 +17,16 @@ import {
   useToast,
   NumberInput,
   NumberInputField,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { AddIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
 import {
   generateHumanReadableTokenTransfer,
   generateTokenPaymentPayload,
   PaymentInput,
-  transformToHumanReadable,
+  copyJsonToClipboard,
+  copyTextToClipboard,
+  handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { AddressBook } from "@/types/interfaces";
 import { WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
@@ -35,6 +38,9 @@ import { NetworkSelector } from "@/components/NetworkSelector";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { getNetworkString } from "@/lib/utils/getNetworkString";
+import OpenPRButton from "@/components/btns/OpenPRButton";
+import { PRCreationModal } from "@/components/modal/PRModal";
+import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 
 interface CreatePaymentProps {
   addressBook: AddressBook;
@@ -45,10 +51,10 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("mainnet");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
-  const [availableNetworks, setAvailableNetworks] = useState<string[]>([]);
   const [availableMultisigs, setAvailableMultisigs] = useState<{
     [key: string]: string;
   }>({});
@@ -65,7 +71,6 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   useEffect(() => {
     // Directly determine available networks from token whitelist
     const availableNetworks = Object.keys(WHITELISTED_PAYMENT_TOKENS);
-    setAvailableNetworks(availableNetworks);
 
     // Create simplified network options for the NetworkSelector
     const options = availableNetworks.map(network => {
@@ -144,6 +149,17 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   );
 
   const handleGenerateClick = () => {
+    if (!selectedMultisig) {
+      toast({
+        title: "Missing source wallet",
+        description: "Please select a source wallet before generating the payload",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     const safeInfo = {
       address: selectedMultisig,
       network: selectedNetwork,
@@ -175,51 +191,44 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       },
       builderPath: "create-payment",
     };
-  }, [generatedPayload]);
+  }, [generatedPayload, humanReadableText]);
 
-  const handleDownloadClick = (payload: any) => {
-    if (typeof window !== "undefined" && window.document) {
-      const payloadString = JSON.stringify(JSON.parse(payload), null, 2);
-      const blob = new Blob([payloadString], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "BIP-XXX-payment.json";
-      link.click();
-      URL.revokeObjectURL(link.href);
+  // Prepare pre-filled values for PR modal
+  const getPrefillValues = () => {
+    // Only include payments with valid data
+    const validPayments = payments.filter(p => p.to && p.value > 0);
+    if (validPayments.length === 0) return {};
+
+    const uniqueId = generateUniqueId();
+
+    // Create a summary for the payment description
+    const paymentSummary = validPayments
+      .map((p, i) => {
+        const token = WHITELISTED_PAYMENT_TOKENS[selectedNetwork]?.find(t => t.address === p.token);
+        return `Payment ${i + 1}: ${p.value} ${token?.symbol || "tokens"} to ${p.to.substring(0, 8)}...`;
+      })
+      .join(", ");
+
+    return {
+      prefillBranchName: `feature/create-payment-${uniqueId}`,
+      prefillPrName: `Create DAO Payment${validPayments.length > 1 ? "s" : ""} on ${selectedNetwork}`,
+      prefillDescription: `This PR creates ${validPayments.length} payment${validPayments.length > 1 ? "s" : ""} from the DAO multisig on ${selectedNetwork}. ${paymentSummary}`,
+      prefillFilename: `payment-${uniqueId}.json`,
+    };
+  };
+
+  const handleOpenPRModal = () => {
+    if (generatedPayload) {
+      onOpen();
+    } else {
+      toast({
+        title: "No payload generated",
+        description: "Please generate a payload first",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
     }
-  };
-
-  const copyJsonToClipboard = (payload: any) => {
-    const payloadString = JSON.stringify(JSON.parse(payload), null, 2);
-    navigator.clipboard
-      .writeText(payloadString)
-      .then(() => {
-        toast({
-          title: "Copied to clipboard!",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
-      })
-      .catch(err => {
-        console.error("Could not copy text: ", err);
-      });
-  };
-
-  const copyTextToClipboard = (text: string) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        toast({
-          title: "Copied to clipboard!",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
-      })
-      .catch(err => {
-        console.error("Could not copy text: ", err);
-      });
   };
 
   // Filter out SONIC and BSC from network options - use lowercase for consistency
@@ -249,38 +258,29 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
         </Box>
       </Flex>
       <Box>
-        <Box mb={2} mt={2}>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-            <FormControl maxWidth="sm">
-              <FormLabel>Select Network</FormLabel>
-              <NetworkSelector
-                networks={networks}
-                networkOptions={filteredNetworkOptions}
-                selectedNetwork={selectedNetwork}
-                handleNetworkChange={handleNetworkChange}
-              />
-            </FormControl>
-          </SimpleGrid>
+        <Box mb={4} mt={2}>
+          <FormControl maxWidth="sm" mb={4}>
+            <FormLabel>Select Network</FormLabel>
+            <NetworkSelector
+              networks={networks}
+              networkOptions={filteredNetworkOptions}
+              selectedNetwork={selectedNetwork}
+              handleNetworkChange={handleNetworkChange}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Source Wallet</FormLabel>
+            <SearchableAddressInput
+              value={selectedMultisig}
+              onChange={value => setSelectedMultisig(value)}
+              addresses={availableMultisigs}
+            />
+          </FormControl>
         </Box>
         {payments.map((payment, index) => (
           <Box key={index} mb="10px">
             <Card key={index + selectedNetwork}>
-              <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mt={4} mb={2}>
-                <FormControl>
-                  <FormLabel>Source Wallet</FormLabel>
-                  <Select
-                    value={selectedMultisig}
-                    onChange={e => setSelectedMultisig(e.target.value)}
-                  >
-                    {Object.entries(availableMultisigs).map(([name, address]) => (
-                      <option key={`${address}-${selectedNetwork}`} value={address}>
-                        {`${transformToHumanReadable(name)}`}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </SimpleGrid>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
                 <FormControl>
                   <FormLabel>Token</FormLabel>
                   <Select
@@ -353,48 +353,61 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
           Add Payment
         </Button>
       </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mt="20px"
-        mb="10px"
-        wrap="wrap"
-        gap={2}
-      >
-        <Flex gap={2} align="center">
-          <Button variant="primary" onClick={handleGenerateClick}>
-            Generate Payload
-          </Button>
-          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
-        </Flex>
-        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
-      </Flex>
-      <Divider />
-
-      {generatedPayload && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={newJson => setGeneratedPayload(newJson)}
-        />
+      {payments.length > 0 && (
+        <>
+          <Flex
+            justifyContent="space-between"
+            alignItems="center"
+            mt="20px"
+            mb="10px"
+            wrap="wrap"
+            gap={2}
+          >
+            <Flex gap={2} align="center">
+              <Button
+                variant="primary"
+                onClick={handleGenerateClick}
+                isDisabled={!selectedMultisig || payments.length === 0}
+              >
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </Flex>
+            {generatedPayload && (
+              <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+            )}
+          </Flex>
+          <Divider />
+        </>
       )}
 
-      <Box display="flex" alignItems="center" mt="20px">
-        <Button
-          variant="secondary"
-          mr="10px"
-          leftIcon={<DownloadIcon />}
-          onClick={() => handleDownloadClick(generatedPayload)}
-        >
-          Download Payload
-        </Button>
-        <Button
-          variant="secondary"
-          leftIcon={<CopyIcon />}
-          onClick={() => copyJsonToClipboard(generatedPayload)}
-        >
-          Copy Payload to Clipboard
-        </Button>
-      </Box>
+      {generatedPayload && (
+        <>
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
+          />
+          <Box display="flex" alignItems="center" mt="20px">
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
+          </Box>
+        </>
+      )}
 
       {humanReadableText && (
         <Box mt="20px">
@@ -405,13 +418,21 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
           <Button
             variant="secondary"
             leftIcon={<CopyIcon />}
-            onClick={() => copyTextToClipboard(humanReadableText)}
+            onClick={() => copyTextToClipboard(humanReadableText, toast)}
           >
             Copy Text to Clipboard
           </Button>
         </Box>
       )}
       <Box mt={8} />
+      <PRCreationModal
+        type={"create-payment"}
+        isOpen={isOpen}
+        onClose={onClose}
+        payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+        network={selectedNetwork}
+        {...getPrefillValues()}
+      />
     </Container>
   );
 }
