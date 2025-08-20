@@ -8,7 +8,6 @@ import {
   BoxProps,
   Link,
   Image,
-  Badge,
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import { FaRegChartBar } from "react-icons/fa6";
@@ -20,6 +19,7 @@ import {
   TbHeartRateMonitor,
   TbFishHook,
   TbCoins,
+  TbChartCovariate,
 } from "react-icons/tb";
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
@@ -27,6 +27,7 @@ import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import NextLink from "next/link";
 import { GoAlertFill } from "react-icons/go";
+
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
@@ -109,6 +110,12 @@ const LinkItems = [
     icon: GoAlertFill,
     target: "/payload-builder/emergency",
     description: "Create Emergency Payloads",
+  },
+  {
+    name: "ReCLAMM Pools",
+    icon: TbChartCovariate,
+    target: "/reclamm",
+    description: "View RECLAMM pools",
   },
 ];
 

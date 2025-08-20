@@ -15,6 +15,11 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { CalendarIcon } from "@chakra-ui/icons";
+import {
+  convertTimestampToLocalDateTime,
+  getMinDateTime,
+  convertDateTimeToTimestamp,
+} from "@/lib/utils/datePickerUtils";
 
 interface InjectorDateTimePickerProps {
   value: string;
@@ -44,24 +49,6 @@ export const InjectorDateTimePicker: React.FC<InjectorDateTimePickerProps> = ({
     }
   };
 
-  const convertTimestampToLocalDateTime = (timestamp: string): string => {
-    if (!timestamp || timestamp === "0") return "";
-    const date = new Date(parseInt(timestamp) * 1000);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  };
-
-  const getMinDateTime = () => {
-    const now = new Date();
-    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return localNow.toISOString().slice(0, 16);
-  };
-
-  const convertDateTimeToTimestamp = (dateTimeString: string): string => {
-    if (!dateTimeString) return "0";
-    const timestamp = Math.floor(new Date(dateTimeString).getTime() / 1000);
-    return timestamp.toString();
-  };
 
   const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const timestamp = convertDateTimeToTimestamp(e.target.value);
