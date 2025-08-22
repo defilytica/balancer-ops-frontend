@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Cache for 24 hours (in seconds)
-const CACHE_DURATION = 24 * 60 * 60; // 86400 seconds
-
 // Next.js will revalidate the cache every 24 hours
-export const revalidate = CACHE_DURATION;
+export const revalidate = 86400; // 24 * 60 * 60 seconds
+
+// Cache for 24 hours (in seconds)
+const CACHE_DURATION = 86400;
 
 interface MerklData {
   [address: string]: {
