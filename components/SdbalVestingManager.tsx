@@ -6,6 +6,7 @@ import {
   AlertDescription,
   AlertIcon,
   AlertTitle,
+  Avatar,
   Badge,
   Box,
   Button,
@@ -27,7 +28,11 @@ import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { sdBALVesterABI } from "@/abi/sdBALVester";
 import { gaugeABI } from "@/abi/gauge";
-import { CurrentTokenPricesDocument, GqlChain } from "@/lib/services/apollo/generated/graphql";
+import {
+  CurrentTokenPricesDocument,
+  GetTokensDocument,
+  GqlChain,
+} from "@/lib/services/apollo/generated/graphql";
 
 interface SdbalVestingManagerProps {
   addressBook: AddressBook;
@@ -53,6 +58,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   const [selectedContract, setSelectedContract] = useState<VestingContract | null>(null);
   const [merklData, setMerklData] = useState<MerklData | null>(null);
   const [isLoadingMerkl, setIsLoadingMerkl] = useState(false);
+  const [merklLastUpdate, setMerklLastUpdate] = useState<string | null>(null);
 
   const { address: connectedAddress, chainId } = useAccount();
   const toast = useToast();
@@ -66,6 +72,21 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   // Fetch sdBAL token price
   const { data: priceData } = useQuery(CurrentTokenPricesDocument, {
     variables: { chains: ["MAINNET" as GqlChain] },
+    context: {
+      uri: "https://api-v3.balancer.fi/",
+    },
+  });
+
+  // Token addresses for fetching metadata
+  const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+  const BAL_ADDRESS = "0xba100000625a3754423978a60c9317c58a424e3D";
+
+  // Fetch token metadata including logos
+  const { data: tokenData } = useQuery(GetTokensDocument, {
+    variables: {
+      chainIn: ["MAINNET" as GqlChain],
+      tokensIn: [sdBALTokenAddress, USDC_ADDRESS, BAL_ADDRESS],
+    },
     context: {
       uri: "https://api-v3.balancer.fi/",
     },
@@ -105,9 +126,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     },
   });
 
-  // Token addresses for rewards
-  const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // USDC mainnet
-  const BAL_ADDRESS = "0xba100000625a3754423978a60c9317c58a424e3D"; // BAL mainnet
+  // Get token logos from fetched data
+  const getTokenLogo = useCallback(
+    (address: string) => {
+      const token = tokenData?.tokenGetTokens.find(
+        t => t.address.toLowerCase() === address.toLowerCase(),
+      );
+      return token?.logoURI || null;
+    },
+    [tokenData],
+  );
 
   // Read claimable USDC from gauge
   const { data: claimableUSDC } = useReadContract({
@@ -138,7 +166,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       p => p.address.toLowerCase() === USDC_ADDRESS.toLowerCase(),
     );
     return price?.price || 1;
-  }, [priceData?.tokenGetCurrentPrices]);
+  }, [priceData?.tokenGetCurrentPrices, USDC_ADDRESS]);
 
   const balPrice = useMemo(() => {
     if (!priceData?.tokenGetCurrentPrices) return null;
@@ -146,7 +174,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       p => p.address.toLowerCase() === BAL_ADDRESS.toLowerCase(),
     );
     return price?.price || null;
-  }, [priceData?.tokenGetCurrentPrices]);
+  }, [priceData?.tokenGetCurrentPrices, BAL_ADDRESS]);
 
   // Calculate vesting rewards amounts
   const vestingRewards = useMemo(() => {
@@ -173,6 +201,25 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     return rewards;
   }, [claimableUSDC, claimableBAL, usdcPrice, balPrice]);
 
+  // Calculate total claimable value in USD
+  const totalClaimableUSD = useMemo(() => {
+    let total = 0;
+
+    // Add voting rewards value
+    if (claimableVotingRewards?.usdValue) {
+      total += parseFloat(claimableVotingRewards.usdValue);
+    }
+
+    // Add vesting rewards values
+    vestingRewards.forEach(reward => {
+      if (reward.usdValue) {
+        total += parseFloat(reward.usdValue);
+      }
+    });
+
+    return total.toFixed(2);
+  }, [claimableVotingRewards, vestingRewards]);
+
   // Get all stake_dao vesting contracts from the address book
   const vestingContracts = useMemo(() => {
     const contracts: VestingContract[] = [];
@@ -183,8 +230,15 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       if (stakeDAOData) {
         Object.entries(stakeDAOData).forEach(([name, address]) => {
           if (name.includes("Vester") && typeof address === "string") {
+            // Simplify the display name - remove "-Vester" suffix and capitalize
+            const simplifiedName = name
+              .replace("-Vester", "")
+              .replace("_Vester", "")
+              .split("-")
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(" ");
             contracts.push({
-              name: `${name} (${network})`,
+              name: `${simplifiedName} (${network})`,
               address,
             });
           }
@@ -246,6 +300,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         });
 
         setMerklData(normalizedData);
+        setMerklLastUpdate(apiResponse.timestamp);
         console.log(`Merkl data loaded: ${Object.keys(normalizedData).length} addresses`);
         console.log(`Data timestamp: ${apiResponse.timestamp}`);
         console.log(`Next update: ${apiResponse.nextUpdate}`);
@@ -625,7 +680,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                         color="font.primary"
                         fontWeight="medium"
                       >
-                        {connectedAddress.slice(0, 8)}...{connectedAddress.slice(-6)}
+                        {connectedAddress}
                       </Text>
                     </VStack>
                     <Box w="8px" h="8px" bg="green.400" borderRadius="full" />
@@ -683,53 +738,92 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         <Card mb={4} variant="level1">
           <CardBody>
             <VStack spacing={4} align="stretch">
+              {/* Total Claimable Summary */}
+              {(parseFloat(totalClaimableUSD) > 0 || claimableVotingRewards || vestingRewards.length > 0) && (
+                <Box
+                  p={4}
+                  bg="background.level2"
+                  borderRadius="xl"
+                  borderWidth="2px"
+                  borderColor="border.highlight"
+                >
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="sm" color="font.secondary" fontWeight="medium" textTransform="uppercase">
+                        Total Claimable Value
+                      </Text>
+                      <Text fontSize="3xl" fontWeight="bold" color="font.primary">
+                        ${totalClaimableUSD}
+                      </Text>
+                      <Text fontSize="xs" color="font.secondary">
+                        Across all reward types
+                      </Text>
+                    </VStack>
+                    <Box>
+                      <Badge colorScheme="green" size="lg" px={3} py={2} borderRadius="md">
+                        {(claimableVotingRewards ? 1 : 0) + vestingRewards.length} Rewards Available
+                      </Badge>
+                    </Box>
+                  </HStack>
+                </Box>
+              )}
               {/* Voting Rewards Section */}
               {claimableVotingRewards && (
                 <Box>
-                  <Text fontSize="sm" fontWeight="semibold" mb={3} color="font.primary">
-                    Voting Rewards Available
-                  </Text>
+                  <HStack justify="space-between" mb={3}>
+                    <Text fontWeight="semibold" color="font.primary">
+                      Voting Rewards
+                    </Text>
+                    <Text fontSize="sm" color="font.secondary">
+                      Compounded as sdBAL
+                    </Text>
+                  </HStack>
                   <Card variant="subSection">
                     <CardBody>
-                      <VStack spacing={4} align="stretch">
-                        <HStack justify="space-between" align="start">
-                          <VStack align="start" spacing={2}>
-                            <HStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="font.primary">
-                                {parseFloat(claimableVotingRewards.amount).toFixed(4)}
-                              </Text>
-                              <Text fontSize="lg" color="font.secondary" fontWeight="medium">
-                                sdBAL
-                              </Text>
-                            </HStack>
-                            {claimableVotingRewards.usdValue && (
-                              <Text fontSize="md" color="font.secondary" fontWeight="medium">
-                                ≈ ${claimableVotingRewards.usdValue} USD
-                              </Text>
-                            )}
-                          </VStack>
-                          <VStack align="end" spacing={1}>
-                            <Badge variant="meta" size="md">
-                              Merkl
-                            </Badge>
-                            <Text fontSize="xs" color="font.secondary">
-                              Voting Incentives
-                            </Text>
-                          </VStack>
+                      <VStack spacing={3} align="stretch">
+                        <HStack justify="space-between" align="center" p={3} bg="background.level3" borderRadius="lg">
+                          <HStack spacing={3}>
+                            <Avatar
+                              src={getTokenLogo(sdBALTokenAddress) || undefined}
+                              name="sdBAL"
+                              size="sm"
+                              bg="gray.500"
+                            />
+                            <VStack align="start" spacing={0}>
+                              <HStack spacing={2}>
+                                <Text fontSize="lg" fontWeight="bold" color="font.primary">
+                                  {parseFloat(claimableVotingRewards.amount).toFixed(4)}
+                                </Text>
+                                <Text fontSize="md" color="font.secondary" fontWeight="medium">
+                                  sdBAL
+                                </Text>
+                              </HStack>
+                              {claimableVotingRewards.usdValue && (
+                                <Text fontSize="sm" color="font.secondary">
+                                  ≈ ${claimableVotingRewards.usdValue}
+                                </Text>
+                              )}
+                            </VStack>
+                          </HStack>
+                          <Badge variant="meta" size="sm">
+                            Merkl Rewards
+                          </Badge>
                         </HStack>
 
-                        <Button
-                          variant="secondary"
-                          size="md"
-                          onClick={handleClaimVotingRewards}
-                          isLoading={isLoadingMerkl}
-                          loadingText="Loading Merkl data..."
-                          fontWeight="bold"
-                          w="full"
-                        >
-                          Claim Voting Rewards (
-                          {parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)
-                        </Button>
+                        <Flex justify="center">
+                          <Button
+                            variant="secondary"
+                            size="md"
+                            onClick={handleClaimVotingRewards}
+                            isLoading={isLoadingMerkl}
+                            loadingText="Loading Merkl data..."
+                            fontWeight="bold"
+                            maxW="320px"
+                          >
+                            Claim Voting Rewards (
+                            {parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)
+                          </Button>
+                        </Flex>
                       </VStack>
                     </CardBody>
                   </Card>
@@ -739,62 +833,74 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
               {/* Gauge Rewards Section */}
               {vestingRewards.length > 0 && (
                 <Box>
-                  <Text fontSize="sm" fontWeight="semibold" mb={3} color="font.primary">
-                    Gauge Rewards Available
-                  </Text>
+                  <HStack justify="space-between" mb={3}>
+                    <Text fontWeight="semibold" color="font.primary">
+                      Gauge Rewards
+                    </Text>
+                    <Text fontSize="sm" color="font.secondary">
+                      Passive fees
+                    </Text>
+                  </HStack>
                   <Card variant="subSection">
                     <CardBody>
                       <VStack spacing={4} align="stretch">
-                        <VStack spacing={3}>
+                        <VStack spacing={2}>
                           {vestingRewards.map(reward => {
+                            const tokenAddress = reward.symbol === "USDC" ? USDC_ADDRESS : BAL_ADDRESS;
                             return (
-                              <Box
+                              <HStack
                                 key={reward.symbol}
-                                p={4}
+                                justify="space-between"
+                                align="center"
+                                p={3}
                                 bg="background.level3"
-                                borderRadius="md"
+                                borderRadius="lg"
                                 w="full"
                               >
-                                <HStack justify="space-between" align="start">
-                                  <VStack align="start" spacing={1}>
-                                    <HStack>
-                                      <Text fontSize="xl" fontWeight="bold" color="font.primary">
+                                <HStack spacing={3}>
+                                  <Avatar
+                                    src={getTokenLogo(tokenAddress) || undefined}
+                                    name={reward.symbol}
+                                    size="sm"
+                                    bg="gray.500"
+                                  />
+                                  <VStack align="start" spacing={0}>
+                                    <HStack spacing={2}>
+                                      <Text fontSize="lg" fontWeight="bold" color="font.primary">
                                         {parseFloat(reward.amount).toFixed(
                                           reward.symbol === "USDC" ? 2 : 4,
                                         )}
                                       </Text>
-                                      <Text
-                                        fontSize="md"
-                                        color="font.secondary"
-                                        fontWeight="medium"
-                                      >
+                                      <Text fontSize="md" color="font.secondary" fontWeight="medium">
                                         {reward.symbol}
                                       </Text>
                                     </HStack>
                                     {reward.usdValue && (
                                       <Text fontSize="sm" color="font.secondary">
-                                        ≈ ${reward.usdValue} USD
+                                        ≈ ${reward.usdValue}
                                       </Text>
                                     )}
                                   </VStack>
-                                  <Text fontSize="xs" color="font.secondary">
-                                    {reward.symbol === "USDC" ? "Stablecoin" : "Governance Token"}
-                                  </Text>
                                 </HStack>
-                              </Box>
+                                <Badge variant="subtle" colorScheme={reward.symbol === "USDC" ? "green" : "purple"} size="sm">
+                                  {reward.symbol === "USDC" ? "Stable" : "Governance"}
+                                </Badge>
+                              </HStack>
                             );
                           })}
                         </VStack>
 
-                        <Button
-                          variant="primary"
-                          size="md"
-                          onClick={handleClaimRewards}
-                          fontWeight="bold"
-                          w="full"
-                        >
-                          Claim Gauge Rewards ({vestingRewards.map(r => r.symbol).join(", ")})
-                        </Button>
+                        <Flex justify="center">
+                          <Button
+                            variant="primary"
+                            size="md"
+                            onClick={handleClaimRewards}
+                            fontWeight="bold"
+                            maxW="320px"
+                          >
+                            Claim Gauge Rewards ({vestingRewards.map(r => r.symbol).join(", ")})
+                          </Button>
+                        </Flex>
                       </VStack>
                     </CardBody>
                   </Card>
@@ -811,6 +917,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
           <AlertIcon />
           <AlertDescription fontSize="sm">Loading voting rewards data...</AlertDescription>
         </Alert>
+      )}
+
+      {/* Merkl Data Update Indicator */}
+      {merklLastUpdate && !isLoadingMerkl && (
+        <Box mt={4} textAlign="center">
+          <Text fontSize="xs" color="font.secondary">
+            Merkl tree last updated: {new Date(merklLastUpdate).toLocaleString()} (Updates daily at
+            6 AM UTC)
+          </Text>
+        </Box>
       )}
     </Container>
   );
