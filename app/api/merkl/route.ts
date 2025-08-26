@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Next.js will revalidate the cache every 24 hours
-export const revalidate = 86400; // 24 * 60 * 60 seconds
+// Next.js will revalidate the cache every 6 hours
+export const revalidate = 21600; // 6 * 60 * 60 seconds
 
-// Cache for 24 hours (in seconds)
-const CACHE_DURATION = 86400;
+// Cache for 6 hours (in seconds)
+const CACHE_DURATION = 21600;
 
 interface MerklData {
   [address: string]: {
@@ -49,13 +49,18 @@ export async function GET(request: NextRequest) {
       `Fetching Merkl data at ${now.toISOString()}, next update: ${nextUpdate.toISOString()}`,
     );
 
+    // Check if client is requesting fresh data
+    const cacheControl = request.headers.get("cache-control");
+    const shouldBypassCache = cacheControl === "no-cache" || request.nextUrl.searchParams.has("t");
+
     const response = await fetch(
       "https://raw.githubusercontent.com/stake-dao/bounties-report/refs/heads/main/bounties-reports/latest/merkle.json",
       {
-        // Use Next.js cache with 24 hour revalidation
+        // Use shorter cache when bypass is requested
         next: {
-          revalidate: CACHE_DURATION,
+          revalidate: shouldBypassCache ? 0 : CACHE_DURATION,
         },
+        cache: shouldBypassCache ? "no-store" : undefined,
       },
     );
 

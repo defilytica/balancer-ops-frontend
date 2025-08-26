@@ -24,6 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { useAccount, useReadContract, useWriteContract, useSwitchChain } from "wagmi";
 import { useQuery } from "@apollo/client";
+import { useQuery as useReactQuery } from "@tanstack/react-query";
 import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { sdBALVesterABI } from "@/abi/sdBALVester";
@@ -33,6 +34,7 @@ import {
   GetTokensDocument,
   GqlChain,
 } from "@/lib/services/apollo/generated/graphql";
+import { SDBAL_TOKEN_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 
 interface SdbalVestingManagerProps {
   addressBook: AddressBook;
@@ -57,7 +59,6 @@ interface MerklData {
 export default function SdbalVestingManager({ addressBook }: SdbalVestingManagerProps) {
   const [selectedContract, setSelectedContract] = useState<VestingContract | null>(null);
   const [merklData, setMerklData] = useState<MerklData | null>(null);
-  const [isLoadingMerkl, setIsLoadingMerkl] = useState(false);
   const [merklLastUpdate, setMerklLastUpdate] = useState<string | null>(null);
 
   const { address: connectedAddress, chainId } = useAccount();
@@ -67,7 +68,12 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
 
   const MAINNET_CHAIN_ID = 1;
   const isOnMainnet = chainId === MAINNET_CHAIN_ID;
-  const sdBALTokenAddress = "0xF24d8651578a55b0C119B9910759a351A3458895";
+
+  // Get token addresses from constants
+  const USDC_ADDRESS =
+    WHITELISTED_PAYMENT_TOKENS.mainnet?.find(t => t.symbol === "USDC")?.address || "";
+  const BAL_ADDRESS =
+    WHITELISTED_PAYMENT_TOKENS.mainnet?.find(t => t.symbol === "BAL")?.address || "";
 
   // Fetch sdBAL token price
   const { data: priceData } = useQuery(CurrentTokenPricesDocument, {
@@ -77,15 +83,11 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     },
   });
 
-  // Token addresses for fetching metadata
-  const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-  const BAL_ADDRESS = "0xba100000625a3754423978a60c9317c58a424e3D";
-
   // Fetch token metadata including logos
   const { data: tokenData } = useQuery(GetTokensDocument, {
     variables: {
       chainIn: ["MAINNET" as GqlChain],
-      tokensIn: [sdBALTokenAddress, USDC_ADDRESS, BAL_ADDRESS],
+      tokensIn: [SDBAL_TOKEN_ADDRESS, USDC_ADDRESS, BAL_ADDRESS],
     },
     context: {
       uri: "https://api-v3.balancer.fi/",
@@ -95,7 +97,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   const sdBALPrice = useMemo(() => {
     if (!priceData?.tokenGetCurrentPrices) return null;
     const price = priceData.tokenGetCurrentPrices.find(
-      p => p.address.toLowerCase() === sdBALTokenAddress.toLowerCase(),
+      p => p.address.toLowerCase() === SDBAL_TOKEN_ADDRESS.toLowerCase(),
     );
     return price?.price || null;
   }, [priceData?.tokenGetCurrentPrices]);
@@ -276,54 +278,71 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     return connected === beneficiaryAddr;
   }, [connectedAddress, beneficiary]);
 
-  // Fetch Merkl proofs data from API route
+  // Custom hook to fetch Merkl data
+  const fetchMerklData = useCallback(async () => {
+    // Add timestamp to bypass cache during development
+    const response = await fetch(`/api/merkl?t=${Date.now()}`, {
+      cache: "no-cache",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch Merkl data");
+    }
+    return response.json();
+  }, []);
+
+  // Use React Query for Merkl data fetching
+  const {
+    data: merklResponse,
+    isLoading: isLoadingMerkl,
+    error: merklError,
+    refetch: refetchMerkl,
+  } = useReactQuery({
+    queryKey: ["merkl-data"],
+    queryFn: fetchMerklData,
+    refetchInterval: 6 * 60 * 60 * 1000, // Refetch every 6 hours
+    staleTime: 3 * 60 * 60 * 1000, // Consider data stale after 3 hours
+    gcTime: 6 * 60 * 60 * 1000, // Garbage collect after 6 hours
+    refetchOnWindowFocus: false, // Don't refetch on window focus to save API calls
+  });
+
+  // Process Merkl data
   useEffect(() => {
-    const fetchMerklData = async () => {
-      setIsLoadingMerkl(true);
-      try {
-        const response = await fetch("/api/merkl");
+    if (merklResponse?.data) {
+      // Ensure all addresses in merkl data are lowercase
+      const normalizedData: MerklData = {};
+      Object.entries(merklResponse.data as MerklData).forEach(([address, data]) => {
+        normalizedData[address.toLowerCase()] = data as MerklData[string];
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch Merkl data");
-        }
+      setMerklData(normalizedData);
+      setMerklLastUpdate(merklResponse.timestamp);
+      console.log(`Merkl data loaded: ${Object.keys(normalizedData).length} addresses`);
+      console.log(`Data timestamp: ${merklResponse.timestamp}`);
+      console.log(`Next update: ${merklResponse.nextUpdate}`);
 
-        const apiResponse = await response.json();
+      // Log sample addresses to verify we have the latest data
+      const sampleAddresses = Object.keys(normalizedData).slice(0, 3);
+      console.log("Sample addresses in merkl data:", sampleAddresses);
+    }
+  }, [merklResponse]);
 
-        if (apiResponse.error) {
-          throw new Error(apiResponse.details || apiResponse.error);
-        }
-
-        // Ensure all addresses in merkl data are lowercase
-        const normalizedData: MerklData = {};
-        Object.entries(apiResponse.data as MerklData).forEach(([address, data]) => {
-          normalizedData[address.toLowerCase()] = data as MerklData[string];
-        });
-
-        setMerklData(normalizedData);
-        setMerklLastUpdate(apiResponse.timestamp);
-        console.log(`Merkl data loaded: ${Object.keys(normalizedData).length} addresses`);
-        console.log(`Data timestamp: ${apiResponse.timestamp}`);
-        console.log(`Next update: ${apiResponse.nextUpdate}`);
-
-        // Log first 5 addresses for debugging
-        const sampleAddresses = Object.keys(normalizedData).slice(0, 5);
-        console.log("Sample addresses in merkl data:", sampleAddresses);
-      } catch (error) {
-        console.error("Error fetching Merkl data:", error);
-        toast({
-          title: "Error fetching Merkl data",
-          description: "Could not load voting rewards data",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setIsLoadingMerkl(false);
-      }
-    };
-
-    fetchMerklData();
-  }, [toast]);
+  // Handle Merkl data error
+  useEffect(() => {
+    if (merklError) {
+      console.error("Error fetching Merkl data:", merklError);
+      toast({
+        title: "Error fetching Merkl data",
+        description: "Could not load voting rewards data",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [merklError, toast]);
 
   const handleSwitchToMainnet = useCallback(async () => {
     try {
@@ -348,43 +367,53 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     [vestingContracts],
   );
 
+  // Shared validation for claim functions
+  const validateClaim = useCallback(
+    (rewardType: string): boolean => {
+      if (!selectedContract || !connectedAddress) {
+        toast({
+          title: "Error",
+          description: "Please connect your wallet and select a vesting contract",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return false;
+      }
+
+      if (!isOnMainnet) {
+        toast({
+          title: "Wrong network",
+          description: `Please switch to Ethereum Mainnet to claim ${rewardType}`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return false;
+      }
+
+      if (!isBeneficiary) {
+        toast({
+          title: "Not authorized",
+          description: "You are not the beneficiary of this vesting contract",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return false;
+      }
+
+      return true;
+    },
+    [selectedContract, connectedAddress, isOnMainnet, isBeneficiary, toast],
+  );
+
   const handleClaimRewards = useCallback(async () => {
-    if (!selectedContract || !connectedAddress) {
-      toast({
-        title: "Error",
-        description: "Please connect your wallet and select a vesting contract",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!isOnMainnet) {
-      toast({
-        title: "Wrong network",
-        description: "Please switch to Ethereum Mainnet to claim rewards",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!isBeneficiary) {
-      toast({
-        title: "Not authorized",
-        description: "You are not the beneficiary of this vesting contract",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
+    if (!validateClaim("rewards")) return;
 
     try {
       const hash = await writeContractAsync({
-        address: selectedContract.address as `0x${string}`,
+        address: selectedContract!.address as `0x${string}`,
         abi: sdBALVesterABI,
         functionName: "claimRewards",
         args: [],
@@ -392,7 +421,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
 
       toast({
         title: "Transaction submitted",
-        description: `Claiming rewards. Transaction: ${hash}`,
+        description: `Claiming gauge rewards. Transaction: ${hash}`,
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -401,47 +430,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       console.error("Error claiming rewards:", error);
       toast({
         title: "Transaction failed",
-        description: error.message || "Failed to claim rewards",
+        description: error.message || "Failed to claim gauge rewards",
         status: "error",
         duration: 5000,
         isClosable: true,
       });
     }
-  }, [selectedContract, connectedAddress, isOnMainnet, isBeneficiary, writeContractAsync, toast]);
+  }, [validateClaim, selectedContract, writeContractAsync, toast]);
 
   const handleClaimVotingRewards = useCallback(async () => {
-    if (!selectedContract || !connectedAddress) {
-      toast({
-        title: "Error",
-        description: "Please connect your wallet and select a vesting contract",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!isOnMainnet) {
-      toast({
-        title: "Wrong network",
-        description: "Please switch to Ethereum Mainnet to claim voting rewards",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!isBeneficiary) {
-      toast({
-        title: "Not authorized",
-        description: "You are not the beneficiary of this vesting contract",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
+    if (!validateClaim("voting rewards")) return;
 
     if (!merklData) {
       toast({
@@ -454,15 +452,14 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       return;
     }
 
-    // Static values for sdBAL voting rewards
-    const sdBALTokenAddress = "0xF24d8651578a55b0C119B9910759a351A3458895"; // sdBAL token address
+    // Use sdBAL token address from constants
 
     // Use the vesting contract address for merkl data lookup
-    const vesterAddress = selectedContract.address.toLowerCase();
+    const vesterAddress = selectedContract!.address.toLowerCase();
     const finalData = merklData[vesterAddress];
 
     console.log("=== Merkl Address Lookup ===");
-    console.log("Vesting contract address (original):", selectedContract.address);
+    console.log("Vesting contract address (original):", selectedContract!.address);
     console.log("Vesting contract address (lowercase):", vesterAddress);
     console.log("Connected wallet:", connectedAddress);
     console.log("Data found:", !!finalData);
@@ -498,7 +495,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       const proofs = finalDataToUse.proof as `0x${string}`[];
 
       console.log("Claiming voting rewards with params:", {
-        token: sdBALTokenAddress,
+        token: SDBAL_TOKEN_ADDRESS,
         index,
         amount: amount.toString(),
         amountHex,
@@ -509,11 +506,11 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       });
 
       const hash = await writeContractAsync({
-        address: selectedContract.address as `0x${string}`,
+        address: selectedContract!.address as `0x${string}`,
         abi: sdBALVesterABI,
         functionName: "claimVotingRewards",
         args: [
-          sdBALTokenAddress, // token address as string
+          SDBAL_TOKEN_ADDRESS, // token address as string
           index, // index as number
           amount, // amount as BigInt
           proofs, // merkle proofs already formatted
@@ -739,7 +736,9 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
           <CardBody>
             <VStack spacing={4} align="stretch">
               {/* Total Claimable Summary */}
-              {(parseFloat(totalClaimableUSD) > 0 || claimableVotingRewards || vestingRewards.length > 0) && (
+              {(parseFloat(totalClaimableUSD) > 0 ||
+                claimableVotingRewards ||
+                vestingRewards.length > 0) && (
                 <Box
                   p={4}
                   bg="background.level2"
@@ -749,7 +748,12 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                 >
                   <HStack justify="space-between" align="center">
                     <VStack align="start" spacing={1}>
-                      <Text fontSize="sm" color="font.secondary" fontWeight="medium" textTransform="uppercase">
+                      <Text
+                        fontSize="sm"
+                        color="font.secondary"
+                        fontWeight="medium"
+                        textTransform="uppercase"
+                      >
                         Total Claimable Value
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="font.primary">
@@ -781,10 +785,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                   <Card variant="subSection">
                     <CardBody>
                       <VStack spacing={3} align="stretch">
-                        <HStack justify="space-between" align="center" p={3} bg="background.level3" borderRadius="lg">
+                        <HStack
+                          justify="space-between"
+                          align="center"
+                          p={3}
+                          bg="background.level3"
+                          borderRadius="lg"
+                        >
                           <HStack spacing={3}>
                             <Avatar
-                              src={getTokenLogo(sdBALTokenAddress) || undefined}
+                              src={getTokenLogo(SDBAL_TOKEN_ADDRESS) || undefined}
                               name="sdBAL"
                               size="sm"
                               bg="gray.500"
@@ -846,7 +856,8 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                       <VStack spacing={4} align="stretch">
                         <VStack spacing={2}>
                           {vestingRewards.map(reward => {
-                            const tokenAddress = reward.symbol === "USDC" ? USDC_ADDRESS : BAL_ADDRESS;
+                            const tokenAddress =
+                              reward.symbol === "USDC" ? USDC_ADDRESS : BAL_ADDRESS;
                             return (
                               <HStack
                                 key={reward.symbol}
@@ -871,7 +882,11 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                                           reward.symbol === "USDC" ? 2 : 4,
                                         )}
                                       </Text>
-                                      <Text fontSize="md" color="font.secondary" fontWeight="medium">
+                                      <Text
+                                        fontSize="md"
+                                        color="font.secondary"
+                                        fontWeight="medium"
+                                      >
                                         {reward.symbol}
                                       </Text>
                                     </HStack>
@@ -882,7 +897,11 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                                     )}
                                   </VStack>
                                 </HStack>
-                                <Badge variant="subtle" colorScheme={reward.symbol === "USDC" ? "green" : "purple"} size="sm">
+                                <Badge
+                                  variant="subtle"
+                                  colorScheme={reward.symbol === "USDC" ? "green" : "purple"}
+                                  size="sm"
+                                >
                                   {reward.symbol === "USDC" ? "Stable" : "Governance"}
                                 </Badge>
                               </HStack>
@@ -921,11 +940,21 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
 
       {/* Merkl Data Update Indicator */}
       {merklLastUpdate && !isLoadingMerkl && (
-        <Box mt={4} textAlign="center">
-          <Text fontSize="xs" color="font.secondary">
-            Merkl tree last updated: {new Date(merklLastUpdate).toLocaleString()} (Updates daily at
-            6 AM UTC)
-          </Text>
+        <Box mt={4}>
+          <Flex justify="center" align="center" gap={3}>
+            <Text fontSize="xs" color="font.secondary">
+              Merkl tree last updated: {new Date(merklLastUpdate).toLocaleString()} (UI updates data
+              every 6h)
+            </Text>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => refetchMerkl()}
+              isLoading={isLoadingMerkl}
+            >
+              Refresh
+            </Button>
+          </Flex>
         </Box>
       )}
     </Container>
