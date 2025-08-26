@@ -63,7 +63,7 @@ export const ReClammPoolInfoCard: React.FC<ReClammPoolInfoCardProps> = ({ pool, 
     },
     {
       title: "Daily Price Shift Base",
-      value: pool.dailyPriceShiftBase,
+      value: `${(parseFloat(pool.dailyPriceShiftBase) * 100).toFixed(2)}%`,
     },
   ];
 
