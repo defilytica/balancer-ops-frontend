@@ -144,15 +144,14 @@ const DRPCBanner = () => (
 const DefilyticaBanner = () => (
   <Link href="https://defilytica.com" isExternal>
     <Box
-      mt={3}
       shadow="md"
       borderRadius="md"
       overflow="hidden"
       transition="all 0.1s"
-      p={2} // Added padding for better spacing
+      p={2}
       display="flex"
       alignItems="center"
-      gap={2} // Add space between logo and text
+      gap={2}
       bg="purple.950"
       _hover={{
         shadow: "lg",
@@ -209,46 +208,53 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
   return (
     <Box w={{ base: "full", md: 72 }} pos="fixed" h="full" {...rest}>
-      <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-        <Flex alignItems="center">
-          <Box boxSize={30} marginRight={2}>
-            <ChakraLink
-              as={NextLink}
-              href="/" // Explicit href for the logo
-              style={{ textDecoration: "none" }}
-              _focus={{ boxShadow: "none" }}
-            >
-              <BalancerLogo />
-            </ChakraLink>
-          </Box>
-          <Box>
-            <ChakraLink
-              as={NextLink}
-              href="/" // Explicit href for the heading
-              style={{ textDecoration: "none" }}
-              _focus={{ boxShadow: "none" }}
-            >
-              <Heading as="h5" size="md" variant="special">
-                Ops Tooling
-              </Heading>
-            </ChakraLink>
+      <Flex direction="column" h="full" justifyContent="space-between">
+        <Flex direction="column">
+          <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+            <Flex alignItems="center">
+              <Box boxSize={30} marginRight={2}>
+                <ChakraLink
+                  as={NextLink}
+                  href="/" // Explicit href for the logo
+                  style={{ textDecoration: "none" }}
+                  _focus={{ boxShadow: "none" }}
+                >
+                  <BalancerLogo />
+                </ChakraLink>
+              </Box>
+              <Box>
+                <ChakraLink
+                  as={NextLink}
+                  href="/" // Explicit href for the heading
+                  style={{ textDecoration: "none" }}
+                  _focus={{ boxShadow: "none" }}
+                >
+                  <Heading as="h5" size="md" variant="special">
+                    Ops Tooling
+                  </Heading>
+                </ChakraLink>
+              </Box>
+            </Flex>
+            <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
+          </Flex>
+
+          <Box flex="1" overflowY="auto">
+            {LinkItems.map(item => renderNavItem(item))}
           </Box>
         </Flex>
-        <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
-      </Flex>
 
-      {LinkItems.map(item => renderNavItem(item))}
-
-      <Flex
-        position="absolute"
-        bottom="20"
-        width="100%"
-        justifyContent="center"
-        flexDirection="column"
-        alignItems="center"
-      >
-        <DRPCBanner />
-        <DefilyticaBanner />
+        <Flex
+          direction="column"
+          alignItems="center"
+          px="4"
+          py="4"
+          pb="16"
+          gap="2"
+          display={{ base: "none", sm: "flex" }}
+        >
+          <DRPCBanner />
+          <DefilyticaBanner />
+        </Flex>
       </Flex>
     </Box>
   );
