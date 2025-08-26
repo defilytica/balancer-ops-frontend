@@ -6,7 +6,6 @@ import {
   Text,
   VStack,
   Box,
-  Flex,
   List,
   ListItem,
   ListIcon,

@@ -2,9 +2,7 @@ import { ethers } from "ethers";
 import { NextRequest, NextResponse } from "next/server";
 import { networks } from "@/constants/constants";
 
-const safeAbi = [
-  "function VERSION() external view returns (string)",
-];
+const safeAbi = ["function VERSION() external view returns (string)"];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

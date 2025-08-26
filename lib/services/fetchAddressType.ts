@@ -5,7 +5,9 @@ export const fetchAddressType = async (
   network: string,
 ): Promise<AddressTypeData> => {
   try {
-    const response = await fetch(`/api/address-check?address=${address}&network=${network.toLowerCase()}`);
+    const response = await fetch(
+      `/api/address-check?address=${address}&network=${network.toLowerCase()}`,
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch address type data");

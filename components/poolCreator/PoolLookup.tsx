@@ -10,11 +10,10 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
-  Spinner,
   Box,
   useToast,
 } from "@chakra-ui/react";
-import { ethers, formatUnits } from "ethers";
+import { formatUnits } from "ethers";
 import { GetTokensQuery, GetTokensQueryVariables, PoolConfig, PoolToken } from "@/types/interfaces";
 import { vaultABI } from "@/abi/BalVault";
 import { weightedPool } from "@/abi/WeightedPool";
@@ -68,17 +67,7 @@ const PoolLookup = ({ onPoolFound }: { onPoolFound: (poolData: PoolConfig) => vo
         );
       }
 
-      // Setup common contracts
-      const vaultContract = {
-        address: VAULT_ADDRESS,
-        abi: vaultABI,
-      };
-
       const factoryAddress = FactoryAddressWeighted[selectedNetwork];
-      const factoryContract = {
-        address: factoryAddress,
-        abi: CreateWeightedABI,
-      };
 
       // Determine pool type
       const isWeightedPool = await publicClient.readContract({

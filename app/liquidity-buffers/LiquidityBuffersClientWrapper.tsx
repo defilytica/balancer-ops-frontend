@@ -1,7 +1,7 @@
 "use client";
 
 import LiquidityBuffersModule from "@/components/LiquidityBuffersModule";
-import { Box, Skeleton } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { AddressBook } from "@/types/interfaces";
 
 interface LiquidityBuffersClientWrapperProps {

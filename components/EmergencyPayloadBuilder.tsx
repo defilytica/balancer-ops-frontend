@@ -1059,7 +1059,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                                   setPaused(true) - Legacy V2 Pools
                                 </Text>
                                 <Text fontSize="xs" color="font.secondary">
-                                  Use for older pools that don't have the pause() method
+                                  Use for older pools that don&#39;t have the pause() method
                                 </Text>
                               </VStack>
                             </Radio>

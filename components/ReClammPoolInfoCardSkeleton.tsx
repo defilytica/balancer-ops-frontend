@@ -24,7 +24,11 @@ export const ReClammPoolInfoCardSkeleton: React.FC = () => {
 
         <VStack width="full" spacing="sm">
           {/* Header row for desktop */}
-          <HStack spacing={{ base: "0", md: "xl" }} width="full" display={{ base: "none", md: "flex" }}>
+          <HStack
+            spacing={{ base: "0", md: "xl" }}
+            width="full"
+            display={{ base: "none", md: "flex" }}
+          >
             <Box minWidth="160px">
               <Skeleton height="16px" width="60px" />
             </Box>

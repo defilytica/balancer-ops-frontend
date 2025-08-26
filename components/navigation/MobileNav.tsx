@@ -1,13 +1,9 @@
 import React from "react";
 import {
   IconButton,
-  Avatar,
   Box,
   Flex,
-  HStack,
-  VStack,
   useColorModeValue,
-  Text,
   FlexProps,
   Heading,
 } from "@chakra-ui/react";

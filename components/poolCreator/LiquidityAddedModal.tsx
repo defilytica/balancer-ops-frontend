@@ -119,7 +119,13 @@ export const LiquidityAddedModal = ({
                 </Alert>
               </VStack>
             </Box>
-            <Box borderWidth="1px" borderRadius="lg" p={4} bg="purple.50" _dark={{ bg: "purple.900" }}>
+            <Box
+              borderWidth="1px"
+              borderRadius="lg"
+              p={4}
+              bg="purple.50"
+              _dark={{ bg: "purple.900" }}
+            >
               <VStack align="stretch" spacing={2}>
                 <Text fontWeight="semibold" fontSize="sm">
                   View Your Pool

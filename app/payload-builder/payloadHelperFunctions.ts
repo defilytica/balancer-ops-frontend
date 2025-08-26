@@ -1616,7 +1616,9 @@ export function generateReClammCombinedParametersPayload(
         priceRatioUpdateEndTime: input.priceRatioUpdateEndTime,
       },
     });
-    descriptions.push(`price ratio update from ${new Date(parseInt(input.priceRatioUpdateStartTime) * 1000).toLocaleString()} to ${new Date(parseInt(input.priceRatioUpdateEndTime) * 1000).toLocaleString()} with end ratio ${input.endPriceRatio}`);
+    descriptions.push(
+      `price ratio update from ${new Date(parseInt(input.priceRatioUpdateStartTime) * 1000).toLocaleString()} to ${new Date(parseInt(input.priceRatioUpdateEndTime) * 1000).toLocaleString()} with end ratio ${input.endPriceRatio}`,
+    );
   }
 
   // Add stop price ratio update transaction if requested
@@ -1635,9 +1637,10 @@ export function generateReClammCombinedParametersPayload(
     descriptions.push("stop price ratio update");
   }
 
-  const description = descriptions.length > 1 
-    ? `Set ${descriptions.join(" and ")} for ${input.poolName}`
-    : `Set ${descriptions[0]} for ${input.poolName}`;
+  const description =
+    descriptions.length > 1
+      ? `Set ${descriptions.join(" and ")} for ${input.poolName}`
+      : `Set ${descriptions[0]} for ${input.poolName}`;
 
   return {
     version: "1.0",
