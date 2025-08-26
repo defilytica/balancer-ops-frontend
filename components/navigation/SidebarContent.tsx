@@ -106,16 +106,16 @@ const LinkItems = [
     description: "View and configure hooks",
   },
   {
-    name: "Emergency",
-    icon: GoAlertFill,
-    target: "/payload-builder/emergency",
-    description: "Create Emergency Payloads",
-  },
-  {
     name: "ReCLAMM Pools",
     icon: TbChartCovariate,
     target: "/reclamm",
     description: "View RECLAMM pools",
+  },
+  {
+    name: "Emergency",
+    icon: GoAlertFill,
+    target: "/payload-builder/emergency",
+    description: "Create Emergency Payloads",
   },
 ];
 
