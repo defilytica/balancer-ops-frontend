@@ -39,6 +39,7 @@ import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { fetchReclammRangeStatus } from "@/lib/services/fetchReclammRangeStatus";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { getDailyPriceShiftExponent } from "@/lib/utils/reclammUtils";
 
 interface ReClammPoolsTableProps {
   pools: Pool[];
@@ -89,15 +90,17 @@ const ReClammRow = ({
     window.open(poolUrl, "_blank", "noopener,noreferrer");
   };
 
-  const formatDailyPriceShiftBase = (value: string | number | null | undefined) => {
-    if (!value || value === "-") return { formatted: "-", full: "-" };
+  const formatDailyPriceShiftExponent = (value: string | number | null | undefined) => {
+    if (!value || value === "-") return "-";
     const numValue = Number(value);
-    if (isNaN(numValue)) return { formatted: "-", full: "-" };
+    if (isNaN(numValue)) return "-";
 
-    // Convert to percentage (multiply by 100)
-    const percentage = numValue * 100;
-    const formatted = `${percentage.toFixed(2)}%`;
-    return { formatted, full: `${percentage.toFixed(7)}%` };
+    // Calculate the exponent using the utility function
+    const exponent = getDailyPriceShiftExponent(numValue);
+
+    // Convert bigint to percentage: divide by 10^16 to get percentage
+    const percentage = Number(exponent) / 1e16;
+    return `${percentage.toFixed(2)}%`;
   };
 
   return (
@@ -189,20 +192,13 @@ const ReClammRow = ({
         {loading ? (
           <Spinner size="sm" />
         ) : (
-          (() => {
-            const priceShift = formatDailyPriceShiftBase(
+          <Text>
+            {formatDailyPriceShiftExponent(
               data?.pool && "dailyPriceShiftBase" in data.pool
                 ? data.pool.dailyPriceShiftBase
                 : null,
-            );
-            return priceShift.formatted === "-" ? (
-              <Text>{priceShift.formatted}</Text>
-            ) : (
-              <Tooltip label={priceShift.full} placement="top">
-                <Text cursor="help">{priceShift.formatted}</Text>
-              </Tooltip>
-            );
-          })()
+            )}
+          </Text>
         )}
       </Td>
       <Td isNumeric px={3}>
@@ -421,11 +417,15 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
                 24h Volume
               </Button>
             </Th>
-            <Th w="120px" px={3}>
-              Daily Price Shift Base
+            <Th maxWidth="120px" px={3} textAlign="right">
+              Daily Price
+              <br />
+              Shift Exponent
             </Th>
-            <Th w="120px" px={3}>
-              Centeredness Margin
+            <Th maxWidth="120px" px={3} textAlign="right">
+              Centeredness
+              <br />
+              Margin
             </Th>
             <Th w="80px" px={3}>
               In Range

@@ -50,10 +50,6 @@ export const ReClammPoolInfoCard: React.FC<ReClammPoolInfoCardProps> = ({ pool, 
       value: `${(parseFloat(pool.centerednessMargin) * 100).toFixed(2)}%`,
     },
     {
-      title: "Current Price Ratio",
-      value: parseFloat(pool.currentFourthRootPriceRatio).toFixed(6),
-    },
-    {
       title: "Has Buffer",
       value: pool.hasAnyAllowedBuffer ? "Yes" : "No",
     },
@@ -63,7 +59,7 @@ export const ReClammPoolInfoCard: React.FC<ReClammPoolInfoCardProps> = ({ pool, 
     },
     {
       title: "Daily Price Shift Base",
-      value: pool.dailyPriceShiftBase,
+      value: `${(parseFloat(pool.dailyPriceShiftBase) * 100).toFixed(2)}%`,
     },
   ];
 
