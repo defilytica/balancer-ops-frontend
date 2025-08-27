@@ -40,6 +40,9 @@ export const GOVERNANCE_ADDRESS = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 export const V3_VAULT_ADDRESS = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const PRESET_FEES = [0.1, 0.3, 1.0];
 
+// StakeDAO specific token addresses
+export const SDBAL_TOKEN_ADDRESS = "0xF24d8651578a55b0C119B9910759a351A3458895";
+
 // SONIC specific addresses that are not mapped in our address book
 export const SONIC_VAULT_EXPLORER = "0x9672Af0b41e97855E9fff995a058C6F46a09d5B3";
 
