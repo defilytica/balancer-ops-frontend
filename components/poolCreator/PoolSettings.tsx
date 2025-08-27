@@ -297,8 +297,12 @@ export const PoolSettingsComponent = ({
       }
     } catch (error: any) {
       console.error("Pool creation error:", error);
-      
-      if (error?.code === 'ACTION_REJECTED' || error?.code === 4001 || error?.message?.includes('user rejected')) {
+
+      if (
+        error?.code === "ACTION_REJECTED" ||
+        error?.code === 4001 ||
+        error?.message?.includes("user rejected")
+      ) {
         toast({
           title: "Transaction Cancelled",
           description: "You cancelled the pool creation transaction.",
@@ -324,7 +328,7 @@ export const PoolSettingsComponent = ({
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
-      
+
       // Get network for existing pools
       const network = await provider.getNetwork();
       const networkName = getNetworkString(Number(network.chainId));
@@ -396,23 +400,23 @@ export const PoolSettingsComponent = ({
       console.log(userAddress);
       console.log(config.poolId);
       console.log(joinRequest);
-      
+
       let tx;
       try {
-        tx = await vaultContract.joinPool(
-          config.poolId!,
-          userAddress,
-          userAddress,
-          joinRequest,
-        );
+        tx = await vaultContract.joinPool(config.poolId!, userAddress, userAddress, joinRequest);
       } catch (error: any) {
         // User rejected transaction or other error during transaction creation
         console.error("Transaction rejected or failed:", error);
-        
-        if (error?.code === 'ACTION_REJECTED' || error?.code === 4001 || error?.message?.includes('user rejected')) {
+
+        if (
+          error?.code === "ACTION_REJECTED" ||
+          error?.code === 4001 ||
+          error?.message?.includes("user rejected")
+        ) {
           toast({
             title: "Transaction Cancelled",
-            description: "You cancelled the transaction. Please approve the transaction to add liquidity.",
+            description:
+              "You cancelled the transaction. Please approve the transaction to add liquidity.",
             status: "warning",
             duration: 5000,
           });
@@ -431,7 +435,7 @@ export const PoolSettingsComponent = ({
       // Wait for transaction confirmation
       try {
         const receipt = await tx.wait();
-        
+
         if (receipt.status === 0) {
           // Transaction failed on chain
           toast({
@@ -443,7 +447,7 @@ export const PoolSettingsComponent = ({
           setIsJoiningPool(false);
           return;
         }
-        
+
         // Transaction succeeded
         toast({
           title: "Success",
@@ -537,11 +541,11 @@ export const PoolSettingsComponent = ({
     console.log(receipt);
     console.log(receipt.logs);
     console.log(receipt.logs[0]);
-    
+
     if (receipt.status === 0) {
       throw new Error("Transaction failed on chain");
     }
-    
+
     const poolAddress = receipt.logs[0].address;
 
     // Get pool ID
@@ -613,7 +617,7 @@ export const PoolSettingsComponent = ({
 
     // Wait for transaction confirmation
     const receipt = await tx.wait();
-    
+
     if (receipt.status === 0) {
       throw new Error("Transaction failed on chain");
     }

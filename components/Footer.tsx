@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Container, Stack, Text, Link, Divider, useColorModeValue } from "@chakra-ui/react";
+import { Box, Container, Stack, Text, Divider, useColorModeValue } from "@chakra-ui/react";
 
 export default function Footer() {
   const bgColor = useColorModeValue("gray.50", "gray.900");

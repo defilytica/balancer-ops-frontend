@@ -59,7 +59,8 @@ export default function DisclaimerModal({ isOpen, onClose }: DisclaimerModalProp
                 understand the protocols you interact with
               </ListItem>
               <ListItem>
-                <strong>This software is provided "as is"</strong> without warranties of any kind
+                <strong>This software is provided &quot;as is&quot;</strong> without warranties of
+                any kind
               </ListItem>
             </UnorderedList>
 

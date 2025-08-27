@@ -35,7 +35,7 @@ import {
   generateInitializeBufferPayload,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks, V3_VAULT_ADDRESS } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
@@ -162,16 +162,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     }
 
     // Check if underlying amount is provided but underlying token address is invalid
-    if (
+    return (
       underlyingAmount > 0 &&
       (!debouncedUnderlyingTokenAddress ||
         isZeroAddress(debouncedUnderlyingTokenAddress) ||
         !isAddress(debouncedUnderlyingTokenAddress))
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   }, [
     selectedNetwork,
     selectedToken,
@@ -1016,7 +1012,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
             <AlertDescription>
               <Text fontWeight="semibold">This buffer is already initialized.</Text>
               <Text fontSize="sm" mt={1}>
-                You cannot initialize it again. Use the "Manage Buffer" tool to add or remove
+                You cannot initialize it again. Use the &quot;Manage Buffer&quot; tool to add or
                 liquidity.
               </Text>
             </AlertDescription>

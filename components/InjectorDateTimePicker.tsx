@@ -49,7 +49,6 @@ export const InjectorDateTimePicker: React.FC<InjectorDateTimePickerProps> = ({
     }
   };
 
-
   const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const timestamp = convertDateTimeToTimestamp(e.target.value);
     onChange(timestamp);

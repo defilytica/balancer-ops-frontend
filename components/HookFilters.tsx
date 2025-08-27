@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   VStack,
-  HStack,
   Box,
   Button,
   Popover,
@@ -12,7 +11,6 @@ import {
   PopoverCloseButton,
   Icon,
   Badge,
-  Divider,
   useColorModeValue,
   Text,
   Flex,
