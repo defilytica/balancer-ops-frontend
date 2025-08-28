@@ -40,6 +40,8 @@ import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import SimulateEOATransactionButton from "@/components/btns/SimulateEOATransactionButton";
+import { buildChangeSwapFeeV3SimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -514,6 +516,19 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
 
         {generatedPayload && !isCurrentWalletManager && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
+
+        {selectedPool && debouncedSwapFee && isSwapFeeValid && isCurrentWalletManager && (
+          <SimulateEOATransactionButton
+            transactions={
+              buildChangeSwapFeeV3SimulationTransactions({
+                selectedPool,
+                newSwapFeePercentage: debouncedSwapFee,
+              }) || []
+            }
+            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+            disabled={!debouncedSwapFee || !isSwapFeeValid}
+          />
         )}
       </Flex>
       <Divider />

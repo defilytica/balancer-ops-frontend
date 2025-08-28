@@ -37,6 +37,8 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
+import SimulateEOATransactionButton, { Transaction } from "./btns/SimulateEOATransactionButton";
+import { buildInitializeBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
@@ -1069,6 +1071,28 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
           {executionMode === ExecutionMode.SAFE && generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
+          {executionMode === ExecutionMode.EOA &&
+            selectedToken &&
+            !isInitialized &&
+            walletAddress && (
+              <SimulateEOATransactionButton
+                transactions={
+                  selectedToken && selectedNetwork
+                    ? buildInitializeBufferSimulationTransactions({
+                        selectedToken,
+                        selectedNetwork,
+                        exactAmountWrappedIn,
+                        exactAmountUnderlyingIn,
+                        underlyingTokenAddress: debouncedUnderlyingTokenAddress,
+                        minIssuedShares,
+                        addressBook,
+                      }) || []
+                    : []
+                }
+                networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+                disabled={isGenerateButtonDisabled}
+              />
+            )}
         </Flex>
 
         <Divider />

@@ -43,6 +43,8 @@ import { ReClammPoolInfoCardSkeleton } from "./ReClammPoolInfoCardSkeleton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import SimulateEOATransactionButton from "@/components/btns/SimulateEOATransactionButton";
+import { buildReClammParameterSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -1144,6 +1146,29 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
         {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
+
+        {selectedPool &&
+          isCurrentWalletManager &&
+          isValid &&
+          addressTypeData?.type !== "SafeProxy" && (
+            <SimulateEOATransactionButton
+              transactions={
+                buildReClammParameterSimulationTransactions({
+                  selectedPool,
+                  hasCenterednessMargin: !!hasCenterednessMargin,
+                  hasDailyPriceShiftExponent: !!hasDailyPriceShiftExponent,
+                  hasPriceRatioUpdate: !!hasPriceRatioUpdate,
+                  centerednessMargin: debouncedCenterednessMargin,
+                  dailyPriceShiftExponent: debouncedDailyPriceShiftExponent,
+                  endPriceRatio: debouncedEndPriceRatio,
+                  priceRatioUpdateStartTime: debouncedPriceRatioUpdateStartTime,
+                  priceRatioUpdateEndTime: debouncedPriceRatioUpdateEndTime,
+                }) || []
+              }
+              networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+              disabled={!isValid}
+            />
+          )}
       </Flex>
       <Divider />
 
