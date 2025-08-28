@@ -60,36 +60,44 @@ export async function POST(request: NextRequest) {
       simulationResponse.data.simulation_results?.every((sim: any) => sim.simulation.status) ??
       false;
 
-    let failedSimulationUrl = null;
+    let sharedUrl = null;
 
-    // If bundle failed, find first failed simulation and share it for debugging
-    if (!allSucceeded && simulationResponse.data.simulation_results) {
-      const firstFailedSim = simulationResponse.data.simulation_results.find(
-        (sim: any) => !sim.simulation.status,
-      );
+    // Determine which simulation to share
+    let simulationToShare = null;
+    if (simulationResponse.data.simulation_results) {
+      if (simulationResponse.data.simulation_results.length === 1) {
+        // If there's only one transaction (successful or failed), share it
+        simulationToShare = simulationResponse.data.simulation_results[0];
+      } else if (!allSucceeded) {
+        // If multiple transactions and bundle failed, share the first failed simulation for debugging
+        simulationToShare = simulationResponse.data.simulation_results.find(
+          (sim: any) => !sim.simulation.status,
+        );
+      }
+    }
 
-      if (firstFailedSim?.simulation?.id) {
-        try {
-          await axios.post(
-            `https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulations/${firstFailedSim.simulation.id}/share`,
-            {},
-            {
-              headers: {
-                "X-Access-Key": TENDERLY_ACCESS_KEY as string,
-                "Content-Type": "application/json",
-              },
+    // Share the selected simulation
+    if (simulationToShare?.simulation?.id) {
+      try {
+        await axios.post(
+          `https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulations/${simulationToShare.simulation.id}/share`,
+          {},
+          {
+            headers: {
+              "X-Access-Key": TENDERLY_ACCESS_KEY as string,
+              "Content-Type": "application/json",
             },
-          );
-          failedSimulationUrl = `https://www.tdly.co/shared/simulation/${firstFailedSim.simulation.id}`;
-          console.log("Failed simulation shared successfully:", failedSimulationUrl);
-        } catch (shareError) {
-          console.error("Failed to share individual simulation:", shareError);
-        }
+          },
+        );
+        sharedUrl = `https://www.tdly.co/shared/simulation/${simulationToShare.simulation.id}`;
+        console.log("Simulation shared successfully:", sharedUrl);
+      } catch (shareError) {
+        console.error("Failed to share simulation:", shareError);
       }
     }
 
     return NextResponse.json({
-      url: failedSimulationUrl,
+      url: sharedUrl,
       success: allSucceeded,
       bundle: simulationResponse.data,
     });
