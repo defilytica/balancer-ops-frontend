@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Determine which simulation to share
     let simulationToShare = null;
-    if (simulationResponse.data.simulation_results) {
+    if (simulationResponse.data.simulation_results && simulationResponse.data.simulation_results.length > 0) {
       if (simulationResponse.data.simulation_results.length === 1) {
         // If there's only one transaction (successful or failed), share it
         simulationToShare = simulationResponse.data.simulation_results[0];
@@ -73,6 +73,12 @@ export async function POST(request: NextRequest) {
         simulationToShare = simulationResponse.data.simulation_results.find(
           (sim: any) => !sim.simulation.status,
         );
+      } else {
+        // If multiple transactions and all succeeded, share the last one
+        simulationToShare =
+          simulationResponse.data.simulation_results[
+            simulationResponse.data.simulation_results.length - 1
+          ];
       }
     }
 
