@@ -3,22 +3,12 @@
 import React, { useCallback, useState } from "react";
 import { Button, Box, Text, Link, useToast, Flex, Badge } from "@chakra-ui/react";
 import { ethers } from "ethers";
-
-export interface Transaction {
-  to: string;
-  data: string;
-  value?: string;
-}
+import { SimulationResult, SimulationTransaction } from "@/types/interfaces";
 
 interface SimulateTransactionButtonProps {
-  transactions: Transaction[];
+  transactions: SimulationTransaction[];
   networkId: string;
   disabled?: boolean;
-}
-
-export interface SimulationResult {
-  url: string | null;
-  success: boolean;
 }
 
 export default function SimulateTransactionButton({

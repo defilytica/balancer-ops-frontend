@@ -57,10 +57,8 @@ import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
-import {
-  buildManageBufferSimulationTransactions,
-  BufferOperation,
-} from "@/app/payload-builder/simulationHelperFunctions";
+import { buildManageBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
+import { BufferOperation } from "@/types/interfaces";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";

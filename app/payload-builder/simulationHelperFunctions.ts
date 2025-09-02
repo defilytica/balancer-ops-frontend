@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { Transaction } from "@/components/btns/SimulateEOATransactionButton";
+import { SimulationTransaction } from "@/types/interfaces";
 import { AddressBook, TokenListToken, Pool } from "@/types/interfaces";
 import { getAddress } from "@/lib/data/maxis/addressBook";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
@@ -8,26 +8,19 @@ import { V3_VAULT_ADDRESS } from "@/constants/constants";
 import { reClammPoolAbi } from "@/abi/ReclammPool.js";
 import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { mevCaptureHookAbi } from "@/abi/MevCaptureHook";
-
-export enum BufferOperation {
-  ADD = "add",
-  REMOVE = "remove",
-}
-
-export interface manageBufferSimulationTransactionsParams {
-  selectedToken: TokenListToken;
-  selectedNetwork: string;
-  sharesAmount: string;
-  operationType: BufferOperation;
-  wrappedTokenAmount?: string;
-  underlyingTokenAmount?: string;
-  underlyingTokenAddress?: string;
-  addressBook: AddressBook;
-}
+import {
+  ManageBufferSimulationTransactionsParams,
+  BufferOperation,
+  InitializeBufferSimulationTransactionsParams,
+  ChangeSwapFeeV3SimulationTransactionsParams,
+  ReClammParameterSimulationTransactionsParams,
+  StableSurgeParameterSimulationTransactionsParams,
+  MevCaptureParameterSimulationTransactionsParams,
+} from "@/types/interfaces";
 
 export function buildManageBufferSimulationTransactions(
-  params: manageBufferSimulationTransactionsParams,
-): Transaction[] | null {
+  params: ManageBufferSimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const {
     selectedToken,
     selectedNetwork,
@@ -41,7 +34,7 @@ export function buildManageBufferSimulationTransactions(
 
   if (!selectedToken || !selectedNetwork || !sharesAmount) return null;
 
-  const transactions: Transaction[] = [];
+  const transactions: SimulationTransaction[] = [];
 
   if (operationType === BufferOperation.ADD) {
     const bufferRouterAddress = getAddress(
@@ -167,19 +160,9 @@ export function buildManageBufferSimulationTransactions(
   return transactions;
 }
 
-export interface initializeBufferSimulationTransactionsParams {
-  selectedToken: TokenListToken;
-  selectedNetwork: string;
-  exactAmountWrappedIn?: string;
-  exactAmountUnderlyingIn?: string;
-  underlyingTokenAddress?: string;
-  minIssuedShares?: string;
-  addressBook: AddressBook;
-}
-
 export function buildInitializeBufferSimulationTransactions(
-  params: initializeBufferSimulationTransactionsParams,
-): Transaction[] | null {
+  params: InitializeBufferSimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const {
     selectedToken,
     selectedNetwork,
@@ -208,7 +191,7 @@ export function buildInitializeBufferSimulationTransactions(
   );
   if (!permit2Address) return null;
 
-  const transactions: Transaction[] = [];
+  const transactions: SimulationTransaction[] = [];
   const expiration = Math.floor(Date.now() / 1000) + 86400 * 365; // 1 year
 
   // Add approval transactions if needed
@@ -294,14 +277,9 @@ export function buildInitializeBufferSimulationTransactions(
   return transactions;
 }
 
-export interface changeSwapFeeV3SimulationTransactionsParams {
-  selectedPool: Pool;
-  newSwapFeePercentage: string;
-}
-
 export function buildChangeSwapFeeV3SimulationTransactions(
-  params: changeSwapFeeV3SimulationTransactionsParams,
-): Transaction[] | null {
+  params: ChangeSwapFeeV3SimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const { selectedPool, newSwapFeePercentage } = params;
 
   if (!selectedPool || !newSwapFeePercentage) return null;
@@ -328,21 +306,9 @@ export function buildChangeSwapFeeV3SimulationTransactions(
   }
 }
 
-export interface reClammParameterSimulationTransactionsParams {
-  selectedPool: Pool;
-  hasCenterednessMargin: boolean;
-  hasDailyPriceShiftExponent: boolean;
-  hasPriceRatioUpdate: boolean;
-  centerednessMargin?: string;
-  dailyPriceShiftExponent?: string;
-  endPriceRatio?: string;
-  priceRatioUpdateStartTime?: string;
-  priceRatioUpdateEndTime?: string;
-}
-
 export function buildReClammParameterSimulationTransactions(
-  params: reClammParameterSimulationTransactionsParams,
-): Transaction[] | null {
+  params: ReClammParameterSimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const {
     selectedPool,
     hasCenterednessMargin,
@@ -359,7 +325,7 @@ export function buildReClammParameterSimulationTransactions(
 
   try {
     const contract = new ethers.Contract(selectedPool.address, reClammPoolAbi);
-    const transactions: Transaction[] = [];
+    const transactions: SimulationTransaction[] = [];
 
     if (hasCenterednessMargin && centerednessMargin) {
       const centerednessMarginValue = ((parseFloat(centerednessMargin) / 100) * 1e18).toString();
@@ -420,17 +386,9 @@ export function buildReClammParameterSimulationTransactions(
   }
 }
 
-export interface stableSurgeParameterSimulationTransactionsParams {
-  selectedPool: Pool;
-  hasMaxSurgeFeePercentage: boolean;
-  hasSurgeThresholdPercentage: boolean;
-  maxSurgeFeePercentage?: string;
-  surgeThresholdPercentage?: string;
-}
-
 export function buildStableSurgeParameterSimulationTransactions(
-  params: stableSurgeParameterSimulationTransactionsParams,
-): Transaction[] | null {
+  params: StableSurgeParameterSimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const {
     selectedPool,
     hasMaxSurgeFeePercentage,
@@ -443,7 +401,7 @@ export function buildStableSurgeParameterSimulationTransactions(
 
   try {
     const contract = new ethers.Contract(selectedPool.hook.address, stableSurgeHookAbi);
-    const transactions: Transaction[] = [];
+    const transactions: SimulationTransaction[] = [];
 
     if (hasMaxSurgeFeePercentage && maxSurgeFeePercentage) {
       const maxSurgeFeeValue = BigInt(parseFloat(maxSurgeFeePercentage) * 1e16).toString();
@@ -482,17 +440,9 @@ export function buildStableSurgeParameterSimulationTransactions(
   }
 }
 
-export interface mevCaptureParameterSimulationTransactionsParams {
-  selectedPool: Pool;
-  hasMevTaxThreshold: boolean;
-  hasMevTaxMultiplier: boolean;
-  mevTaxThreshold?: string;
-  mevTaxMultiplier?: string;
-}
-
 export function buildMevCaptureParameterSimulationTransactions(
-  params: mevCaptureParameterSimulationTransactionsParams,
-): Transaction[] | null {
+  params: MevCaptureParameterSimulationTransactionsParams,
+): SimulationTransaction[] | null {
   const {
     selectedPool,
     hasMevTaxThreshold,
@@ -505,7 +455,7 @@ export function buildMevCaptureParameterSimulationTransactions(
 
   try {
     const contract = new ethers.Contract(selectedPool.hook.address, mevCaptureHookAbi);
-    const transactions: Transaction[] = [];
+    const transactions: SimulationTransaction[] = [];
 
     if (hasMevTaxThreshold && mevTaxThreshold) {
       // Convert from Gwei to Wei for transaction

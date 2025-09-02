@@ -37,7 +37,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
-import SimulateEOATransactionButton, { Transaction } from "./btns/SimulateEOATransactionButton";
+import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { buildInitializeBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";

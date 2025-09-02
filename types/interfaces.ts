@@ -315,3 +315,75 @@ export interface AddressTypeData {
   address: string;
   type: "EOA" | "SafeProxy" | "Contract";
 }
+
+// EOA simulation types
+
+export interface SimulationResult {
+  url: string | null;
+  success: boolean;
+}
+
+export interface SimulationTransaction {
+  to: string;
+  data: string;
+  value?: string;
+}
+
+export enum BufferOperation {
+  ADD = "add",
+  REMOVE = "remove",
+}
+
+export interface ManageBufferSimulationTransactionsParams {
+  selectedToken: TokenListToken;
+  selectedNetwork: string;
+  sharesAmount: string;
+  operationType: BufferOperation;
+  wrappedTokenAmount?: string;
+  underlyingTokenAmount?: string;
+  underlyingTokenAddress?: string;
+  addressBook: AddressBook;
+}
+
+export interface InitializeBufferSimulationTransactionsParams {
+  selectedToken: TokenListToken;
+  selectedNetwork: string;
+  exactAmountWrappedIn?: string;
+  exactAmountUnderlyingIn?: string;
+  underlyingTokenAddress?: string;
+  minIssuedShares?: string;
+  addressBook: AddressBook;
+}
+
+export interface ChangeSwapFeeV3SimulationTransactionsParams {
+  selectedPool: Pool;
+  newSwapFeePercentage: string;
+}
+
+export interface ReClammParameterSimulationTransactionsParams {
+  selectedPool: Pool;
+  hasCenterednessMargin: boolean;
+  hasDailyPriceShiftExponent: boolean;
+  hasPriceRatioUpdate: boolean;
+  centerednessMargin?: string;
+  dailyPriceShiftExponent?: string;
+  endPriceRatio?: string;
+  priceRatioUpdateStartTime?: string;
+  priceRatioUpdateEndTime?: string;
+}
+
+export interface StableSurgeParameterSimulationTransactionsParams {
+  selectedPool: Pool;
+  hasMaxSurgeFeePercentage: boolean;
+  hasSurgeThresholdPercentage: boolean;
+  maxSurgeFeePercentage?: string;
+  surgeThresholdPercentage?: string;
+}
+
+export interface MevCaptureParameterSimulationTransactionsParams {
+  selectedPool: Pool;
+  hasMevTaxThreshold: boolean;
+  hasMevTaxMultiplier: boolean;
+  mevTaxThreshold?: string;
+  mevTaxMultiplier?: string;
+}
