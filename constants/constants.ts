@@ -406,7 +406,7 @@ export const networks: Record<string, NetworkInfo> = {
   avalanche: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
-    explorer: "https://snowtrace.io/",
+    explorer: "https://snowscan.xyz/",
     chainId: "43114",
   },
   arbitrum: {
@@ -436,7 +436,7 @@ export const networks: Record<string, NetworkInfo> = {
   avalanche_c: {
     logo: AvalancheLogo.src,
     rpc: "https://lb.drpc.org/ogrpc?network=avalanche&dkey=",
-    explorer: "https://snowtrace.io/",
+    explorer: "https://snowscan.xyz/",
     chainId: "43114",
   },
   ethereum: {
