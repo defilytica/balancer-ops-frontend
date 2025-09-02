@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
+import { TbAutomation } from "react-icons/tb";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import {
   TbTransactionBitcoin,
@@ -116,6 +117,12 @@ const LinkItems = [
     icon: GoAlertFill,
     target: "/payload-builder/emergency",
     description: "Create Emergency Payloads",
+  },
+  {
+    name: "StableSurge Simulator",
+    icon: TbAutomation,
+    target: "/simulators/stablesurge",
+    description: "Simulate StableSurge on a pool",
   },
 ];
 
