@@ -29,6 +29,7 @@ import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { sdBALVesterABI } from "@/abi/sdBALVester";
 import { gaugeABI } from "@/abi/gauge";
+import { merkleStashABI } from "@/abi/merkleStash";
 import {
   CurrentTokenPricesDocument,
   GetTokensDocument,
@@ -128,6 +129,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     },
   });
 
+  // Read the merkle stash address from the selected contract
+  const { data: merkleStashAddress } = useReadContract({
+    address: selectedContract?.address as `0x${string}`,
+    abi: sdBALVesterABI,
+    functionName: "VOTING_REWARDS_MERKLE_STASH",
+    query: {
+      enabled: !!selectedContract?.address && isOnMainnet,
+    },
+  });
+
   // Get token logos from fetched data
   const getTokenLogo = useCallback(
     (address: string) => {
@@ -177,6 +188,27 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     );
     return price?.price || null;
   }, [priceData?.tokenGetCurrentPrices, BAL_ADDRESS]);
+
+  // Check if the current merkle proof has already been claimed
+  const { data: isAlreadyClaimed, isLoading: isCheckingClaimed } = useReadContract({
+    address: merkleStashAddress as `0x${string}`,
+    abi: merkleStashABI,
+    functionName: "isClaimed",
+    args: [
+      SDBAL_TOKEN_ADDRESS as `0x${string}`,
+      merklData && selectedContract
+        ? BigInt(merklData[selectedContract.address.toLowerCase()]?.index || 0)
+        : BigInt(0),
+    ],
+    query: {
+      enabled:
+        !!merkleStashAddress &&
+        !!merklData &&
+        !!selectedContract &&
+        !!merklData[selectedContract.address.toLowerCase()] &&
+        isOnMainnet,
+    },
+  });
 
   // Calculate vesting rewards amounts
   const vestingRewards = useMemo(() => {
@@ -452,6 +484,17 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       return;
     }
 
+    if (isAlreadyClaimed) {
+      toast({
+        title: "Already claimed",
+        description: "This merkle proof has already been claimed",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     // Use sdBAL token address from constants
 
     // Use the vesting contract address for merkl data lookup
@@ -535,11 +578,13 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       });
     }
   }, [
+    validateClaim,
     selectedContract,
     connectedAddress,
     isOnMainnet,
     isBeneficiary,
     merklData,
+    isAlreadyClaimed,
     writeContractAsync,
     toast,
   ]);
@@ -820,20 +865,43 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                           </Badge>
                         </HStack>
 
-                        <Flex justify="center">
-                          <Button
-                            variant="secondary"
-                            size="md"
-                            onClick={handleClaimVotingRewards}
-                            isLoading={isLoadingMerkl}
-                            loadingText="Loading Merkl data..."
-                            fontWeight="bold"
-                            maxW="320px"
-                          >
-                            Claim Voting Rewards (
-                            {parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)
-                          </Button>
-                        </Flex>
+                        <VStack spacing={2}>
+                          {/* Claim Status Info */}
+                          {isCheckingClaimed ? (
+                            <Badge colorScheme="gray" size="sm">
+                              Checking claim status...
+                            </Badge>
+                          ) : isAlreadyClaimed ? (
+                            <Badge colorScheme="red" size="sm" px={3} py={1}>
+                              ✗ Already Claimed
+                            </Badge>
+                          ) : (
+                            <Badge colorScheme="green" size="sm" px={3} py={1}>
+                              ✓ Available to Claim
+                            </Badge>
+                          )}
+
+                          <Flex justify="center">
+                            <Button
+                              variant="secondary"
+                              size="md"
+                              onClick={handleClaimVotingRewards}
+                              isLoading={isLoadingMerkl || isCheckingClaimed}
+                              loadingText={
+                                isLoadingMerkl
+                                  ? "Loading Merkl data..."
+                                  : "Checking claim status..."
+                              }
+                              isDisabled={isAlreadyClaimed}
+                              fontWeight="bold"
+                              maxW="320px"
+                            >
+                              {isAlreadyClaimed
+                                ? "Already Claimed"
+                                : `Claim Voting Rewards (${parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)`}
+                            </Button>
+                          </Flex>
+                        </VStack>
                       </VStack>
                     </CardBody>
                   </Card>
