@@ -38,6 +38,8 @@ import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/in
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import SimulateEOATransactionButton from "@/components/btns/SimulateEOATransactionButton";
+import { buildStableSurgeParameterSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -722,6 +724,24 @@ export default function StableSurgeHookConfigurationModule({
 
         {generatedPayload && !isCurrentWalletManager && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
+
+        {selectedPool && isCurrentWalletManager && (
+          <SimulateEOATransactionButton
+            transactions={
+              buildStableSurgeParameterSimulationTransactions({
+                selectedPool,
+                hasMaxSurgeFeePercentage: !!debouncedMaxSurgeFeePercentage,
+                hasSurgeThresholdPercentage: !!debouncedSurgeThresholdPercentage,
+                maxSurgeFeePercentage: debouncedMaxSurgeFeePercentage,
+                surgeThresholdPercentage: debouncedSurgeThresholdPercentage,
+              }) || []
+            }
+            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+            disabled={
+              (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
+            }
+          />
         )}
       </Flex>
       <Divider />

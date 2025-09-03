@@ -55,7 +55,10 @@ import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { isAddress } from "viem";
 import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
+import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { buildManageBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
+import { BufferOperation } from "@/types/interfaces";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
@@ -67,11 +70,6 @@ import Permit2ABI from "@/abi/Permit2.json";
 
 interface ManageBufferModuleProps {
   addressBook: AddressBook;
-}
-
-enum BufferOperation {
-  ADD = "add",
-  REMOVE = "remove",
 }
 
 enum ExecutionMode {
@@ -1579,6 +1577,29 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           {executionMode === ExecutionMode.SAFE && generatedPayload && (
             <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
           )}
+          {executionMode === ExecutionMode.EOA &&
+            selectedToken &&
+            isInitialized &&
+            walletAddress && (
+              <SimulateEOATransactionButton
+                transactions={
+                  selectedToken && selectedNetwork && sharesAmount
+                    ? buildManageBufferSimulationTransactions({
+                        selectedToken,
+                        selectedNetwork,
+                        sharesAmount,
+                        operationType,
+                        wrappedTokenAmount,
+                        underlyingTokenAmount,
+                        underlyingTokenAddress,
+                        addressBook,
+                      }) || []
+                    : []
+                }
+                networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+                disabled={isGenerateButtonDisabled}
+              />
+            )}
         </Flex>
         <Divider />
 

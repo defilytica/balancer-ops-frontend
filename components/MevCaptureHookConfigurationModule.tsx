@@ -38,6 +38,8 @@ import { AddressBook, HookParams, MevTaxHookParams, Pool } from "@/types/interfa
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
+import SimulateEOATransactionButton from "@/components/btns/SimulateEOATransactionButton";
+import { buildMevCaptureParameterSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";
@@ -721,6 +723,22 @@ export default function MevCaptureHookConfigurationModule({
 
         {generatedPayload && !isCurrentWalletManager && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
+
+        {selectedPool && isCurrentWalletManager && (
+          <SimulateEOATransactionButton
+            transactions={
+              buildMevCaptureParameterSimulationTransactions({
+                selectedPool,
+                hasMevTaxThreshold: !!debouncedMevTaxThreshold,
+                hasMevTaxMultiplier: !!debouncedMevTaxMultiplier,
+                mevTaxThreshold: debouncedMevTaxThreshold,
+                mevTaxMultiplier: debouncedMevTaxMultiplier,
+              }) || []
+            }
+            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+            disabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
+          />
         )}
       </Flex>
       <Divider />
