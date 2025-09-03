@@ -484,7 +484,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       return;
     }
 
-    if (isAlreadyClaimed) {
+    if (Boolean(isAlreadyClaimed)) {
       toast({
         title: "Already claimed",
         description: "This merkle proof has already been claimed",
@@ -871,7 +871,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                             <Badge colorScheme="gray" size="sm">
                               Checking claim status...
                             </Badge>
-                          ) : isAlreadyClaimed ? (
+                          ) : Boolean(isAlreadyClaimed) ? (
                             <Badge colorScheme="red" size="sm" px={3} py={1}>
                               ✗ Already Claimed
                             </Badge>
@@ -892,11 +892,11 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
                                   ? "Loading Merkl data..."
                                   : "Checking claim status..."
                               }
-                              isDisabled={isAlreadyClaimed}
+                              isDisabled={Boolean(isAlreadyClaimed)}
                               fontWeight="bold"
                               maxW="320px"
                             >
-                              {isAlreadyClaimed
+                              {Boolean(isAlreadyClaimed)
                                 ? "Already Claimed"
                                 : `Claim Voting Rewards (${parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)`}
                             </Button>
