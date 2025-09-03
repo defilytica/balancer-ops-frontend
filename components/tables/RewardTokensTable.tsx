@@ -127,7 +127,7 @@ const RewardTokenCard: React.FC<{
           <VStack align="start" spacing={1} flex="1">
             <HStack spacing={2}>
               <Link
-                href={`${getExplorerUrl(token.address)}${token.address}`}
+                href={getExplorerUrl(token.address)}
                 isExternal
                 fontSize="sm"
                 fontWeight="medium"
@@ -165,7 +165,7 @@ const RewardTokenCard: React.FC<{
             <AddressCopyButton
               address={token.distributor}
               displayText={`${token.distributor.slice(0, 8)}...${token.distributor.slice(-6)}`}
-              explorerUrl={`${getExplorerUrl(token.distributor)}${token.distributor}`}
+              explorerUrl={getExplorerUrl(token.distributor)}
             />
             {isInjector && injectorPath && (
               <Link
@@ -315,7 +315,7 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                       <AddressCopyButton
                         address={pool.poolAddress}
                         displayText={`${pool.poolAddress.slice(0, 8)}...${pool.poolAddress.slice(-6)}`}
-                        explorerUrl={`${getExplorerUrl(pool.poolAddress)}${pool.poolAddress}`}
+                        explorerUrl={getExplorerUrl(pool.poolAddress)}
                       />
                     </VStack>
                   </Td>
@@ -323,7 +323,7 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                     <AddressCopyButton
                       address={pool.gaugeAddress}
                       displayText={`${pool.gaugeAddress.slice(0, 8)}...${pool.gaugeAddress.slice(-6)}`}
-                      explorerUrl={`${getExplorerUrl(pool.gaugeAddress)}${pool.gaugeAddress}`}
+                      explorerUrl={getExplorerUrl(pool.gaugeAddress)}
                     />
                   </Td>
                   <Td>
