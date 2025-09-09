@@ -208,6 +208,10 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     return !!(gauntletFeeSetterAddress && feeManagerSafeAddress);
   }, [gauntletFeeSetterAddress, feeManagerSafeAddress]);
 
+  const v2Pools = useMemo(() => {
+    return data?.poolGetPools?.filter(pool => pool.protocolVersion !== 3);
+  }, [data]);
+
   const handleGenerateClick = () => {
     if (!selectedPool || !newSwapFee || !selectedNetwork) {
       toast({
@@ -369,7 +373,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         <GridItem colSpan={{ base: 12, md: 8 }}>
           {selectedNetwork && (
             <PoolSelector
-              pools={data?.poolGetPools}
+              pools={v2Pools}
               loading={loading}
               error={error}
               selectedPool={selectedPool}
