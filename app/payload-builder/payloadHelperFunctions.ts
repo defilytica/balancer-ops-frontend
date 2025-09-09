@@ -680,6 +680,56 @@ export function generateSwapFeeChangePayload(
   };
 }
 
+// Gauntlet Fee Setter payload generation for legacy v2 pools
+export function generateGauntletSwapFeeChangePayload(
+  input: SwapFeeChangeInput,
+  chainId: string,
+  multisig: string,
+  gauntletFeeSetterAddress?: string,
+) {
+  // Default Gauntlet fee setter address for mainnet if not provided
+  const feeSetterAddress = gauntletFeeSetterAddress || "0xE4a8ed6c1D8d048bD29A00946BFcf2DB10E7923B";
+  const swapFeePercentage = (parseFloat(input.newSwapFeePercentage) * 1e16).toString();
+
+  const transaction = {
+    to: feeSetterAddress,
+    value: "0",
+    data: null,
+    contractMethod: {
+      inputs: [
+        {
+          name: "addresses",
+          type: "address[]",
+          internalType: "address[]",
+        },
+        {
+          name: "fees",
+          type: "uint256[]",
+          internalType: "uint256[]",
+        },
+      ],
+      name: "setSwapFees",
+      payable: false,
+    },
+    contractInputsValues: {
+      addresses: [input.poolAddress],
+      fees: [swapFeePercentage],
+    },
+  };
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: `Set swap fee to ${input.newSwapFeePercentage}% for ${input.poolName} via Gauntlet Fee Setter`,
+      createdFromSafeAddress: multisig,
+    },
+    transactions: [transaction],
+  };
+}
+
 // -- SET SWAP FEES ON V3 POOLS HELPERS --
 // Helper function to check if an address is the zero address
 export function isZeroAddress(address: string): boolean {
