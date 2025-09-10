@@ -28,6 +28,7 @@ import {
   StatNumber,
   useDisclosure,
   useToast,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
@@ -211,6 +212,11 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const v2Pools = useMemo(() => {
     return data?.poolGetPools?.filter(pool => pool.protocolVersion !== 3);
   }, [data]);
+
+  // Color mode values for dark mode support
+  const textColorSecondary = useColorModeValue("gray.600", "gray.400");
+  const textColorPrimary = useColorModeValue("gray.700", "gray.300");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
 
   const handleGenerateClick = () => {
     if (!selectedPool || !newSwapFee || !selectedNetwork) {
@@ -400,7 +406,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       )}
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-        <GridItem colSpan={{ base: 12, md: 4 }}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl isDisabled={!selectedPool || !isAuthorizedPool}>
             <FormLabel>New Swap Fee Percentage</FormLabel>
             <Input
@@ -412,58 +418,43 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
               onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </FormControl>
-          <Box mt={4}>
-            <Checkbox
-              isChecked={useGauntletFeeSetter}
-              onChange={e => setUseGauntletFeeSetter(e.target.checked)}
-              isDisabled={!selectedPool || !isAuthorizedPool || !isGauntletAvailable}
-              colorScheme="blue"
-            >
-              Use Gauntlet Fee Setter
-            </Checkbox>
-            <Box fontSize="sm" color="gray.600" mt={1} ml={6}>
-              For legacy v2 weighted and stable pools
-              {!isGauntletAvailable && selectedNetwork && (
-                <Box as="span" color="orange.500" ml={2}>
-                  (Not available for {selectedNetwork})
+        </GridItem>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl>
+            <FormLabel>Fee Setter Configuration</FormLabel>
+            <Box p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+              <Checkbox
+                isChecked={useGauntletFeeSetter}
+                onChange={e => setUseGauntletFeeSetter(e.target.checked)}
+                isDisabled={!selectedPool || !isAuthorizedPool || !isGauntletAvailable}
+                colorScheme="blue"
+              >
+                Use Gauntlet Fee Setter
+                <Box as="span" fontSize="sm" color={textColorSecondary} ml={2}>
+                  (for legacy v2 pools)
+                  {!isGauntletAvailable && selectedNetwork && (
+                    <Box as="span" color="orange.500" ml={1}>
+                      - Not available
+                    </Box>
+                  )}
+                </Box>
+              </Checkbox>
+              {useGauntletFeeSetter && isGauntletAvailable && (
+                <Box mt={3} pl={6} fontSize="sm" color={textColorPrimary}>
+                  <Box>✓ Gauntlet fee setter will be used</Box>
+                  <Box fontSize="xs" color={textColorSecondary} mt={1}>
+                    Safe: {feeManagerSafeAddress?.slice(0, 6)}...{feeManagerSafeAddress?.slice(-4)}
+                  </Box>
                 </Box>
               )}
             </Box>
-            {useGauntletFeeSetter && (
-              <Box
-                mt={3}
-                p={3}
-                borderRadius="md"
-                bg="blue.50"
-                borderLeft="3px solid"
-                borderLeftColor="blue.400"
-              >
-                <Box fontSize="sm" color="blue.800">
-                  <Box mb={2}>✓ Will use Gauntlet fee setter contract for transaction</Box>
-                  {feeManagerSafeAddress ? (
-                    <Box color="blue.600">
-                      Safe: {feeManagerSafeAddress.slice(0, 6)}...{feeManagerSafeAddress.slice(-4)}
-                    </Box>
-                  ) : (
-                    <Box color="orange.600" fontSize="sm">
-                      ⚠️ Fee Manager safe not configured for this network
-                    </Box>
-                  )}
-                  {!gauntletFeeSetterAddress && (
-                    <Box color="orange.600" fontSize="sm" mt={1}>
-                      ⚠️ Gauntlet fee setter not configured for this network
-                    </Box>
-                  )}
-                  <Box mt={2} fontSize="xs" color="blue.700">
-                    💡 Always simulate the transaction before execution
-                  </Box>
-                </Box>
-              </Box>
-            )}
-          </Box>
+          </FormControl>
         </GridItem>
-        <GridItem colSpan={{ base: 12, md: 8 }}>
-          {selectedPool && newSwapFee && (
+      </Grid>
+
+      {selectedPool && newSwapFee && (
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={{ base: 12 }}>
             <Card>
               <CardHeader>
                 <Flex alignItems="center">
@@ -494,9 +485,9 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
                 </StatGroup>
               </CardBody>
             </Card>
-          )}
-        </GridItem>
-      </Grid>
+          </GridItem>
+        </Grid>
+      )}
 
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Flex alignItems="center" gap={2}>
