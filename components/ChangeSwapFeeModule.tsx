@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
   AlertDescription,
   AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Card,
@@ -21,13 +20,6 @@ import {
   GridItem,
   Heading,
   Input,
-  List,
-  ListItem,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
-  Spinner,
   Stat,
   StatArrow,
   StatGroup,
@@ -36,10 +28,12 @@ import {
   StatNumber,
   useDisclosure,
   useToast,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
   copyJsonToClipboard,
   generateSwapFeeChangePayload,
+  generateGauntletSwapFeeChangePayload,
   handleDownloadClick,
   SwapFeeChangeInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
@@ -60,8 +54,11 @@ import { DollarSign } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
+import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { Checkbox } from "@chakra-ui/react";
+import PoolSelector from "@/components/PoolSelector";
 
 const AUTHORIZED_OWNER = "0xba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1ba1b";
 
@@ -74,8 +71,10 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [newSwapFee, setNewSwapFee] = useState<string>("");
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMultisig, setSelectedMultisig] = useState<string>("");
+  const [useGauntletFeeSetter, setUseGauntletFeeSetter] = useState<boolean>(false);
+  const [gauntletFeeSetterAddress, setGauntletFeeSetterAddress] = useState<string>("");
+  const [feeManagerSafeAddress, setFeeManagerSafeAddress] = useState<string>("");
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -126,6 +125,37 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     [addressBook],
   );
 
+  const resolveGauntletFeeSetter = useCallback(
+    (network: string) => {
+      const gauntletData = getCategoryData(addressBook, network.toLowerCase(), "gauntlet");
+
+      if (gauntletData && typeof gauntletData === "object") {
+        const feeSetter = gauntletData["GauntletFeeSetter"];
+        if (feeSetter && typeof feeSetter === "string") {
+          return feeSetter;
+        }
+      }
+      // Default to mainnet Gauntlet fee setter if not found
+      return network.toLowerCase() === "mainnet"
+        ? "0xE4a8ed6c1D8d048bD29A00946BFcf2DB10E7923B"
+        : "";
+    },
+    [addressBook],
+  );
+
+  const resolveFeeManagerSafe = useCallback(
+    (network: string) => {
+      // Get the feeManager safe address from multisigs
+      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
+      if (multisigs && multisigs["feeManager"]) {
+        const feeManagerSafe = multisigs["feeManager"];
+        return typeof feeManagerSafe === "string" ? feeManagerSafe : "";
+      }
+      return "";
+    },
+    [addressBook],
+  );
+
   const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
     GetPoolsDocument,
     {
@@ -134,26 +164,29 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     },
   );
 
-  const filteredPools = useMemo(() => {
-    if (!data?.poolGetPools) return [];
-    return data.poolGetPools.filter(
-      pool =>
-        pool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pool.address.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [data?.poolGetPools, searchTerm]);
+  const handlePoolSelection = useCallback((pool: Pool) => {
+    setSelectedPool(pool);
+  }, []);
+
+  const clearPoolSelection = useCallback(() => {
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewSwapFee("");
+    setUseGauntletFeeSetter(false);
+  }, []);
 
   const handleNetworkChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newNetwork = e.target.value;
       setSelectedNetwork(newNetwork);
       setSelectedMultisig(resolveMultisig(newNetwork));
+      setGauntletFeeSetterAddress(resolveGauntletFeeSetter(newNetwork));
+      setFeeManagerSafeAddress(resolveFeeManagerSafe(newNetwork));
       setSelectedPool(null);
       setGeneratedPayload(null);
-      setSearchTerm("");
       setNewSwapFee("");
     },
-    [resolveMultisig],
+    [resolveMultisig, resolveGauntletFeeSetter, resolveFeeManagerSafe],
   );
 
   const handleOpenPRModal = () => {
@@ -171,6 +204,19 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   };
 
   const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_OWNER;
+
+  const isGauntletAvailable = useMemo(() => {
+    return !!(gauntletFeeSetterAddress && feeManagerSafeAddress);
+  }, [gauntletFeeSetterAddress, feeManagerSafeAddress]);
+
+  const v2Pools = useMemo(() => {
+    return data?.poolGetPools?.filter(pool => pool.protocolVersion !== 3);
+  }, [data]);
+
+  // Color mode values for dark mode support
+  const textColorSecondary = useColorModeValue("gray.600", "gray.400");
+  const textColorPrimary = useColorModeValue("gray.700", "gray.300");
+  const borderColor = useColorModeValue("gray.200", "gray.600");
 
   const handleGenerateClick = () => {
     if (!selectedPool || !newSwapFee || !selectedNetwork) {
@@ -213,7 +259,40 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       poolName: selectedPool.name,
     };
 
-    const payload = generateSwapFeeChangePayload(input, network.chainId, selectedMultisig);
+    let payload;
+    if (useGauntletFeeSetter) {
+      if (!gauntletFeeSetterAddress) {
+        toast({
+          title: "Gauntlet Fee Setter not configured",
+          description: "Gauntlet Fee Setter address not found for this network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (!feeManagerSafeAddress) {
+        toast({
+          title: "Fee Manager Safe not configured",
+          description: "Fee Manager Safe address not found for this network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      payload = generateGauntletSwapFeeChangePayload(
+        input,
+        network.chainId,
+        feeManagerSafeAddress, // Use Fee Manager safe for Gauntlet operations
+        gauntletFeeSetterAddress,
+      );
+    } else {
+      payload = generateSwapFeeChangePayload(input, network.chainId, selectedMultisig);
+    }
+
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
@@ -223,23 +302,46 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     const payload =
       typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
 
-    // Assuming the payload structure has the necessary data at a predictable path
-    const poolAddress = payload.transactions[0]?.to;
-    const newSwapFeePercentage = payload.transactions[0]?.contractInputsValues.swapFeePercentage;
+    // Check if this is a Gauntlet fee setter transaction
+    const isGauntletTransaction = payload.transactions[0]?.contractMethod?.name === "setSwapFees";
 
-    if (!poolAddress || !newSwapFeePercentage) return null;
+    if (isGauntletTransaction) {
+      // For Gauntlet transactions, extract pool address from the addresses array
+      const poolAddress = payload.transactions[0]?.contractInputsValues?.addresses?.[0];
+      const newSwapFeePercentage = payload.transactions[0]?.contractInputsValues?.fees?.[0];
 
-    return {
-      type: "fee-setter",
-      title: "Change Swap Fee (v2)",
-      description: payload.meta.description,
-      payload: payload,
-      params: {
-        poolAddress: poolAddress,
-        swapFeePercentage: newSwapFeePercentage,
-      },
-      builderPath: "fee-setter",
-    };
+      if (!poolAddress || !newSwapFeePercentage) return null;
+
+      return {
+        type: "fee-setter-gauntlet",
+        title: "Change Swap Fee (v2 - Gauntlet)",
+        description: payload.meta.description,
+        payload: payload,
+        params: {
+          poolAddress: poolAddress,
+          swapFeePercentage: newSwapFeePercentage,
+        },
+        builderPath: "fee-setter",
+      };
+    } else {
+      // Regular fee setter transaction
+      const poolAddress = payload.transactions[0]?.to;
+      const newSwapFeePercentage = payload.transactions[0]?.contractInputsValues.swapFeePercentage;
+
+      if (!poolAddress || !newSwapFeePercentage) return null;
+
+      return {
+        type: "fee-setter",
+        title: "Change Swap Fee (v2)",
+        description: payload.meta.description,
+        payload: payload,
+        params: {
+          poolAddress: poolAddress,
+          swapFeePercentage: newSwapFeePercentage,
+        },
+        builderPath: "fee-setter",
+      };
+    }
   }, [generatedPayload]);
 
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
@@ -275,126 +377,118 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         </GridItem>
 
         <GridItem colSpan={{ base: 12, md: 8 }}>
-          <FormControl isDisabled={!selectedNetwork}>
-            <FormLabel>Select Pool</FormLabel>
-            <Popover>
-              <PopoverTrigger>
-                <Input
-                  value={selectedPool ? `${selectedPool.name} - ${selectedPool.address}` : ""}
-                  placeholder="Search and select a pool"
-                  readOnly
-                />
-              </PopoverTrigger>
-              <PopoverContent width="100%">
-                <PopoverBody>
-                  <Input
-                    placeholder="Search pools..."
-                    mb={2}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                  <List maxH="200px" overflowY="auto">
-                    {filteredPools.map(pool => (
-                      <ListItem
-                        key={pool.address}
-                        onClick={() => {
-                          setSelectedPool(pool as unknown as Pool);
-                          onClose();
-                        }}
-                        cursor="pointer"
-                        _hover={{ bg: "gray.100" }}
-                        p={2}
-                      >
-                        {pool.name} - {pool.address.slice(0, 6)}...
-                        {pool.address.slice(-4)}
-                      </ListItem>
-                    ))}
-                  </List>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
+          {selectedNetwork && (
+            <PoolSelector
+              pools={v2Pools}
+              loading={loading}
+              error={error}
+              selectedPool={selectedPool}
+              onPoolSelect={handlePoolSelection}
+              onClearSelection={clearPoolSelection}
+            />
+          )}
+        </GridItem>
+      </Grid>
+
+      {selectedPool && (
+        <Box mb={6}>
+          <PoolInfoCard pool={selectedPool} />
+          {!isAuthorizedPool && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is not owned by the authorized delegate address and cannot be modified.
+                Only the pool owner can modify this pool.
+              </AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl isDisabled={!selectedPool || !isAuthorizedPool}>
+            <FormLabel>New Swap Fee Percentage</FormLabel>
+            <Input
+              type="number"
+              step="0.01"
+              value={newSwapFee}
+              onChange={e => setNewSwapFee(e.target.value)}
+              placeholder="Enter new swap fee (e.g., 0.1)"
+              onWheel={e => (e.target as HTMLInputElement).blur()}
+            />
+          </FormControl>
+        </GridItem>
+        <GridItem colSpan={{ base: 12, md: 6 }}>
+          <FormControl>
+            <FormLabel>Fee Setter Configuration</FormLabel>
+            <Box p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+              <Checkbox
+                isChecked={useGauntletFeeSetter}
+                onChange={e => setUseGauntletFeeSetter(e.target.checked)}
+                isDisabled={!selectedPool || !isAuthorizedPool || !isGauntletAvailable}
+                colorScheme="blue"
+              >
+                Use Gauntlet Fee Setter
+                <Box as="span" fontSize="sm" color={textColorSecondary} ml={2}>
+                  (for legacy v2 pools)
+                  {!isGauntletAvailable && selectedNetwork && (
+                    <Box as="span" color="orange.500" ml={1}>
+                      - Not available
+                    </Box>
+                  )}
+                </Box>
+              </Checkbox>
+              {useGauntletFeeSetter && isGauntletAvailable && (
+                <Box mt={3} pl={6} fontSize="sm" color={textColorPrimary}>
+                  <Box>✓ Gauntlet fee setter will be used</Box>
+                  <Box fontSize="xs" color={textColorSecondary} mt={1}>
+                    Safe: {feeManagerSafeAddress?.slice(0, 6)}...{feeManagerSafeAddress?.slice(-4)}
+                  </Box>
+                </Box>
+              )}
+            </Box>
           </FormControl>
         </GridItem>
       </Grid>
 
-      {loading ? (
-        <Flex justify="center" my={4}>
-          <Spinner />
-        </Flex>
-      ) : error ? (
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading pools</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {selectedPool && (
-            <Box mb={6}>
-              <PoolInfoCard pool={selectedPool} />
-              {!isAuthorizedPool && (
-                <Alert status="warning" mt={4}>
-                  <AlertIcon />
-                  <AlertDescription>
-                    This pool is not owned by the authorized delegate address and cannot be
-                    modified. Only the pool owner can modify this pool.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
-            <GridItem colSpan={{ base: 12, md: 4 }}>
-              <FormControl isDisabled={!selectedPool || !isAuthorizedPool}>
-                <FormLabel>New Swap Fee Percentage</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newSwapFee}
-                  onChange={e => setNewSwapFee(e.target.value)}
-                  placeholder="Enter new swap fee (e.g., 0.1)"
-                  onWheel={e => (e.target as HTMLInputElement).blur()}
-                />
-              </FormControl>
-            </GridItem>
-            <GridItem colSpan={{ base: 12, md: 8 }}>
-              {selectedPool && newSwapFee && (
-                <Card>
-                  <CardHeader>
-                    <Flex alignItems="center">
-                      <DollarSign size={24} />
-                      <Heading size="md" ml={2}>
-                        Swap Fee Change Preview
-                      </Heading>
-                    </Flex>
-                  </CardHeader>
-                  <CardBody>
-                    <StatGroup>
-                      <Stat>
-                        <StatLabel>Current Fee</StatLabel>
-                        <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>New Fee</StatLabel>
-                        <StatNumber>{newFee.toFixed(4)}%</StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>Change</StatLabel>
-                        <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
-                        <StatHelpText>
-                          <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
-                          {feeChange > 0 ? "Increase" : "Decrease"}
-                        </StatHelpText>
-                      </Stat>
-                    </StatGroup>
-                  </CardBody>
-                </Card>
-              )}
-            </GridItem>
-          </Grid>
-        </>
+      {selectedPool && newSwapFee && (
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
+          <GridItem colSpan={{ base: 12 }}>
+            <Card>
+              <CardHeader>
+                <Flex alignItems="center">
+                  <DollarSign size={24} />
+                  <Heading size="md" ml={2}>
+                    Swap Fee Change Preview
+                  </Heading>
+                </Flex>
+              </CardHeader>
+              <CardBody>
+                <StatGroup>
+                  <Stat>
+                    <StatLabel>Current Fee</StatLabel>
+                    <StatNumber>{currentFee.toFixed(4)}%</StatNumber>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>New Fee</StatLabel>
+                    <StatNumber>{newFee.toFixed(4)}%</StatNumber>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Change</StatLabel>
+                    <StatNumber>{Math.abs(feeChange).toFixed(4)}%</StatNumber>
+                    <StatHelpText>
+                      <StatArrow type={feeChange > 0 ? "increase" : "decrease"} />
+                      {feeChange > 0 ? "Increase" : "Decrease"}
+                    </StatHelpText>
+                  </Stat>
+                </StatGroup>
+              </CardBody>
+            </Card>
+          </GridItem>
+        </Grid>
       )}
+
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Flex alignItems="center" gap={2}>
           <Button
