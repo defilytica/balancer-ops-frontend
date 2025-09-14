@@ -35,7 +35,7 @@ import {
   generateInitializeBufferPayload,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, SONIC_BUFFER_ROUTER, SONIC_PERMIT2 } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { buildInitializeBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
@@ -67,6 +67,13 @@ enum ExecutionMode {
   SAFE = "safe",
   EOA = "eoa",
 }
+
+const getPermit2Address = (addressBook: AddressBook, network: string): string | undefined => {
+  if (network.toLowerCase() === "sonic") {
+    return SONIC_PERMIT2;
+  }
+  return getAddress(addressBook, network.toLowerCase(), "uniswap", "permit2");
+};
 
 export default function InitializeBufferModule({ addressBook }: InitializeBufferModuleProps) {
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
@@ -145,8 +152,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network =>
-      networksWithVaultExplorer.includes(network.apiID.toLowerCase()),
+    return NETWORK_OPTIONS.filter(
+      network =>
+        networksWithVaultExplorer.includes(network.apiID.toLowerCase()) ||
+        network.apiID === "SONIC",
     );
   }, [addressBook]);
 
@@ -234,12 +243,17 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const getBufferRouterAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
+    let bufferRouterAddress;
+    if (selectedNetwork.toLowerCase() === "sonic") {
+      bufferRouterAddress = SONIC_BUFFER_ROUTER;
+    } else {
+      bufferRouterAddress = getAddress(
+        addressBook,
+        selectedNetwork.toLowerCase(),
+        "20241205-v3-buffer-router",
+        "BufferRouter",
+      );
+    }
 
     if (!bufferRouterAddress) {
       toast({
@@ -408,12 +422,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       if (!bufferRouterAddress) return;
 
       // Get permit2 address
-      const permit2Address = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "uniswap",
-        "permit2",
-      );
+      const permit2Address = getPermit2Address(addressBook, selectedNetwork);
 
       if (!permit2Address) {
         toast({
@@ -733,7 +742,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
 
     let permit2Address;
     if (includePermit2) {
-      permit2Address = getAddress(addressBook, selectedNetwork.toLowerCase(), "uniswap", "permit2");
+      permit2Address = getPermit2Address(addressBook, selectedNetwork);
       if (!permit2Address) {
         toast({
           title: "Permit2 not found",

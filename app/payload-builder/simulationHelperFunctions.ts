@@ -1,10 +1,9 @@
 import { ethers } from "ethers";
 import { SimulationTransaction } from "@/types/interfaces";
-import { AddressBook, TokenListToken, Pool } from "@/types/interfaces";
 import { getAddress } from "@/lib/data/maxis/addressBook";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import BufferRouterABI from "@/abi/BufferRouter.json";
-import { V3_VAULT_ADDRESS } from "@/constants/constants";
+import { SONIC_BUFFER_ROUTER, SONIC_PERMIT2, V3_VAULT_ADDRESS } from "@/constants/constants";
 import { reClammPoolAbi } from "@/abi/ReclammPool.js";
 import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { mevCaptureHookAbi } from "@/abi/MevCaptureHook";
@@ -175,20 +174,25 @@ export function buildInitializeBufferSimulationTransactions(
 
   if (!selectedToken || !selectedNetwork) return null;
 
-  const bufferRouterAddress = getAddress(
-    addressBook,
-    selectedNetwork.toLowerCase(),
-    "20241205-v3-buffer-router",
-    "BufferRouter",
-  );
+  let bufferRouterAddress;
+  if (selectedNetwork.toLowerCase() === "sonic") {
+    bufferRouterAddress = SONIC_BUFFER_ROUTER;
+  } else {
+    bufferRouterAddress = getAddress(
+      addressBook,
+      selectedNetwork.toLowerCase(),
+      "20241205-v3-buffer-router",
+      "BufferRouter",
+    );
+  }
   if (!bufferRouterAddress) return null;
 
-  const permit2Address = getAddress(
-    addressBook,
-    selectedNetwork.toLowerCase(),
-    "uniswap",
-    "permit2",
-  );
+  let permit2Address;
+  if (selectedNetwork.toLowerCase() === "sonic") {
+    permit2Address = SONIC_PERMIT2;
+  } else {
+    permit2Address = getAddress(addressBook, selectedNetwork.toLowerCase(), "uniswap", "permit2");
+  }
   if (!permit2Address) return null;
 
   const transactions: SimulationTransaction[] = [];
