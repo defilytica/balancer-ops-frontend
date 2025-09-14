@@ -7,7 +7,13 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import {
+  NETWORK_OPTIONS,
+  networks,
+  SONIC_PERMIT2,
+  SONIC_BUFFER_ROUTER,
+  SONIC_VAULT,
+} from "@/constants/constants";
 import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
@@ -77,6 +83,28 @@ enum ExecutionMode {
   EOA = "eoa",
 }
 
+const getPermit2Address = (addressBook: AddressBook, network: string): string | undefined => {
+  if (network.toLowerCase() === "sonic") {
+    return SONIC_PERMIT2;
+  }
+  return getAddress(addressBook, network.toLowerCase(), "uniswap", "permit2");
+};
+
+const getBufferRouterAddressForNetwork = (
+  addressBook: AddressBook,
+  network: string,
+): string | undefined => {
+  if (network.toLowerCase() === "sonic") {
+    return SONIC_BUFFER_ROUTER;
+  }
+  return getAddress(
+    addressBook,
+    network.toLowerCase(),
+    "20241205-v3-buffer-router",
+    "BufferRouter",
+  );
+};
+
 export default function ManageBufferModule({ addressBook }: ManageBufferModuleProps) {
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -125,7 +153,11 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network => networksWithV3.includes(network.apiID.toLowerCase()));
+    return NETWORK_OPTIONS.filter(
+      network =>
+        networksWithV3.includes(network.apiID.toLowerCase()) ||
+        network.apiID.toLowerCase() === "sonic",
+    );
   }, [addressBook]);
 
   // Fetch buffer balance
@@ -240,12 +272,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const getBufferRouterAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
+    const bufferRouterAddress = getBufferRouterAddressForNetwork(addressBook, selectedNetwork);
 
     if (!bufferRouterAddress) {
       toast({
@@ -264,6 +291,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   // Get vault address with validation
   const getVaultAddress = useCallback(() => {
     if (!selectedNetwork) return null;
+
+    if (selectedNetwork.toLowerCase() === "sonic") {
+      return SONIC_VAULT;
+    }
 
     const vaultAddress = getAddress(
       addressBook,
@@ -409,12 +440,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
       let permit2Address;
       if (includePermit2) {
-        permit2Address = getAddress(
-          addressBook,
-          selectedNetwork.toLowerCase(),
-          "uniswap",
-          "permit2",
-        );
+        permit2Address = getPermit2Address(addressBook, selectedNetwork);
         if (!permit2Address) {
           toast({
             title: "Permit2 not found",
@@ -497,12 +523,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       if (!bufferRouterAddress) return;
 
       // Get permit2 address
-      const permit2Address = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "uniswap",
-        "permit2",
-      );
+      const permit2Address = getPermit2Address(addressBook, selectedNetwork);
 
       if (!permit2Address) {
         toast({
