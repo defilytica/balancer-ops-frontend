@@ -8,7 +8,12 @@ import {
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import {
+  getPermit2Address,
+  getBufferRouterAddress as getBufferRouterAddressForNetwork,
+  getVaultAddress as getVaultAddressForNetwork,
+} from "@/lib/utils/sonicNetworkUtils";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
@@ -125,7 +130,11 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
   const networkOptionsWithV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(network => networksWithV3.includes(network.apiID.toLowerCase()));
+    return NETWORK_OPTIONS.filter(
+      network =>
+        networksWithV3.includes(network.apiID.toLowerCase()) ||
+        network.apiID.toLowerCase() === "sonic",
+    );
   }, [addressBook]);
 
   // Fetch buffer balance
@@ -240,12 +249,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const getBufferRouterAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
+    const bufferRouterAddress = getBufferRouterAddressForNetwork(addressBook, selectedNetwork);
 
     if (!bufferRouterAddress) {
       toast({
@@ -265,12 +269,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const getVaultAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    const vaultAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241204-v3-vault",
-      "Vault",
-    );
+    const vaultAddress = getVaultAddressForNetwork(addressBook, selectedNetwork);
 
     if (!vaultAddress) {
       toast({
@@ -409,12 +408,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
 
       let permit2Address;
       if (includePermit2) {
-        permit2Address = getAddress(
-          addressBook,
-          selectedNetwork.toLowerCase(),
-          "uniswap",
-          "permit2",
-        );
+        permit2Address = getPermit2Address(addressBook, selectedNetwork);
         if (!permit2Address) {
           toast({
             title: "Permit2 not found",
@@ -497,12 +491,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       if (!bufferRouterAddress) return;
 
       // Get permit2 address
-      const permit2Address = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "uniswap",
-        "permit2",
-      );
+      const permit2Address = getPermit2Address(addressBook, selectedNetwork);
 
       if (!permit2Address) {
         toast({

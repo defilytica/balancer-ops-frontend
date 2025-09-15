@@ -1,8 +1,9 @@
 import { ethers } from "ethers";
 import { NextRequest, NextResponse } from "next/server";
-import { networks, SONIC_VAULT_EXPLORER } from "@/constants/constants";
+import { networks } from "@/constants/constants";
 import { vaultExplorerABI } from "@/abi/VaultExplorer";
-import { fetchAddressBook, getAddress } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
+import { getVaultExplorerAddress } from "@/lib/utils/sonicNetworkUtils";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -18,17 +19,7 @@ export async function GET(request: NextRequest) {
 
   let addressBook = await fetchAddressBook();
 
-  let vaultExplorerAddress;
-  if (network.toLowerCase() === "sonic") {
-    vaultExplorerAddress = SONIC_VAULT_EXPLORER;
-  } else {
-    vaultExplorerAddress = getAddress(
-      addressBook,
-      network,
-      "20250407-v3-vault-explorer-v2",
-      "VaultExplorer",
-    );
-  }
+  const vaultExplorerAddress = getVaultExplorerAddress(addressBook, network);
 
   if (!vaultExplorerAddress) {
     throw new Error("VaultExplorer address not found");

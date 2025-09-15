@@ -1,10 +1,10 @@
 import { ethers } from "ethers";
 import { SimulationTransaction } from "@/types/interfaces";
-import { AddressBook, TokenListToken, Pool } from "@/types/interfaces";
 import { getAddress } from "@/lib/data/maxis/addressBook";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import BufferRouterABI from "@/abi/BufferRouter.json";
 import { V3_VAULT_ADDRESS } from "@/constants/constants";
+import { getBufferRouterAddress, getPermit2Address, getVaultAddress } from "@/lib/utils/sonicNetworkUtils";
 import { reClammPoolAbi } from "@/abi/ReclammPool.js";
 import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { mevCaptureHookAbi } from "@/abi/MevCaptureHook";
@@ -37,20 +37,10 @@ export function buildManageBufferSimulationTransactions(
   const transactions: SimulationTransaction[] = [];
 
   if (operationType === BufferOperation.ADD) {
-    const bufferRouterAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241205-v3-buffer-router",
-      "BufferRouter",
-    );
+    const bufferRouterAddress = getBufferRouterAddress(addressBook, selectedNetwork);
     if (!bufferRouterAddress) return null;
 
-    const permit2Address = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "uniswap",
-      "permit2",
-    );
+    const permit2Address = getPermit2Address(addressBook, selectedNetwork);
     if (!permit2Address) return null;
 
     const expiration = Math.floor(Date.now() / 1000) + 86400 * 365; // 1 year
@@ -132,12 +122,7 @@ export function buildManageBufferSimulationTransactions(
     });
   } else {
     // REMOVE operation
-    const vaultAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241204-v3-vault",
-      "Vault",
-    );
+    const vaultAddress = getVaultAddress(addressBook, selectedNetwork);
     if (!vaultAddress) return null;
 
     const removeLiquidityData = new ethers.Interface(V3vaultAdmin).encodeFunctionData(
@@ -175,20 +160,10 @@ export function buildInitializeBufferSimulationTransactions(
 
   if (!selectedToken || !selectedNetwork) return null;
 
-  const bufferRouterAddress = getAddress(
-    addressBook,
-    selectedNetwork.toLowerCase(),
-    "20241205-v3-buffer-router",
-    "BufferRouter",
-  );
+  const bufferRouterAddress = getBufferRouterAddress(addressBook, selectedNetwork);
   if (!bufferRouterAddress) return null;
 
-  const permit2Address = getAddress(
-    addressBook,
-    selectedNetwork.toLowerCase(),
-    "uniswap",
-    "permit2",
-  );
+  const permit2Address = getPermit2Address(addressBook, selectedNetwork);
   if (!permit2Address) return null;
 
   const transactions: SimulationTransaction[] = [];
