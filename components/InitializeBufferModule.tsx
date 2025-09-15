@@ -35,11 +35,15 @@ import {
   generateInitializeBufferPayload,
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
-import { NETWORK_OPTIONS, networks, SONIC_BUFFER_ROUTER, SONIC_PERMIT2 } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { buildInitializeBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
-import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import {
+  getPermit2Address,
+  getBufferRouterAddress as getBufferRouterAddressForNetwork,
+} from "@/lib/utils/sonicNetworkUtils";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
@@ -67,13 +71,6 @@ enum ExecutionMode {
   SAFE = "safe",
   EOA = "eoa",
 }
-
-const getPermit2Address = (addressBook: AddressBook, network: string): string | undefined => {
-  if (network.toLowerCase() === "sonic") {
-    return SONIC_PERMIT2;
-  }
-  return getAddress(addressBook, network.toLowerCase(), "uniswap", "permit2");
-};
 
 export default function InitializeBufferModule({ addressBook }: InitializeBufferModuleProps) {
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
@@ -243,17 +240,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const getBufferRouterAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    let bufferRouterAddress;
-    if (selectedNetwork.toLowerCase() === "sonic") {
-      bufferRouterAddress = SONIC_BUFFER_ROUTER;
-    } else {
-      bufferRouterAddress = getAddress(
-        addressBook,
-        selectedNetwork.toLowerCase(),
-        "20241205-v3-buffer-router",
-        "BufferRouter",
-      );
-    }
+    const bufferRouterAddress = getBufferRouterAddressForNetwork(addressBook, selectedNetwork);
 
     if (!bufferRouterAddress) {
       toast({

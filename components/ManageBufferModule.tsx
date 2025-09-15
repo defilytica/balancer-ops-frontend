@@ -7,14 +7,13 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/poolCreator/TokenSelector";
+import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import {
-  NETWORK_OPTIONS,
-  networks,
-  SONIC_PERMIT2,
-  SONIC_BUFFER_ROUTER,
-  SONIC_VAULT,
-} from "@/constants/constants";
-import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+  getPermit2Address,
+  getBufferRouterAddress as getBufferRouterAddressForNetwork,
+  getVaultAddress as getVaultAddressForNetwork,
+} from "@/lib/utils/sonicNetworkUtils";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
@@ -82,28 +81,6 @@ enum ExecutionMode {
   SAFE = "safe",
   EOA = "eoa",
 }
-
-const getPermit2Address = (addressBook: AddressBook, network: string): string | undefined => {
-  if (network.toLowerCase() === "sonic") {
-    return SONIC_PERMIT2;
-  }
-  return getAddress(addressBook, network.toLowerCase(), "uniswap", "permit2");
-};
-
-const getBufferRouterAddressForNetwork = (
-  addressBook: AddressBook,
-  network: string,
-): string | undefined => {
-  if (network.toLowerCase() === "sonic") {
-    return SONIC_BUFFER_ROUTER;
-  }
-  return getAddress(
-    addressBook,
-    network.toLowerCase(),
-    "20241205-v3-buffer-router",
-    "BufferRouter",
-  );
-};
 
 export default function ManageBufferModule({ addressBook }: ManageBufferModuleProps) {
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
@@ -292,16 +269,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const getVaultAddress = useCallback(() => {
     if (!selectedNetwork) return null;
 
-    if (selectedNetwork.toLowerCase() === "sonic") {
-      return SONIC_VAULT;
-    }
-
-    const vaultAddress = getAddress(
-      addressBook,
-      selectedNetwork.toLowerCase(),
-      "20241204-v3-vault",
-      "Vault",
-    );
+    const vaultAddress = getVaultAddressForNetwork(addressBook, selectedNetwork);
 
     if (!vaultAddress) {
       toast({
