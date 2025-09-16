@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  IconButton,
-  Box,
-  Flex,
-  useColorModeValue,
-  FlexProps,
-  Heading,
-} from "@chakra-ui/react";
+import { IconButton, Box, Flex, useColorModeValue, FlexProps, Heading } from "@chakra-ui/react";
 import { FiMenu } from "react-icons/fi";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import DarkModeToggle from "@/components/btns/DarkModeToggle";
