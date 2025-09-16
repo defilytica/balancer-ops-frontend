@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
 
     // Determine which simulation to share
     let simulationToShare = null;
-    if (simulationResponse.data.simulation_results && simulationResponse.data.simulation_results.length > 0) {
+    if (
+      simulationResponse.data.simulation_results &&
+      simulationResponse.data.simulation_results.length > 0
+    ) {
       if (simulationResponse.data.simulation_results.length === 1) {
         // If there's only one transaction (successful or failed), share it
         simulationToShare = simulationResponse.data.simulation_results[0];
