@@ -69,6 +69,9 @@ export const copyTextToClipboard = (text: string, toast: any) => {
 
 // --- ENABLE GAUGE
 export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
+  // Using omni-sig safe address for gauge operations
+  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
+
   const transactions = inputs.map(input => ({
     to: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
     value: "0",
@@ -93,18 +96,20 @@ export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      createdFromSafeAddress: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+      createdFromSafeAddress: OMNI_SIG_SAFE,
     },
     transactions,
   };
 }
 
 export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
+  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
+
   const gaugesList = inputs
     .map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`)
     .join("\n");
 
-  return `The Balancer Maxi LM Multisig eth:0xc38c5f97B34E175FFd35407fc91a937300E33860 will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
+  return `The Balancer Maxi Omni-Sig ${OMNI_SIG_SAFE} will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
 }
 
 // --- KILL GAUGE ---
@@ -113,6 +118,9 @@ export interface KillGaugeInput {
 }
 
 export function generateKillGaugePayload(targets: KillGaugeInput[]) {
+  // Using omni-sig safe address for gauge operations
+  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
+
   const transactions = targets.map(target => ({
     to: "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
     value: "0",
@@ -137,7 +145,7 @@ export function generateKillGaugePayload(targets: KillGaugeInput[]) {
     createdAt: Date.now(),
     meta: {
       name: "Transactions Batch",
-      createdFromSafeAddress: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
+      createdFromSafeAddress: OMNI_SIG_SAFE,
     },
     transactions,
   };
