@@ -25,7 +25,12 @@ export const getVaultExplorerAddress = (
     return SONIC_VAULT_EXPLORER;
   }
 
-  return getAddress(addressBook, network, "20250407-v3-vault-explorer-v2", "VaultExplorer");
+  return getAddress(
+    addressBook,
+    network.toLowerCase(),
+    "20250407-v3-vault-explorer-v2",
+    "VaultExplorer",
+  );
 };
 
 /**
@@ -36,7 +41,7 @@ export const getVaultAddress = (addressBook: AddressBook, network: string): stri
     return SONIC_VAULT;
   }
 
-  return getAddress(addressBook, network, "20241204-v3-vault", "Vault");
+  return getAddress(addressBook, network.toLowerCase(), "20241204-v3-vault", "Vault");
 };
 
 /**
@@ -50,7 +55,12 @@ export const getBufferRouterAddress = (
     return SONIC_BUFFER_ROUTER;
   }
 
-  return getAddress(addressBook, network, "20241205-v3-buffer-router", "BufferRouter");
+  return getAddress(
+    addressBook,
+    network.toLowerCase(),
+    "20241205-v3-buffer-router",
+    "BufferRouter",
+  );
 };
 
 /**
@@ -64,5 +74,5 @@ export const getPermit2Address = (
     return SONIC_PERMIT2;
   }
 
-  return getAddress(addressBook, network, "uniswap", "permit2");
+  return getAddress(addressBook, network.toLowerCase(), "uniswap", "permit2");
 };
