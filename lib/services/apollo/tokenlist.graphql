@@ -1,8 +1,12 @@
-query GetTokens($chainIn: [GqlChain!], $tokensIn: [String!]) {
+query GetTokens($chainIn: [GqlChain!], $tokensIn: [String!], $typeIn: [GqlTokenType!]) {
     tokenGetTokens(
         chains: $chainIn
-        where: { tokensIn: $tokensIn }
+        where: { 
+            tokensIn: $tokensIn
+            typeIn: $typeIn
+        }
     ) {
+        chain
         chainId
         address
         name
@@ -12,5 +16,8 @@ query GetTokens($chainIn: [GqlChain!], $tokensIn: [String!]) {
         isErc4626
         isBufferAllowed
         underlyingTokenAddress
+        erc4626ReviewData {
+          canUseBufferForSwaps
+        }
     }
 }

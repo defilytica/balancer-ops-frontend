@@ -136,6 +136,7 @@ export interface UnderlyingToken {
 }
 
 export interface TokenListToken {
+  chain: string;
   chainId: number;
   address: string;
   name: string;
