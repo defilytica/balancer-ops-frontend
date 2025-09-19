@@ -18,7 +18,7 @@ import {
 import { InfoOutlineIcon } from "@chakra-ui/icons";
 import { PoolToken } from "@/types/interfaces";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
-import { BufferRow } from "./BufferRow";
+import { PoolRow } from "./PoolRow";
 import { networks } from "@/constants/constants";
 import { getLendingProtocolFromTags } from "@/lib/utils/getLendingProtocolFromTags";
 import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
@@ -97,7 +97,7 @@ export const PoolCard = ({ pool }: PoolCardProps) => {
       </CardHeader>
       <CardBody p={6}>
         {pool.poolTokens.map((token: PoolToken, index: number) => (
-          <BufferRow
+          <PoolRow
             key={token.address}
             token={token}
             buffer={pool.buffers?.[token.address]}

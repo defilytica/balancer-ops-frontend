@@ -24,10 +24,10 @@ import {
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
 import { MdFilterListAlt } from "react-icons/md";
-import { BufferTable } from "@/components/tables/BufferTable";
-import { BufferGrid } from "@/components/tables/BufferGrid";
+import { BoostedPoolsTable } from "@/components/tables/BoostedPoolsTable";
+import { BoostedPoolsGrid } from "@/components/tables/BoostedPoolsGrid";
 import { NetworkSelector } from "@/components/NetworkSelector";
-import { ViewSwitcher, ViewMode } from "@/components/liquidityBuffers/ViewSwitcher";
+import { ViewSwitcher, ViewMode } from "@/components/boostedPools/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
@@ -36,11 +36,11 @@ import { useBufferData, PoolWithBufferData } from "@/lib/hooks/useBufferData";
 import GlobeLogo from "@/public/imgs/globe.svg";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
-interface LiquidityBuffersModuleProps {
+interface BoostedPoolsModuleProps {
   addressBook: AddressBook;
 }
 
-export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffersModuleProps) {
+export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("ALL");
   const [showOnlyEmptyBuffers, setShowOnlyEmptyBuffers] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.TABLE);
@@ -211,7 +211,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     return (
       <VStack spacing={6} align="stretch">
         {viewMode === ViewMode.CARD ? (
-          <BufferGrid
+          <BoostedPoolsGrid
             items={displayedPools}
             pageSize={pageSize}
             currentPage={currentPage}
@@ -222,7 +222,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
             onPageSizeChange={handlePageSizeChange}
           />
         ) : (
-          <BufferTable
+          <BoostedPoolsTable
             pools={displayedPools}
             pageSize={pageSize}
             currentPage={currentPage}
@@ -248,9 +248,9 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       >
         <Box>
           <Heading as="h2" size="lg" variant="special" mb={2}>
-            Liquidity Buffers
+            Boosted Pools
           </Heading>
-          <Text>Liquidity buffer allocation visualization in Balancer v3 boosted pools.</Text>
+          <Text>Boosted pools and their liquidity buffer allocations in Balancer v3.</Text>
         </Box>
 
         <Flex direction="column" p={2} gap={2} borderRadius="xl" borderWidth="1px" minW="250px">
