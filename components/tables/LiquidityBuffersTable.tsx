@@ -1,46 +1,36 @@
+import { networks } from "@/constants/constants";
+import { TokenWithBufferData } from "@/types/interfaces";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
 import {
-  Box,
-  Text,
-  HStack,
-  Image,
-  Icon,
   Avatar,
-  Tooltip,
+  Badge,
+  Box,
+  Card,
+  Flex,
   Grid,
   GridItem,
-  VStack,
-  Card,
+  HStack,
+  Icon,
+  Image,
   Link,
-  Flex,
-  Badge,
-  Spinner,
   Popover,
-  PopoverTrigger,
   PopoverContent,
+  PopoverTrigger,
+  Spinner,
   Stack,
+  Text,
+  Tooltip,
+  VStack,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
-import { networks } from "@/constants/constants";
 import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { formatUnits } from "viem";
+import { formatValue } from "@/lib/utils/formatValue";
 import { PaginatedTable } from "../../lib/shared/components/PaginatedTable";
-import { TokenListToken } from "@/types/interfaces";
-import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
-import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
-import { useState, useEffect } from "react";
-
-interface BufferData {
-  isInitialized?: boolean;
-  balancePercentage?: number;
-  underlyingBalance?: bigint;
-  wrappedBalance?: bigint;
-  loading: boolean;
-  error?: boolean;
-}
 
 interface LiquidityBuffersTableProps {
-  tokens: TokenListToken[];
+  tokens: TokenWithBufferData[];
   pageSize: number;
   currentPage: number;
   totalPages: number;
@@ -71,13 +61,13 @@ const LiquidityBuffersTableHeader = () => (
       </VStack>
     </GridItem>
     <GridItem>
-      <Text fontWeight="bold">Token</Text>
+      <Text fontWeight="bold">Wrapped Token</Text>
     </GridItem>
-    <GridItem justifySelf="end">
+    <GridItem>
       <Text fontWeight="bold">Address</Text>
     </GridItem>
-    <GridItem justifySelf="end">
-      <Text fontWeight="bold">Underlying</Text>
+    <GridItem>
+      <Text fontWeight="bold">Underlying Token</Text>
     </GridItem>
     <GridItem justifySelf="center">
       <Text fontWeight="bold">Buffer Status</Text>
@@ -116,13 +106,12 @@ const LiquidityBuffersTableRow = ({
   item: token,
   index,
   itemsLength,
-  bufferData,
 }: {
-  item: TokenListToken;
+  item: TokenWithBufferData;
   index: number;
   itemsLength: number;
-  bufferData: BufferData;
 }) => {
+  const { bufferData } = token;
   const isLast = index === itemsLength - 1;
   return (
     <Box
@@ -148,7 +137,7 @@ const LiquidityBuffersTableRow = ({
         {/* Network */}
         <GridItem>
           <Image
-            src={networks[token.chain?.toLowerCase()]?.logo || ""}
+            src={networks[token.chain?.toLowerCase() || ""]?.logo}
             alt={token.chain}
             boxSize="6"
           />
@@ -176,11 +165,11 @@ const LiquidityBuffersTableRow = ({
           </HStack>
         </GridItem>
         {/* Address */}
-        <GridItem justifySelf="end">
+        <GridItem>
           <AddressLink address={token.address} chain={token.chain} />
         </GridItem>
         {/* Underlying Token Address */}
-        <GridItem justifySelf="end">
+        <GridItem>
           {token.underlyingTokenAddress ? (
             <AddressLink address={token.underlyingTokenAddress} chain={token.chain} />
           ) : (
@@ -215,6 +204,8 @@ const LiquidityBuffersTableRow = ({
             <Text fontSize="sm" color="red.500">
               Error
             </Text>
+          ) : !bufferData.isInitialized ? (
+            <Text>N/A</Text>
           ) : bufferData.balancePercentage !== undefined &&
             bufferData.underlyingBalance !== undefined &&
             bufferData.wrappedBalance !== undefined ? (
@@ -226,20 +217,20 @@ const LiquidityBuffersTableRow = ({
                 {
                   name: "Wrapped",
                   value: wrappedPercentage,
-                  underlying: Number(bufferData.underlyingBalance!) / 1e18,
-                  wrapped: Number(bufferData.wrappedBalance!) / 1e18,
+                  underlying: Number(formatUnits(bufferData.underlyingBalance, token.decimals)),
+                  wrapped: Number(formatUnits(bufferData.wrappedBalance, token.decimals)),
                 },
                 {
                   name: "Underlying",
                   value: underlyingPercentage,
-                  underlying: Number(bufferData.underlyingBalance!) / 1e18,
-                  wrapped: Number(bufferData.wrappedBalance!) / 1e18,
+                  underlying: Number(formatUnits(bufferData.underlyingBalance, token.decimals)),
+                  wrapped: Number(formatUnits(bufferData.wrappedBalance, token.decimals)),
                 },
               ];
 
-              const formatNumber = (value: number) => {
-                if (value === 0 || value >= 0.01) return value.toFixed(2);
-                return "< 0.01";
+              const formatBufferValue = (value: bigint, decimals: number) => {
+                const formattedValue = Number(formatUnits(value, decimals));
+                return value > 0 && formattedValue < 0.01 ? "< 0.01" : formatValue(value, decimals);
               };
 
               const tooltipContent = (
@@ -251,7 +242,7 @@ const LiquidityBuffersTableRow = ({
                         <Text fontWeight="medium">{token.symbol}</Text>
                       </HStack>
                       <Text color="gray.400">
-                        {underlyingPercentage.toFixed(1)}% - {wrappedPercentage.toFixed(1)}%
+                        {wrappedPercentage.toFixed(1)}% - {underlyingPercentage.toFixed(1)}%
                       </Text>
                     </HStack>
 
@@ -261,7 +252,7 @@ const LiquidityBuffersTableRow = ({
                           Wrapped
                         </Text>
                         <Text fontSize="sm">
-                          {formatNumber(Number(bufferData.wrappedBalance!) / 1e18)}
+                          {formatBufferValue(bufferData.wrappedBalance, token.decimals)}
                         </Text>
                       </HStack>
                       <HStack justify="space-between">
@@ -269,7 +260,7 @@ const LiquidityBuffersTableRow = ({
                           Underlying
                         </Text>
                         <Text fontSize="sm">
-                          {formatNumber(Number(bufferData.underlyingBalance!) / 1e18)}
+                          {formatBufferValue(bufferData.underlyingBalance, token.decimals)}
                         </Text>
                       </HStack>
                     </Stack>
@@ -328,70 +319,7 @@ export const LiquidityBuffersTable = ({
   onPageChange,
   onPageSizeChange,
 }: LiquidityBuffersTableProps) => {
-  const [bufferDataMap, setBufferDataMap] = useState<Map<string, BufferData>>(new Map());
   const showPagination = totalPages > 1;
-
-  const fetchBufferData = async (token: TokenListToken) => {
-    if (!token.isErc4626 || !token.underlyingTokenAddress) {
-      return;
-    }
-
-    const key = `${token.address}-${token.chain}`;
-    setBufferDataMap(prev => new Map(prev.set(key, { loading: true })));
-
-    try {
-      const [initStatus, balanceData] = await Promise.all([
-        fetchBufferInitializationStatus(token.address, token.chain.toLowerCase()),
-        fetchBufferBalance(token.address, token.chain.toLowerCase()),
-      ]);
-
-      const totalBalance = balanceData.underlyingBalance + balanceData.wrappedBalance;
-      const balancePercentage =
-        totalBalance > BigInt(0)
-          ? Number((balanceData.wrappedBalance * BigInt(100)) / totalBalance)
-          : 0;
-
-      setBufferDataMap(
-        prev =>
-          new Map(
-            prev.set(key, {
-              isInitialized: initStatus,
-              balancePercentage,
-              underlyingBalance: balanceData.underlyingBalance,
-              wrappedBalance: balanceData.wrappedBalance,
-              loading: false,
-            }),
-          ),
-      );
-    } catch (error) {
-      console.error(`Error fetching buffer data for ${token.symbol}:`, error);
-      setBufferDataMap(
-        prev =>
-          new Map(
-            prev.set(key, {
-              loading: false,
-              error: true,
-            }),
-          ),
-      );
-    }
-  };
-
-  useEffect(() => {
-    tokens.forEach(token => {
-      if (token.isErc4626 && token.underlyingTokenAddress) {
-        const key = `${token.address}-${token.chain}`;
-        if (!bufferDataMap.has(key)) {
-          fetchBufferData(token);
-        }
-      }
-    });
-  }, [tokens]);
-
-  const getBufferData = (token: TokenListToken): BufferData => {
-    const key = `${token.address}-${token.chain}`;
-    return bufferDataMap.get(key) || { loading: false };
-  };
 
   return (
     <Card
@@ -399,7 +327,6 @@ export const LiquidityBuffersTable = ({
       left={{ base: "-4px", sm: "0" }}
       p={{ base: "0", sm: "0" }}
       position="relative"
-      // fixing right padding for horizontal scroll on mobile
       pr={{ base: "lg", sm: "lg", md: "lg", lg: "0" }}
       w={{ base: "100vw", lg: "full" }}
       overflow="visible"
@@ -409,12 +336,7 @@ export const LiquidityBuffersTable = ({
         loading={loading}
         renderTableHeader={LiquidityBuffersTableHeader}
         renderTableRow={({ item, index }) => (
-          <LiquidityBuffersTableRow
-            item={item}
-            index={index}
-            itemsLength={tokens.length}
-            bufferData={getBufferData(item)}
-          />
+          <LiquidityBuffersTableRow item={item} index={index} itemsLength={tokens.length} />
         )}
         showPagination={showPagination}
         paginationProps={{
@@ -430,7 +352,7 @@ export const LiquidityBuffersTable = ({
           pageSize,
         }}
         noItemsFoundLabel="No tokens found"
-        getRowId={token => token.address}
+        getRowId={(token: TokenWithBufferData) => token.address}
       />
     </Card>
   );

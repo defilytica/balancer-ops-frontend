@@ -16,6 +16,7 @@ import {
   Flex,
   Center,
   Heading,
+  Checkbox,
 } from "@chakra-ui/react";
 import { Filter } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -27,6 +28,8 @@ interface LiquidityBuffersFiltersProps {
   networkOptions: Array<{ label: string; apiID: string; chainId: string }>;
   networks: Record<string, any>;
   addressBook: AddressBook;
+  showOnlyEmpty: boolean;
+  onShowOnlyEmptyChange: (value: boolean) => void;
 }
 
 export function LiquidityBuffersFilters({
@@ -34,16 +37,16 @@ export function LiquidityBuffersFilters({
   onNetworkChange,
   networkOptions,
   networks,
+  showOnlyEmpty,
+  onShowOnlyEmptyChange,
 }: LiquidityBuffersFiltersProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const textColor = useColorModeValue("#fff", "font.dark");
 
-  // Calculate total active filters (network is always selected, so no filters to count)
-  const totalFilterCount = 0;
+  const totalFilterCount = showOnlyEmpty ? 1 : 0;
 
   const resetFilters = () => {
-    // Since network must always be selected, no reset needed
-    // This function is kept for consistency but does nothing
+    onShowOnlyEmptyChange(false);
   };
 
   return (
@@ -111,6 +114,18 @@ export function LiquidityBuffersFilters({
                   selectedNetwork={selectedNetwork}
                   handleNetworkChange={onNetworkChange}
                 />
+              </Box>
+              <Box>
+                <Heading as="h3" mb="sm" size="sm">
+                  Buffer status
+                </Heading>
+                <Checkbox
+                  isChecked={showOnlyEmpty}
+                  onChange={e => onShowOnlyEmptyChange(e.target.checked)}
+                  colorScheme="blue"
+                >
+                  <Text fontSize="md">Not initialized</Text>
+                </Checkbox>
               </Box>
             </VStack>
           </PopoverBody>
