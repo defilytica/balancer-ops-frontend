@@ -136,11 +136,25 @@ const LiquidityBuffersTableRow = ({
       >
         {/* Network */}
         <GridItem>
-          <Image
-            src={networks[token.chain?.toLowerCase() || ""]?.logo}
-            alt={token.chain}
-            boxSize="6"
-          />
+          {token.chain && networks[token.chain.toLowerCase()]?.logo ? (
+            <Image
+              src={networks[token.chain.toLowerCase()].logo}
+              alt={token.chain}
+              boxSize="6"
+              loading="eager"
+            />
+          ) : (
+            <Box
+              boxSize="6"
+              bg="gray.300"
+              rounded="full"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Icon as={Globe} boxSize="4" color="gray.600" />
+            </Box>
+          )}
         </GridItem>
         <GridItem>
           <HStack>
@@ -280,6 +294,7 @@ const LiquidityBuffersTableRow = ({
                             innerRadius={10}
                             outerRadius={15}
                             strokeWidth={0}
+                            isAnimationActive={false}
                           >
                             <Cell fill="#627EEA" />
                             <Cell fill="#E5E5E5" />

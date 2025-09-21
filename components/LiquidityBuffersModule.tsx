@@ -22,6 +22,7 @@ import {
 import { BiErrorCircle } from "react-icons/bi";
 import { LiquidityBuffersTable } from "@/components/tables/LiquidityBuffersTable";
 import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
+import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo, useEffect } from "react";
 import { AddressBook, TokenListToken, BufferData, TokenWithBufferData } from "@/types/interfaces";
@@ -38,6 +39,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [showOnlyEmpty, setShowOnlyEmpty] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [bufferDataMap, setBufferDataMap] = useState<Map<string, BufferData>>(new Map());
 
   const { loading, error, data } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
@@ -126,18 +128,26 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   }, [allTokens, bufferDataMap]);
 
   const filteredTokens = useMemo(() => {
-    if (!showOnlyEmpty) {
-      return tokensWithBufferData;
+    let filtered = tokensWithBufferData;
+
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        token =>
+          token.name?.toLowerCase().includes(searchLower) ||
+          token.symbol?.toLowerCase().includes(searchLower),
+      );
     }
 
-    return tokensWithBufferData.filter(token => {
-      if (!token.isErc4626 || !token.underlyingTokenAddress) {
-        return false;
-      }
-      const { bufferData } = token;
-      return !bufferData.loading && !bufferData.error && bufferData.isInitialized === false;
-    });
-  }, [tokensWithBufferData, showOnlyEmpty]);
+    if (showOnlyEmpty) {
+      filtered = filtered.filter(token => {
+        const { bufferData } = token;
+        return !bufferData.loading && !bufferData.error && bufferData.isInitialized === false;
+      });
+    }
+
+    return filtered;
+  }, [tokensWithBufferData, showOnlyEmpty, searchTerm]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -244,9 +254,9 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     <Container maxW="container.xl">
       <Flex
         direction={{ base: "column", md: "row" }}
-        align={{ base: "flex-start", md: "center" }}
+        align={{ base: "flex-start", md: "flex-end" }}
         justify="space-between"
-        mb={8}
+        mb={6}
         wrap="wrap"
         gap={4}
       >
@@ -257,17 +267,28 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           <Text>Manage liquidity buffers for tokens in Balancer v3.</Text>
         </Box>
 
-        <Box>
-          <LiquidityBuffersFilters
-            selectedNetwork={selectedNetwork}
-            onNetworkChange={handleNetworkChange}
-            networkOptions={networkOptionsV3}
-            networks={networks}
-            addressBook={addressBook}
-            showOnlyEmpty={showOnlyEmpty}
-            onShowOnlyEmptyChange={handleShowOnlyEmptyChange}
-          />
-        </Box>
+        <Flex gap={4} align="center" minW="0">
+          <Box minW="300px">
+            <SearchInput
+              search={searchTerm}
+              setSearch={setSearchTerm}
+              placeholder="Search..."
+              ariaLabel="Search tokens"
+              autoFocus={false}
+            />
+          </Box>
+          <Box flexShrink={0}>
+            <LiquidityBuffersFilters
+              selectedNetwork={selectedNetwork}
+              onNetworkChange={handleNetworkChange}
+              networkOptions={networkOptionsV3}
+              networks={networks}
+              addressBook={addressBook}
+              showOnlyEmpty={showOnlyEmpty}
+              onShowOnlyEmptyChange={handleShowOnlyEmptyChange}
+            />
+          </Box>
+        </Flex>
       </Flex>
 
       {renderContent()}
