@@ -13,7 +13,7 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { Pagination } from "../../lib/shared/components/Pagination";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { PoolCard } from "../boostedPools/PoolCard";
 
 interface BoostedPoolsGridProps extends SimpleGridProps {

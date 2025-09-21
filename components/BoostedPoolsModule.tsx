@@ -32,7 +32,7 @@ import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
-import { useBufferData, PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { usePoolBufferData, PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import GlobeLogo from "@/public/imgs/globe.svg";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
@@ -68,7 +68,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
 
   // Only fetch buffer data for paginated pools when filter is off
   // When empty buffers filter is on, we need all pools' buffer data
-  const { pools: poolsWithBufferBalances, loading: loadingBuffers } = useBufferData(
+  const { pools: poolsWithBufferBalances, loading: loadingBuffers } = usePoolBufferData(
     showOnlyEmptyBuffers ? allPools : paginatedPools,
   );
 

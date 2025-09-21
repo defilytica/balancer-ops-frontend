@@ -11,7 +11,7 @@ import {
   VStack,
   Card,
 } from "@chakra-ui/react";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { BufferTableTooltip } from "../boostedPools/BufferTableTooltip";

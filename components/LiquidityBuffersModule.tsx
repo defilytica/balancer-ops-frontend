@@ -24,11 +24,10 @@ import { LiquidityBuffersTable } from "@/components/tables/LiquidityBuffersTable
 import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
 import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { useState, useMemo, useEffect } from "react";
-import { AddressBook, TokenListToken, BufferData, TokenWithBufferData } from "@/types/interfaces";
+import { useState, useMemo } from "react";
+import { AddressBook, TokenListToken } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
-import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
-import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
+import { useTokenBufferData } from "@/lib/hooks/useTokenBufferData";
 
 interface LiquidityBuffersModuleProps {
   addressBook: AddressBook;
@@ -40,7 +39,6 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const [pageSize, setPageSize] = useState(10);
   const [showOnlyEmpty, setShowOnlyEmpty] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [bufferDataMap, setBufferDataMap] = useState<Map<string, BufferData>>(new Map());
 
   const { loading, error, data } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
@@ -61,71 +59,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
 
   const allTokens = (data?.tokenGetTokens || []) as unknown as TokenListToken[];
 
-  // Fetch buffer data for ERC4626 tokens
-  const fetchBufferData = async (token: TokenListToken): Promise<BufferData | null> => {
-    if (!token.isErc4626 || !token.underlyingTokenAddress) {
-      return null;
-    }
-
-    const [initStatus, balanceData] = await Promise.all([
-      fetchBufferInitializationStatus(token.address, token.chain?.toLowerCase() || ""),
-      fetchBufferBalance(token.address, token.chain?.toLowerCase() || ""),
-    ]);
-
-    const totalBalance = balanceData.underlyingBalance + balanceData.wrappedBalance;
-    const balancePercentage =
-      totalBalance > BigInt(0)
-        ? Number((balanceData.wrappedBalance * BigInt(100)) / totalBalance)
-        : 0;
-
-    return {
-      isInitialized: initStatus,
-      balancePercentage,
-      underlyingBalance: balanceData.underlyingBalance,
-      wrappedBalance: balanceData.wrappedBalance,
-      loading: false,
-    };
-  };
-
-  useEffect(() => {
-    allTokens.forEach(async token => {
-      const key = `${token.address}-${token.chain}`;
-      if (!bufferDataMap.has(key)) {
-        setBufferDataMap(prev => new Map(prev.set(key, { loading: true })));
-
-        try {
-          const bufferData = await fetchBufferData(token);
-          if (bufferData) {
-            setBufferDataMap(prev => new Map(prev.set(key, bufferData)));
-          }
-        } catch (error) {
-          console.error(`Error fetching buffer data for ${token.symbol}:`, error);
-          setBufferDataMap(
-            prev =>
-              new Map(
-                prev.set(key, {
-                  loading: false,
-                  error: true,
-                }),
-              ),
-          );
-        }
-      }
-    });
-  }, [allTokens, bufferDataMap]);
-
-  const getBufferData = (token: TokenListToken): BufferData => {
-    const key = `${token.address}-${token.chain}`;
-    return bufferDataMap.get(key) || { loading: false };
-  };
-
-  // Create tokens with buffer data
-  const tokensWithBufferData: TokenWithBufferData[] = useMemo(() => {
-    return allTokens.map(token => ({
-      ...token,
-      bufferData: getBufferData(token),
-    }));
-  }, [allTokens, bufferDataMap]);
+  const { tokensWithBufferData, isBufferDataLoading } = useTokenBufferData(allTokens);
 
   const filteredTokens = useMemo(() => {
     let filtered = tokensWithBufferData;
@@ -135,7 +69,8 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       filtered = filtered.filter(
         token =>
           token.name?.toLowerCase().includes(searchLower) ||
-          token.symbol?.toLowerCase().includes(searchLower),
+          token.symbol?.toLowerCase().includes(searchLower) ||
+          token.address?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -185,6 +120,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     setCurrentPage(1);
   };
 
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -217,7 +153,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       );
     }
 
-    if (paginatedTokens.length === 0) {
+    if (paginatedTokens.length === 0 && !isBufferDataLoading) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="gray.400" opacity={0.2}>
@@ -242,7 +178,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           pageSize={pageSize}
           currentPage={currentPage}
           totalPages={totalPages}
-          loading={false}
+          loading={isBufferDataLoading}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
         />

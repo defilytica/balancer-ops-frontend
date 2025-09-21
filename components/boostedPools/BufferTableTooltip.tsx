@@ -12,7 +12,7 @@ import {
   Icon,
   Avatar,
 } from "@chakra-ui/react";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { formatUnits } from "viem";
 import { calculateRatios } from "@/lib/utils/calculateRatios";
 import { formatValue } from "@/lib/utils/formatValue";

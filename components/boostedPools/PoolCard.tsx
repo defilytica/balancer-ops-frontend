@@ -21,7 +21,7 @@ import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
 import { PoolRow } from "./PoolRow";
 import { networks } from "@/constants/constants";
 import { getLendingProtocolFromTags } from "@/lib/utils/getLendingProtocolFromTags";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 
 interface PoolCardProps {
   pool: PoolWithBufferData;

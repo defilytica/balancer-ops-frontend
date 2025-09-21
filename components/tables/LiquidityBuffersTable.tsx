@@ -283,7 +283,7 @@ const LiquidityBuffersTableRow = ({
               );
 
               return (
-                <Popover trigger="hover" placement="bottom">
+                <Popover trigger="hover" placement="auto">
                   <PopoverTrigger>
                     <Box w="40px" h="40px" cursor="pointer">
                       <ResponsiveContainer width="100%" height="100%">
