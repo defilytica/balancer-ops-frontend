@@ -296,13 +296,20 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     const lowerSearchTerm = searchTerm.toLowerCase();
 
     return data.filter(pool => {
-      // Search filter (most restrictive first for early exit)
-      if (
-        searchTerm &&
-        !pool.poolName.toLowerCase().includes(lowerSearchTerm) &&
-        !pool.poolSymbol.toLowerCase().includes(lowerSearchTerm)
-      ) {
-        return false;
+      // Search filter - check pool name, symbol, and reward token names/symbols
+      if (searchTerm) {
+        const poolMatches =
+          pool.poolName.toLowerCase().includes(lowerSearchTerm) ||
+          pool.poolSymbol.toLowerCase().includes(lowerSearchTerm);
+
+        const rewardTokenMatches = pool.rewardTokens.some(token =>
+          token.symbol.toLowerCase().includes(lowerSearchTerm) ||
+          token.name.toLowerCase().includes(lowerSearchTerm)
+        );
+
+        if (!poolMatches && !rewardTokenMatches) {
+          return false;
+        }
       }
 
       // Active rewards filter
@@ -412,7 +419,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
               <SearchIcon color="gray.500" />
             </InputLeftElement>
             <Input
-              placeholder="Search pools by name or symbol..."
+              placeholder="Search pools or reward tokens..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -454,7 +461,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         <Box textAlign="center" py={8}>
           <Text color="font.secondary">
             {searchTerm || showActiveOnly || showDistributorOnly
-              ? `No pools found${searchTerm ? ` matching "${searchTerm}"` : ""}${showActiveOnly ? " with active rewards" : ""}${showDistributorOnly ? " where you're a distributor" : ""} on ${selectedNetwork}`
+              ? `No pools or reward tokens found${searchTerm ? ` matching "${searchTerm}"` : ""}${showActiveOnly ? " with active rewards" : ""}${showDistributorOnly ? " where you're a distributor" : ""} on ${selectedNetwork}`
               : `No pools with gauges found for ${selectedNetwork}`}
           </Text>
         </Box>
