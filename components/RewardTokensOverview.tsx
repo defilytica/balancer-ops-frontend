@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Alert,
   AlertIcon,
@@ -34,6 +35,10 @@ import { getExplorerUrl } from "@/lib/utils/getExplorerUrl";
 interface RewardTokensOverviewProps {}
 
 const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showActiveOnly, setShowActiveOnly] = useState<boolean>(false);
@@ -42,6 +47,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const [selectedPool, setSelectedPool] = useState<RewardTokenData | null>(null);
   const [injectorAddresses, setInjectorAddresses] = useState<Set<string>>(new Set());
   const [v2InjectorAddresses, setV2InjectorAddresses] = useState<Set<string>>(new Set());
+  const [shouldOpenModalOnDataLoad, setShouldOpenModalOnDataLoad] = useState<boolean>(false);
 
   const { data, loading, error, refetch } = useRewardTokenData(selectedNetwork);
   const { address, isConnected } = useAccount();
@@ -53,8 +59,15 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     if (!data) return [];
     const addresses = new Set<string>();
     data.forEach(pool => {
+      // Include reward tokens
       pool.rewardTokens.forEach(token => {
         addresses.add(token.address);
+      });
+      // Include pool tokens
+      pool.poolTokens?.forEach(token => {
+        if (!token.isNested && !token.isPhantomBpt) {
+          addresses.add(token.address);
+        }
       });
     });
     return Array.from(addresses);
@@ -84,6 +97,40 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     });
     return logoMap;
   }, [tokenData]);
+
+  // Process URL parameters on initial load and network/data changes
+  useEffect(() => {
+    const network = searchParams.get('network');
+    const gaugeAddress = searchParams.get('gauge');
+    const tokenAddress = searchParams.get('token');
+
+    if (network && !selectedNetwork) {
+      setSelectedNetwork(network);
+      if (gaugeAddress && tokenAddress) {
+        setShouldOpenModalOnDataLoad(true);
+      }
+    }
+
+    // If data is loaded and we have all required params, open the modal
+    if (data && shouldOpenModalOnDataLoad && gaugeAddress && tokenAddress) {
+      const pool = data.find(p =>
+        p.gaugeAddress.toLowerCase() === gaugeAddress.toLowerCase()
+      );
+
+      if (pool) {
+        const token = pool.rewardTokens.find(t =>
+          t.address.toLowerCase() === tokenAddress.toLowerCase()
+        );
+
+        if (token) {
+          setSelectedPool(pool);
+          setSelectedToken(token);
+          onOpen();
+          setShouldOpenModalOnDataLoad(false);
+        }
+      }
+    }
+  }, [searchParams, data, selectedNetwork, shouldOpenModalOnDataLoad, onOpen]);
 
   // Optimized injector address fetching
   // Reset distributor filter when wallet disconnects
@@ -156,7 +203,20 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
+    // Clear URL params when network changes
+    updateUrlParams({});
   };
+
+  // Function to update URL with query parameters
+  const updateUrlParams = useCallback((params: Record<string, string>) => {
+    const newSearchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) newSearchParams.set(key, value);
+    });
+    const queryString = newSearchParams.toString();
+    const url = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
 
   const formatEndDate = (periodFinish: string) => {
     const timestamp = parseInt(periodFinish);
@@ -176,12 +236,24 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const openAddRewardsModal = (pool: RewardTokenData, token: any) => {
     setSelectedPool(pool);
     setSelectedToken(token);
+
+    // Update URL with modal parameters (simplified - using gauge as unique identifier)
+    updateUrlParams({
+      network: selectedNetwork,
+      gauge: pool.gaugeAddress,
+      token: token.address,
+    });
+
     onOpen();
   };
 
   const closeAddRewardsModal = () => {
     setSelectedPool(null);
     setSelectedToken(null);
+
+    // Clear URL params when modal closes
+    updateUrlParams({});
+
     onClose();
   };
 

@@ -98,7 +98,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         >
           {selectedNetwork ? renderNetworkOption(selectedNetwork) : "Select Network"}
         </MenuButton>
-        <MenuList width="100%">
+        <MenuList width="100%" zIndex={1500}>
           {networkOptions.map(network => (
             <MenuItem
               key={network.chainId + network.apiID}

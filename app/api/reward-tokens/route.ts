@@ -57,6 +57,15 @@ export async function GET(request: NextRequest) {
           dynamicData {
             swapFee
             poolId
+            totalLiquidity
+          }
+          allTokens {
+            address
+            symbol
+            name
+            decimals
+            isNested
+            isPhantomBpt
           }
         }
       }
@@ -125,6 +134,8 @@ export async function GET(request: NextRequest) {
             gaugeAddress,
             version: `v${pool.protocolVersion}`,
             rewardTokens,
+            poolTokens: pool.allTokens || [],
+            totalLiquidity: pool.dynamicData?.totalLiquidity || "0",
           };
         } catch (gaugeError) {
           console.error(`Error fetching gauge data for ${gaugeAddress}:`, gaugeError);
@@ -136,6 +147,8 @@ export async function GET(request: NextRequest) {
             gaugeAddress,
             version: `v${pool.protocolVersion}`,
             rewardTokens: [],
+            poolTokens: pool.allTokens || [],
+            totalLiquidity: pool.dynamicData?.totalLiquidity || "0",
           };
         }
       }),

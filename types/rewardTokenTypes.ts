@@ -9,6 +9,15 @@ export interface RewardToken {
   last_update: string;
 }
 
+export interface PoolToken {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  isNested: boolean;
+  isPhantomBpt: boolean;
+}
+
 export interface RewardTokenData {
   poolAddress: string;
   poolId: string;
@@ -17,6 +26,8 @@ export interface RewardTokenData {
   gaugeAddress: string;
   version: string;
   rewardTokens: RewardToken[];
+  poolTokens?: PoolToken[];
+  totalLiquidity?: string;
 }
 
 export interface RewardTokensResponse {
