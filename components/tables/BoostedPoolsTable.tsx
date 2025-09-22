@@ -11,16 +11,16 @@ import {
   VStack,
   Card,
 } from "@chakra-ui/react";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
-import { BufferTableTooltip } from "../liquidityBuffers/BufferTableTooltip";
+import { BufferTableTooltip } from "../boostedPools/BufferTableTooltip";
 import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 import { PaginatedTable } from "../../lib/shared/components/PaginatedTable";
 
-interface BufferTableProps {
+interface BoostedPoolsTableProps {
   pools: PoolWithBufferData[];
   pageSize: number;
   currentPage: number;
@@ -30,7 +30,7 @@ interface BufferTableProps {
   onPageSizeChange: (size: number) => void;
 }
 
-const BufferTableHeader = () => (
+const BoostedPoolsTableHeader = () => (
   <Grid
     templateColumns={{ base: "40px 3fr 1.2fr 1.2fr 0.8fr", md: "40px 3fr 1.2fr 1.2fr 0.8fr" }}
     gap={{ base: "xxs", xl: "lg" }}
@@ -61,7 +61,7 @@ const BufferTableHeader = () => (
   </Grid>
 );
 
-const BufferTableRow = ({
+const BoostedPoolsTableRow = ({
   item: pool,
   index,
   itemsLength,
@@ -156,7 +156,7 @@ const BufferTableRow = ({
   );
 };
 
-export const BufferTable = ({
+export const BoostedPoolsTable = ({
   pools,
   pageSize,
   currentPage,
@@ -164,7 +164,7 @@ export const BufferTable = ({
   loading,
   onPageChange,
   onPageSizeChange,
-}: BufferTableProps) => {
+}: BoostedPoolsTableProps) => {
   const showPagination = totalPages > 1;
 
   return (
@@ -180,9 +180,9 @@ export const BufferTable = ({
       <PaginatedTable
         items={pools}
         loading={loading}
-        renderTableHeader={BufferTableHeader}
+        renderTableHeader={BoostedPoolsTableHeader}
         renderTableRow={({ item, index }) => (
-          <BufferTableRow item={item} index={index} itemsLength={pools.length} />
+          <BoostedPoolsTableRow item={item} index={index} itemsLength={pools.length} />
         )}
         showPagination={showPagination}
         paginationProps={{

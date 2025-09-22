@@ -10,7 +10,6 @@ import {
   Image,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import { FaRegChartBar } from "react-icons/fa6";
 import { SiChainlink } from "react-icons/si";
 import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import {
@@ -21,6 +20,9 @@ import {
   TbCoins,
   TbChartCovariate,
 } from "react-icons/tb";
+import { FaChartPie } from "react-icons/fa";
+import { MdOutlineSsidChart } from "react-icons/md";
+import { BiAlignMiddle } from "react-icons/bi";
 import { PiRocketLaunchBold } from "react-icons/pi";
 import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
@@ -64,10 +66,40 @@ const LinkItems = [
     ],
   },
   {
+    name: "Pools",
+    icon: FaChartPie,
+    children: [
+      {
+        name: "Boosted Pools",
+        icon: MdOutlineSsidChart,
+        target: "/boosted-pools",
+        description: "View boosted pools with buffer utilization",
+      },
+      {
+        name: "ReCLAMM Pools",
+        icon: TbChartCovariate,
+        target: "/reclamm",
+        description: "View RECLAMM pools",
+      },
+      {
+        name: "Hooks",
+        icon: TbFishHook,
+        target: "/hooks",
+        description: "View pools with hooks connected",
+      },
+    ],
+  },
+  {
     name: "Pool Creator (v2)",
     icon: MdPool,
     target: "/pool-creator-v2",
     description: "Create weighted and composable stable pools for Balancer v2",
+  },
+  {
+    name: "Liquidity Buffers",
+    icon: BiAlignMiddle,
+    target: "/liquidity-buffers",
+    description: "View liquidity buffer allocations",
   },
   {
     name: "Gauge Creator",
@@ -88,28 +120,10 @@ const LinkItems = [
     description: "View Chainlink Automation Upkeeps",
   },
   {
-    name: "Liquidity Buffers",
-    icon: FaRegChartBar,
-    target: "/liquidity-buffers",
-    description: "View liquidity buffer allocations",
-  },
-  {
     name: "Gauge Monitoring",
     icon: TbHeartRateMonitor,
     target: "/gauge-kill-list",
     description: "Check for gauge kill-list",
-  },
-  {
-    name: "Hooks",
-    icon: TbFishHook,
-    target: "/hooks",
-    description: "View and configure hooks",
-  },
-  {
-    name: "ReCLAMM Pools",
-    icon: TbChartCovariate,
-    target: "/reclamm",
-    description: "View RECLAMM pools",
   },
   {
     name: "Emergency",

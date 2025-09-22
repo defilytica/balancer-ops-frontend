@@ -13,10 +13,10 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { Pagination } from "../../lib/shared/components/Pagination";
-import { PoolWithBufferData } from "@/lib/hooks/useBufferData";
-import { PoolCard } from "../liquidityBuffers/PoolCard";
+import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
+import { PoolCard } from "../boostedPools/PoolCard";
 
-interface BufferGridProps extends SimpleGridProps {
+interface BoostedPoolsGridProps extends SimpleGridProps {
   items: PoolWithBufferData[];
   loading: boolean;
   currentPage: number;
@@ -29,7 +29,7 @@ interface BufferGridProps extends SimpleGridProps {
   paginationStyles?: StyleProps;
 }
 
-export function BufferGrid({
+export function BoostedPoolsGrid({
   items,
   loading,
   currentPage,
@@ -41,7 +41,7 @@ export function BufferGrid({
   loadingLength = 6,
   paginationStyles,
   ...simpleGridProps
-}: BufferGridProps) {
+}: BoostedPoolsGridProps) {
   const [previousPageCount, setPreviousPageCount] = useState(0);
 
   useEffect(() => {

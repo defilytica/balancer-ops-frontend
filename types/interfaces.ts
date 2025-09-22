@@ -145,6 +145,20 @@ export interface TokenListToken {
   isErc4626?: boolean;
   underlyingTokenAddress?: string;
   isManual?: boolean;
+  chain?: string;
+}
+
+export interface BufferData {
+  isInitialized?: boolean;
+  balancePercentage?: number;
+  underlyingBalance?: bigint;
+  wrappedBalance?: bigint;
+  loading: boolean;
+  error?: boolean;
+}
+
+export interface TokenWithBufferData extends TokenListToken {
+  bufferData: BufferData;
 }
 
 export interface TokenWithBalance extends PoolToken {

@@ -1,18 +1,9 @@
-import { Suspense } from "react";
+import React from "react";
 import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
-import LiquidityBuffersClientWrapper from "./LiquidityBuffersClientWrapper";
+import LiquidityBuffersModule from "@/components/LiquidityBuffersModule";
 
-export default async function LiquidityBufferPage() {
-  //Fetch address book data
+export default async function LiquidityBuffersPage() {
   const addressBook = await fetchAddressBook();
 
-  return (
-    <Suspense
-      fallback={
-        <div style={{ width: "100%", height: "500px", backgroundColor: "#1a202c" }}>Loading...</div>
-      }
-    >
-      <LiquidityBuffersClientWrapper addressBook={addressBook} />
-    </Suspense>
-  );
+  return <LiquidityBuffersModule addressBook={addressBook} />;
 }

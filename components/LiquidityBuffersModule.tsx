@@ -2,9 +2,11 @@
 
 import { useQuery } from "@apollo/client";
 import {
-  GetV3PoolsDocument,
-  GetV3PoolsQuery,
+  GetTokensDocument,
+  GetTokensQuery,
+  GetTokensQueryVariables,
   GqlChain,
+  GqlTokenType,
 } from "@/lib/services/apollo/generated/graphql";
 import {
   Box,
@@ -15,90 +17,80 @@ import {
   Spinner,
   Heading,
   Flex,
-  HStack,
-  Switch,
-  FormControl,
-  FormLabel,
-  Divider,
-  useColorModeValue,
+  Container,
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
-import { MdFilterListAlt } from "react-icons/md";
-import { BufferTable } from "@/components/tables/BufferTable";
-import { BufferGrid } from "@/components/tables/BufferGrid";
-import { NetworkSelector } from "@/components/NetworkSelector";
-import { ViewSwitcher, ViewMode } from "@/components/liquidityBuffers/ViewSwitcher";
+import { LiquidityBuffersTable } from "@/components/tables/LiquidityBuffersTable";
+import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
+import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
-import { AddressBook, Pool } from "@/types/interfaces";
+import { AddressBook, TokenListToken } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
-import { useBufferData, PoolWithBufferData } from "@/lib/hooks/useBufferData";
-import GlobeLogo from "@/public/imgs/globe.svg";
-import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
+import { useTokenBufferData } from "@/lib/hooks/useTokenBufferData";
 
 interface LiquidityBuffersModuleProps {
   addressBook: AddressBook;
 }
 
 export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffersModuleProps) {
-  const [selectedNetwork, setSelectedNetwork] = useState("ALL");
-  const [showOnlyEmptyBuffers, setShowOnlyEmptyBuffers] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.TABLE);
+  const [selectedNetwork, setSelectedNetwork] = useState("MAINNET");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [showOnlyEmpty, setShowOnlyEmpty] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const {
-    loading: loadingPools,
-    error,
-    data,
-  } = useQuery<GetV3PoolsQuery>(GetV3PoolsDocument, {
-    variables: {
-      chainIn: selectedNetwork !== "ALL" ? [selectedNetwork] : undefined,
-      chainNotIn: ["SEPOLIA" as GqlChain],
-      tagIn: ["BOOSTED"],
+  const { loading, error, data } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
+    GetTokensDocument,
+    {
+      variables: {
+        chainIn: [selectedNetwork as GqlChain],
+        typeIn: [GqlTokenType.Erc4626],
+      },
+      skip: !selectedNetwork,
+      context: {
+        uri:
+          selectedNetwork === "SEPOLIA"
+            ? "https://test-api-v3.balancer.fi/"
+            : "https://api-v3.balancer.fi/",
+      },
     },
-  });
-
-  const allPools = (data?.poolGetPools || []) as unknown as Pool[];
-
-  // Calculate pagination indices
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedPools = allPools.slice(startIndex, endIndex);
-
-  // Only fetch buffer data for paginated pools when filter is off
-  // When empty buffers filter is on, we need all pools' buffer data
-  const { pools: poolsWithBufferBalances, loading: loadingBuffers } = useBufferData(
-    showOnlyEmptyBuffers ? allPools : paginatedPools,
   );
 
-  const filteredPools = useMemo(() => {
-    if (!showOnlyEmptyBuffers) return poolsWithBufferBalances;
+  const allTokens = (data?.tokenGetTokens || []) as unknown as TokenListToken[];
 
-    return poolsWithBufferBalances.filter((pool: PoolWithBufferData) => {
-      // Show pool if a "real" ERC4626 token has empty buffer
-      return pool.poolTokens.some(token => {
-        if (!isRealErc4626Token(token)) return false;
+  const { tokensWithBufferData, isBufferDataLoading } = useTokenBufferData(allTokens);
 
-        const buffer = pool.buffers?.[token.address];
-        if (!buffer || buffer.state?.isError) return false;
-        return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
+  const filteredTokens = useMemo(() => {
+    let filtered = tokensWithBufferData;
+
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        token =>
+          token.name?.toLowerCase().includes(searchLower) ||
+          token.symbol?.toLowerCase().includes(searchLower) ||
+          token.address?.toLowerCase().includes(searchLower),
+      );
+    }
+
+    if (showOnlyEmpty) {
+      filtered = filtered.filter(token => {
+        const { bufferData } = token;
+        return !bufferData.loading && !bufferData.error && bufferData.isInitialized === false;
       });
-    });
-  }, [poolsWithBufferBalances, showOnlyEmptyBuffers]);
+    }
 
-  // When empty buffersfilter is on, we need to paginate the filtered results
-  const displayedPools = useMemo(() => {
-    if (!showOnlyEmptyBuffers) return filteredPools;
-    return filteredPools.slice(startIndex, endIndex);
-  }, [filteredPools, showOnlyEmptyBuffers, startIndex, endIndex]);
+    return filtered;
+  }, [tokensWithBufferData, showOnlyEmpty, searchTerm]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
 
   const totalPages = useMemo(() => {
-    if (showOnlyEmptyBuffers) {
-      return Math.ceil(filteredPools.length / pageSize);
-    }
-    return Math.ceil(allPools.length / pageSize);
-  }, [allPools.length, filteredPools.length, showOnlyEmptyBuffers, pageSize]);
+    return Math.ceil(filteredTokens.length / pageSize);
+  }, [filteredTokens.length, pageSize]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -106,73 +98,44 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
-    setCurrentPage(1); // Reset to first page when changing page size
+    setCurrentPage(1);
   };
 
-  const networkOptionsV3WithAll = useMemo(() => {
+  const networkOptionsV3 = useMemo(() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     const filteredNetworks = NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
 
-    return [
-      {
-        label: "All networks",
-        apiID: "ALL",
-        chainId: "",
-      },
-      ...filteredNetworks,
-    ];
+    return filteredNetworks;
   }, [addressBook]);
-
-  const networksWithAll = {
-    ...networks,
-    all: {
-      logo: GlobeLogo.src,
-      rpc: "",
-      explorer: "",
-      chainId: "",
-    },
-  };
-
-  const handleFilterToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setShowOnlyEmptyBuffers(e.target.checked);
-  };
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedNetwork(e.target.value);
-    setCurrentPage(1); // Reset to first page when changing network
+    setCurrentPage(1);
   };
 
+  const handleShowOnlyEmptyChange = (value: boolean) => {
+    setShowOnlyEmpty(value);
+    setCurrentPage(1);
+  };
+
+
   const renderContent = () => {
-    if (loadingPools) {
+    if (loading) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="whiteAlpha.50">
             <Spinner size="lg" color="gray.400" />
           </Box>
           <Text fontSize="m" color="gray.500">
-            Loading pools...
+            Loading tokens...
           </Text>
         </Center>
       );
     }
 
-    // Special loading state for empty buffers filter as it needs to load all buffers for all pools
-    if (showOnlyEmptyBuffers && loadingBuffers) {
-      return (
-        <Center h="50vh" flexDir="column" gap={4} w="full">
-          <Box p={4} w="16" h="16" rounded="full" bg="whiteAlpha.50">
-            <Spinner size="lg" color="gray.400" />
-          </Box>
-          <Text fontSize="m" color="gray.500">
-            Looking for empty buffers...
-          </Text>
-        </Center>
-      );
-    }
-
-    if (error || !data?.poolGetPools) {
+    if (error || !data?.tokenGetTokens) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="red.400" opacity={0.2}>
@@ -180,7 +143,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           </Box>
           <VStack spacing={1}>
             <Text fontSize="lg" fontWeight="medium">
-              Failed to load pools
+              Failed to load tokens
             </Text>
             <Text fontSize="m" color="gray.400">
               Please check your connection and try again
@@ -190,7 +153,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
       );
     }
 
-    if (displayedPools.length === 0) {
+    if (paginatedTokens.length === 0 && !isBufferDataLoading) {
       return (
         <Center h="50vh" flexDir="column" gap={4}>
           <Box p={4} w="16" h="16" rounded="full" bg="gray.400" opacity={0.2}>
@@ -198,7 +161,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           </Box>
           <VStack spacing={1}>
             <Text fontSize="lg" fontWeight="medium">
-              No pools found
+              No tokens found
             </Text>
             <Text fontSize="m" color="gray.400">
               Try adjusting your filters
@@ -210,39 +173,26 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
 
     return (
       <VStack spacing={6} align="stretch">
-        {viewMode === ViewMode.CARD ? (
-          <BufferGrid
-            items={displayedPools}
-            pageSize={pageSize}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadingLength={pageSize}
-            loading={loadingBuffers}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        ) : (
-          <BufferTable
-            pools={displayedPools}
-            pageSize={pageSize}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loading={loadingBuffers}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        )}
+        <LiquidityBuffersTable
+          tokens={paginatedTokens}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loading={isBufferDataLoading}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </VStack>
     );
   };
 
   return (
-    <>
+    <Container maxW="container.xl">
       <Flex
         direction={{ base: "column", md: "row" }}
-        align={{ base: "flex-start", md: "center" }}
+        align={{ base: "flex-start", md: "flex-end" }}
         justify="space-between"
-        mb={2}
+        mb={6}
         wrap="wrap"
         gap={4}
       >
@@ -250,34 +200,34 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
           <Heading as="h2" size="lg" variant="special" mb={2}>
             Liquidity Buffers
           </Heading>
-          <Text>Liquidity buffer allocation visualization in Balancer v3 boosted pools.</Text>
+          <Text>Manage liquidity buffers for tokens in Balancer v3.</Text>
         </Box>
 
-        <Flex direction="column" p={2} gap={2} borderRadius="xl" borderWidth="1px" minW="250px">
-          <NetworkSelector
-            networks={networksWithAll}
-            networkOptions={networkOptionsV3WithAll}
-            selectedNetwork={selectedNetwork}
-            handleNetworkChange={handleNetworkChange}
-          />
-          <Divider />
-          <FormControl display="flex" alignItems="center" justifyContent="space-between" px={1}>
-            <HStack spacing={2}>
-              <Icon as={MdFilterListAlt} color={useColorModeValue("gray.600", "gray.200")} />
-              <FormLabel mb="0" fontSize="md">
-                Empty buffers only
-              </FormLabel>
-            </HStack>
-            <Switch isChecked={showOnlyEmptyBuffers} onChange={handleFilterToggle} size="md" />
-          </FormControl>
+        <Flex gap={4} align="center" minW="0">
+          <Box minW="300px">
+            <SearchInput
+              search={searchTerm}
+              setSearch={setSearchTerm}
+              placeholder="Search..."
+              ariaLabel="Search tokens"
+              autoFocus={false}
+            />
+          </Box>
+          <Box flexShrink={0}>
+            <LiquidityBuffersFilters
+              selectedNetwork={selectedNetwork}
+              onNetworkChange={handleNetworkChange}
+              networkOptions={networkOptionsV3}
+              networks={networks}
+              addressBook={addressBook}
+              showOnlyEmpty={showOnlyEmpty}
+              onShowOnlyEmptyChange={handleShowOnlyEmptyChange}
+            />
+          </Box>
         </Flex>
       </Flex>
 
-      <Flex justify="flex-start" mb={4}>
-        <ViewSwitcher viewMode={viewMode} onChange={setViewMode} />
-      </Flex>
-
       {renderContent()}
-    </>
+    </Container>
   );
 }

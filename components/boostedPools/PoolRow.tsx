@@ -27,7 +27,7 @@ import { formatUnits } from "viem";
 import { BufferCardTooltip } from "./BufferCardTooltip";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
 
-interface BufferRowProps {
+interface PoolRowProps {
   token: PoolToken;
   isLastToken: boolean;
   buffer?: {
@@ -41,7 +41,7 @@ interface BufferRowProps {
   };
 }
 
-export const BufferRow = ({ token, isLastToken, buffer }: BufferRowProps) => {
+export const PoolRow = ({ token, isLastToken, buffer }: PoolRowProps) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
   const { isLoading, isError } = buffer?.state || {};
 

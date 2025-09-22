@@ -24,7 +24,7 @@ export interface BufferDataResult {
   loading: boolean;
 }
 
-export function useBufferData(pools: Pool[] = []): BufferDataResult {
+export function usePoolBufferData(pools: Pool[] = []): BufferDataResult {
   // Query for buffer balances
   const bufferBalanceQueries = useQueries({
     queries: pools.flatMap(pool =>
