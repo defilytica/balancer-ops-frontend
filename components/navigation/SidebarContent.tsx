@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Text,
@@ -20,6 +20,7 @@ import {
   TbCoins,
   TbChartCovariate,
 } from "react-icons/tb";
+import { GiRadarSweep } from "react-icons/gi";
 import { FaChartPie } from "react-icons/fa";
 import { MdOutlineSsidChart } from "react-icons/md";
 import { BiAlignMiddle } from "react-icons/bi";
@@ -42,58 +43,70 @@ const LinkItems = [
     description: "Choose from a variety of options to create Balancer DAO Payloads",
   },
   {
-    name: "Rewards Injector",
-    icon: RiContractLine,
-    children: [
-      {
-        name: "Rewards Injector",
-        icon: RiContractLine,
-        target: "/rewards-injector",
-        description: "View and Configure Gauge Rewards injectors",
-      },
-      {
-        name: "Injector Status",
-        icon: RiAlertLine,
-        target: "/rewards-injector/status",
-        description: "Check Injector status",
-      },
-      {
-        name: "Deploy New Injector",
-        icon: PiRocketLaunchBold,
-        target: "/injector-creator-v2",
-        description: "Deploy a new rewards injector",
-      },
-    ],
-  },
-  {
     name: "Pools",
     icon: FaChartPie,
     children: [
       {
-        name: "Boosted Pools",
+        name: "Boosted",
         icon: MdOutlineSsidChart,
         target: "/boosted-pools",
         description: "View boosted pools with buffer utilization",
       },
       {
-        name: "ReCLAMM Pools",
+        name: "ReCLAMM",
         icon: TbChartCovariate,
         target: "/reclamm",
         description: "View RECLAMM pools",
       },
       {
-        name: "Hooks",
-        icon: TbFishHook,
-        target: "/hooks",
-        description: "View pools with hooks connected",
+        name: "Pool Creator (v2)",
+        icon: MdPool,
+        target: "/pool-creator-v2",
+        description: "Create weighted and composable stable pools for Balancer v2",
       },
     ],
   },
   {
-    name: "Pool Creator (v2)",
-    icon: MdPool,
-    target: "/pool-creator-v2",
-    description: "Create weighted and composable stable pools for Balancer v2",
+    name: "Hooks",
+    icon: TbFishHook,
+    target: "/hooks",
+    description: "View pools with hooks connected",
+  },
+  {
+    name: "Incentive Management",
+    icon: RiContractLine,
+    children: [
+      {
+        name: "Gauge Creator",
+        icon: TbGaugeFilled,
+        target: "/gauge-creator",
+        description: "Create a staking gauge for Balancer pools",
+      },
+      {
+        name: "Rewards Injector Viewer",
+        icon: RiContractLine,
+        target: "/rewards-injector",
+        description: "View and Configure Gauge Rewards injectors",
+      },
+      {
+        name: "Rewards Status",
+        icon: RiAlertLine,
+        target: "/rewards-injector/status",
+        description: "Check Injector status",
+      },
+      {
+        name: "Injector Deployer",
+        icon: PiRocketLaunchBold,
+        target: "/injector-creator-v2",
+        description: "Deploy a new rewards injector",
+      },
+      {
+        name: "Reward Tokens",
+        icon: TbCoins,
+        target: "/reward-tokens",
+        description: "Manage reward tokens on gauges",
+      },
+    ],
   },
   {
     name: "Liquidity Buffers",
@@ -102,28 +115,22 @@ const LinkItems = [
     description: "View liquidity buffer allocations",
   },
   {
-    name: "Gauge Creator",
-    icon: TbGaugeFilled,
-    target: "/gauge-creator",
-    description: "Create a staking gauge for Balancer pools",
-  },
-  {
-    name: "Reward Tokens",
-    icon: TbCoins,
-    target: "/reward-tokens",
-    description: "Manage reward tokens on gauges",
-  },
-  {
-    name: "Chainlink Automation",
-    icon: SiChainlink,
-    target: "/chainlink-automation",
-    description: "View Chainlink Automation Upkeeps",
-  },
-  {
-    name: "Gauge Monitoring",
-    icon: TbHeartRateMonitor,
-    target: "/gauge-kill-list",
-    description: "Check for gauge kill-list",
+    name: "Monitoring",
+    icon: GiRadarSweep,
+    children: [
+      {
+        name: "Chainlink Automation",
+        icon: SiChainlink,
+        target: "/chainlink-automation",
+        description: "View Chainlink Automation Upkeeps",
+      },
+      {
+        name: "Gauge Monitoring",
+        icon: TbHeartRateMonitor,
+        target: "/gauge-kill-list",
+        description: "Check for gauge kill-list",
+      },
+    ],
   },
   {
     name: "Emergency",
