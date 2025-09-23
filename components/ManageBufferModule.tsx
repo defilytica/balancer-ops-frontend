@@ -67,6 +67,7 @@ import { BufferOperation } from "@/types/interfaces";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
+import { useSearchParams } from "next/navigation";
 import { ethers } from "ethers";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import { ERC20 } from "@/abi/erc20";
@@ -83,6 +84,7 @@ enum ExecutionMode {
 }
 
 export default function ManageBufferModule({ addressBook }: ManageBufferModuleProps) {
+  const searchParams = useSearchParams();
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedToken, setSelectedToken] = useState<TokenListToken | undefined>();
@@ -101,6 +103,31 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
 
+  // Extract token address from URL for efficient querying
+  const tokenParamFromUrl = useMemo(() => {
+    const tokenParam = searchParams.get("token");
+    return tokenParam && isAddress(tokenParam) ? tokenParam : null;
+  }, [searchParams]);
+
+  // Query for specific token from URL parameter
+  const { data: urlTokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
+    GetTokensDocument,
+    {
+      variables: {
+        chainIn: [selectedNetwork],
+        tokensIn: tokenParamFromUrl ? [tokenParamFromUrl] : [],
+      },
+      skip: !selectedNetwork || !tokenParamFromUrl,
+      context: {
+        uri:
+          selectedNetwork === "SEPOLIA"
+            ? "https://test-api-v3.balancer.fi/"
+            : "https://api-v3.balancer.fi/",
+      },
+    },
+  );
+
+  // Query for underlying token data (when we have a selected token)
   const { data: tokensData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
     GetTokensDocument,
     {
@@ -136,6 +163,30 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         network.apiID.toLowerCase() === "sonic",
     );
   }, [addressBook]);
+
+  // Handle URL parameters for network
+  useEffect(() => {
+    const networkParam = searchParams.get("network");
+
+    if (networkParam && !selectedNetwork) {
+      const networkOption = networkOptionsWithV3.find(
+        n => n.apiID.toLowerCase() === networkParam.toLowerCase(),
+      );
+      if (networkOption) {
+        setSelectedNetwork(networkOption.apiID);
+      }
+    }
+  }, [searchParams, selectedNetwork, networkOptionsWithV3]);
+
+  // Separate effect for token selection (waits for data to load)
+  useEffect(() => {
+    if (tokenParamFromUrl && !selectedToken && selectedNetwork && urlTokenData?.tokenGetTokens) {
+      if (urlTokenData.tokenGetTokens.length > 0) {
+        const apiToken = urlTokenData.tokenGetTokens[0];
+        handleTokenSelect(apiToken);
+      }
+    }
+  }, [tokenParamFromUrl, selectedToken, selectedNetwork, urlTokenData]);
 
   // Fetch buffer balance
   const {
