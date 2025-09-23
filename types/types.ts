@@ -28,7 +28,8 @@ export type GaugeNetworkId =
   | "base"
   | "gnosis"
   | "fraxtal"
-  | "mode";
+  | "mode"
+  | "plasma";
 
 // Permissions types for action interfaces for reducer
 export type PermissionsAction =

@@ -26,6 +26,7 @@ import {
   sonic,
 } from "wagmi/chains";
 import { hyperEvm } from "@/lib/modules/chains/custom/hyperevm";
+import { plasma } from "@/lib/modules/chains/custom/plasma";
 import { http } from "viem";
 import MainnetLogo from "@/public/imgs/mainnet.svg";
 import PolygonLogo from "@/public/imgs/polygon.svg";
@@ -40,6 +41,7 @@ import fraxtalLogo from "@/public/imgs/fraxtal.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
 import modeLogo from "@/public/imgs/mode.svg";
 import hyperEVMILogo from "@/public/imgs/hyperevm.svg";
+import plasmaLogo from "@/public/imgs/plasma.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
 
@@ -97,6 +99,10 @@ const customChains = {
     ...hyperEvm,
     iconUrl: hyperEVMILogo.src,
   },
+  plasma: {
+    ...plasma,
+    iconUrl: plasmaLogo.src,
+  },
 };
 
 // Create connectors once at module level for stable references (important for Safe apps)
@@ -137,6 +143,7 @@ export const wagmiConfig: Config = createConfig({
     customChains.fraxtal,
     customChains.sonic,
     customChains.hyperevm,
+    customChains.plasma,
   ],
   transports: {
     [mainnet.id]: http("https://eth.drpc.org"),
@@ -152,6 +159,7 @@ export const wagmiConfig: Config = createConfig({
     [fraxtal.id]: http("https://fraxtal.drpc.org"),
     [sonic.id]: http("https://sonic-rpc.publicnode.com"),
     [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
+    [plasma.id]: http("https://plasma.drpc.org"),
   },
   connectors,
   ssr: true,
