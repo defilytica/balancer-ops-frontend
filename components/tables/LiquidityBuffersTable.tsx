@@ -45,8 +45,8 @@ interface LiquidityBuffersTableProps {
 const LiquidityBuffersTableHeader = () => (
   <Grid
     templateColumns={{
-      base: "40px 3fr 1fr 1fr 1fr 1fr 120px",
-      md: "40px 3fr 1fr 1fr 1fr 1fr 120px",
+      base: "40px 3fr 1fr 1fr 1fr 1fr 90px",
+      md: "40px 3fr 1fr 1fr 1fr 1fr 90px",
     }}
     gap={{ base: "xxs", xl: "lg" }}
     px={{ base: 4, md: 8 }}
@@ -144,8 +144,8 @@ const LiquidityBuffersTableRow = ({
     >
       <Grid
         templateColumns={{
-          base: "40px 3fr 1fr 1fr 1fr 1fr 120px",
-          md: "40px 3fr 1fr 1fr 1fr 1fr 120px",
+          base: "40px 3fr 1fr 1fr 1fr 1fr 90px",
+          md: "40px 3fr 1fr 1fr 1fr 1fr 90px",
         }}
         gap={{ base: 4, md: 6 }}
         alignItems="center"
@@ -376,7 +376,6 @@ export const LiquidityBuffersTable = ({
       left={{ base: "-4px", sm: "0" }}
       p={{ base: "0", sm: "0" }}
       position="relative"
-      pr={{ base: "lg", sm: "lg", md: "lg", lg: "0" }}
       w={{ base: "100vw", lg: "full" }}
       overflow="visible"
     >
