@@ -229,40 +229,38 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
   return (
     <Box w={{ base: "full", md: 72 }} pos="fixed" h="full" {...rest}>
-      <Flex direction="column" h="full" justifyContent="space-between">
-        <Flex direction="column">
-          <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-            <Flex alignItems="center">
-              <Box boxSize={30} marginRight={2}>
-                <ChakraLink
-                  as={NextLink}
-                  href="/" // Explicit href for the logo
-                  style={{ textDecoration: "none" }}
-                  _focus={{ boxShadow: "none" }}
-                >
-                  <BalancerLogo />
-                </ChakraLink>
-              </Box>
-              <Box>
-                <ChakraLink
-                  as={NextLink}
-                  href="/" // Explicit href for the heading
-                  style={{ textDecoration: "none" }}
-                  _focus={{ boxShadow: "none" }}
-                >
-                  <Heading as="h5" size="md" variant="special">
-                    Ops Tooling
-                  </Heading>
-                </ChakraLink>
-              </Box>
-            </Flex>
-            <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
+      <Flex direction="column" h="full">
+        <Flex h="20" alignItems="center" mx="8" justifyContent="space-between" flexShrink={0}>
+          <Flex alignItems="center">
+            <Box boxSize={30} marginRight={2}>
+              <ChakraLink
+                as={NextLink}
+                href="/" // Explicit href for the logo
+                style={{ textDecoration: "none" }}
+                _focus={{ boxShadow: "none" }}
+              >
+                <BalancerLogo />
+              </ChakraLink>
+            </Box>
+            <Box>
+              <ChakraLink
+                as={NextLink}
+                href="/" // Explicit href for the heading
+                style={{ textDecoration: "none" }}
+                _focus={{ boxShadow: "none" }}
+              >
+                <Heading as="h5" size="md" variant="special">
+                  Ops Tooling
+                </Heading>
+              </ChakraLink>
+            </Box>
           </Flex>
-
-          <Box flex="1" overflowY="auto">
-            {LinkItems.map(item => renderNavItem(item))}
-          </Box>
+          <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
         </Flex>
+
+        <Box flex="1" overflowY="auto" px="4" minH="0">
+          {LinkItems.map(item => renderNavItem(item))}
+        </Box>
 
         <Flex
           direction="column"
@@ -272,6 +270,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           pb="16"
           gap="2"
           display={{ base: "none", sm: "flex" }}
+          flexShrink={0}
         >
           <DRPCBanner />
           <DefilyticaBanner />

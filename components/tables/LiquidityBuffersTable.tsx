@@ -294,6 +294,17 @@ const LiquidityBuffersTableRow = ({
                           {formatBufferValue(bufferData.underlyingBalance, token.decimals)}
                         </Text>
                       </HStack>
+                      <HStack justify="space-between" borderTop="1px" borderColor="gray.600" pt={2}>
+                        <Text fontSize="sm" color="gray.400" fontWeight="bold">
+                          Total
+                        </Text>
+                        <Text fontSize="sm" fontWeight="bold">
+                          {formatBufferValue(
+                            bufferData.wrappedBalance + bufferData.underlyingBalance,
+                            token.decimals,
+                          )}
+                        </Text>
+                      </HStack>
                     </Stack>
                   </VStack>
                 </Box>
