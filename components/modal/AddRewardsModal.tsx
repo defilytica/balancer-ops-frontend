@@ -31,7 +31,12 @@ import {
   VStack,
   Grid,
   GridItem,
+  IconButton,
+  Tooltip,
+  useClipboard,
+  useToast,
 } from "@chakra-ui/react";
+import { CopyIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import {
   useAccount,
   useReadContract,
@@ -71,6 +76,33 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
 
   const { address } = useAccount();
   const chainId = useChainId();
+  const toast = useToast();
+
+  // Generate share link for this specific modal
+  const getShareLink = () => {
+    if (!selectedNetwork || !selectedPool || !selectedToken) return "";
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const params = new URLSearchParams({
+      network: selectedNetwork,
+      gauge: selectedPool.gaugeAddress,
+      token: selectedToken.address,
+    });
+    return `${baseUrl}/reward-tokens?${params.toString()}`;
+  };
+
+  const shareLink = getShareLink();
+  const { onCopy: onCopyShareLink, hasCopied: hasShareLinkCopied } = useClipboard(shareLink);
+
+  const handleCopyShareLink = () => {
+    onCopyShareLink();
+    toast({
+      title: "Link copied!",
+      description: "Share link has been copied to clipboard",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
 
   // Helper function to get expected chain ID for network
   const getExpectedChainId = (network: string) => {
@@ -271,7 +303,33 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
     <Modal isOpen={isOpen} onClose={handleClose} size={{ base: "lg", md: "2xl", lg: "4xl" }}>
       <ModalOverlay />
       <ModalContent maxW={{ base: "90vw", md: "2xl", lg: "4xl" }}>
-        <ModalHeader>Add Rewards</ModalHeader>
+        <ModalHeader>
+          <HStack justify="space-between" pr={8}>
+            <Text>Add Rewards</Text>
+            <HStack spacing={2}>
+              <Tooltip label={hasShareLinkCopied ? "Copied!" : "Copy share link"} hasArrow>
+                <IconButton
+                  aria-label="Copy share link"
+                  icon={<CopyIcon />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyShareLink}
+                  color={hasShareLinkCopied ? "green.500" : "gray.500"}
+                />
+              </Tooltip>
+              <Tooltip label="Open in new tab" hasArrow>
+                <IconButton
+                  aria-label="Open share link"
+                  icon={<ExternalLinkIcon />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => window.open(shareLink, "_blank")}
+                  color="gray.500"
+                />
+              </Tooltip>
+            </HStack>
+          </HStack>
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={6} align="start">

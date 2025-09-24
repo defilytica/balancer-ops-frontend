@@ -1,8 +1,19 @@
 "use client";
 
-import React from "react";
-import { Box, Heading, Text } from "@chakra-ui/react";
+import React, { Suspense } from "react";
+import { Box, Heading, Text, Spinner, VStack } from "@chakra-ui/react";
 import RewardTokensOverview from "@/components/RewardTokensOverview";
+
+function LoadingFallback() {
+  return (
+    <Box display="flex" justifyContent="center" alignItems="center" minH="200px">
+      <VStack spacing={4}>
+        <Spinner size="xl" />
+        <Text>Loading rewards data...</Text>
+      </VStack>
+    </Box>
+  );
+}
 
 export default function RewardTokensPage() {
   return (
@@ -11,7 +22,9 @@ export default function RewardTokensPage() {
         Reward Tokens Management
       </Heading>
       <Text mb={6}>Overview of pools, gauges, and their reward tokens</Text>
-      <RewardTokensOverview />
+      <Suspense fallback={<LoadingFallback />}>
+        <RewardTokensOverview />
+      </Suspense>
     </Box>
   );
 }

@@ -22,8 +22,10 @@ import {
   Collapse,
   Flex,
   useColorModeValue,
+  Icon,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon, CopyIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { FaCircle } from "react-icons/fa";
 import { RewardTokenData } from "@/types/rewardTokenTypes";
 
 interface RewardTokensTableProps {
@@ -289,34 +291,82 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                   onClick={handleRowClick}
                 >
                   <Td>
-                    <VStack align="start" spacing={1}>
-                      <HStack spacing={2}>
-                        <Link
-                          href={poolUrl}
-                          fontWeight="semibold"
-                          fontSize="sm"
-                          color="inherit"
-                          _hover={{ opacity: 0.8 }}
-                          isExternal
-                          onClick={e => e.stopPropagation()}
-                        >
-                          {pool.poolName}
-                        </Link>
-                        {hasRewardTokens && (
-                          <Badge
-                            size="sm"
-                            colorScheme={hasActiveRewards ? "green" : "gray"}
-                            variant="subtle"
-                          >
-                            {hasActiveRewards ? "Active" : "Inactive"}
-                          </Badge>
+                    <VStack align="start" spacing={2}>
+                      <HStack>
+                        {pool.poolTokens && pool.poolTokens.length > 0 && (
+                          <>
+                            {pool.poolTokens
+                              .filter(token => !token.isNested && !token.isPhantomBpt)
+                              .slice(0, 4)
+                              .map((token, index) => (
+                                <Box
+                                  key={index}
+                                  ml={index === 0 ? 0 : "-12px"}
+                                  zIndex={10 - index}
+                                >
+                                  <Tooltip
+                                    bgColor="background.level4"
+                                    label={token.symbol}
+                                    textColor="font.primary"
+                                    placement="bottom"
+                                  >
+                                    {tokenLogos[token.address.toLowerCase()] ? (
+                                      <Avatar
+                                        src={tokenLogos[token.address.toLowerCase()]}
+                                        size="xs"
+                                        borderWidth="1px"
+                                        borderColor="background.level1"
+                                      />
+                                    ) : (
+                                      <Box display="flex">
+                                        <Icon
+                                          as={FaCircle}
+                                          boxSize="5"
+                                          borderWidth="1px"
+                                          borderColor="background.level1"
+                                        />
+                                      </Box>
+                                    )}
+                                  </Tooltip>
+                                </Box>
+                              ))}
+                            {pool.poolTokens.filter(token => !token.isNested && !token.isPhantomBpt).length > 4 && (
+                              <Text fontSize="xs" color="gray.500" ml={1}>
+                                +{pool.poolTokens.filter(token => !token.isNested && !token.isPhantomBpt).length - 4} more
+                              </Text>
+                            )}
+                          </>
                         )}
                       </HStack>
-                      <AddressCopyButton
-                        address={pool.poolAddress}
-                        displayText={`${pool.poolAddress.slice(0, 8)}...${pool.poolAddress.slice(-6)}`}
-                        explorerUrl={getExplorerUrl(pool.poolAddress)}
-                      />
+                      <VStack align="start" spacing={1}>
+                        <HStack spacing={2}>
+                          <Link
+                            href={poolUrl}
+                            fontWeight="semibold"
+                            fontSize="sm"
+                            color="inherit"
+                            _hover={{ opacity: 0.8 }}
+                            isExternal
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {pool.poolName}
+                          </Link>
+                          {hasRewardTokens && (
+                            <Badge
+                              size="sm"
+                              colorScheme={hasActiveRewards ? "green" : "gray"}
+                              variant="subtle"
+                            >
+                              {hasActiveRewards ? "Active" : "Inactive"}
+                            </Badge>
+                          )}
+                        </HStack>
+                        <AddressCopyButton
+                          address={pool.poolAddress}
+                          displayText={`${pool.poolAddress.slice(0, 8)}...${pool.poolAddress.slice(-6)}`}
+                          explorerUrl={getExplorerUrl(pool.poolAddress)}
+                        />
+                      </VStack>
                     </VStack>
                   </Td>
                   <Td>
