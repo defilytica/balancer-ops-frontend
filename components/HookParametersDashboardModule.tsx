@@ -129,7 +129,7 @@ export default function HookParametersDashboardModule({
   }, [hookTypeParam, router]);
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <Container maxW={hookType.type === "STABLE_SURGE" ? "container.2xl" : "container.xl"} py={8}>
       <Flex
         direction={{ base: "column", md: "row" }}
         align={{ base: "flex-start", md: "center" }}

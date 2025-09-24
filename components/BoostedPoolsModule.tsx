@@ -15,18 +15,12 @@ import {
   Spinner,
   Heading,
   Flex,
-  HStack,
-  Switch,
-  FormControl,
-  FormLabel,
-  Divider,
-  useColorModeValue,
+  Container,
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
-import { MdFilterListAlt } from "react-icons/md";
 import { BoostedPoolsTable } from "@/components/tables/BoostedPoolsTable";
 import { BoostedPoolsGrid } from "@/components/tables/BoostedPoolsGrid";
-import { NetworkSelector } from "@/components/NetworkSelector";
+import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
 import { ViewSwitcher, ViewMode } from "@/components/boostedPools/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
@@ -82,6 +76,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
 
         const buffer = pool.buffers?.[token.address];
         if (!buffer || buffer.state?.isError) return false;
+        if (!buffer.isInitialized) return true;
         return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
       });
     });
@@ -135,8 +130,9 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
     },
   };
 
-  const handleFilterToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setShowOnlyEmptyBuffers(e.target.checked);
+  const handleShowOnlyEmptyBuffersChange = (value: boolean) => {
+    setShowOnlyEmptyBuffers(value);
+    setCurrentPage(1); // Reset to first page when changing filter
   };
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -237,12 +233,12 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
   };
 
   return (
-    <>
+    <Container maxW="container.xl">
       <Flex
         direction={{ base: "column", md: "row" }}
-        align={{ base: "flex-start", md: "center" }}
+        align={{ base: "flex-start", md: "flex-end" }}
         justify="space-between"
-        mb={2}
+        mb={6}
         wrap="wrap"
         gap={4}
       >
@@ -253,31 +249,21 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
           <Text>Boosted pools and their liquidity buffer allocations in Balancer v3.</Text>
         </Box>
 
-        <Flex direction="column" p={2} gap={2} borderRadius="xl" borderWidth="1px" minW="250px">
-          <NetworkSelector
-            networks={networksWithAll}
-            networkOptions={networkOptionsV3WithAll}
+        <Flex gap={4} align="center">
+          <ViewSwitcher viewMode={viewMode} onChange={setViewMode} />
+          <LiquidityBuffersFilters
             selectedNetwork={selectedNetwork}
-            handleNetworkChange={handleNetworkChange}
+            onNetworkChange={handleNetworkChange}
+            networkOptions={networkOptionsV3WithAll}
+            networks={networksWithAll}
+            addressBook={addressBook}
+            showOnlyEmpty={showOnlyEmptyBuffers}
+            onShowOnlyEmptyChange={handleShowOnlyEmptyBuffersChange}
           />
-          <Divider />
-          <FormControl display="flex" alignItems="center" justifyContent="space-between" px={1}>
-            <HStack spacing={2}>
-              <Icon as={MdFilterListAlt} color={useColorModeValue("gray.600", "gray.200")} />
-              <FormLabel mb="0" fontSize="md">
-                Empty buffers only
-              </FormLabel>
-            </HStack>
-            <Switch isChecked={showOnlyEmptyBuffers} onChange={handleFilterToggle} size="md" />
-          </FormControl>
         </Flex>
       </Flex>
 
-      <Flex justify="flex-start" mb={4}>
-        <ViewSwitcher viewMode={viewMode} onChange={setViewMode} />
-      </Flex>
-
       {renderContent()}
-    </>
+    </Container>
   );
 }

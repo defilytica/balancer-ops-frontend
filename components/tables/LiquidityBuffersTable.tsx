@@ -5,6 +5,7 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Card,
   Flex,
   Grid,
@@ -21,9 +22,11 @@ import {
   Text,
   Tooltip,
   VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { Globe } from "react-feather";
+import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
+import NextLink from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { formatUnits } from "viem";
 import { formatValue } from "@/lib/utils/formatValue";
@@ -42,8 +45,8 @@ interface LiquidityBuffersTableProps {
 const LiquidityBuffersTableHeader = () => (
   <Grid
     templateColumns={{
-      base: "40px 3fr 1fr 1fr 1fr 1fr",
-      md: "40px 3fr 1fr 1fr 1fr 1fr",
+      base: "40px 3fr 1fr 1fr 1fr 1fr 90px",
+      md: "40px 3fr 1fr 1fr 1fr 1fr 90px",
     }}
     gap={{ base: "xxs", xl: "lg" }}
     px={{ base: 4, md: 8 }}
@@ -74,6 +77,9 @@ const LiquidityBuffersTableHeader = () => (
     </GridItem>
     <GridItem justifySelf="center">
       <Text fontWeight="bold">Buffer Balance</Text>
+    </GridItem>
+    <GridItem>
+      <Text fontWeight="bold">Configure</Text>
     </GridItem>
   </Grid>
 );
@@ -113,6 +119,17 @@ const LiquidityBuffersTableRow = ({
 }) => {
   const { bufferData } = token;
   const isLast = index === itemsLength - 1;
+  const configButtonColor = useColorModeValue("gray.500", "gray.400");
+  const configButtonHoverColor = useColorModeValue("gray.600", "gray.300");
+
+  const getConfigRoute = () => {
+    const network = token.chain?.toLowerCase();
+    if (bufferData.isInitialized) {
+      return `/payload-builder/manage-buffer?network=${network}&token=${token.address}`;
+    } else {
+      return `/payload-builder/initialize-buffer?network=${network}&token=${token.address}`;
+    }
+  };
   return (
     <Box
       w="full"
@@ -127,8 +144,8 @@ const LiquidityBuffersTableRow = ({
     >
       <Grid
         templateColumns={{
-          base: "40px 3fr 1fr 1fr 1fr 1fr",
-          md: "40px 3fr 1fr 1fr 1fr 1fr",
+          base: "40px 3fr 1fr 1fr 1fr 1fr 90px",
+          md: "40px 3fr 1fr 1fr 1fr 1fr 90px",
         }}
         gap={{ base: 4, md: 6 }}
         alignItems="center"
@@ -277,6 +294,17 @@ const LiquidityBuffersTableRow = ({
                           {formatBufferValue(bufferData.underlyingBalance, token.decimals)}
                         </Text>
                       </HStack>
+                      <HStack justify="space-between" borderTop="1px" borderColor="gray.600" pt={2}>
+                        <Text fontSize="sm" color="gray.400" fontWeight="bold">
+                          Total
+                        </Text>
+                        <Text fontSize="sm" fontWeight="bold">
+                          {formatBufferValue(
+                            bufferData.wrappedBalance + bufferData.underlyingBalance,
+                            token.decimals,
+                          )}
+                        </Text>
+                      </HStack>
                     </Stack>
                   </VStack>
                 </Box>
@@ -320,6 +348,23 @@ const LiquidityBuffersTableRow = ({
             </Text>
           )}
         </GridItem>
+        <GridItem>
+          <NextLink href={getConfigRoute()} onClick={e => e.stopPropagation()}>
+            <Button
+              size="xs"
+              leftIcon={<Icon as={Settings} boxSize="3" />}
+              variant="outline"
+              borderColor={configButtonColor}
+              color={configButtonColor}
+              _hover={{
+                color: configButtonHoverColor,
+                borderColor: configButtonHoverColor,
+              }}
+            >
+              {bufferData.isInitialized ? "Manage" : "Initialize"}
+            </Button>
+          </NextLink>
+        </GridItem>
       </Grid>
     </Box>
   );
@@ -342,7 +387,6 @@ export const LiquidityBuffersTable = ({
       left={{ base: "-4px", sm: "0" }}
       p={{ base: "0", sm: "0" }}
       position="relative"
-      pr={{ base: "lg", sm: "lg", md: "lg", lg: "0" }}
       w={{ base: "100vw", lg: "full" }}
       overflow="visible"
     >

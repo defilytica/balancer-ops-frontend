@@ -14,6 +14,7 @@ import {
 import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { networks } from "@/constants/constants";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
+import { formatTokenAmount } from "@/lib/utils/formatTokenAmount";
 import { BufferTableTooltip } from "../boostedPools/BufferTableTooltip";
 import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
@@ -72,6 +73,39 @@ const BoostedPoolsTableRow = ({
 }) => {
   const realErc4626Count = filterRealErc4626Tokens(pool.poolTokens).length;
 
+  const getNetworkNameForUrl = (chainName: string) => {
+    return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
+  };
+
+  const getPoolUrl = (pool: PoolWithBufferData) => {
+    const networkName = getNetworkNameForUrl(pool.chain);
+    return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
+  };
+
+  const handlePoolNameClick = () => {
+    const poolUrl = getPoolUrl(pool);
+    window.open(poolUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const calculateTokenPercentage = (
+    token: PoolWithBufferData["poolTokens"][0],
+    pool: PoolWithBufferData,
+  ) => {
+    if (!token.balanceUSD || !pool.dynamicData?.totalLiquidity) {
+      return "0.0";
+    }
+
+    const tokenUSDValue = parseFloat(token.balanceUSD);
+    const totalLiquidity = parseFloat(pool.dynamicData.totalLiquidity);
+
+    if (totalLiquidity === 0) {
+      return "0.0";
+    }
+
+    const percentage = (tokenUSDValue / totalLiquidity) * 100;
+    return percentage.toFixed(1);
+  };
+
   const isLast = index === itemsLength - 1;
   return (
     <Box
@@ -101,18 +135,49 @@ const BoostedPoolsTableRow = ({
         </GridItem>
         {/* Pool name and tokens */}
         <GridItem>
-          <HStack>
-            {pool.poolTokens.map((token, index) => (
-              <Box
-                key={index}
-                ml={index === 0 ? 0 : "-15px"}
-                zIndex={pool.poolTokens.length - index}
-              >
-                <Tooltip
-                  bgColor="background.level4"
-                  label={token.symbol}
-                  textColor="font.primary"
-                  placement="bottom"
+          <Tooltip
+            bgColor="background.level4"
+            textColor="font.primary"
+            // placement="bottom"
+            label={
+              <Box>
+                <Text fontWeight="bold" mb={2}>
+                  Token Balances:
+                </Text>
+                {pool.poolTokens.map((token, index) => {
+                  const percentage = calculateTokenPercentage(token, pool);
+                  return (
+                    <HStack key={index} spacing={2} mb={1}>
+                      {token.logoURI ? (
+                        <Avatar
+                          src={token.logoURI}
+                          size="xs"
+                          borderWidth="1px"
+                          borderColor="background.level1"
+                        />
+                      ) : (
+                        <Icon
+                          as={FaCircle}
+                          boxSize="4"
+                          borderWidth="1px"
+                          borderColor="background.level1"
+                        />
+                      )}
+                      <Text fontSize="sm">
+                        {token.symbol}: {formatTokenAmount(token.balance || "0")} ({percentage}%)
+                      </Text>
+                    </HStack>
+                  );
+                })}
+              </Box>
+            }
+          >
+            <HStack cursor="pointer" onClick={handlePoolNameClick}>
+              {pool.poolTokens.map((token, index) => (
+                <Box
+                  key={index}
+                  ml={index === 0 ? 0 : "-15px"}
+                  zIndex={pool.poolTokens.length - index}
                 >
                   {token.logoURI ? (
                     <Avatar
@@ -131,11 +196,11 @@ const BoostedPoolsTableRow = ({
                       />
                     </Box>
                   )}
-                </Tooltip>
-              </Box>
-            ))}
-            <Text ml={2}>{pool.name || pool.symbol}</Text>
-          </HStack>
+                </Box>
+              ))}
+              <Text ml={2}>{pool.name || pool.symbol}</Text>
+            </HStack>
+          </Tooltip>
         </GridItem>
         {/* TVL */}
         <GridItem justifySelf="end">

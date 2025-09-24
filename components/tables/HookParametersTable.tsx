@@ -270,7 +270,7 @@ export const HookParametersTable = ({
               </Th>
             ))}
             {selectedHookType === "STABLE_SURGE" && (
-              <Th isNumeric w="140px" px={3}>
+              <Th isNumeric w="150px" px={3}>
                 <Button
                   variant="unstyled"
                   size="sm"
@@ -446,18 +446,18 @@ export const HookParametersTable = ({
                   <Td isNumeric px={3}>
                     {stableSurgeMetrics ? (
                       <Box textAlign="center">
-                        <Text fontSize="xs" mb={1}>
+                        <Text fontSize="sm" fontWeight="medium" mb={1}>
                           {stableSurgeMetrics.balanceRatio}% dev
                         </Text>
                         <Badge
-                          size="xs"
+                          size="sm"
                           colorScheme={stableSurgeMetrics.isInSurgeMode ? "red" : "green"}
                         >
                           {stableSurgeMetrics.isInSurgeMode ? "SURGE" : "NORMAL"}
                         </Badge>
                         {stableSurgeMetrics.isInSurgeMode && (
-                          <Text fontSize="xs" color="red.300" mt={1}>
-                            +{stableSurgeMetrics.estimatedSurgeFee}%
+                          <Text fontSize="sm" color="red.400" fontWeight="bold" mt={1}>
+                            +{stableSurgeMetrics.estimatedSurgeFee}% fee
                           </Text>
                         )}
                       </Box>
