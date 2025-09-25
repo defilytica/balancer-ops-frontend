@@ -34,7 +34,13 @@ import {
   GetV3PoolsWithHooksQueryVariables,
   GetV3PoolsWithHooksDocument,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool, StableSurgeHookParams, HookParams } from "@/types/interfaces";
+import {
+  AddressBook,
+  Pool,
+  StableSurgeHookParams,
+  HookParams,
+  AddressType,
+} from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -59,6 +65,8 @@ import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { fetchAddressType } from "@/lib/services/fetchAddressType";
+import { useQuery as useReactQuery } from "@tanstack/react-query";
 
 // Type guard for StableSurgeHookParams
 export const isStableSurgeHookParams = (params?: HookParams): params is StableSurgeHookParams => {
@@ -312,8 +320,8 @@ export default function StableSurgeHookConfigurationModule({
       return;
     }
 
-    // Case 1: Zero or maxi_omni address manager (DAO governed)
-    if (isAuthorizedPool) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed) OR Safe proxy
+    if (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -345,11 +353,17 @@ export default function StableSurgeHookConfigurationModule({
         newSurgeThresholdPercentage: debouncedSurgeThresholdPercentage || undefined,
       };
 
+      // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
+      const multisigAddress =
+        addressTypeData?.type === AddressType.SAFE_PROXY
+          ? selectedPool.swapFeeManager
+          : selectedMultisig;
+
       const payload = generateStableSurgeParamsPayload(
         input,
         network.chainId,
         hookAddress,
-        selectedMultisig,
+        multisigAddress,
       );
       setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
@@ -465,6 +479,21 @@ export default function StableSurgeHookConfigurationModule({
     );
   }, [selectedPool, selectedMultisig]);
 
+  // Determine if we need to check the address type
+  const shouldCheckAddressType = useMemo(() => {
+    return (
+      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
+    );
+  }, [selectedPool, selectedNetwork]);
+
+  // React Query for address type checking
+  const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
+    queryKey: ["addressType", selectedPool?.swapFeeManager, selectedNetwork],
+    queryFn: () => fetchAddressType(selectedPool!.swapFeeManager, selectedNetwork),
+    enabled: !!shouldCheckAddressType,
+    staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
+  });
+
   const generateComposerData = useCallback(() => {
     if (!generatedPayload) return null;
 
@@ -541,26 +570,40 @@ export default function StableSurgeHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {selectedPool && isCurrentWalletManager && (
+      {selectedPool && (
         <Box mb={6}>
           <PoolInfoCard pool={selectedPool} showHook={true} />
-          {isCurrentWalletManager && (
+          {isCheckingAddress ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>Checking pool authorization...</AlertDescription>
+            </Alert>
+          ) : isCurrentWalletManager && addressTypeData?.type === AddressType.EOA ? (
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
                 This pool is owned by the authorized delegate address that is currently connected.
-                It can now be modified. Change swap fee settings and execute through your connected
+                You can modify its StableSurge hook parameters and execute through your connected
                 EOA.
               </AlertDescription>
             </Alert>
-          )}
-        </Box>
-      )}
-
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <PoolInfoCard pool={selectedPool} showHook={true} />
-          {!isAuthorizedPool && (
+          ) : isAuthorizedPool ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool's StableSurge hook configuration can be modified through the DAO multisig.
+              </AlertDescription>
+            </Alert>
+          ) : addressTypeData ? (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {addressTypeData.type === AddressType.SAFE_PROXY
+                  ? `This pool's StableSurge hook configuration is managed by a Safe: ${selectedPool.swapFeeManager}`
+                  : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+          ) : (
             <Alert status="warning" mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -572,23 +615,15 @@ export default function StableSurgeHookConfigurationModule({
         </Box>
       )}
 
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              {isAuthorizedPool
-                ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                : `This pool's StableSurge hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-            </AlertDescription>
-          </Alert>
-        </Box>
-      )}
-
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            isDisabled={
+              !selectedPool ||
+              (!isAuthorizedPool &&
+                !isCurrentWalletManager &&
+                addressTypeData?.type !== AddressType.SAFE_PROXY)
+            }
             mb={4}
             isInvalid={!!maxSurgeFeePercentageError}
           >
@@ -615,7 +650,12 @@ export default function StableSurgeHookConfigurationModule({
 
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            isDisabled={
+              !selectedPool ||
+              (!isAuthorizedPool &&
+                !isCurrentWalletManager &&
+                addressTypeData?.type !== AddressType.SAFE_PROXY)
+            }
             mb={4}
             isInvalid={!!surgeThresholdPercentageError}
           >
@@ -690,7 +730,7 @@ export default function StableSurgeHookConfigurationModule({
             <Button variant="primary" isDisabled={true}>
               Select a Pool
             </Button>
-          ) : isCurrentWalletManager ? (
+          ) : isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY ? (
             <Button
               variant="primary"
               onClick={handleGenerateClick}
@@ -700,7 +740,9 @@ export default function StableSurgeHookConfigurationModule({
             >
               Execute Parameter Change
             </Button>
-          ) : isAuthorizedPool ? (
+          ) : isAuthorizedPool ||
+            addressTypeData?.type === AddressType.SAFE_PROXY ||
+            isCurrentWalletManager ? (
             <>
               <Button
                 variant="primary"
@@ -721,67 +763,72 @@ export default function StableSurgeHookConfigurationModule({
           )}
         </Flex>
 
-        {generatedPayload && !isCurrentWalletManager && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload &&
+          (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+          )}
 
-        {selectedPool && isCurrentWalletManager && (
-          <SimulateEOATransactionButton
-            transactions={
-              buildStableSurgeParameterSimulationTransactions({
-                selectedPool,
-                hasMaxSurgeFeePercentage: !!debouncedMaxSurgeFeePercentage,
-                hasSurgeThresholdPercentage: !!debouncedSurgeThresholdPercentage,
-                maxSurgeFeePercentage: debouncedMaxSurgeFeePercentage,
-                surgeThresholdPercentage: debouncedSurgeThresholdPercentage,
-              }) || []
-            }
-            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
-            disabled={
-              (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
-            }
-          />
-        )}
+        {selectedPool &&
+          isCurrentWalletManager &&
+          addressTypeData?.type !== AddressType.SAFE_PROXY && (
+            <SimulateEOATransactionButton
+              transactions={
+                buildStableSurgeParameterSimulationTransactions({
+                  selectedPool,
+                  hasMaxSurgeFeePercentage: !!debouncedMaxSurgeFeePercentage,
+                  hasSurgeThresholdPercentage: !!debouncedSurgeThresholdPercentage,
+                  maxSurgeFeePercentage: debouncedMaxSurgeFeePercentage,
+                  surgeThresholdPercentage: debouncedSurgeThresholdPercentage,
+                }) || []
+              }
+              networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+              disabled={
+                (!debouncedMaxSurgeFeePercentage && !debouncedSurgeThresholdPercentage) || !isValid
+              }
+            />
+          )}
       </Flex>
       <Divider />
 
-      {generatedPayload && !isCurrentWalletManager && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={newJson => setGeneratedPayload(newJson)}
-        />
-      )}
-
-      {generatedPayload && !isCurrentWalletManager && (
-        <Box display="flex" alignItems="center" mt="20px">
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<DownloadIcon />}
-            onClick={() => handleDownloadClick(generatedPayload)}
-          >
-            Download Payload
-          </Button>
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<CopyIcon />}
-            onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-          >
-            Copy Payload to Clipboard
-          </Button>
-          <OpenPRButton onClick={handleOpenPRModal} />
-          <Box mt={8} />
-          <PRCreationModal
-            type={"hook-stable-surge"}
-            isOpen={isOpen}
-            onClose={onClose}
-            payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-            network={selectedNetwork}
-            {...getPrefillValues()}
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
-        </Box>
-      )}
+        )}
+
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <Box display="flex" alignItems="center" mt="20px">
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} />
+            <Box mt={8} />
+            <PRCreationModal
+              type={"hook-stable-surge"}
+              isOpen={isOpen}
+              onClose={onClose}
+              payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+              network={selectedNetwork}
+              {...getPrefillValues()}
+            />
+          </Box>
+        )}
     </Container>
   );
 }
