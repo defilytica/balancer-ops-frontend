@@ -36,7 +36,7 @@ import {
   GetV3PoolsQueryVariables,
   GqlPoolType,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool, ReClammPool, ReClammContractData } from "@/types/interfaces";
+import { AddressBook, Pool, ReClammPool, AddressType } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { ReClammPoolInfoCard } from "@/components/ReClammPoolInfoCard";
 import { ReClammPoolInfoCardSkeleton } from "./ReClammPoolInfoCardSkeleton";
@@ -510,7 +510,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       return;
     }
 
-    if (!isAuthorizedPool && addressTypeData?.type !== "SafeProxy") {
+    if (!isAuthorizedPool && addressTypeData?.type !== AddressType.SAFE_PROXY) {
       toast({
         title: "Not authorized",
         description: "This pool can only be modified by the DAO multisig",
@@ -554,7 +554,9 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
 
     // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
     const multisigAddress =
-      addressTypeData?.type === "SafeProxy" ? selectedPool.swapFeeManager : selectedMultisig;
+      addressTypeData?.type === AddressType.SAFE_PROXY
+        ? selectedPool.swapFeeManager
+        : selectedMultisig;
 
     const payload = generateReClammCombinedParametersPayload(
       input,
@@ -813,7 +815,12 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               ) : null}
             </Box>
           )}
-          {isCurrentWalletManager ? (
+          {isCheckingAddress ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>Checking pool authorization...</AlertDescription>
+            </Alert>
+          ) : isCurrentWalletManager && addressTypeData?.type === AddressType.EOA ? (
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -828,16 +835,11 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
                 This ReCLAMM pool's parameters can be modified through the DAO multisig.
               </AlertDescription>
             </Alert>
-          ) : isCheckingAddress ? (
-            <Alert status="info" mt={4}>
-              <AlertIcon />
-              <AlertDescription>Checking pool authorization...</AlertDescription>
-            </Alert>
           ) : addressTypeData ? (
             <Alert status="warning" mt={4}>
               <AlertIcon />
               <AlertDescription>
-                {addressTypeData.type === "SafeProxy"
+                {addressTypeData.type === AddressType.SAFE_PROXY
                   ? `This pool's parameters are managed by a Safe: ${selectedPool.swapFeeManager}`
                   : `This pool's parameters can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
               </AlertDescription>
@@ -1032,7 +1034,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
               >
                 Stop Update
               </Button>
-            ) : isAuthorizedPool || addressTypeData?.type === "SafeProxy" ? (
+            ) : isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY ? (
               <Box ml={4} display="flex" alignItems="center">
                 <Checkbox
                   isChecked={stopPriceRatioUpdate}
@@ -1125,11 +1127,11 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
             <Button variant="primary" isDisabled={true}>
               Select a Pool
             </Button>
-          ) : isCurrentWalletManager && addressTypeData?.type !== "SafeProxy" ? (
+          ) : isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY ? (
             <Button variant="primary" onClick={handleExecuteTransactions} isDisabled={!isValid}>
               Execute Parameter Changes ({getParameterCount})
             </Button>
-          ) : isAuthorizedPool || addressTypeData?.type === "SafeProxy" ? (
+          ) : isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY ? (
             <>
               <Button variant="primary" onClick={handleGenerateClick} isDisabled={!isValid}>
                 Generate Payload
@@ -1143,14 +1145,15 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
           )}
         </Flex>
 
-        {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload &&
+          (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+          )}
 
         {selectedPool &&
           isCurrentWalletManager &&
           isValid &&
-          addressTypeData?.type !== "SafeProxy" && (
+          addressTypeData?.type !== AddressType.SAFE_PROXY && (
             <SimulateEOATransactionButton
               transactions={
                 buildReClammParameterSimulationTransactions({
@@ -1172,43 +1175,45 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       </Flex>
       <Divider />
 
-      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={newJson => setGeneratedPayload(newJson)}
-        />
-      )}
-
-      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === "SafeProxy") && (
-        <Box display="flex" alignItems="center" mt="20px">
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<DownloadIcon />}
-            onClick={() => handleDownloadClick(generatedPayload)}
-          >
-            Download Payload
-          </Button>
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<CopyIcon />}
-            onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-          >
-            Copy Payload to Clipboard
-          </Button>
-          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
-          <Box mt={8} />
-          <PRCreationModal
-            type={"reclamm"}
-            isOpen={isOpen}
-            onClose={onClose}
-            network={selectedNetwork}
-            payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-            {...getPrefillValues()}
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
-        </Box>
-      )}
+        )}
+
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <Box display="flex" alignItems="center" mt="20px">
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
+            <Box mt={8} />
+            <PRCreationModal
+              type={"reclamm"}
+              isOpen={isOpen}
+              onClose={onClose}
+              network={selectedNetwork}
+              payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+              {...getPrefillValues()}
+            />
+          </Box>
+        )}
     </Container>
   );
 }

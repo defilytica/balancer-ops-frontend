@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { NextRequest, NextResponse } from "next/server";
 import { networks } from "@/constants/constants";
+import { AddressType } from "@/types/interfaces";
 
 const safeAbi = ["function VERSION() external view returns (string)"];
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (code === "0x" || code === "0x0") {
       return NextResponse.json({
         address,
-        type: "EOA",
+        type: AddressType.EOA,
       });
     }
 
@@ -38,13 +39,13 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         address,
-        type: "SafeProxy",
+        type: AddressType.SAFE_PROXY,
       });
     } catch (safeError) {
       // Not a Safe contract, but still a contract
       return NextResponse.json({
         address,
-        type: "Contract",
+        type: AddressType.CONTRACT,
       });
     }
   } catch (error) {

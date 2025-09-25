@@ -1,5 +1,11 @@
 import { PoolType } from "@/types/types";
 
+export enum AddressType {
+  EOA = "EOA",
+  SAFE_PROXY = "SafeProxy",
+  CONTRACT = "Contract",
+}
+
 export interface AddressBook {
   active: {
     [network: string]: {
@@ -327,7 +333,7 @@ export interface FormattedDeployment {
 
 export interface AddressTypeData {
   address: string;
-  type: "EOA" | "SafeProxy" | "Contract";
+  type: AddressType;
 }
 
 // EOA simulation types
