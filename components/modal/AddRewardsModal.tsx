@@ -73,6 +73,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   const [rewardAmount, setRewardAmount] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [shouldSkipApproval, setShouldSkipApproval] = useState<boolean>(false);
+  const [isTransactionInProgress, setIsTransactionInProgress] = useState<boolean>(false);
 
   const { address } = useAccount();
   const chainId = useChainId();
@@ -165,14 +166,35 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
     },
   }) as { data: bigint | undefined; refetch: () => void };
 
-  const { writeContract: writeApprove, data: approveHash } = useWriteContract();
-  const { writeContract: writeDeposit, data: depositHash } = useWriteContract();
+  const {
+    writeContract: writeApprove,
+    data: approveHash,
+    error: approveWriteError,
+    isError: approveWriteIsError,
+    reset: resetApprove,
+  } = useWriteContract();
 
-  const { isLoading: isApproving, isSuccess: approveSuccess } = useWaitForTransactionReceipt({
+  const {
+    writeContract: writeDeposit,
+    data: depositHash,
+    error: depositWriteError,
+    isError: depositWriteIsError,
+    reset: resetDeposit,
+  } = useWriteContract();
+
+  const {
+    isLoading: isApproving,
+    isSuccess: approveSuccess,
+    isError: approveError,
+  } = useWaitForTransactionReceipt({
     hash: approveHash,
   });
 
-  const { isLoading: isDepositing, isSuccess: depositSuccess } = useWaitForTransactionReceipt({
+  const {
+    isLoading: isDepositing,
+    isSuccess: depositSuccess,
+    isError: depositError,
+  } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
 
@@ -211,27 +233,127 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
     }
   }, [rewardAmount, tokenAllowance, selectedToken, currentStep]);
 
+  // Watch for approval write errors (user rejection)
+  useEffect(() => {
+    if (approveWriteError) {
+      console.error("Approval write error:", approveWriteError);
+      setIsTransactionInProgress(false);
+      // Reset the write contract state to allow retry
+      resetApprove();
+
+      // Show user-friendly error message
+      if (approveWriteError.message?.includes("User rejected") ||
+          approveWriteError.message?.includes("User denied")) {
+        toast({
+          title: "Transaction cancelled",
+          description: "You cancelled the approval transaction",
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  }, [approveWriteError, resetApprove, toast]);
+
+  // Watch for deposit write errors (user rejection)
+  useEffect(() => {
+    if (depositWriteError) {
+      console.error("Deposit write error:", depositWriteError);
+      setIsTransactionInProgress(false);
+      // Reset the write contract state to allow retry
+      resetDeposit();
+
+      // Show user-friendly error message
+      if (depositWriteError.message?.includes("User rejected") ||
+          depositWriteError.message?.includes("User denied")) {
+        toast({
+          title: "Transaction cancelled",
+          description: "You cancelled the deposit transaction",
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  }, [depositWriteError, resetDeposit, toast]);
+
   // Watch for approval success to move to step 2
   useEffect(() => {
-    if (approveSuccess && currentStep === 1) {
+    let mounted = true;
+
+    if (approveSuccess && currentStep === 1 && mounted) {
       setCurrentStep(2);
       refetchAllowance();
+      // Clear the transaction in progress flag after moving to next step
+      setIsTransactionInProgress(false);
     }
-  }, [approveSuccess, currentStep, refetchAllowance]);
+
+    // Reset transaction progress if approval fails on-chain
+    if (approveError && mounted) {
+      setIsTransactionInProgress(false);
+      toast({
+        title: "Approval failed",
+        description: "The approval transaction failed. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [approveSuccess, approveError, currentStep, refetchAllowance, toast]);
 
   // Watch for deposit success to close modal
   useEffect(() => {
-    if (depositSuccess && currentStep === 2) {
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (depositSuccess && currentStep === 2 && mounted) {
       refetchBalance();
       onSuccess();
-      handleClose();
+      setIsTransactionInProgress(false);
+      // Add a small delay to ensure state updates complete before closing
+      timeoutId = setTimeout(() => {
+        if (mounted) {
+          handleClose();
+        }
+      }, 100);
     }
-  }, [depositSuccess, currentStep, refetchBalance, onSuccess]);
+
+    // Reset transaction progress if deposit fails on-chain
+    if (depositError && mounted) {
+      setIsTransactionInProgress(false);
+      toast({
+        title: "Deposit failed",
+        description: "The deposit transaction failed. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+
+    return () => {
+      mounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [depositSuccess, depositError, currentStep, refetchBalance, onSuccess, toast]);
 
   const handleClose = () => {
+    // Don't close if a transaction is in progress
+    if (isTransactionInProgress) {
+      return;
+    }
     setRewardAmount("");
     setCurrentStep(1);
     setShouldSkipApproval(false);
+    setIsTransactionInProgress(false);
+    // Reset write contract states
+    resetApprove();
+    resetDeposit();
     onClose();
   };
 
@@ -255,6 +377,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
     const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
 
     try {
+      setIsTransactionInProgress(true);
       writeApprove({
         address: selectedToken.address,
         abi: ERC20,
@@ -263,6 +386,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
       });
     } catch (error) {
       console.error("Approval failed:", error);
+      setIsTransactionInProgress(false);
     }
   };
 
@@ -284,6 +408,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
     const amountWei = ethers.parseUnits(rewardAmount, selectedToken.decimals);
 
     try {
+      setIsTransactionInProgress(true);
       writeDeposit({
         address: selectedPool.gaugeAddress as `0x${string}`,
         abi: gaugeABI,
@@ -292,6 +417,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
       });
     } catch (error) {
       console.error("Deposit failed:", error);
+      setIsTransactionInProgress(false);
     }
   };
 
@@ -300,7 +426,13 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size={{ base: "lg", md: "2xl", lg: "4xl" }}>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      size={{ base: "lg", md: "2xl", lg: "4xl" }}
+      closeOnOverlayClick={!isTransactionInProgress}
+      closeOnEsc={!isTransactionInProgress}
+    >
       <ModalOverlay />
       <ModalContent maxW={{ base: "90vw", md: "2xl", lg: "4xl" }}>
         <ModalHeader>
@@ -661,7 +793,12 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={handleClose}>
+          <Button
+            variant="ghost"
+            mr={3}
+            onClick={handleClose}
+            isDisabled={isTransactionInProgress}
+          >
             Cancel
           </Button>
 
@@ -669,7 +806,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
             <Button
               colorScheme="blue"
               onClick={handleApprove}
-              isLoading={isApproving}
+              isLoading={isApproving || (isTransactionInProgress && currentStep === 1 && !approveWriteError)}
               loadingText="Approving..."
               isDisabled={
                 !isCorrectNetwork ||
@@ -721,7 +858,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
             <Button
               colorScheme="green"
               onClick={handleDeposit}
-              isLoading={isDepositing}
+              isLoading={isDepositing || (isTransactionInProgress && currentStep === 2 && !depositWriteError)}
               loadingText="Depositing..."
               isDisabled={
                 !isCorrectNetwork ||

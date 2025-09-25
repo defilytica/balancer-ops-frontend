@@ -100,9 +100,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
   // Process URL parameters on initial load and network/data changes
   useEffect(() => {
-    const network = searchParams.get('network');
-    const gaugeAddress = searchParams.get('gauge');
-    const tokenAddress = searchParams.get('token');
+    const network = searchParams.get("network");
+    const gaugeAddress = searchParams.get("gauge");
+    const tokenAddress = searchParams.get("token");
 
     if (network && !selectedNetwork) {
       setSelectedNetwork(network);
@@ -113,13 +113,11 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
     // If data is loaded and we have all required params, open the modal
     if (data && shouldOpenModalOnDataLoad && gaugeAddress && tokenAddress) {
-      const pool = data.find(p =>
-        p.gaugeAddress.toLowerCase() === gaugeAddress.toLowerCase()
-      );
+      const pool = data.find(p => p.gaugeAddress.toLowerCase() === gaugeAddress.toLowerCase());
 
       if (pool) {
-        const token = pool.rewardTokens.find(t =>
-          t.address.toLowerCase() === tokenAddress.toLowerCase()
+        const token = pool.rewardTokens.find(
+          t => t.address.toLowerCase() === tokenAddress.toLowerCase(),
         );
 
         if (token) {
@@ -208,15 +206,18 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   };
 
   // Function to update URL with query parameters
-  const updateUrlParams = useCallback((params: Record<string, string>) => {
-    const newSearchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) newSearchParams.set(key, value);
-    });
-    const queryString = newSearchParams.toString();
-    const url = queryString ? `${pathname}?${queryString}` : pathname;
-    router.replace(url, { scroll: false });
-  }, [pathname, router]);
+  const updateUrlParams = useCallback(
+    (params: Record<string, string>) => {
+      const newSearchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) newSearchParams.set(key, value);
+      });
+      const queryString = newSearchParams.toString();
+      const url = queryString ? `${pathname}?${queryString}` : pathname;
+      router.replace(url, { scroll: false });
+    },
+    [pathname, router],
+  );
 
   const formatEndDate = (periodFinish: string) => {
     const timestamp = parseInt(periodFinish);
@@ -302,9 +303,10 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
           pool.poolName.toLowerCase().includes(lowerSearchTerm) ||
           pool.poolSymbol.toLowerCase().includes(lowerSearchTerm);
 
-        const rewardTokenMatches = pool.rewardTokens.some(token =>
-          token.symbol.toLowerCase().includes(lowerSearchTerm) ||
-          token.name.toLowerCase().includes(lowerSearchTerm)
+        const rewardTokenMatches = pool.rewardTokens.some(
+          token =>
+            token.symbol.toLowerCase().includes(lowerSearchTerm) ||
+            token.name.toLowerCase().includes(lowerSearchTerm),
         );
 
         if (!poolMatches && !rewardTokenMatches) {
