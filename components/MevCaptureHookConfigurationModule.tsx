@@ -34,7 +34,7 @@ import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, HookParams, MevTaxHookParams, Pool } from "@/types/interfaces";
+import { AddressBook, HookParams, MevTaxHookParams, Pool, AddressType } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
@@ -59,6 +59,8 @@ import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { fetchAddressType } from "@/lib/services/fetchAddressType";
+import { useQuery as useReactQuery } from "@tanstack/react-query";
 
 // Type guard for MevTaxHookParams
 export const isMevTaxHookParams = (params?: HookParams): params is MevTaxHookParams => {
@@ -317,8 +319,8 @@ export default function MevCaptureHookConfigurationModule({
       return;
     }
 
-    // Case 1: Zero or maxi_omni address manager (DAO governed)
-    if (isAuthorizedPool) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed) OR Safe proxy
+    if (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -350,11 +352,15 @@ export default function MevCaptureHookConfigurationModule({
         newMevTaxMultiplier: debouncedMevTaxMultiplier,
       };
 
+      // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
+      const multisigAddress =
+        addressTypeData?.type === AddressType.SAFE_PROXY ? selectedPool.swapFeeManager : selectedMultisig;
+
       const payload = generateMevCaptureParamsPayload(
         input,
         network.chainId,
         hookAddress,
-        selectedMultisig,
+        multisigAddress,
       );
       setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
@@ -475,6 +481,21 @@ export default function MevCaptureHookConfigurationModule({
     );
   }, [selectedPool, selectedMultisig]);
 
+  // Determine if we need to check the address type
+  const shouldCheckAddressType = useMemo(() => {
+    return (
+      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
+    );
+  }, [selectedPool, selectedNetwork]);
+
+  // React Query for address type checking
+  const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
+    queryKey: ["addressType", selectedPool?.swapFeeManager, selectedNetwork],
+    queryFn: () => fetchAddressType(selectedPool!.swapFeeManager, selectedNetwork),
+    enabled: !!shouldCheckAddressType,
+    staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
+  });
+
   const generateComposerData = useCallback(() => {
     if (!generatedPayload) return null;
 
@@ -549,26 +570,40 @@ export default function MevCaptureHookConfigurationModule({
         </GridItem>
       </Grid>
 
-      {selectedPool && isCurrentWalletManager && (
+      {selectedPool && (
         <Box mb={6}>
           <PoolInfoCard pool={selectedPool} showHook={true} />
-          {isCurrentWalletManager && (
+          {isCheckingAddress ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>Checking pool authorization...</AlertDescription>
+            </Alert>
+          ) : isCurrentWalletManager && addressTypeData?.type === AddressType.EOA ? (
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
                 This pool is owned by the authorized delegate address that is currently connected.
-                It can now be modified. Change swap fee settings and execute through your connected
+                You can modify its MEV Capture hook parameters and execute through your connected
                 EOA.
               </AlertDescription>
             </Alert>
-          )}
-        </Box>
-      )}
-
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <PoolInfoCard pool={selectedPool} showHook={true} />
-          {!isAuthorizedPool && (
+          ) : isAuthorizedPool ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool's MEV Capture hook configuration can be modified through the DAO multisig.
+              </AlertDescription>
+            </Alert>
+          ) : addressTypeData ? (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {addressTypeData.type === AddressType.SAFE_PROXY
+                  ? `This pool's MEV Capture hook configuration is managed by a Safe: ${selectedPool.swapFeeManager}`
+                  : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+          ) : (
             <Alert status="warning" mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -580,23 +615,10 @@ export default function MevCaptureHookConfigurationModule({
         </Box>
       )}
 
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              {isAuthorizedPool
-                ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                : `This pool's MEV Capture hook configuration can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-            </AlertDescription>
-          </Alert>
-        </Box>
-      )}
-
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY)}
             mb={4}
             isInvalid={!!mevTaxThresholdError}
           >
@@ -621,7 +643,7 @@ export default function MevCaptureHookConfigurationModule({
 
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY)}
             mb={4}
             isInvalid={!!mevTaxMultiplierError}
           >
@@ -695,7 +717,7 @@ export default function MevCaptureHookConfigurationModule({
             <Button variant="primary" isDisabled={true}>
               Select a Pool
             </Button>
-          ) : isCurrentWalletManager ? (
+          ) : isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY ? (
             <Button
               variant="primary"
               onClick={handleGenerateClick}
@@ -703,7 +725,7 @@ export default function MevCaptureHookConfigurationModule({
             >
               Execute Parameter Change
             </Button>
-          ) : isAuthorizedPool ? (
+          ) : isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY || isCurrentWalletManager ? (
             <>
               <Button
                 variant="primary"
@@ -721,11 +743,11 @@ export default function MevCaptureHookConfigurationModule({
           )}
         </Flex>
 
-        {generatedPayload && !isCurrentWalletManager && (
+        {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
           <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
         )}
 
-        {selectedPool && isCurrentWalletManager && (
+        {selectedPool && isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY && (
           <SimulateEOATransactionButton
             transactions={
               buildMevCaptureParameterSimulationTransactions({
@@ -743,14 +765,14 @@ export default function MevCaptureHookConfigurationModule({
       </Flex>
       <Divider />
 
-      {generatedPayload && !isCurrentWalletManager && (
+      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => setGeneratedPayload(newJson)}
         />
       )}
 
-      {generatedPayload && !isCurrentWalletManager && (
+      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
         <Box display="flex" alignItems="center" mt="20px">
           <Button
             variant="secondary"
