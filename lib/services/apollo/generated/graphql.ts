@@ -210,6 +210,42 @@ export type GqlLatestSyncedBlocks = {
   userWalletSyncBlock: Scalars['BigInt']['output'];
 };
 
+export type GqlLoopsData = {
+  __typename: 'GqlLoopsData';
+  /** Aave Merit APR */
+  aaveMeritApr: Scalars['Float']['output'];
+  /** Aave S borrow APR */
+  aaveSBorrowApr: Scalars['Float']['output'];
+  /** Actual TotalSupply of LoopS. */
+  actualSupply: Scalars['String']['output'];
+  /** The total APR for LoopS */
+  apr: Scalars['Float']['output'];
+  /** The amount of stS provided to Aave. */
+  collateralAmount: Scalars['String']['output'];
+  /** The amount of stS provided to Aave in S. */
+  collateralAmountInEth: Scalars['String']['output'];
+  /** The total S debt amount of the position */
+  debtAmount: Scalars['String']['output'];
+  /** The health factor of the Aave position */
+  healthFactor: Scalars['String']['output'];
+  /** The amount of leverage the current position has. */
+  leverage: Scalars['Float']['output'];
+  /** Loan To Value of the position */
+  ltv: Scalars['String']['output'];
+  /** Net Asset Value. The amount of collateral minus the amount of debt. */
+  nav: Scalars['String']['output'];
+  /** The current rate of LoopS against S. */
+  rate: Scalars['String']['output'];
+  /** The current Sonic points multiplier for LoopS */
+  sonicPointsMultiplier: Scalars['String']['output'];
+  /** The current cap on the stS market on Aave */
+  stSAaveMarketCap: Scalars['String']['output'];
+  /** The max LTV of the market with e-mode */
+  stSAaveMarketMaxLTV: Scalars['String']['output'];
+  /** The current amount of stS supplied to the Aave market */
+  stSAaveMarketSupply: Scalars['String']['output'];
+};
+
 /** All info on the nested pool if the token is a BPT. It will only support 1 level of nesting. */
 export type GqlNestedPool = {
   __typename: 'GqlNestedPool';
@@ -411,7 +447,7 @@ export type GqlPoolApr = {
 /** All APRs for a pool */
 export type GqlPoolAprItem = {
   __typename: 'GqlPoolAprItem';
-  /** The APR value in % -> 0.2 = 0.2% */
+  /** The APR value in % -> 0.2 = 20% */
   apr: Scalars['Float']['output'];
   /** The id of the APR item */
   id: Scalars['ID']['output'];
@@ -3036,6 +3072,8 @@ export type Query = {
   blocksGetBlocksPerYear: Scalars['Float']['output'];
   latestSyncedBlocks: GqlLatestSyncedBlocks;
   lbpPriceChart?: Maybe<Array<LbpPriceChartData>>;
+  /** Get the LoopS data */
+  loopsGetData: GqlLoopsData;
   /** Getting swap, add and remove events with paging */
   poolEvents: Array<GqlPoolEvent>;
   /**

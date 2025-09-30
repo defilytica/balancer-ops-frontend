@@ -35,7 +35,7 @@ import {
   GetV3PoolsQueryVariables,
   GqlPoolType,
 } from "@/lib/services/apollo/generated/graphql";
-import { AddressBook, Pool } from "@/types/interfaces";
+import { AddressBook, Pool, AddressType } from "@/types/interfaces";
 import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
@@ -63,6 +63,8 @@ import { useDebounce } from "use-debounce";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
+import { fetchAddressType } from "@/lib/services/fetchAddressType";
+import { useQuery as useReactQuery } from "@tanstack/react-query";
 
 export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -199,8 +201,8 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       return;
     }
 
-    // Case 1: Zero or maxi_omni address manager (DAO governed)
-    if (isAuthorizedPool) {
+    // Case 1: Zero or maxi_omni address manager (DAO governed) OR Safe proxy
+    if (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {
         toast({
@@ -219,7 +221,13 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         poolName: selectedPool.name,
       };
 
-      const payload = generateDAOSwapFeeChangePayload(input, network.chainId, selectedMultisig);
+      // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
+      const multisigAddress =
+        addressTypeData?.type === AddressType.SAFE_PROXY
+          ? selectedPool.swapFeeManager
+          : selectedMultisig;
+
+      const payload = generateDAOSwapFeeChangePayload(input, network.chainId, multisigAddress);
       setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
     // Case 2: Current wallet is the fee manager
@@ -282,6 +290,21 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
     );
   }, [selectedPool, selectedMultisig]);
+
+  // Determine if we need to check the address type
+  const shouldCheckAddressType = useMemo(() => {
+    return (
+      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
+    );
+  }, [selectedPool, selectedNetwork]);
+
+  // React Query for address type checking
+  const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
+    queryKey: ["addressType", selectedPool?.swapFeeManager, selectedNetwork],
+    queryFn: () => fetchAddressType(selectedPool!.swapFeeManager, selectedNetwork),
+    enabled: !!shouldCheckAddressType,
+    staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
+  });
 
   const getPrefillValues = useCallback(() => {
     // Make sure we have a selected pool and new swap fee
@@ -387,26 +410,39 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </GridItem>
       </Grid>
 
-      {selectedPool && isCurrentWalletManager && (
+      {selectedPool && (
         <Box mb={6}>
           <PoolInfoCard pool={selectedPool} />
-          {isCurrentWalletManager && (
+          {isCheckingAddress ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>Checking pool authorization...</AlertDescription>
+            </Alert>
+          ) : isCurrentWalletManager && addressTypeData?.type === AddressType.EOA ? (
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
                 This pool is owned by the authorized delegate address that is currently connected.
-                It can now be modified. Change swap fee settings and execute through your connected
-                EOA.
+                You can modify its swap fee and execute through your connected EOA.
               </AlertDescription>
             </Alert>
-          )}
-        </Box>
-      )}
-
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <PoolInfoCard pool={selectedPool} />
-          {!isAuthorizedPool && (
+          ) : isAuthorizedPool ? (
+            <Alert status="info" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                This pool is DAO-governed. Changes must be executed through the multisig.
+              </AlertDescription>
+            </Alert>
+          ) : addressTypeData ? (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <AlertDescription>
+                {addressTypeData.type === AddressType.SAFE_PROXY
+                  ? `This pool's swap fee is managed by a Safe: ${selectedPool.swapFeeManager}`
+                  : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
+              </AlertDescription>
+            </Alert>
+          ) : (
             <Alert status="warning" mt={4}>
               <AlertIcon />
               <AlertDescription>
@@ -418,23 +454,15 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
         </Box>
       )}
 
-      {selectedPool && !isCurrentWalletManager && (
-        <Box mb={6}>
-          <Alert status={isAuthorizedPool ? "info" : "warning"} mt={4}>
-            <AlertIcon />
-            <AlertDescription>
-              {isAuthorizedPool
-                ? "This pool is DAO-governed. Changes must be executed through the multisig."
-                : `This pool's swap fee can only be modified by the swap fee manager: ${selectedPool.swapFeeManager}`}
-            </AlertDescription>
-          </Alert>
-        </Box>
-      )}
-
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager)}
+            isDisabled={
+              !selectedPool ||
+              (!isAuthorizedPool &&
+                !isCurrentWalletManager &&
+                addressTypeData?.type !== AddressType.SAFE_PROXY)
+            }
             mb={4}
             isInvalid={debouncedSwapFee !== "" && !isSwapFeeValid}
           >
@@ -488,7 +516,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             <Button variant="primary" isDisabled={true}>
               Select a Pool
             </Button>
-          ) : isCurrentWalletManager ? (
+          ) : isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY ? (
             <Button
               variant="primary"
               onClick={handleGenerateClick}
@@ -496,7 +524,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
             >
               Execute Fee Change
             </Button>
-          ) : isAuthorizedPool ? (
+          ) : isAuthorizedPool ||
+            addressTypeData?.type === AddressType.SAFE_PROXY ||
+            isCurrentWalletManager ? (
             <>
               <Button
                 variant="primary"
@@ -514,62 +544,69 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
           )}
         </Flex>
 
-        {generatedPayload && !isCurrentWalletManager && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload &&
+          (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+          )}
 
-        {selectedPool && debouncedSwapFee && isSwapFeeValid && isCurrentWalletManager && (
-          <SimulateEOATransactionButton
-            transactions={
-              buildChangeSwapFeeV3SimulationTransactions({
-                selectedPool,
-                newSwapFeePercentage: debouncedSwapFee,
-              }) || []
-            }
-            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
-            disabled={!debouncedSwapFee || !isSwapFeeValid}
-          />
-        )}
+        {selectedPool &&
+          debouncedSwapFee &&
+          isSwapFeeValid &&
+          isCurrentWalletManager &&
+          addressTypeData?.type !== AddressType.SAFE_PROXY && (
+            <SimulateEOATransactionButton
+              transactions={
+                buildChangeSwapFeeV3SimulationTransactions({
+                  selectedPool,
+                  newSwapFeePercentage: debouncedSwapFee,
+                }) || []
+              }
+              networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+              disabled={!debouncedSwapFee || !isSwapFeeValid}
+            />
+          )}
       </Flex>
       <Divider />
 
-      {generatedPayload && !isCurrentWalletManager && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={newJson => setGeneratedPayload(newJson)}
-        />
-      )}
-
-      {generatedPayload && !isCurrentWalletManager && (
-        <Box display="flex" alignItems="center" mt="20px">
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<DownloadIcon />}
-            onClick={() => handleDownloadClick(generatedPayload)}
-          >
-            Download Payload
-          </Button>
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<CopyIcon />}
-            onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-          >
-            Copy Payload to Clipboard
-          </Button>
-          <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
-          <Box mt={8} />
-          <PRCreationModal
-            type={"fee-setter-v3"}
-            isOpen={isOpen}
-            onClose={onClose}
-            network={selectedNetwork}
-            payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-            {...getPrefillValues()}
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
-        </Box>
-      )}
+        )}
+
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <Box display="flex" alignItems="center" mt="20px">
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} network={selectedNetwork} />
+            <Box mt={8} />
+            <PRCreationModal
+              type={"fee-setter-v3"}
+              isOpen={isOpen}
+              onClose={onClose}
+              network={selectedNetwork}
+              payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+              {...getPrefillValues()}
+            />
+          </Box>
+        )}
     </Container>
   );
 }
