@@ -107,7 +107,10 @@ export default function SetRewardDistributorPage() {
     }
   };
 
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+  const filteredNetworkOptions = NETWORK_OPTIONS.filter(
+    network =>
+      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM",
+  );
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedApiID = e.target.value;

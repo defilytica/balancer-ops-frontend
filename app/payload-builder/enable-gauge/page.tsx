@@ -100,7 +100,10 @@ export default function EnableGaugePage() {
       apiID, // Using the key directly
       chainId: "0", // Default chainId
     }))
-    .filter(network => network.apiID !== "sonic");
+    .filter(
+      network =>
+        network.apiID !== "sonic" && network.apiID !== "plasma" && network.apiID !== "hyperevm",
+    );
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {
