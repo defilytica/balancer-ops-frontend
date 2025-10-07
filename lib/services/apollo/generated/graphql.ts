@@ -212,10 +212,6 @@ export type GqlLatestSyncedBlocks = {
 
 export type GqlLoopsData = {
   __typename: 'GqlLoopsData';
-  /** Aave Merit APR */
-  aaveMeritApr: Scalars['Float']['output'];
-  /** Aave S borrow APR */
-  aaveSBorrowApr: Scalars['Float']['output'];
   /** Actual TotalSupply of LoopS. */
   actualSupply: Scalars['String']['output'];
   /** The total APR for LoopS */
@@ -230,20 +226,18 @@ export type GqlLoopsData = {
   healthFactor: Scalars['String']['output'];
   /** The amount of leverage the current position has. */
   leverage: Scalars['Float']['output'];
-  /** Loan To Value of the position */
-  ltv: Scalars['String']['output'];
   /** Net Asset Value. The amount of collateral minus the amount of debt. */
   nav: Scalars['String']['output'];
   /** The current rate of LoopS against S. */
   rate: Scalars['String']['output'];
   /** The current Sonic points multiplier for LoopS */
   sonicPointsMultiplier: Scalars['String']['output'];
-  /** The current cap on the stS market on Aave */
-  stSAaveMarketCap: Scalars['String']['output'];
-  /** The max LTV of the market with e-mode */
-  stSAaveMarketMaxLTV: Scalars['String']['output'];
   /** The current amount of stS supplied to the Aave market */
   stSAaveMarketSupply: Scalars['String']['output'];
+  /** The current cap on the stS market on Aave */
+  stSAaveMarketSupplyCap: Scalars['String']['output'];
+  /** Net Asset Value in USD. */
+  tvl: Scalars['String']['output'];
 };
 
 /** All info on the nested pool if the token is a BPT. It will only support 1 level of nesting. */

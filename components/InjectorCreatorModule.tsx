@@ -136,6 +136,15 @@ const convertToHumanReadable = (rawAmount: string, decimals: number): string => 
   }
 };
 
+const filteredNetworkOptions = NETWORK_OPTIONS.filter(
+  network =>
+    network.apiID !== "SONIC" &&
+    network.apiID !== "PLASMA" &&
+    network.apiID !== "HYPEREVM" &&
+    network.apiID !== "MODE" &&
+    network.apiID !== "FRAXTAL",
+);
+
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [factoryAddress, setFactoryAddress] = useState("");
@@ -898,7 +907,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
         <GridItem colSpan={{ base: 12, md: 4 }}>
           <NetworkSelector
             networks={networks}
-            networkOptions={NETWORK_OPTIONS}
+            networkOptions={filteredNetworkOptions}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
           />
