@@ -350,8 +350,8 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     for (let i = 0; i < nonce; i++) {
       contracts.push({
         address: selectedContract.address as `0x${string}`,
-        abi: sdBALVesterABI,
-        functionName: "getVestingPosition",
+        abi: sdBALVesterABI as any,
+        functionName: "getVestingPosition" as const,
         args: [BigInt(i)],
       });
     }
@@ -360,7 +360,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   }, [vestingNonce, selectedContract?.address]);
 
   const { data: vestingPositionsData, isLoading: isLoadingPositions } = useReadContracts({
-    contracts: vestingPositionContracts,
+    contracts: vestingPositionContracts as any,
     query: {
       enabled: vestingPositionContracts.length > 0 && isOnMainnet && isBeneficiary,
     },
@@ -949,363 +949,386 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         </Card>
       )}
 
-      {/* Claimable Amounts & Action Buttons */}
+      {/* Claimable Rewards Section */}
       {selectedContract && connectedAddress && isOnMainnet && isBeneficiary && (
-        <Card mb={4} variant="level1">
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              {/* Total Claimable Summary */}
-              {(parseFloat(totalClaimableUSD) > 0 ||
-                claimableVotingRewards ||
-                vestingRewards.length > 0) && (
-                <Box
-                  p={4}
-                  bg="background.level2"
-                  borderRadius="xl"
-                  borderWidth="2px"
-                  borderColor="border.highlight"
-                >
-                  <HStack justify="space-between" align="center">
-                    <VStack align="start" spacing={1}>
-                      <Text
-                        fontSize="sm"
-                        color="font.secondary"
-                        fontWeight="medium"
-                        textTransform="uppercase"
-                      >
-                        Total Claimable Value
-                      </Text>
-                      <Text fontSize="3xl" fontWeight="bold" color="font.primary">
-                        ${totalClaimableUSD}
-                      </Text>
-                      <Text fontSize="xs" color="font.secondary">
-                        Across all reward types
-                      </Text>
-                    </VStack>
-                    <Box>
-                      <Badge colorScheme="green" size="lg" px={3} py={2} borderRadius="md">
-                        {(claimableVotingRewards ? 1 : 0) + vestingRewards.length} Rewards Available
-                      </Badge>
-                    </Box>
-                  </HStack>
-                </Box>
-              )}
-              {/* Voting Rewards Section */}
-              {claimableVotingRewards && (
-                <Box>
-                  <HStack justify="space-between" mb={3}>
-                    <Text fontWeight="semibold" color="font.primary">
-                      Voting Rewards
-                    </Text>
-                    <Text fontSize="sm" color="font.secondary">
-                      Compounded as sdBAL
-                    </Text>
-                  </HStack>
-                  <Card variant="subSection">
-                    <CardBody>
-                      <VStack spacing={3} align="stretch">
-                        <HStack
-                          justify="space-between"
-                          align="center"
-                          p={3}
-                          bg="background.level3"
-                          borderRadius="lg"
-                        >
-                          <HStack spacing={3}>
-                            <Avatar
-                              src={getTokenLogo(SDBAL_TOKEN_ADDRESS) || undefined}
-                              name="sdBAL"
-                              size="sm"
-                              bg="gray.500"
-                            />
-                            <VStack align="start" spacing={0}>
-                              <HStack spacing={2}>
-                                <Text fontSize="lg" fontWeight="bold" color="font.primary">
-                                  {parseFloat(claimableVotingRewards.amount).toFixed(4)}
-                                </Text>
-                                <Text fontSize="md" color="font.secondary" fontWeight="medium">
-                                  sdBAL
-                                </Text>
-                              </HStack>
-                              {claimableVotingRewards.usdValue && (
-                                <Text fontSize="sm" color="font.secondary">
-                                  ≈ ${claimableVotingRewards.usdValue}
-                                </Text>
-                              )}
-                            </VStack>
-                          </HStack>
-                          <Badge variant="meta" size="sm">
-                            Merkl Rewards
-                          </Badge>
-                        </HStack>
+        <>
+          <Box mb={8} mt={6}>
+            <Heading as="h3" size="md" mb={2}>
+              Immediate Claimable Rewards
+            </Heading>
+            <Text fontSize="sm" color="font.secondary">
+              Rewards that are ready to be claimed right now
+            </Text>
+          </Box>
 
-                        <VStack spacing={2}>
-                          {/* Claim Status Info */}
-                          {isCheckingClaimed ? (
-                            <Badge colorScheme="gray" size="sm">
-                              Checking claim status...
+          <Card mb={8} variant="level1">
+            <CardBody>
+              <VStack spacing={4} align="stretch">
+                {/* Total Claimable Summary */}
+                {(parseFloat(totalClaimableUSD) > 0 ||
+                  claimableVotingRewards ||
+                  vestingRewards.length > 0) && (
+                  <Box
+                    p={4}
+                    bg="background.level2"
+                    borderRadius="xl"
+                    borderWidth="2px"
+                    borderColor="border.highlight"
+                  >
+                    <HStack justify="space-between" align="center">
+                      <VStack align="start" spacing={1}>
+                        <Text
+                          fontSize="sm"
+                          color="font.secondary"
+                          fontWeight="medium"
+                          textTransform="uppercase"
+                        >
+                          Total Claimable Value
+                        </Text>
+                        <Text fontSize="3xl" fontWeight="bold" color="font.primary">
+                          ${totalClaimableUSD}
+                        </Text>
+                        <Text fontSize="xs" color="font.secondary">
+                          Across all reward types
+                        </Text>
+                      </VStack>
+                      <Box>
+                        <Badge colorScheme="green" size="lg" px={3} py={2} borderRadius="md">
+                          {(claimableVotingRewards ? 1 : 0) + vestingRewards.length} Rewards
+                          Available
+                        </Badge>
+                      </Box>
+                    </HStack>
+                  </Box>
+                )}
+                {/* Voting Rewards Section */}
+                {claimableVotingRewards && (
+                  <Box>
+                    <HStack justify="space-between" mb={3}>
+                      <Text fontWeight="semibold" color="font.primary">
+                        Voting Rewards
+                      </Text>
+                      <Text fontSize="sm" color="font.secondary">
+                        Compounded as sdBAL
+                      </Text>
+                    </HStack>
+                    <Card variant="subSection">
+                      <CardBody>
+                        <VStack spacing={3} align="stretch">
+                          <HStack
+                            justify="space-between"
+                            align="center"
+                            p={3}
+                            bg="background.level3"
+                            borderRadius="lg"
+                          >
+                            <HStack spacing={3}>
+                              <Avatar
+                                src={getTokenLogo(SDBAL_TOKEN_ADDRESS) || undefined}
+                                name="sdBAL"
+                                size="sm"
+                                bg="gray.500"
+                              />
+                              <VStack align="start" spacing={0}>
+                                <HStack spacing={2}>
+                                  <Text fontSize="lg" fontWeight="bold" color="font.primary">
+                                    {parseFloat(claimableVotingRewards.amount).toFixed(4)}
+                                  </Text>
+                                  <Text fontSize="md" color="font.secondary" fontWeight="medium">
+                                    sdBAL
+                                  </Text>
+                                </HStack>
+                                {claimableVotingRewards.usdValue && (
+                                  <Text fontSize="sm" color="font.secondary">
+                                    ≈ ${claimableVotingRewards.usdValue}
+                                  </Text>
+                                )}
+                              </VStack>
+                            </HStack>
+                            <Badge variant="meta" size="sm">
+                              Merkl Rewards
                             </Badge>
-                          ) : Boolean(isAlreadyClaimed) ? (
-                            <Badge colorScheme="red" size="sm" px={3} py={1}>
-                              ✗ Already Claimed
-                            </Badge>
-                          ) : (
-                            <Badge colorScheme="green" size="sm" px={3} py={1}>
-                              ✓ Available to Claim
-                            </Badge>
-                          )}
+                          </HStack>
+
+                          <VStack spacing={2}>
+                            {/* Claim Status Info */}
+                            {isCheckingClaimed ? (
+                              <Badge colorScheme="gray" size="sm">
+                                Checking claim status...
+                              </Badge>
+                            ) : Boolean(isAlreadyClaimed) ? (
+                              <Badge colorScheme="red" size="sm" px={3} py={1}>
+                                ✗ Already Claimed
+                              </Badge>
+                            ) : (
+                              <Badge colorScheme="green" size="sm" px={3} py={1}>
+                                ✓ Available to Claim
+                              </Badge>
+                            )}
+
+                            <Flex justify="center">
+                              <Button
+                                variant="secondary"
+                                size="md"
+                                onClick={handleClaimVotingRewards}
+                                isLoading={isLoadingMerkl || isCheckingClaimed}
+                                loadingText={
+                                  isLoadingMerkl
+                                    ? "Loading Merkl data..."
+                                    : "Checking claim status..."
+                                }
+                                isDisabled={Boolean(isAlreadyClaimed)}
+                                fontWeight="bold"
+                                maxW="320px"
+                              >
+                                {Boolean(isAlreadyClaimed)
+                                  ? "Already Claimed"
+                                  : `Claim Voting Rewards (${parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)`}
+                              </Button>
+                            </Flex>
+                          </VStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  </Box>
+                )}
+
+                {/* Gauge Rewards Section */}
+                {vestingRewards.length > 0 && (
+                  <Box>
+                    <HStack justify="space-between" mb={3}>
+                      <Text fontWeight="semibold" color="font.primary">
+                        Gauge Rewards
+                      </Text>
+                      <Text fontSize="sm" color="font.secondary">
+                        Passive fees
+                      </Text>
+                    </HStack>
+                    <Card variant="subSection">
+                      <CardBody>
+                        <VStack spacing={4} align="stretch">
+                          <VStack spacing={2}>
+                            {vestingRewards.map(reward => {
+                              const tokenAddress =
+                                reward.symbol === "USDC" ? USDC_ADDRESS : BAL_ADDRESS;
+                              return (
+                                <HStack
+                                  key={reward.symbol}
+                                  justify="space-between"
+                                  align="center"
+                                  p={3}
+                                  bg="background.level3"
+                                  borderRadius="lg"
+                                  w="full"
+                                >
+                                  <HStack spacing={3}>
+                                    <Avatar
+                                      src={getTokenLogo(tokenAddress) || undefined}
+                                      name={reward.symbol}
+                                      size="sm"
+                                      bg="gray.500"
+                                    />
+                                    <VStack align="start" spacing={0}>
+                                      <HStack spacing={2}>
+                                        <Text fontSize="lg" fontWeight="bold" color="font.primary">
+                                          {parseFloat(reward.amount).toFixed(
+                                            reward.symbol === "USDC" ? 2 : 4,
+                                          )}
+                                        </Text>
+                                        <Text
+                                          fontSize="md"
+                                          color="font.secondary"
+                                          fontWeight="medium"
+                                        >
+                                          {reward.symbol}
+                                        </Text>
+                                      </HStack>
+                                      {reward.usdValue && (
+                                        <Text fontSize="sm" color="font.secondary">
+                                          ≈ ${reward.usdValue}
+                                        </Text>
+                                      )}
+                                    </VStack>
+                                  </HStack>
+                                  <Badge
+                                    variant="subtle"
+                                    colorScheme={reward.symbol === "USDC" ? "green" : "purple"}
+                                    size="sm"
+                                  >
+                                    {reward.symbol === "USDC" ? "Stable" : "Governance"}
+                                  </Badge>
+                                </HStack>
+                              );
+                            })}
+                          </VStack>
 
                           <Flex justify="center">
                             <Button
-                              variant="secondary"
+                              variant="primary"
                               size="md"
-                              onClick={handleClaimVotingRewards}
-                              isLoading={isLoadingMerkl || isCheckingClaimed}
-                              loadingText={
-                                isLoadingMerkl
-                                  ? "Loading Merkl data..."
-                                  : "Checking claim status..."
-                              }
-                              isDisabled={Boolean(isAlreadyClaimed)}
+                              onClick={handleClaimRewards}
                               fontWeight="bold"
                               maxW="320px"
                             >
-                              {Boolean(isAlreadyClaimed)
-                                ? "Already Claimed"
-                                : `Claim Voting Rewards (${parseFloat(claimableVotingRewards.amount).toFixed(2)} sdBAL)`}
+                              Claim Gauge Rewards ({vestingRewards.map(r => r.symbol).join(", ")})
                             </Button>
                           </Flex>
                         </VStack>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                </Box>
-              )}
-
-              {/* Gauge Rewards Section */}
-              {vestingRewards.length > 0 && (
-                <Box>
-                  <HStack justify="space-between" mb={3}>
-                    <Text fontWeight="semibold" color="font.primary">
-                      Gauge Rewards
-                    </Text>
-                    <Text fontSize="sm" color="font.secondary">
-                      Passive fees
-                    </Text>
-                  </HStack>
-                  <Card variant="subSection">
-                    <CardBody>
-                      <VStack spacing={4} align="stretch">
-                        <VStack spacing={2}>
-                          {vestingRewards.map(reward => {
-                            const tokenAddress =
-                              reward.symbol === "USDC" ? USDC_ADDRESS : BAL_ADDRESS;
-                            return (
-                              <HStack
-                                key={reward.symbol}
-                                justify="space-between"
-                                align="center"
-                                p={3}
-                                bg="background.level3"
-                                borderRadius="lg"
-                                w="full"
-                              >
-                                <HStack spacing={3}>
-                                  <Avatar
-                                    src={getTokenLogo(tokenAddress) || undefined}
-                                    name={reward.symbol}
-                                    size="sm"
-                                    bg="gray.500"
-                                  />
-                                  <VStack align="start" spacing={0}>
-                                    <HStack spacing={2}>
-                                      <Text fontSize="lg" fontWeight="bold" color="font.primary">
-                                        {parseFloat(reward.amount).toFixed(
-                                          reward.symbol === "USDC" ? 2 : 4,
-                                        )}
-                                      </Text>
-                                      <Text
-                                        fontSize="md"
-                                        color="font.secondary"
-                                        fontWeight="medium"
-                                      >
-                                        {reward.symbol}
-                                      </Text>
-                                    </HStack>
-                                    {reward.usdValue && (
-                                      <Text fontSize="sm" color="font.secondary">
-                                        ≈ ${reward.usdValue}
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                </HStack>
-                                <Badge
-                                  variant="subtle"
-                                  colorScheme={reward.symbol === "USDC" ? "green" : "purple"}
-                                  size="sm"
-                                >
-                                  {reward.symbol === "USDC" ? "Stable" : "Governance"}
-                                </Badge>
-                              </HStack>
-                            );
-                          })}
-                        </VStack>
-
-                        <Flex justify="center">
-                          <Button
-                            variant="primary"
-                            size="md"
-                            onClick={handleClaimRewards}
-                            fontWeight="bold"
-                            maxW="320px"
-                          >
-                            Claim Gauge Rewards ({vestingRewards.map(r => r.symbol).join(", ")})
-                          </Button>
-                        </Flex>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                </Box>
-              )}
-            </VStack>
-          </CardBody>
-        </Card>
+                      </CardBody>
+                    </Card>
+                  </Box>
+                )}
+              </VStack>
+            </CardBody>
+          </Card>
+        </>
       )}
 
-      {/* Vesting Positions Table */}
+      {/* Vesting Schedule Section */}
       {selectedContract &&
         connectedAddress &&
         isOnMainnet &&
         isBeneficiary &&
         vestingPositions.length > 0 && (
-          <Card mb={4} variant="level1">
-            <CardHeader>
-              <HStack justify="space-between" align="center">
-                <Heading as="h3" size="md">
-                  Vesting Positions
-                </Heading>
-                <Badge colorScheme="blue" px={3} py={1}>
-                  {vestingPositions.length} Position{vestingPositions.length !== 1 ? "s" : ""}
-                </Badge>
-              </HStack>
-            </CardHeader>
-            <CardBody>
-              {isLoadingNonce || isLoadingPositions ? (
-                <Flex justify="center" align="center" py={8}>
-                  <Text color="font.secondary">Loading vesting positions...</Text>
-                </Flex>
-              ) : (
-                <Box overflowX="auto">
-                  <Table variant="simple" size="sm">
-                    <Thead>
-                      <Tr>
-                        <Th>Position</Th>
-                        <Th isNumeric>Amount</Th>
-                        <Th>Vesting Ends</Th>
-                        <Th>Status</Th>
-                        <Th>Action</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {vestingPositions.map(position => {
-                        const { absoluteDate, relativeTime, diffDays } = formatVestingDate(
-                          position.vestingEnds,
-                        );
-                        const isClaimable = diffDays <= 0 && !position.claimed;
-                        const sdBALAmount = (Number(position.amount) / 1e18).toFixed(4);
-                        const usdValue = sdBALPrice
-                          ? (parseFloat(sdBALAmount) * sdBALPrice).toFixed(2)
-                          : null;
+          <>
+            <Box mb={6} mt={10}>
+              <Heading as="h3" size="md" mb={2}>
+                Vesting Schedule
+              </Heading>
+              <Text fontSize="sm" color="font.secondary">
+                Your locked sdBAL positions with their unlock dates and claim status
+              </Text>
+            </Box>
 
-                        return (
-                          <Tr key={position.nonce}>
-                            <Td>
-                              <Text fontWeight="medium" fontFamily="mono">
-                                #{position.nonce}
-                              </Text>
-                            </Td>
-                            <Td isNumeric>
-                              <VStack align="end" spacing={0}>
-                                <HStack spacing={1}>
-                                  <Text fontWeight="bold" fontSize="sm">
-                                    {sdBALAmount}
+            <Card mb={4} variant="level1">
+              <CardHeader>
+                <HStack justify="space-between" align="center">
+                  <Text fontWeight="semibold" fontSize="md" color="font.primary">
+                    All Vesting Positions
+                  </Text>
+                  <Badge colorScheme="blue" px={3} py={1}>
+                    {vestingPositions.length} Position{vestingPositions.length !== 1 ? "s" : ""}
+                  </Badge>
+                </HStack>
+              </CardHeader>
+              <CardBody>
+                {isLoadingNonce || isLoadingPositions ? (
+                  <Flex justify="center" align="center" py={8}>
+                    <Text color="font.secondary">Loading vesting positions...</Text>
+                  </Flex>
+                ) : (
+                  <Box overflowX="auto">
+                    <Table variant="simple" size="sm">
+                      <Thead>
+                        <Tr>
+                          <Th>Position</Th>
+                          <Th isNumeric>Amount</Th>
+                          <Th>Vesting Ends</Th>
+                          <Th>Status</Th>
+                          <Th>Action</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {vestingPositions.map(position => {
+                          const { absoluteDate, relativeTime, diffDays } = formatVestingDate(
+                            position.vestingEnds,
+                          );
+                          const isClaimable = diffDays <= 0 && !position.claimed;
+                          const sdBALAmount = (Number(position.amount) / 1e18).toFixed(4);
+                          const usdValue = sdBALPrice
+                            ? (parseFloat(sdBALAmount) * sdBALPrice).toFixed(2)
+                            : null;
+
+                          return (
+                            <Tr key={position.nonce}>
+                              <Td>
+                                <Text fontWeight="medium" fontFamily="mono">
+                                  #{position.nonce}
+                                </Text>
+                              </Td>
+                              <Td isNumeric>
+                                <VStack align="end" spacing={0}>
+                                  <HStack spacing={1}>
+                                    <Text fontWeight="bold" fontSize="sm">
+                                      {sdBALAmount}
+                                    </Text>
+                                    <Text fontSize="xs" color="font.secondary">
+                                      sdBAL
+                                    </Text>
+                                  </HStack>
+                                  {usdValue && (
+                                    <Text fontSize="xs" color="font.secondary">
+                                      ≈ ${usdValue}
+                                    </Text>
+                                  )}
+                                </VStack>
+                              </Td>
+                              <Td>
+                                <VStack align="start" spacing={0}>
+                                  <Text fontSize="sm" fontWeight="medium">
+                                    {absoluteDate}
                                   </Text>
-                                  <Text fontSize="xs" color="font.secondary">
-                                    sdBAL
+                                  <Text
+                                    fontSize="xs"
+                                    color={diffDays <= 0 ? "green.600" : "font.secondary"}
+                                  >
+                                    {relativeTime}
                                   </Text>
-                                </HStack>
-                                {usdValue && (
-                                  <Text fontSize="xs" color="font.secondary">
-                                    ≈ ${usdValue}
-                                  </Text>
+                                </VStack>
+                              </Td>
+                              <Td>
+                                {position.claimed ? (
+                                  <Badge colorScheme="gray" variant="subtle">
+                                    Claimed
+                                  </Badge>
+                                ) : isClaimable ? (
+                                  <Badge colorScheme="green" variant="subtle">
+                                    Claimable
+                                  </Badge>
+                                ) : (
+                                  <Badge colorScheme="orange" variant="subtle">
+                                    Locked
+                                  </Badge>
                                 )}
-                              </VStack>
-                            </Td>
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="sm" fontWeight="medium">
-                                  {absoluteDate}
-                                </Text>
-                                <Text
-                                  fontSize="xs"
-                                  color={diffDays <= 0 ? "green.600" : "font.secondary"}
-                                >
-                                  {relativeTime}
-                                </Text>
-                              </VStack>
-                            </Td>
-                            <Td>
-                              {position.claimed ? (
-                                <Badge colorScheme="gray" variant="subtle">
-                                  Claimed
-                                </Badge>
-                              ) : isClaimable ? (
-                                <Badge colorScheme="green" variant="subtle">
-                                  Claimable
-                                </Badge>
-                              ) : (
-                                <Badge colorScheme="orange" variant="subtle">
-                                  Locked
-                                </Badge>
-                              )}
-                            </Td>
-                            <Td>
-                              {position.claimed ? (
-                                <Button size="sm" isDisabled variant="ghost">
-                                  Claimed
-                                </Button>
-                              ) : isClaimable ? (
-                                <Button
-                                  size="sm"
-                                  colorScheme="green"
-                                  variant="secondary"
-                                  onClick={() => handleClaimVesting(position.nonce)}
-                                >
-                                  Claim
-                                </Button>
-                              ) : (
-                                <Tooltip
-                                  label={`Available ${relativeTime}`}
-                                  placement="top"
-                                  hasArrow
-                                >
-                                  <Box display="inline-block">
-                                    <Button size="sm" isDisabled variant="ghost">
-                                      Locked
-                                    </Button>
-                                  </Box>
-                                </Tooltip>
-                              )}
-                            </Td>
-                          </Tr>
-                        );
-                      })}
-                    </Tbody>
-                  </Table>
-                </Box>
-              )}
-            </CardBody>
-          </Card>
+                              </Td>
+                              <Td>
+                                {position.claimed ? (
+                                  <Button size="sm" isDisabled variant="ghost">
+                                    Claimed
+                                  </Button>
+                                ) : isClaimable ? (
+                                  <Button
+                                    size="sm"
+                                    colorScheme="green"
+                                    variant="secondary"
+                                    onClick={() => handleClaimVesting(position.nonce)}
+                                  >
+                                    Claim
+                                  </Button>
+                                ) : (
+                                  <Tooltip
+                                    label={`Available ${relativeTime}`}
+                                    placement="top"
+                                    hasArrow
+                                  >
+                                    <Box display="inline-block">
+                                      <Button size="sm" isDisabled variant="ghost">
+                                        Locked
+                                      </Button>
+                                    </Box>
+                                  </Tooltip>
+                                )}
+                              </Td>
+                            </Tr>
+                          );
+                        })}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                )}
+              </CardBody>
+            </Card>
+          </>
         )}
 
       {/* Data Status */}
