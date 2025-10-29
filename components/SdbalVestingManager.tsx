@@ -18,11 +18,24 @@ import {
   Heading,
   HStack,
   Select,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import { useAccount, useReadContract, useWriteContract, useSwitchChain } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useReadContracts,
+  useWriteContract,
+  useSwitchChain,
+} from "wagmi";
 import { useQuery } from "@apollo/client";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 import { AddressBook } from "@/types/interfaces";
@@ -55,6 +68,13 @@ interface MerklData {
     };
     proof: string[];
   };
+}
+
+interface VestingPosition {
+  nonce: number;
+  amount: bigint;
+  vestingEnds: bigint;
+  claimed: boolean;
 }
 
 export default function SdbalVestingManager({ addressBook }: SdbalVestingManagerProps) {
@@ -309,6 +329,77 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
 
     return connected === beneficiaryAddr;
   }, [connectedAddress, beneficiary]);
+
+  // Read the vesting nonce (total number of vesting positions)
+  const { data: vestingNonce, isLoading: isLoadingNonce } = useReadContract({
+    address: selectedContract?.address as `0x${string}`,
+    abi: sdBALVesterABI,
+    functionName: "getVestingNonce",
+    query: {
+      enabled: !!selectedContract?.address && isOnMainnet && isBeneficiary,
+    },
+  });
+
+  // Fetch all vesting positions based on the nonce
+  const vestingPositionContracts = useMemo(() => {
+    if (!vestingNonce || !selectedContract?.address) return [];
+
+    const nonce = Number(vestingNonce);
+    const contracts = [];
+
+    for (let i = 0; i < nonce; i++) {
+      contracts.push({
+        address: selectedContract.address as `0x${string}`,
+        abi: sdBALVesterABI,
+        functionName: "getVestingPosition",
+        args: [BigInt(i)],
+      });
+    }
+
+    return contracts;
+  }, [vestingNonce, selectedContract?.address]);
+
+  const { data: vestingPositionsData, isLoading: isLoadingPositions } = useReadContracts({
+    contracts: vestingPositionContracts,
+    query: {
+      enabled: vestingPositionContracts.length > 0 && isOnMainnet && isBeneficiary,
+    },
+  });
+
+  // Process vesting positions data
+  const vestingPositions = useMemo(() => {
+    if (!vestingPositionsData) return [];
+
+    return vestingPositionsData
+      .map((result, index) => {
+        if (result.status === "success" && result.result) {
+          // Handle both array and object return formats
+          const data = result.result as any;
+
+          // Check if it's an object with named properties or an array
+          const amount = data.amount !== undefined ? BigInt(data.amount) : BigInt(data[0] || 0);
+          const vestingEnds =
+            data.vestingEnds !== undefined ? BigInt(data.vestingEnds) : BigInt(data[1] || 0);
+          const claimed = data.claimed !== undefined ? Boolean(data.claimed) : Boolean(data[2]);
+
+          console.log("Vesting position data:", {
+            index,
+            amount: amount.toString(),
+            vestingEnds: vestingEnds.toString(),
+            claimed,
+          });
+
+          return {
+            nonce: index,
+            amount,
+            vestingEnds,
+            claimed,
+          };
+        }
+        return null;
+      })
+      .filter((pos): pos is VestingPosition => pos !== null);
+  }, [vestingPositionsData]);
 
   // Custom hook to fetch Merkl data
   const fetchMerklData = useCallback(async () => {
@@ -588,6 +679,89 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     writeContractAsync,
     toast,
   ]);
+
+  // Helper function to format dates (absolute + relative)
+  const formatVestingDate = useCallback((vestingEnds: bigint) => {
+    const date = new Date(Number(vestingEnds) * 1000);
+    const now = Date.now();
+    const vestingTime = date.getTime();
+    const diffMs = vestingTime - now;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    const absoluteDate = date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let relativeTime = "";
+    if (diffDays > 0) {
+      if (diffDays === 1) {
+        relativeTime = "in 1 day";
+      } else if (diffDays < 30) {
+        relativeTime = `in ${diffDays} days`;
+      } else if (diffDays < 365) {
+        const months = Math.floor(diffDays / 30);
+        relativeTime = months === 1 ? "in 1 month" : `in ${months} months`;
+      } else {
+        const years = Math.floor(diffDays / 365);
+        relativeTime = years === 1 ? "in 1 year" : `in ${years} years`;
+      }
+    } else if (diffDays === 0) {
+      relativeTime = "today";
+    } else {
+      const absDays = Math.abs(diffDays);
+      if (absDays === 1) {
+        relativeTime = "1 day ago";
+      } else if (absDays < 30) {
+        relativeTime = `${absDays} days ago`;
+      } else if (absDays < 365) {
+        const months = Math.floor(absDays / 30);
+        relativeTime = months === 1 ? "1 month ago" : `${months} months ago`;
+      } else {
+        const years = Math.floor(absDays / 365);
+        relativeTime = years === 1 ? "1 year ago" : `${years} years ago`;
+      }
+    }
+
+    return { absoluteDate, relativeTime, diffDays };
+  }, []);
+
+  // Handle claiming a specific vesting position
+  const handleClaimVesting = useCallback(
+    async (nonce: number) => {
+      if (!validateClaim("vesting position")) return;
+
+      try {
+        const hash = await writeContractAsync({
+          address: selectedContract!.address as `0x${string}`,
+          abi: sdBALVesterABI,
+          functionName: "claim",
+          args: [BigInt(nonce)],
+        });
+
+        toast({
+          title: "Transaction submitted",
+          description: `Claiming vesting position #${nonce}. Transaction: ${hash}`,
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error: any) {
+        console.error("Error claiming vesting position:", error);
+        toast({
+          title: "Transaction failed",
+          description: error.message || "Failed to claim vesting position",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    },
+    [validateClaim, selectedContract, writeContractAsync, toast],
+  );
 
   return (
     <Container maxW="container.lg">
@@ -997,6 +1171,142 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
           </CardBody>
         </Card>
       )}
+
+      {/* Vesting Positions Table */}
+      {selectedContract &&
+        connectedAddress &&
+        isOnMainnet &&
+        isBeneficiary &&
+        vestingPositions.length > 0 && (
+          <Card mb={4} variant="level1">
+            <CardHeader>
+              <HStack justify="space-between" align="center">
+                <Heading as="h3" size="md">
+                  Vesting Positions
+                </Heading>
+                <Badge colorScheme="blue" px={3} py={1}>
+                  {vestingPositions.length} Position{vestingPositions.length !== 1 ? "s" : ""}
+                </Badge>
+              </HStack>
+            </CardHeader>
+            <CardBody>
+              {isLoadingNonce || isLoadingPositions ? (
+                <Flex justify="center" align="center" py={8}>
+                  <Text color="font.secondary">Loading vesting positions...</Text>
+                </Flex>
+              ) : (
+                <Box overflowX="auto">
+                  <Table variant="simple" size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Position</Th>
+                        <Th isNumeric>Amount</Th>
+                        <Th>Vesting Ends</Th>
+                        <Th>Status</Th>
+                        <Th>Action</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {vestingPositions.map(position => {
+                        const { absoluteDate, relativeTime, diffDays } = formatVestingDate(
+                          position.vestingEnds,
+                        );
+                        const isClaimable = diffDays <= 0 && !position.claimed;
+                        const sdBALAmount = (Number(position.amount) / 1e18).toFixed(4);
+                        const usdValue = sdBALPrice
+                          ? (parseFloat(sdBALAmount) * sdBALPrice).toFixed(2)
+                          : null;
+
+                        return (
+                          <Tr key={position.nonce}>
+                            <Td>
+                              <Text fontWeight="medium" fontFamily="mono">
+                                #{position.nonce}
+                              </Text>
+                            </Td>
+                            <Td isNumeric>
+                              <VStack align="end" spacing={0}>
+                                <HStack spacing={1}>
+                                  <Text fontWeight="bold" fontSize="sm">
+                                    {sdBALAmount}
+                                  </Text>
+                                  <Text fontSize="xs" color="font.secondary">
+                                    sdBAL
+                                  </Text>
+                                </HStack>
+                                {usdValue && (
+                                  <Text fontSize="xs" color="font.secondary">
+                                    ≈ ${usdValue}
+                                  </Text>
+                                )}
+                              </VStack>
+                            </Td>
+                            <Td>
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="sm" fontWeight="medium">
+                                  {absoluteDate}
+                                </Text>
+                                <Text
+                                  fontSize="xs"
+                                  color={diffDays <= 0 ? "green.600" : "font.secondary"}
+                                >
+                                  {relativeTime}
+                                </Text>
+                              </VStack>
+                            </Td>
+                            <Td>
+                              {position.claimed ? (
+                                <Badge colorScheme="gray" variant="subtle">
+                                  Claimed
+                                </Badge>
+                              ) : isClaimable ? (
+                                <Badge colorScheme="green" variant="subtle">
+                                  Claimable
+                                </Badge>
+                              ) : (
+                                <Badge colorScheme="orange" variant="subtle">
+                                  Locked
+                                </Badge>
+                              )}
+                            </Td>
+                            <Td>
+                              {position.claimed ? (
+                                <Button size="sm" isDisabled variant="ghost">
+                                  Claimed
+                                </Button>
+                              ) : isClaimable ? (
+                                <Button
+                                  size="sm"
+                                  colorScheme="green"
+                                  variant="secondary"
+                                  onClick={() => handleClaimVesting(position.nonce)}
+                                >
+                                  Claim
+                                </Button>
+                              ) : (
+                                <Tooltip
+                                  label={`Available ${relativeTime}`}
+                                  placement="top"
+                                  hasArrow
+                                >
+                                  <Box display="inline-block">
+                                    <Button size="sm" isDisabled variant="ghost">
+                                      Locked
+                                    </Button>
+                                  </Box>
+                                </Tooltip>
+                              )}
+                            </Td>
+                          </Tr>
+                        );
+                      })}
+                    </Tbody>
+                  </Table>
+                </Box>
+              )}
+            </CardBody>
+          </Card>
+        )}
 
       {/* Data Status */}
       {isLoadingMerkl && (
