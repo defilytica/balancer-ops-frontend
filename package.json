@@ -33,7 +33,7 @@
     "@nikolovlazar/chakra-ui-prose": "^1.2.1",
     "@octokit/rest": "^21.0.0",
     "@prisma/client": "^5.17.0",
-    "@rainbow-me/rainbowkit": "^2.2.0",
+    "@rainbow-me/rainbowkit": "^2.2.9",
     "@reown/walletkit": "^1.3.0",
     "@tanstack/react-query": "^5.59.15",
     "@types/papaparse": "^5.3.14",
@@ -72,7 +72,7 @@
     "sha.js": "^2.4.12",
     "tinycolor2": "^1.6.0",
     "use-debounce": "^10.0.4",
-    "viem": "^2.33.3",
+    "viem": "^2.37.0",
     "wagmi": "^2.19.1"
   },
   "devDependencies": {

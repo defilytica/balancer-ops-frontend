@@ -65,7 +65,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   const { address: connectedAddress, chainId } = useAccount();
   const toast = useToast();
   const { writeContractAsync } = useWriteContract();
-  const { switchChain } = useSwitchChain();
+  const { switchChainAsync } = useSwitchChain();
 
   const MAINNET_CHAIN_ID = 1;
   const isOnMainnet = chainId === MAINNET_CHAIN_ID;
@@ -378,7 +378,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
 
   const handleSwitchToMainnet = useCallback(async () => {
     try {
-      await switchChain({ chainId: MAINNET_CHAIN_ID });
+      await switchChainAsync({ chainId: MAINNET_CHAIN_ID });
     } catch (error: any) {
       console.error("Error switching to mainnet:", error);
       toast({
@@ -389,7 +389,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         isClosable: true,
       });
     }
-  }, [switchChain, toast]);
+  }, [switchChainAsync, toast]);
 
   const handleContractSelect = useCallback(
     (contractAddress: string) => {
