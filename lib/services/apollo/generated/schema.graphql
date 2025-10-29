@@ -215,9 +215,6 @@ type GqlLoopsData {
   """The current rate of LoopS against S."""
   rate: String!
 
-  """The current Sonic points multiplier for LoopS"""
-  sonicPointsMultiplier: String!
-
   """The current amount of stS supplied to the Aave market"""
   stSAaveMarketSupply: String!
 
@@ -3397,7 +3394,7 @@ type Query {
   """Retrieve the withdrawalrequests from a user"""
   sftmxGetWithdrawalRequests(user: String!): [GqlSftmxWithdrawalRequests!]!
 
-  """Get swap quote from the SOR v2 for the V2 vault"""
+  """Get swap quote from the SOR v2"""
   sorGetSwapPaths(
     """The Chain to query"""
     chain: GqlChain!

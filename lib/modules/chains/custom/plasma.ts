@@ -10,7 +10,7 @@ export const plasma = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["https://lb.drpc.org/ogrpc?network=plasma&dkey="],
+      http: ["https://lb.drpc.live/plasma/"],
       webSocket: ["wss://plasma.drpc.org"],
     },
   },
