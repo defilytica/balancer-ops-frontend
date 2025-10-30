@@ -230,8 +230,6 @@ export type GqlLoopsData = {
   nav: Scalars['String']['output'];
   /** The current rate of LoopS against S. */
   rate: Scalars['String']['output'];
-  /** The current Sonic points multiplier for LoopS */
-  sonicPointsMultiplier: Scalars['String']['output'];
   /** The current amount of stS supplied to the Aave market */
   stSAaveMarketSupply: Scalars['String']['output'];
   /** The current cap on the stS market on Aave */
@@ -3093,7 +3091,7 @@ export type Query = {
   sftmxGetStakingSnapshots: Array<GqlSftmxStakingSnapshot>;
   /** Retrieve the withdrawalrequests from a user */
   sftmxGetWithdrawalRequests: Array<GqlSftmxWithdrawalRequests>;
-  /** Get swap quote from the SOR v2 for the V2 vault */
+  /** Get swap quote from the SOR v2 */
   sorGetSwapPaths: GqlSorGetSwapPaths;
   /** Get the staking data and status for stS */
   stsGetGqlStakedSonicData: GqlStakedSonicData;
