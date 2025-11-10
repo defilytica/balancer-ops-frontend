@@ -6,7 +6,7 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
-import { TokenSelector } from "@/components/poolCreator/TokenSelector";
+import { TokenSelector } from "@/components/TokenSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import {

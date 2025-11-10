@@ -44,7 +44,7 @@ import {
   getPermit2Address,
   getBufferRouterAddress as getBufferRouterAddressForNetwork,
 } from "@/lib/utils/sonicNetworkUtils";
-import { TokenSelector } from "@/components/poolCreator/TokenSelector";
+import { TokenSelector } from "@/components/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
 import { useQuery } from "@apollo/client";
 import { NetworkSelector } from "@/components/NetworkSelector";
