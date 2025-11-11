@@ -25,7 +25,6 @@ import { FaChartPie } from "react-icons/fa";
 import { MdOutlineSsidChart } from "react-icons/md";
 import { BiAlignMiddle } from "react-icons/bi";
 import { PiRocketLaunchBold } from "react-icons/pi";
-import { MdPool } from "react-icons/md";
 import NavItem, { NavItemType } from "./NavItem";
 import { BalancerLogo } from "@/public/imgs/BalancerLogo";
 import NextLink from "next/link";
@@ -57,12 +56,6 @@ const LinkItems = [
         icon: TbChartCovariate,
         target: "/reclamm",
         description: "View RECLAMM pools",
-      },
-      {
-        name: "Pool Creator (v2)",
-        icon: MdPool,
-        target: "/pool-creator-v2",
-        description: "Create weighted and composable stable pools for Balancer v2",
       },
     ],
   },
