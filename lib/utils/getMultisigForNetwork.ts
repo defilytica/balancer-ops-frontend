@@ -5,7 +5,7 @@ import { NETWORK_OPTIONS } from "@/constants/constants";
 export const getMultisigForNetwork = (
   addressBook: AddressBook,
   network: string,
-  multisigType: "maxi_omni" | "lm" = "maxi_omni",
+  multisigType: "omni" | "lm" = "omni",
 ): string => {
   // For SONIC, we fetch predefined constants
   if (network.toLowerCase() === "sonic") {
