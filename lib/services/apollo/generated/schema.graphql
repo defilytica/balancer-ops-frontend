@@ -92,6 +92,7 @@ enum GqlChain {
   POLYGON
   SEPOLIA
   SONIC
+  XLAYER
   ZKEVM
 }
 

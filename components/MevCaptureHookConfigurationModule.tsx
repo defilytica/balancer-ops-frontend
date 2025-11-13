@@ -319,7 +319,7 @@ export default function MevCaptureHookConfigurationModule({
       return;
     }
 
-    // Case 1: Zero or maxi_omni address manager (DAO governed) OR Safe proxy
+    // Case 1: Zero or omni address manager (DAO governed) OR Safe proxy
     if (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) {
       const network = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
       if (!network) {

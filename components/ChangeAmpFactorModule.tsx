@@ -69,7 +69,7 @@ const PROTOCOL_CONFIG = {
   },
   v3: {
     authorizedOwner: "0x0000000000000000000000000000000000000000",
-    multisigType: "maxi_omni" as const,
+    multisigType: "omni" as const,
     protocolVersion: 3,
     title: "Balancer v3: Create Amplification Factor Update Payload",
     prType: "amp-factor-update-v3" as const,
