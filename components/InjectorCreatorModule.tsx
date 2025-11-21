@@ -141,6 +141,7 @@ const filteredNetworkOptions = NETWORK_OPTIONS.filter(
     network.apiID !== "SONIC" &&
     network.apiID !== "PLASMA" &&
     network.apiID !== "HYPEREVM" &&
+    network.apiID !== "XLAYER" &&
     network.apiID !== "MODE" &&
     network.apiID !== "FRAXTAL",
 );

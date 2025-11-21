@@ -102,7 +102,7 @@ export default function EnableGaugePage() {
     }))
     .filter(
       network =>
-        network.apiID !== "sonic" && network.apiID !== "plasma" && network.apiID !== "hyperevm",
+        network.apiID !== "sonic" && network.apiID !== "plasma" && network.apiID !== "hyperevm" && network.apiID !== "xlayer",
     );
 
   // Prepare pre-filled values for PR modal

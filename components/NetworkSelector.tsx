@@ -41,6 +41,11 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   handleNetworkChange,
   label,
 }) => {
+  // Sort network options alphabetically by label
+  const sortedNetworkOptions = React.useMemo(() => {
+    return [...networkOptions].sort((a, b) => a.label.localeCompare(b.label));
+  }, [networkOptions]);
+
   // Create a synthetic event for our custom handler
   const createSyntheticEvent = (value: string) => {
     return {
@@ -99,7 +104,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
           {selectedNetwork ? renderNetworkOption(selectedNetwork) : "Select Network"}
         </MenuButton>
         <MenuList width="100%" zIndex={1500}>
-          {networkOptions.map(network => (
+          {sortedNetworkOptions.map(network => (
             <MenuItem
               key={network.chainId + network.apiID}
               onClick={() => onSelectNetwork(network.apiID)}
