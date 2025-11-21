@@ -54,7 +54,7 @@
     "limiter": "^2.1.0",
     "lodash": "^4.17.21",
     "next": "15.4.7",
-    "next-auth": "^4.24.8",
+    "next-auth": "^4.24.12",
     "next-themes": "^0.3.0",
     "papaparse": "^5.4.1",
     "pino-pretty": "^11.3.0",
@@ -117,7 +117,8 @@
     "@metamask/rpc-errors": "^6.4.0",
     "tmp": "^0.2.4",
     "brace-expansion": "^2.0.2",
-    "cookie": "^0.7.0"
+    "cookie": "^0.7.0",
+    "js-yaml": "^4.1.1"
   },
   "eslintConfig": {
     "extends": [
