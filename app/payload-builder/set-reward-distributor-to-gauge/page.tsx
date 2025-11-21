@@ -109,7 +109,7 @@ export default function SetRewardDistributorPage() {
 
   const filteredNetworkOptions = NETWORK_OPTIONS.filter(
     network =>
-      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM",
+      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM" && network.apiID !== "XLAYER",
   );
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

@@ -107,7 +107,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const { switchChain } = useSwitchChain();
   const filteredNetworkOptions = NETWORK_OPTIONS.filter(
     network =>
-      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM",
+      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM" && network.apiID !== "XLAYER",
   );
 
   //Pool data
