@@ -18,6 +18,7 @@ import {
 import { HookParametersTable } from "@/components/tables/HookParametersTable";
 import { HookFilters } from "@/components/HookFilters";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import {
   GetV3PoolsWithHooksQuery,
   GetV3PoolsWithHooksQueryVariables,
@@ -93,13 +94,9 @@ export default function HookParametersDashboardModule({
     // Get networks that have v3 vaults
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
 
-    // For MEV Capture hook, restrict to Base and Optimism only
+    // For MEV Capture hook, restrict to supported networks
     if (hookType.type === "MEV_TAX") {
-      const allowedNetworks = ["base", "optimism"];
-      return [
-        ...baseOptions,
-        ...NETWORK_OPTIONS.filter(network => allowedNetworks.includes(network.apiID.toLowerCase())),
-      ];
+      return [...baseOptions, ...getNetworksForFeature("mevCaptureHook")];
     }
 
     // For other hook types, include all v3 networks

@@ -29,6 +29,7 @@ import {
   MevCaptureParamsInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { MEV_CAPTURE_PARAMS, NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import {
   GetV3PoolsWithHooksDocument,
   GetV3PoolsWithHooksQuery,
@@ -143,9 +144,8 @@ export default function MevCaptureHookConfigurationModule({
   );
 
   const networkOptions = useMemo(() => {
-    const allowedNetworks = ["base", "optimism"];
-    return NETWORK_OPTIONS.filter(network => allowedNetworks.includes(network.apiID.toLowerCase()));
-  }, [addressBook]);
+    return getNetworksForFeature("mevCaptureHook");
+  }, []);
 
   // Handle URL parameters for pre-selection
   useEffect(() => {
@@ -354,7 +354,9 @@ export default function MevCaptureHookConfigurationModule({
 
       // Use the Safe address as multisig if it's a Safe, otherwise use DAO multisig
       const multisigAddress =
-        addressTypeData?.type === AddressType.SAFE_PROXY ? selectedPool.swapFeeManager : selectedMultisig;
+        addressTypeData?.type === AddressType.SAFE_PROXY
+          ? selectedPool.swapFeeManager
+          : selectedMultisig;
 
       const payload = generateMevCaptureParamsPayload(
         input,
@@ -618,7 +620,12 @@ export default function MevCaptureHookConfigurationModule({
       <Grid templateColumns="repeat(12, 1fr)" gap={4} mb={6}>
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY)}
+            isDisabled={
+              !selectedPool ||
+              (!isAuthorizedPool &&
+                !isCurrentWalletManager &&
+                addressTypeData?.type !== AddressType.SAFE_PROXY)
+            }
             mb={4}
             isInvalid={!!mevTaxThresholdError}
           >
@@ -643,7 +650,12 @@ export default function MevCaptureHookConfigurationModule({
 
         <GridItem colSpan={{ base: 12, md: 6 }}>
           <FormControl
-            isDisabled={!selectedPool || (!isAuthorizedPool && !isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY)}
+            isDisabled={
+              !selectedPool ||
+              (!isAuthorizedPool &&
+                !isCurrentWalletManager &&
+                addressTypeData?.type !== AddressType.SAFE_PROXY)
+            }
             mb={4}
             isInvalid={!!mevTaxMultiplierError}
           >
@@ -725,7 +737,9 @@ export default function MevCaptureHookConfigurationModule({
             >
               Execute Parameter Change
             </Button>
-          ) : isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY || isCurrentWalletManager ? (
+          ) : isAuthorizedPool ||
+            addressTypeData?.type === AddressType.SAFE_PROXY ||
+            isCurrentWalletManager ? (
             <>
               <Button
                 variant="primary"
@@ -743,65 +757,70 @@ export default function MevCaptureHookConfigurationModule({
           )}
         </Flex>
 
-        {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload &&
+          (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+            <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+          )}
 
-        {selectedPool && isCurrentWalletManager && addressTypeData?.type !== AddressType.SAFE_PROXY && (
-          <SimulateEOATransactionButton
-            transactions={
-              buildMevCaptureParameterSimulationTransactions({
-                selectedPool,
-                hasMevTaxThreshold: !!debouncedMevTaxThreshold,
-                hasMevTaxMultiplier: !!debouncedMevTaxMultiplier,
-                mevTaxThreshold: debouncedMevTaxThreshold,
-                mevTaxMultiplier: debouncedMevTaxMultiplier,
-              }) || []
-            }
-            networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
-            disabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
-          />
-        )}
+        {selectedPool &&
+          isCurrentWalletManager &&
+          addressTypeData?.type !== AddressType.SAFE_PROXY && (
+            <SimulateEOATransactionButton
+              transactions={
+                buildMevCaptureParameterSimulationTransactions({
+                  selectedPool,
+                  hasMevTaxThreshold: !!debouncedMevTaxThreshold,
+                  hasMevTaxMultiplier: !!debouncedMevTaxMultiplier,
+                  mevTaxThreshold: debouncedMevTaxThreshold,
+                  mevTaxMultiplier: debouncedMevTaxMultiplier,
+                }) || []
+              }
+              networkId={NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId || "1"}
+              disabled={(!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier) || !isValid}
+            />
+          )}
       </Flex>
       <Divider />
 
-      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
-        <JsonViewerEditor
-          jsonData={generatedPayload}
-          onJsonChange={newJson => setGeneratedPayload(newJson)}
-        />
-      )}
-
-      {generatedPayload && (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
-        <Box display="flex" alignItems="center" mt="20px">
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<DownloadIcon />}
-            onClick={() => handleDownloadClick(generatedPayload)}
-          >
-            Download Payload
-          </Button>
-          <Button
-            variant="secondary"
-            mr="10px"
-            leftIcon={<CopyIcon />}
-            onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-          >
-            Copy Payload to Clipboard
-          </Button>
-          <OpenPRButton onClick={handleOpenPRModal} />
-          <Box mt={8} />
-          <PRCreationModal
-            type={"hook-mev-capture"}
-            isOpen={isOpen}
-            onClose={onClose}
-            network={selectedNetwork}
-            payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-            {...getPrefillValues()}
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => setGeneratedPayload(newJson)}
           />
-        </Box>
-      )}
+        )}
+
+      {generatedPayload &&
+        (isAuthorizedPool || addressTypeData?.type === AddressType.SAFE_PROXY) && (
+          <Box display="flex" alignItems="center" mt="20px">
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<DownloadIcon />}
+              onClick={() => handleDownloadClick(generatedPayload)}
+            >
+              Download Payload
+            </Button>
+            <Button
+              variant="secondary"
+              mr="10px"
+              leftIcon={<CopyIcon />}
+              onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+            >
+              Copy Payload to Clipboard
+            </Button>
+            <OpenPRButton onClick={handleOpenPRModal} />
+            <Box mt={8} />
+            <PRCreationModal
+              type={"hook-mev-capture"}
+              isOpen={isOpen}
+              onClose={onClose}
+              network={selectedNetwork}
+              payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+              {...getPrefillValues()}
+            />
+          </Box>
+        )}
     </Container>
   );
 }

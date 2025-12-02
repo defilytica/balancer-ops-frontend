@@ -33,6 +33,7 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
@@ -107,10 +108,7 @@ export default function SetRewardDistributorPage() {
     }
   };
 
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(
-    network =>
-      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM",
-  );
+  const filteredNetworkOptions = getNetworksForFeature("gaugeRewards");
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedApiID = e.target.value;

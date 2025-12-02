@@ -38,6 +38,7 @@ import {
   SwapFeeChangeInput,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import {
   GetPoolsDocument,
   GetPoolsQuery,
@@ -78,7 +79,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+  const filteredNetworkOptions = getNetworksForFeature("swapFeeChange");
 
   const getPrefillValues = useCallback(() => {
     // Make sure we have a selected pool and new swap fee

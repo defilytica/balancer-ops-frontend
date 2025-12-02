@@ -50,6 +50,7 @@ import { ethers } from "ethers";
 import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";
 import { AddressBook } from "@/types/interfaces";
 import { ChildChainGaugeInjectorV2Factory } from "@/abi/ChildChainGaugeInjectorV2Factory";
@@ -136,14 +137,7 @@ const convertToHumanReadable = (rawAmount: string, decimals: number): string => 
   }
 };
 
-const filteredNetworkOptions = NETWORK_OPTIONS.filter(
-  network =>
-    network.apiID !== "SONIC" &&
-    network.apiID !== "PLASMA" &&
-    network.apiID !== "HYPEREVM" &&
-    network.apiID !== "MODE" &&
-    network.apiID !== "FRAXTAL",
-);
+const filteredNetworkOptions = getNetworksForFeature("injectorCreation");
 
 export default function InjectorCreatorModule({ addressBook }: InjectorCreationProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("");

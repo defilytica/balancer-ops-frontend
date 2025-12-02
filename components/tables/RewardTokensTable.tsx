@@ -299,11 +299,7 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                               .filter(token => !token.isNested && !token.isPhantomBpt)
                               .slice(0, 4)
                               .map((token, index) => (
-                                <Box
-                                  key={index}
-                                  ml={index === 0 ? 0 : "-12px"}
-                                  zIndex={10 - index}
-                                >
+                                <Box key={index} ml={index === 0 ? 0 : "-12px"} zIndex={10 - index}>
                                   <Tooltip
                                     bgColor="background.level4"
                                     label={token.symbol}
@@ -330,9 +326,14 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
                                   </Tooltip>
                                 </Box>
                               ))}
-                            {pool.poolTokens.filter(token => !token.isNested && !token.isPhantomBpt).length > 4 && (
+                            {pool.poolTokens.filter(token => !token.isNested && !token.isPhantomBpt)
+                              .length > 4 && (
                               <Text fontSize="xs" color="gray.500" ml={1}>
-                                +{pool.poolTokens.filter(token => !token.isNested && !token.isPhantomBpt).length - 4} more
+                                +
+                                {pool.poolTokens.filter(
+                                  token => !token.isNested && !token.isPhantomBpt,
+                                ).length - 4}{" "}
+                                more
                               </Text>
                             )}
                           </>
