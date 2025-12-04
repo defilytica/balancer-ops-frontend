@@ -1,7 +1,7 @@
 "use client";
 
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import { Config, createConfig } from "wagmi";
+import { Config, createConfig, createStorage, noopStorage } from "wagmi";
 import {
   coinbaseWallet,
   rabbyWallet,
@@ -44,6 +44,9 @@ import hyperEVMILogo from "@/public/imgs/hyperevm.svg";
 import plasmaLogo from "@/public/imgs/plasma.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
+
+// Check if we're running on the server
+const isServer = typeof window === "undefined";
 
 // Customize chain icons
 const customChains = {
@@ -105,29 +108,32 @@ const customChains = {
   },
 };
 
-// Create connectors once at module level for stable references (important for Safe apps)
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [
-        // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
-        metaMaskWallet,
-        safeWallet,
-        walletConnectWallet,
-        rabbyWallet,
-        coinbaseWallet,
-        rainbowWallet,
-        injectedWallet,
+// Only create connectors on the client side to avoid indexedDB SSR errors
+// WalletConnect uses indexedDB internally which is not available during SSR
+const connectors = isServer
+  ? undefined
+  : connectorsForWallets(
+      [
+        {
+          groupName: "Recommended",
+          wallets: [
+            // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
+            metaMaskWallet,
+            safeWallet,
+            walletConnectWallet,
+            rabbyWallet,
+            coinbaseWallet,
+            rainbowWallet,
+            injectedWallet,
+          ],
+        },
       ],
-    },
-  ],
-  { appName, projectId },
-);
+      { appName, projectId },
+    );
 
 export type WagmiConfig = Config;
 
-// Create config directly for stable references (important for Safe app compatibility)
+// Create config with SSR-safe storage
 export const wagmiConfig: Config = createConfig({
   chains: [
     customChains.mainnet,
@@ -163,6 +169,10 @@ export const wagmiConfig: Config = createConfig({
   },
   connectors,
   ssr: true,
+  // Use noopStorage on the server to avoid localStorage/indexedDB access
+  storage: createStorage({
+    storage: isServer ? noopStorage : window.localStorage,
+  }),
 });
 
 // For compatibility - export the same config
