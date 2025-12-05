@@ -259,8 +259,8 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   const totalClaimableUSD = useMemo(() => {
     let total = 0;
 
-    // Add voting rewards value
-    if (claimableVotingRewards?.usdValue) {
+    // Add voting rewards value only if not already claimed
+    if (claimableVotingRewards?.usdValue && !isAlreadyClaimed) {
       total += parseFloat(claimableVotingRewards.usdValue);
     }
 
@@ -272,7 +272,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     });
 
     return total.toFixed(2);
-  }, [claimableVotingRewards, vestingRewards]);
+  }, [claimableVotingRewards, vestingRewards, isAlreadyClaimed]);
 
   // Get all stake_dao vesting contracts from the address book
   const vestingContracts = useMemo(() => {
