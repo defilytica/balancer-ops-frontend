@@ -242,8 +242,10 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
       resetApprove();
 
       // Show user-friendly error message
-      if (approveWriteError.message?.includes("User rejected") ||
-          approveWriteError.message?.includes("User denied")) {
+      if (
+        approveWriteError.message?.includes("User rejected") ||
+        approveWriteError.message?.includes("User denied")
+      ) {
         toast({
           title: "Transaction cancelled",
           description: "You cancelled the approval transaction",
@@ -264,8 +266,10 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
       resetDeposit();
 
       // Show user-friendly error message
-      if (depositWriteError.message?.includes("User rejected") ||
-          depositWriteError.message?.includes("User denied")) {
+      if (
+        depositWriteError.message?.includes("User rejected") ||
+        depositWriteError.message?.includes("User denied")
+      ) {
         toast({
           title: "Transaction cancelled",
           description: "You cancelled the deposit transaction",
@@ -793,12 +797,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
         </ModalBody>
 
         <ModalFooter>
-          <Button
-            variant="ghost"
-            mr={3}
-            onClick={handleClose}
-            isDisabled={isTransactionInProgress}
-          >
+          <Button variant="ghost" mr={3} onClick={handleClose} isDisabled={isTransactionInProgress}>
             Cancel
           </Button>
 
@@ -806,7 +805,9 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
             <Button
               colorScheme="blue"
               onClick={handleApprove}
-              isLoading={isApproving || (isTransactionInProgress && currentStep === 1 && !approveWriteError)}
+              isLoading={
+                isApproving || (isTransactionInProgress && currentStep === 1 && !approveWriteError)
+              }
               loadingText="Approving..."
               isDisabled={
                 !isCorrectNetwork ||
@@ -858,7 +859,9 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
             <Button
               colorScheme="green"
               onClick={handleDeposit}
-              isLoading={isDepositing || (isTransactionInProgress && currentStep === 2 && !depositWriteError)}
+              isLoading={
+                isDepositing || (isTransactionInProgress && currentStep === 2 && !depositWriteError)
+              }
               loadingText="Depositing..."
               isDisabled={
                 !isCorrectNetwork ||

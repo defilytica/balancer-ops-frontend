@@ -55,6 +55,7 @@ import {
   NETWORK_OPTIONS,
   networks,
 } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import { ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
 import { LiquidityGaugeFactory } from "@/abi/LiquidityGaugeFactory";
 import { RootGaugeFactory } from "@/abi/RootGaugeFactory";
@@ -105,10 +106,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
 
   //Chain state switch
   const { switchChain } = useSwitchChain();
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(
-    network =>
-      network.apiID !== "SONIC" && network.apiID !== "PLASMA" && network.apiID !== "HYPEREVM",
-  );
+  const filteredNetworkOptions = getNetworksForFeature("gaugeCreation");
 
   //Pool data
   const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(

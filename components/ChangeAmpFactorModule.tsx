@@ -31,6 +31,7 @@ import {
   handleDownloadClick,
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import {
   GetPoolsDocument,
   GetPoolsQuery,
@@ -104,7 +105,7 @@ export default function ChangeAmpFactorModule({
   const config = PROTOCOL_CONFIG[protocolVersion];
 
   const filteredNetworkOptions = useMemo(() => {
-    let baseOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+    let baseOptions = getNetworksForFeature("ampFactorChange");
 
     // For v3, filter to only networks where v3 vault is deployed
     if (protocolVersion === "v3") {

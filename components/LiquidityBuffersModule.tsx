@@ -120,7 +120,6 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     setCurrentPage(1);
   };
 
-
   const renderContent = () => {
     if (loading) {
       return (

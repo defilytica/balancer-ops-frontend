@@ -35,6 +35,7 @@ import { CopyIcon, DownloadIcon, HamburgerIcon, SearchIcon, ViewIcon } from "@ch
 import { FixedSizeList as List } from "react-window";
 import { ActionIdsData, AddressBook, Permission, ReverseAddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import { getAddress, getCategoryData } from "@/lib/data/maxis/addressBook";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
@@ -409,7 +410,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   );
 
   // Filter networks
-  const filteredNetworkOptions = NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
+  const filteredNetworkOptions = getNetworksForFeature("permissions");
 
   // Load wallets when network changes
   useEffect(() => {
