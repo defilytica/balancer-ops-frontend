@@ -108,7 +108,7 @@ const ReClammRow = ({
       <Td>
         <HStack spacing={2}>
           <Image
-            src={networks[pool.chain.toLowerCase()].logo}
+            src={networks[pool.chain.toLowerCase()]?.logo}
             alt={pool.chain.toLowerCase()}
             boxSize="5"
           />
