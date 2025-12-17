@@ -666,7 +666,7 @@ export const MEV_CAPTURE_PARAMS = {
 export const SWAP_FEE_PARAMS = {
   // For Weighted and Stable pools
   STANDARD: {
-    MIN: 0.001, // 0.001%
+    MIN: 0.0001, // 0.0001%
     MAX: 10, // 10%
   },
   // For all other pool types
