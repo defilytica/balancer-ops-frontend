@@ -50,6 +50,17 @@ export const SONIC_VAULT = "0xbA1333333333a1BA1108E8412f11850A5C319bA9";
 export const SONIC_BUFFER_ROUTER = "0x532dA919D3EB5606b5867A6f505969c57F3A721b";
 export const SONIC_PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
+// The Graph subgraph URLs for Balancer v3
+export const SUBGRAPH_URLS: Record<string, string> = {
+  arbitrum: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/subgraphs/id/Ad1cgTzScNmiDPSCeGYxgMU3YdRPrQXGkCZgpmPauauk`,
+  avalanche: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/deployments/id/QmSj437ejL2f1pMP2r5E2m5GjhqJa3rmbvFD5kyscmq7u2`,
+  base: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/subgraphs/id/9b7UBHq8DXxrfGsYhAzF3jZn5mNRgZb5Ag18UL9GJ3cV`,
+  mainnet: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/subgraphs/id/4rixbLvpuBCwXTJSwyAzQgsLR8KprnyMfyCuXT8Fj5cd`,
+  gnosis: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/subgraphs/id/DDoABVc9xCRQwuXRq2QLZ6YLkjoFet74vnfncQDgJVo2`,
+  optimism: `https://gateway.thegraph.com/api/${process.env.GRAPH_API_KEY}/subgraphs/id/DwreTHTzN3kV6szWr7Ldt6VwnGjtmKTKcYT9aDk37MEs`,
+  plasma: `https://api.goldsky.com/api/public/project_cmcigparivg3z01yhbv14ddl8/subgraphs/balancer-v3-plasma/latest/gn`,
+};
+
 export const PAYLOAD_OPTIONS = [
   {
     href: "/payload-builder/create-payment",

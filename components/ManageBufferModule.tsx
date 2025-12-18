@@ -7,6 +7,7 @@ import {
 } from "@/app/payload-builder/payloadHelperFunctions";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/TokenSelector";
+import { ShareholderSelector } from "@/components/modal/ShareholderSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import {
@@ -20,6 +21,7 @@ import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferIniti
 import { fetchBufferOwnerShares } from "@/lib/services/fetchBufferOwnerShares";
 import { fetchBufferTotalShares } from "@/lib/services/fetchBufferTotalShares";
 import { fetchBufferAsset } from "@/lib/services/fetchBufferAsset";
+import { fetchBufferShareholders } from "@/lib/services/fetchBufferShareholders";
 import { formatValue } from "@/lib/utils/formatValue";
 import {
   AddressBook,
@@ -44,8 +46,6 @@ import {
   FormLabel,
   Heading,
   Input,
-  InputGroup,
-  InputRightElement,
   Link,
   List,
   ListIcon,
@@ -260,6 +260,17 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
       !!selectedNetwork &&
       !!networks[selectedNetwork.toLowerCase()] &&
       selectedToken.isManual,
+  });
+
+  // Fetch buffer shareholders
+  const {
+    data: shareholdersData,
+    isLoading: isLoadingShareholders,
+    isError: isShareholdersError,
+  } = useTanStackQuery({
+    queryKey: ["bufferShareholders", selectedToken?.address, selectedNetwork],
+    queryFn: () => fetchBufferShareholders(selectedToken!.address, selectedNetwork.toLowerCase()),
+    enabled: !!selectedToken && !!selectedNetwork,
   });
 
   const underlyingTokenAddress = useMemo(() => {
@@ -1424,33 +1435,23 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
           </FormControl>
         </Flex>
 
-        <Flex direction="column" width={{ base: "100%", md: "50%" }} minW={{ md: "300px" }}>
+        <Flex direction="column" width={{ base: "100%", md: "55%" }}>
           {/* Safe Address - only show in Safe mode */}
           {executionMode === ExecutionMode.SAFE && (
             <FormControl mb={6}>
-              <FormLabel>
-                Shares Owner Safe Address
-                <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={1}>
-                  Required for Safe payload generation. The Safe will be the shares owner/manager.
-                </Text>
-              </FormLabel>
-              <InputGroup>
-                <Input
-                  name="ownerSafe"
-                  value={ownerSafe}
-                  onChange={e => setOwnerSafe(e.target.value)}
-                  placeholder="Safe multisig address"
-                  isDisabled={!selectedToken}
-                  isRequired={executionMode === ExecutionMode.SAFE}
-                />
-                {ownerSafe.length >= 42 && (
-                  <InputRightElement>
-                    <Text fontSize="sm" color={isAddress(ownerSafe) ? "green.500" : "red.500"}>
-                      {isAddress(ownerSafe) ? "✓" : "✗"}
-                    </Text>
-                  </InputRightElement>
-                )}
-              </InputGroup>
+              <FormLabel>Shares Owner Safe Address</FormLabel>
+              <ShareholderSelector
+                shareholders={
+                  selectedToken && shareholdersData ? shareholdersData.shareholders : []
+                }
+                onSelect={address => setOwnerSafe(address)}
+                selectedAddress={ownerSafe}
+                placeholder="Enter Safe address"
+                isDisabled={!selectedToken}
+              />
+              <Text fontSize="xs" color="gray.500" mt={2}>
+                Required for Safe payload generation. The Safe will be the shares owner/manager.
+              </Text>
               {isAddress(ownerSafe) && selectedToken && (
                 <>
                   {isLoadingOwnerShares ? (
