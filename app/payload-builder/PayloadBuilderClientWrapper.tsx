@@ -17,6 +17,7 @@ const CATEGORIZED_PAYLOADS = {
     "initialize-buffer",
     "manage-buffer",
     "fee-setter-v3",
+    "protocol-fee-setter-v3",
     "amp-factor-update-v3",
     "reclamm",
   ],

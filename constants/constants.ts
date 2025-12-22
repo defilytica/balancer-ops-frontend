@@ -162,6 +162,19 @@ export const PAYLOAD_OPTIONS = [
     prTypePath: "MaxiOps/PoolParameterChanges/PoolSwapFeeChanges/",
   },
   {
+    href: "/payload-builder/protocol-fee-setter-v3",
+    key: "protocol-fee-setter-v3",
+    label: "Configure Protocol Fees on a V3 Pool",
+    button_label: "Configure Protocol Fees",
+    description:
+      "Configure protocol swap and yield fee settings on a pool deployed on Balancer v3 via the ProtocolFeeController",
+    icon: TbSettingsDollar,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/set-protocol-fee-v3",
+    prNamePlaceholder: "Set Protocol Fee on Pool XYZ",
+    prTypePath: "MaxiOps/PoolParameterChanges/ProtocolFeeChanges/",
+  },
+  {
     href: "/payload-builder/injector-configurator",
     key: "injector-configurator",
     label: "Configure Rewards Injectors",

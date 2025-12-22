@@ -1946,3 +1946,95 @@ export function generateHumanReadableEmergency(input: EmergencyPayloadInput): st
 
   return description;
 }
+
+// --- Protocol Fee V3 Payload Helpers ---
+
+export interface ProtocolFeeChangeInput {
+  poolAddress: string;
+  poolName: string;
+  newProtocolSwapFeePercentage?: string;
+  newProtocolYieldFeePercentage?: string;
+}
+
+export function generateProtocolFeeChangePayload(
+  input: ProtocolFeeChangeInput,
+  chainId: string,
+  protocolFeeControllerAddress: string,
+  multisig: string,
+) {
+  const transactions = [];
+  const descriptions = [];
+
+  if (input.newProtocolSwapFeePercentage !== undefined) {
+    // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
+    const protocolSwapFeePercentage = percentageToWei(input.newProtocolSwapFeePercentage);
+
+    transactions.push({
+      to: protocolFeeControllerAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "pool", type: "address", internalType: "address" },
+          {
+            name: "newProtocolSwapFeePercentage",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+        name: "setProtocolSwapFeePercentage",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newProtocolSwapFeePercentage: protocolSwapFeePercentage,
+      },
+    });
+    descriptions.push(`protocol swap fee to ${input.newProtocolSwapFeePercentage}%`);
+  }
+
+  if (input.newProtocolYieldFeePercentage !== undefined) {
+    // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
+    const protocolYieldFeePercentage = percentageToWei(input.newProtocolYieldFeePercentage);
+
+    transactions.push({
+      to: protocolFeeControllerAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "pool", type: "address", internalType: "address" },
+          {
+            name: "newProtocolYieldFeePercentage",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+        name: "setProtocolYieldFeePercentage",
+        payable: false,
+      },
+      contractInputsValues: {
+        pool: input.poolAddress,
+        newProtocolYieldFeePercentage: protocolYieldFeePercentage,
+      },
+    });
+    descriptions.push(`protocol yield fee to ${input.newProtocolYieldFeePercentage}%`);
+  }
+
+  const description =
+    descriptions.length > 1
+      ? `Set ${descriptions.join(" and ")} for ${input.poolName}`
+      : `Set ${descriptions[0]} for ${input.poolName}`;
+
+  return {
+    version: "1.0",
+    chainId: chainId,
+    createdAt: Date.now(),
+    meta: {
+      name: "Transactions Batch",
+      description: description,
+      createdFromSafeAddress: multisig,
+    },
+    transactions,
+  };
+}
