@@ -864,7 +864,7 @@ type GqlPoolDynamicData {
   """Disabled for bricked pools"""
   swapEnabled: Boolean!
   swapFee: BigDecimal!
-  swapsCount: BigInt!
+  swapsCount: BigInt! @deprecated
   totalLiquidity: BigDecimal!
   totalLiquidity24hAgo: BigDecimal!
   totalLiquidityAth: BigDecimal! @deprecated
@@ -3218,7 +3218,6 @@ type MevTaxHookParams {
 
 type Mutation {
   beetsPoolLoadReliquarySnapshotsForAllFarms(chain: GqlChain!): String!
-  beetsSyncFbeetsRatio: String!
   createLBP(input: CreateLBPInput!): Boolean!
   poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
   poolLoadSnapshotsForPools(chain: GqlChain!, poolId: String!): String!
