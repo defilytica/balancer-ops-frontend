@@ -71,11 +71,7 @@ const PROTOCOL_FEE_PARAMS = {
   MAX: 50, // 50%
 };
 
-export default function ChangeProtocolFeeV3Module({
-  addressBook,
-}: {
-  addressBook: AddressBook;
-}) {
+export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook: AddressBook }) {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [enableSwapFee, setEnableSwapFee] = useState(false);
@@ -132,8 +128,7 @@ export default function ChangeProtocolFeeV3Module({
       "20250214-v3-protocol-fee-controller-v2",
     );
     return NETWORK_OPTIONS.filter(
-      network =>
-        networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
+      network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
   }, [addressBook]);
 
@@ -194,7 +189,12 @@ export default function ChangeProtocolFeeV3Module({
     };
 
     fetchFees();
-  }, [selectedPool?.address, protocolFeeControllerAddress, selectedNetwork, lastFetchedPoolAddress]);
+  }, [
+    selectedPool?.address,
+    protocolFeeControllerAddress,
+    selectedNetwork,
+    lastFetchedPoolAddress,
+  ]);
 
   const handleNetworkChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -294,12 +294,10 @@ export default function ChangeProtocolFeeV3Module({
 
   const isFormValid = useMemo(() => {
     const hasAtLeastOneFee =
-      (enableSwapFee && debouncedSwapFee !== "") ||
-      (enableYieldFee && debouncedYieldFee !== "");
+      (enableSwapFee && debouncedSwapFee !== "") || (enableYieldFee && debouncedYieldFee !== "");
 
     const swapFeeOk = !enableSwapFee || (debouncedSwapFee !== "" && swapFeeValidation.isValid);
-    const yieldFeeOk =
-      !enableYieldFee || (debouncedYieldFee !== "" && yieldFeeValidation.isValid);
+    const yieldFeeOk = !enableYieldFee || (debouncedYieldFee !== "" && yieldFeeValidation.isValid);
 
     return hasAtLeastOneFee && swapFeeOk && yieldFeeOk && protocolFeeControllerAddress !== "";
   }, [
@@ -316,8 +314,7 @@ export default function ChangeProtocolFeeV3Module({
     if (!selectedPool || !selectedNetwork || !isFormValid) {
       toast({
         title: "Missing information",
-        description:
-          "Please select a network, pool, and enter at least one protocol fee",
+        description: "Please select a network, pool, and enter at least one protocol fee",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -391,8 +388,7 @@ export default function ChangeProtocolFeeV3Module({
     const networkName = networkOption?.label || selectedNetwork;
     const networkPath = networkName === "Ethereum" ? "Mainnet" : networkName;
 
-    const filename =
-      networkPath + `/set-protocol-fee-${selectedPool.address}-${uniqueId}.json`;
+    const filename = networkPath + `/set-protocol-fee-${selectedPool.address}-${uniqueId}.json`;
 
     return {
       prefillBranchName: `feature/protocol-fee-${shortPoolId}-${uniqueId}`,
@@ -413,9 +409,7 @@ export default function ChangeProtocolFeeV3Module({
     if (!generatedPayload) return null;
 
     const payload =
-      typeof generatedPayload === "string"
-        ? JSON.parse(generatedPayload)
-        : generatedPayload;
+      typeof generatedPayload === "string" ? JSON.parse(generatedPayload) : generatedPayload;
 
     const firstTx = payload.transactions[0];
     const pool = firstTx?.contractInputsValues?.pool;
@@ -440,12 +434,12 @@ export default function ChangeProtocolFeeV3Module({
     if (enableSwapFee && debouncedSwapFee) {
       const currentSwapFee =
         currentFeeInfo.swapFeePercentage !== null
-          ? currentFeeInfo.swapFeePercentage.toFixed(4)
+          ? currentFeeInfo.swapFeePercentage.toFixed(2)
           : "N/A";
-      const newSwapFee = parseFloat(debouncedSwapFee).toFixed(4);
+      const newSwapFee = parseFloat(debouncedSwapFee).toFixed(2);
       const difference =
         currentFeeInfo.swapFeePercentage !== null
-          ? (parseFloat(debouncedSwapFee) - currentFeeInfo.swapFeePercentage).toFixed(4)
+          ? (parseFloat(debouncedSwapFee) - currentFeeInfo.swapFeePercentage).toFixed(2)
           : "N/A";
 
       params.push({
@@ -459,12 +453,12 @@ export default function ChangeProtocolFeeV3Module({
     if (enableYieldFee && debouncedYieldFee) {
       const currentYieldFee =
         currentFeeInfo.yieldFeePercentage !== null
-          ? currentFeeInfo.yieldFeePercentage.toFixed(4)
+          ? currentFeeInfo.yieldFeePercentage.toFixed(2)
           : "N/A";
-      const newYieldFee = parseFloat(debouncedYieldFee).toFixed(4);
+      const newYieldFee = parseFloat(debouncedYieldFee).toFixed(2);
       const difference =
         currentFeeInfo.yieldFeePercentage !== null
-          ? (parseFloat(debouncedYieldFee) - currentFeeInfo.yieldFeePercentage).toFixed(4)
+          ? (parseFloat(debouncedYieldFee) - currentFeeInfo.yieldFeePercentage).toFixed(2)
           : "N/A";
 
       params.push({
@@ -532,16 +526,16 @@ export default function ChangeProtocolFeeV3Module({
             <Alert status="info" mt={4}>
               <AlertIcon />
               <AlertDescription>
-                Protocol fees can be configured through the DAO. This payload will be
-                executed through the multisig at {selectedMultisig}.
+                Protocol fees can be configured through the DAO. This payload will be executed
+                through the multisig at {selectedMultisig}.
               </AlertDescription>
             </Alert>
           ) : (
             <Alert status="warning" mt={4}>
               <AlertIcon />
               <AlertDescription>
-                ProtocolFeeController not found for {selectedNetwork}. Protocol fee
-                changes may not be available on this network.
+                ProtocolFeeController not found for {selectedNetwork}. Protocol fee changes may not
+                be available on this network.
               </AlertDescription>
             </Alert>
           )}
@@ -641,11 +635,7 @@ export default function ChangeProtocolFeeV3Module({
             </Button>
           ) : (
             <>
-              <Button
-                variant="primary"
-                onClick={handleGenerateClick}
-                isDisabled={!isFormValid}
-              >
+              <Button variant="primary" onClick={handleGenerateClick} isDisabled={!isFormValid}>
                 Generate Payload
               </Button>
               <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
@@ -653,9 +643,7 @@ export default function ChangeProtocolFeeV3Module({
           )}
         </Flex>
 
-        {generatedPayload && (
-          <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
-        )}
+        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
       </Flex>
       <Divider />
 
