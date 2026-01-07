@@ -407,3 +407,12 @@ export interface MevCaptureParameterSimulationTransactionsParams {
   mevTaxThreshold?: string;
   mevTaxMultiplier?: string;
 }
+
+export interface ChangeProtocolFeeV3SimulationTransactionsParams {
+  selectedPool: Pool;
+  protocolFeeControllerAddress: string;
+  hasProtocolSwapFee: boolean;
+  hasProtocolYieldFee: boolean;
+  protocolSwapFeePercentage?: string;
+  protocolYieldFeePercentage?: string;
+}

@@ -12,6 +12,7 @@ import {
 import { reClammPoolAbi } from "@/abi/ReclammPool.js";
 import { stableSurgeHookAbi } from "@/abi/StableSurgeHook";
 import { mevCaptureHookAbi } from "@/abi/MevCaptureHook";
+import { protocolFeeControllerAbi } from "@/abi/ProtocolFeeController";
 import {
   ManageBufferSimulationTransactionsParams,
   BufferOperation,
@@ -20,6 +21,7 @@ import {
   ReClammParameterSimulationTransactionsParams,
   StableSurgeParameterSimulationTransactionsParams,
   MevCaptureParameterSimulationTransactionsParams,
+  ChangeProtocolFeeV3SimulationTransactionsParams,
 } from "@/types/interfaces";
 
 export function buildManageBufferSimulationTransactions(
@@ -471,6 +473,66 @@ export function buildMevCaptureParameterSimulationTransactions(
     return transactions.length > 0 ? transactions : null;
   } catch (error) {
     console.error("Error building MEV Capture parameter transactions:", error);
+    return null;
+  }
+}
+
+export function buildChangeProtocolFeeV3SimulationTransactions(
+  params: ChangeProtocolFeeV3SimulationTransactionsParams,
+): SimulationTransaction[] | null {
+  const {
+    selectedPool,
+    protocolFeeControllerAddress,
+    hasProtocolSwapFee,
+    hasProtocolYieldFee,
+    protocolSwapFeePercentage,
+    protocolYieldFeePercentage,
+  } = params;
+
+  if (!selectedPool || !protocolFeeControllerAddress) return null;
+
+  try {
+    const contract = new ethers.Contract(
+      protocolFeeControllerAddress,
+      protocolFeeControllerAbi,
+    );
+    const transactions: SimulationTransaction[] = [];
+
+    if (hasProtocolSwapFee && protocolSwapFeePercentage) {
+      // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
+      const protocolSwapFeeValue = BigInt(parseFloat(protocolSwapFeePercentage) * 1e16).toString();
+
+      const data = contract.interface.encodeFunctionData("setProtocolSwapFeePercentage", [
+        selectedPool.address,
+        protocolSwapFeeValue,
+      ]);
+
+      transactions.push({
+        to: protocolFeeControllerAddress,
+        data,
+        value: "0",
+      });
+    }
+
+    if (hasProtocolYieldFee && protocolYieldFeePercentage) {
+      // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
+      const protocolYieldFeeValue = BigInt(parseFloat(protocolYieldFeePercentage) * 1e16).toString();
+
+      const data = contract.interface.encodeFunctionData("setProtocolYieldFeePercentage", [
+        selectedPool.address,
+        protocolYieldFeeValue,
+      ]);
+
+      transactions.push({
+        to: protocolFeeControllerAddress,
+        data,
+        value: "0",
+      });
+    }
+
+    return transactions.length > 0 ? transactions : null;
+  } catch (error) {
+    console.error("Error building Protocol Fee change transactions:", error);
     return null;
   }
 }
