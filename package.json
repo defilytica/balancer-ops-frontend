@@ -101,6 +101,7 @@
     ]
   },
   "resolutions": {
+    "preact": "^10.27.3",
     "cross-spawn": "^7.0.6",
     "dset": "^3.1.4",
     "@babel/runtime": "^7.26.10",
