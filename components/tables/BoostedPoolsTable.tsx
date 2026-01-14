@@ -20,6 +20,7 @@ import { Globe } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 import { PaginatedTable } from "../../lib/shared/components/PaginatedTable";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface BoostedPoolsTableProps {
   pools: PoolWithBufferData[];
@@ -29,6 +30,7 @@ interface BoostedPoolsTableProps {
   loading: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  blocklist?: BufferBlocklist;
 }
 
 const BoostedPoolsTableHeader = () => (
@@ -66,12 +68,14 @@ const BoostedPoolsTableRow = ({
   item: pool,
   index,
   itemsLength,
+  blocklist,
 }: {
   item: PoolWithBufferData;
   index: number;
   itemsLength: number;
+  blocklist?: BufferBlocklist;
 }) => {
-  const realErc4626Count = filterRealErc4626Tokens(pool.poolTokens).length;
+  const realErc4626Count = filterRealErc4626Tokens(pool.poolTokens, blocklist).length;
 
   const getNetworkNameForUrl = (chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
@@ -214,7 +218,7 @@ const BoostedPoolsTableRow = ({
         </GridItem>
         {/* Buffers */}
         <GridItem justifySelf="end">
-          <BufferTableTooltip pool={pool} />
+          <BufferTableTooltip pool={pool} blocklist={blocklist} />
         </GridItem>
       </Grid>
     </Box>
@@ -229,6 +233,7 @@ export const BoostedPoolsTable = ({
   loading,
   onPageChange,
   onPageSizeChange,
+  blocklist,
 }: BoostedPoolsTableProps) => {
   const showPagination = totalPages > 1;
 
@@ -247,7 +252,12 @@ export const BoostedPoolsTable = ({
         loading={loading}
         renderTableHeader={BoostedPoolsTableHeader}
         renderTableRow={({ item, index }) => (
-          <BoostedPoolsTableRow item={item} index={index} itemsLength={pools.length} />
+          <BoostedPoolsTableRow
+            item={item}
+            index={index}
+            itemsLength={pools.length}
+            blocklist={blocklist}
+          />
         )}
         showPagination={showPagination}
         paginationProps={{

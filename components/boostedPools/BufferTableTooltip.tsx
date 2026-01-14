@@ -19,15 +19,17 @@ import { formatValue } from "@/lib/utils/formatValue";
 import { BiErrorCircle } from "react-icons/bi";
 import { useMemo } from "react";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface BufferTableTooltipProps {
   pool: PoolWithBufferData;
+  blocklist?: BufferBlocklist;
 }
 
-export const BufferTableTooltip = ({ pool }: BufferTableTooltipProps) => {
+export const BufferTableTooltip = ({ pool, blocklist }: BufferTableTooltipProps) => {
   const realErc4626Tokens = useMemo(
-    () => filterRealErc4626Tokens(pool.poolTokens),
-    [pool.poolTokens],
+    () => filterRealErc4626Tokens(pool.poolTokens, blocklist),
+    [pool.poolTokens, blocklist],
   );
 
   const isLoading = realErc4626Tokens.some(

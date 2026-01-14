@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
 import BoostedPoolsClientWrapper from "./BoostedPoolsClientWrapper";
+import { fetchBufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 export default async function BoostedPoolsPage() {
-  //Fetch address book data
-  const addressBook = await fetchAddressBook();
+  const [addressBook, bufferBlocklist] = await Promise.all([
+    fetchAddressBook(),
+    fetchBufferBlocklist(),
+  ]);
 
   return (
     <Suspense
@@ -12,7 +15,7 @@ export default async function BoostedPoolsPage() {
         <div style={{ width: "100%", height: "500px", backgroundColor: "#1a202c" }}>Loading...</div>
       }
     >
-      <BoostedPoolsClientWrapper addressBook={addressBook} />
+      <BoostedPoolsClientWrapper addressBook={addressBook} bufferBlocklist={bufferBlocklist} />
     </Suspense>
   );
 }
