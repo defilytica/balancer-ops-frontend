@@ -234,7 +234,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
       const matchingGauge = votingGaugesData.veBalGetVotingList.find(
         gauge => gauge.gauge?.address?.toLowerCase() === selectedPool.staking?.gauge?.id.toLowerCase(),
       );
-
+      
       if (matchingGauge) {
         return matchingGauge;
       }
@@ -718,11 +718,14 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                   Note: This gauge is marked as killed.
                 </Text>
               )}
-              {existingMainnetGauge?.gauge?.relativeWeightCap && (
-                <Text mt={1}>
-                  Weight Cap: <Badge colorScheme="blue">{`${(Number(existingMainnetGauge.gauge.relativeWeightCap) * 100).toFixed(0)}%`}</Badge>
-                </Text>
-              )}
+              <Text mt={1}>
+                Weight Cap:{" "}
+                <Badge colorScheme="blue">
+                  {existingMainnetGauge?.gauge?.relativeWeightCap
+                    ? `${(Number(existingMainnetGauge.gauge.relativeWeightCap) * 100).toFixed(0)}%`
+                    : "100%"}
+                </Badge>
+              </Text>
             </AlertDescription>
           </Alert>
         )}
