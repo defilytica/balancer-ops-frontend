@@ -27,13 +27,18 @@ import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, TokenListToken } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 import { useTokenBufferData } from "@/lib/hooks/useTokenBufferData";
 
 interface LiquidityBuffersModuleProps {
   addressBook: AddressBook;
+  bufferBlocklist: BufferBlocklist;
 }
 
-export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffersModuleProps) {
+export default function LiquidityBuffersModule({
+  addressBook,
+  bufferBlocklist,
+}: LiquidityBuffersModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("MAINNET");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -64,6 +69,14 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
   const filteredTokens = useMemo(() => {
     let filtered = tokensWithBufferData;
 
+    // Filter out blocklisted tokens
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork);
+    const chainId = networkOption?.chainId;
+    if (chainId && bufferBlocklist[chainId]) {
+      const blockedAddresses = bufferBlocklist[chainId];
+      filtered = filtered.filter(token => !blockedAddresses.includes(token.address?.toLowerCase() ?? ""));
+    }
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -82,7 +95,7 @@ export default function LiquidityBuffersModule({ addressBook }: LiquidityBuffers
     }
 
     return filtered;
-  }, [tokensWithBufferData, showOnlyEmpty, searchTerm]);
+  }, [tokensWithBufferData, showOnlyEmpty, searchTerm, selectedNetwork, bufferBlocklist]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;

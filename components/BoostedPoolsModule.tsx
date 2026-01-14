@@ -29,12 +29,17 @@ import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { usePoolBufferData, PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import GlobeLogo from "@/public/imgs/globe.svg";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface BoostedPoolsModuleProps {
   addressBook: AddressBook;
+  bufferBlocklist: BufferBlocklist;
 }
 
-export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModuleProps) {
+export default function BoostedPoolsModule({
+  addressBook,
+  bufferBlocklist,
+}: BoostedPoolsModuleProps) {
   const [selectedNetwork, setSelectedNetwork] = useState("ALL");
   const [showOnlyEmptyBuffers, setShowOnlyEmptyBuffers] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.TABLE);
@@ -64,6 +69,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
   // When empty buffers filter is on, we need all pools' buffer data
   const { pools: poolsWithBufferBalances, loading: loadingBuffers } = usePoolBufferData(
     showOnlyEmptyBuffers ? allPools : paginatedPools,
+    bufferBlocklist,
   );
 
   const filteredPools = useMemo(() => {
@@ -72,7 +78,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
     return poolsWithBufferBalances.filter((pool: PoolWithBufferData) => {
       // Show pool if a "real" ERC4626 token has empty buffer
       return pool.poolTokens.some(token => {
-        if (!isRealErc4626Token(token)) return false;
+        if (!isRealErc4626Token(token, bufferBlocklist)) return false;
 
         const buffer = pool.buffers?.[token.address];
         if (!buffer || buffer.state?.isError) return false;
@@ -80,7 +86,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
         return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
       });
     });
-  }, [poolsWithBufferBalances, showOnlyEmptyBuffers]);
+  }, [poolsWithBufferBalances, showOnlyEmptyBuffers, bufferBlocklist]);
 
   // When empty buffersfilter is on, we need to paginate the filtered results
   const displayedPools = useMemo(() => {
@@ -216,6 +222,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
             loading={loadingBuffers}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            blocklist={bufferBlocklist}
           />
         ) : (
           <BoostedPoolsTable
@@ -226,6 +233,7 @@ export default function BoostedPoolsModule({ addressBook }: BoostedPoolsModulePr
             loading={loadingBuffers}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            blocklist={bufferBlocklist}
           />
         )}
       </VStack>

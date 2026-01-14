@@ -15,6 +15,7 @@ import {
 import { Pagination } from "../../lib/shared/components/Pagination";
 import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import { PoolCard } from "../boostedPools/PoolCard";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface BoostedPoolsGridProps extends SimpleGridProps {
   items: PoolWithBufferData[];
@@ -27,6 +28,7 @@ interface BoostedPoolsGridProps extends SimpleGridProps {
   noItemsFoundLabel?: string;
   loadingLength?: number;
   paginationStyles?: StyleProps;
+  blocklist?: BufferBlocklist;
 }
 
 export function BoostedPoolsGrid({
@@ -40,6 +42,7 @@ export function BoostedPoolsGrid({
   noItemsFoundLabel = "No items found",
   loadingLength = 6,
   paginationStyles,
+  blocklist,
   ...simpleGridProps
 }: BoostedPoolsGridProps) {
   const [previousPageCount, setPreviousPageCount] = useState(0);
@@ -62,7 +65,7 @@ export function BoostedPoolsGrid({
           {items.length > 0 &&
             items.map(item => (
               <GridItem key={item.id} rowSpan={item.poolTokens.length + 1}>
-                <PoolCard pool={item} />
+                <PoolCard pool={item} blocklist={blocklist} />
               </GridItem>
             ))}
           {loading &&

@@ -22,12 +22,14 @@ import { PoolRow } from "./PoolRow";
 import { networks } from "@/constants/constants";
 import { getLendingProtocolFromTags } from "@/lib/utils/getLendingProtocolFromTags";
 import { PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface PoolCardProps {
   pool: PoolWithBufferData;
+  blocklist?: BufferBlocklist;
 }
 
-export const PoolCard = ({ pool }: PoolCardProps) => {
+export const PoolCard = ({ pool, blocklist }: PoolCardProps) => {
   const getBalancerNetworkPath = (chain: string): string => {
     return chain.toLowerCase() === "mainnet" ? "ethereum" : chain.toLowerCase();
   };
@@ -102,6 +104,7 @@ export const PoolCard = ({ pool }: PoolCardProps) => {
             token={token}
             buffer={pool.buffers?.[token.address]}
             isLastToken={index === pool.poolTokens.length - 1}
+            blocklist={blocklist}
           />
         ))}
       </CardBody>

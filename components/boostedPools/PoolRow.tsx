@@ -26,6 +26,7 @@ import {
 import { formatUnits } from "viem";
 import { BufferCardTooltip } from "./BufferCardTooltip";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 interface PoolRowProps {
   token: PoolToken;
@@ -39,9 +40,10 @@ interface PoolRowProps {
       isError: boolean;
     };
   };
+  blocklist?: BufferBlocklist;
 }
 
-export const PoolRow = ({ token, isLastToken, buffer }: PoolRowProps) => {
+export const PoolRow = ({ token, isLastToken, buffer, blocklist }: PoolRowProps) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
   const { isLoading, isError } = buffer?.state || {};
 
@@ -72,7 +74,7 @@ export const PoolRow = ({ token, isLastToken, buffer }: PoolRowProps) => {
     }
 
     // Case 2: Fake ERC4626 / underlying token doesn't need a buffer
-    if (!isRealErc4626Token(token)) {
+    if (!isRealErc4626Token(token, blocklist)) {
       return (
         <Center h="full" bg="whiteAlpha.50" rounded="md">
           <HStack>
@@ -194,7 +196,7 @@ export const PoolRow = ({ token, isLastToken, buffer }: PoolRowProps) => {
               {token.symbol}
             </Badge>
           </HStack>
-          {isRealErc4626Token(token) && !isEmptyBuffer && ratios && (
+          {isRealErc4626Token(token, blocklist) && !isEmptyBuffer && ratios && (
             <Text fontSize="sm" color={textColor}>
               {ratios.underlying}% - {ratios.wrapped}%
             </Text>

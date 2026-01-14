@@ -4,6 +4,7 @@ import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferIniti
 import { networks } from "@/constants/constants";
 import { Pool } from "@/types/interfaces";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
+import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
 export interface PoolWithBufferData extends Pool {
   buffers?: {
@@ -24,11 +25,14 @@ export interface BufferDataResult {
   loading: boolean;
 }
 
-export function usePoolBufferData(pools: Pool[] = []): BufferDataResult {
+export function usePoolBufferData(
+  pools: Pool[] = [],
+  blocklist?: BufferBlocklist,
+): BufferDataResult {
   // Query for buffer balances
   const bufferBalanceQueries = useQueries({
     queries: pools.flatMap(pool =>
-      filterRealErc4626Tokens(pool.poolTokens).map(token => ({
+      filterRealErc4626Tokens(pool.poolTokens, blocklist).map(token => ({
         queryKey: ["bufferBalance", pool.address, pool.chain, token.address],
         queryFn: () =>
           fetchBufferBalance(
@@ -46,7 +50,7 @@ export function usePoolBufferData(pools: Pool[] = []): BufferDataResult {
   // Query for buffer initialization status
   const bufferInitializationStatusQueries = useQueries({
     queries: pools.flatMap(pool =>
-      filterRealErc4626Tokens(pool.poolTokens).map(token => ({
+      filterRealErc4626Tokens(pool.poolTokens, blocklist).map(token => ({
         queryKey: ["bufferInitialized", pool.address, pool.chain, token.address],
         queryFn: () =>
           fetchBufferInitializationStatus(
@@ -71,7 +75,7 @@ export function usePoolBufferData(pools: Pool[] = []): BufferDataResult {
   const poolsWithBuffers = pools.map(pool => {
     const buffers: { [key: string]: any } = {};
 
-    filterRealErc4626Tokens(pool.poolTokens).forEach(token => {
+    filterRealErc4626Tokens(pool.poolTokens, blocklist).forEach(token => {
       const balanceQuery = bufferBalanceQueries[queryIndex];
       const initializedQuery = bufferInitializationStatusQueries[queryIndex];
 
