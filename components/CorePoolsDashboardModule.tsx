@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@apollo/client";
 import {
   Box,
   Container,
@@ -30,14 +29,9 @@ import {
   AccordionPanel,
   AccordionIcon,
 } from "@chakra-ui/react";
-import { InfoOutlineIcon } from "@chakra-ui/icons";
+import { InfoOutlineIcon, TimeIcon } from "@chakra-ui/icons";
 import { FaCircle } from "react-icons/fa";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import {
-  GetV3PoolsQuery,
-  GetV3PoolsDocument,
-  GqlChain,
-} from "@/lib/services/apollo/generated/graphql";
 import { Pool, AddressBook } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { CorePoolsTable } from "@/components/tables/CorePoolsTable";
@@ -51,6 +45,66 @@ import {
 } from "@/lib/services/fetchCorePoolsFees";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
+import { CalendarIcon } from "@chakra-ui/icons";
+
+// Reference date: 2026-01-15 is a Thursday and a fee calculation date
+const REFERENCE_FEE_CALC_DATE = new Date(Date.UTC(2026, 0, 15)); // Jan 15, 2026
+
+/**
+ * Get the next fee calculation date (bi-weekly on Thursdays, 00:00 UTC)
+ * If today is a fee calculation Thursday, returns today
+ */
+function getNextFeeCalculationDate(): Date {
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  // Calculate days since reference date
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysSinceRef = Math.floor((todayUTC.getTime() - REFERENCE_FEE_CALC_DATE.getTime()) / msPerDay);
+
+  // Find how many days until the next bi-weekly Thursday
+  const daysIntoCycle = ((daysSinceRef % 14) + 14) % 14;
+  const daysUntilNext = daysIntoCycle === 0 ? 0 : 14 - daysIntoCycle;
+
+  const nextCalcDate = new Date(todayUTC);
+  nextCalcDate.setUTCDate(nextCalcDate.getUTCDate() + daysUntilNext);
+
+  return nextCalcDate;
+}
+
+/**
+ * Get the next fee distribution date (Friday after fee calculation)
+ */
+function getNextFeeDistributionDate(): Date {
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  // Get the most recent fee calculation date (including today if it's a calc date)
+  const nextCalcDate = getNextFeeCalculationDate();
+
+  // Distribution is the Friday after calculation (1 day later)
+  const distributionDate = new Date(nextCalcDate);
+  distributionDate.setUTCDate(distributionDate.getUTCDate() + 1);
+
+  // If today is past this Friday, we need the next cycle's Friday
+  if (todayUTC > distributionDate) {
+    distributionDate.setUTCDate(distributionDate.getUTCDate() + 14);
+  }
+
+  return distributionDate;
+}
+
+/**
+ * Format date as "Jan 15, 2026"
+ */
+function formatDateDisplay(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 interface CorePoolsDashboardModuleProps {
   addressBook: AddressBook;
@@ -65,6 +119,11 @@ export default function CorePoolsDashboardModule({
   const [feeData, setFeeData] = useState<CorePoolFeeData[]>([]);
   const [isLoadingFees, setIsLoadingFees] = useState(true);
   const [feeError, setFeeError] = useState<string | null>(null);
+
+  // Pool data state (cached via API)
+  const [poolsData, setPoolsData] = useState<Pool[]>([]);
+  const [loadingPools, setLoadingPools] = useState(false);
+  const [poolDataLastUpdated, setPoolDataLastUpdated] = useState<string | null>(null);
 
   // Color mode values
   const statsHeaderTextColor = useColorModeValue("gray.600", "gray.400");
@@ -112,20 +171,27 @@ export default function CorePoolsDashboardModule({
     fetchFees();
   }, [selectedDateRangeIndex, availableDateRanges]);
 
-  // Get unique pool IDs from fee data for GraphQL query
-  const poolIds = useMemo(() => feeData.map(d => d.pool_id), [feeData]);
+  // Fetch all v3 pool data from cached API (runs once on mount)
+  useEffect(() => {
+    const fetchPools = async () => {
+      setLoadingPools(true);
+      try {
+        const response = await fetch("/api/core-pools");
+        if (!response.ok) {
+          throw new Error("Failed to fetch pool data");
+        }
+        const data = await response.json();
+        setPoolsData(data.pools || []);
+        setPoolDataLastUpdated(data.lastUpdated);
+      } catch (error) {
+        console.error("Error fetching pool data:", error);
+      } finally {
+        setLoadingPools(false);
+      }
+    };
 
-  // Fetch pool data from GraphQL to enrich with logos and names
-  const { loading: loadingPools, data: poolsData } = useQuery<GetV3PoolsQuery>(
-    GetV3PoolsDocument,
-    {
-      variables: {
-        chainNotIn: ["SEPOLIA" as GqlChain],
-        idIn: poolIds.length > 0 ? poolIds : undefined,
-      },
-      skip: poolIds.length === 0,
-    },
-  );
+    fetchPools();
+  }, []);
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedNetwork(e.target.value);
@@ -172,9 +238,9 @@ export default function CorePoolsDashboardModule({
   // Merge fee data with pool data
   const enrichedPoolData = useMemo(() => {
     const poolsMap = new Map<string, Pool>();
-    if (poolsData?.poolGetPools) {
-      for (const pool of poolsData.poolGetPools) {
-        poolsMap.set(pool.address.toLowerCase(), pool as unknown as Pool);
+    if (poolsData && poolsData.length > 0) {
+      for (const pool of poolsData) {
+        poolsMap.set(pool.address.toLowerCase(), pool);
       }
     }
 
@@ -218,7 +284,21 @@ export default function CorePoolsDashboardModule({
           <Heading as="h2" size="lg" variant="special" mb={2}>
             Core Pools Dashboard
           </Heading>
-          <Text>View fee earnings from Balancer v3 core pools</Text>
+          <Text mb={2}>View fee earnings from Balancer v3 core pools</Text>
+          <HStack spacing={4} fontSize="xs" color={statsHeaderTextColor} flexWrap="wrap">
+            <Tooltip label="Fees are calculated bi-weekly on Thursdays at 00:00 UTC" hasArrow>
+              <HStack spacing={1} cursor="help">
+                <CalendarIcon boxSize={3} />
+                <Text>Next calculation: {formatDateDisplay(getNextFeeCalculationDate())}</Text>
+              </HStack>
+            </Tooltip>
+            <Tooltip label="Fee distributions occur on Fridays following the calculation" hasArrow>
+              <HStack spacing={1} cursor="help">
+                <CalendarIcon boxSize={3} />
+                <Text>Next distribution: {formatDateDisplay(getNextFeeDistributionDate())}</Text>
+              </HStack>
+            </Tooltip>
+          </HStack>
         </Box>
 
         <HStack spacing={4}>
@@ -440,7 +520,31 @@ export default function CorePoolsDashboardModule({
           </AlertDescription>
         </Alert>
       ) : (
-        <CorePoolsTable pools={enrichedPoolData} />
+        <>
+          <CorePoolsTable pools={enrichedPoolData} />
+          {poolDataLastUpdated && (
+            <HStack
+              spacing={2}
+              mt={4}
+              fontSize="xs"
+              color={statsHeaderTextColor}
+              justify="flex-end"
+            >
+              <TimeIcon boxSize={3} />
+              <Tooltip label="Pool metadata is cached for 6 hours to improve load times" hasArrow>
+                <Text cursor="help">
+                  Pool data last refreshed:{" "}
+                  {new Date(poolDataLastUpdated).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </Tooltip>
+            </HStack>
+          )}
+        </>
       )}
     </Container>
   );
