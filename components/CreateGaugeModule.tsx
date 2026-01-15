@@ -99,7 +99,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
   const [weightCap, setWeightCap] = useState<WeightCapType>(GAUGE_WEIGHT_CAPS.TWO_PERCENT);
   const [searchTerm, setSearchTerm] = useState("");
   const [rootGaugeFromAPI, setRootGaugeFromAPI] = useState<GaugeRecipientData | null>(null);
-  const [isLoadingRootGauge, setIsLoadingRootGauge] = useState(false);
 
   const toast = useToast();
   const { address } = useAccount();
@@ -147,7 +146,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
     async (childGaugeId: string) => {
       if (!childGaugeId) return null;
 
-      setIsLoadingRootGauge(true);
       try {
         // First, check in the votingGaugesData
         if (votingGaugesData?.veBalGetVotingList) {
@@ -156,7 +154,6 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
           );
 
           if (matchingGauge) {
-            setIsLoadingRootGauge(false);
             return matchingGauge;
           }
         }
@@ -181,15 +178,12 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
             },
           };
 
-          setIsLoadingRootGauge(false);
           return transformedGauge;
         }
 
-        setIsLoadingRootGauge(false);
         return null;
       } catch (error) {
         console.error("Error fetching root gauge:", error);
-        setIsLoadingRootGauge(false);
         return null;
       }
     },
@@ -229,6 +223,25 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
 
     return null;
   }, [selectedPool, votingGaugesData, rootGaugeFromAPI]);
+
+  // For mainnet gauges, find the gauge info directly from votingGaugesData
+  const existingMainnetGauge = useMemo(() => {
+    if (selectedNetwork !== "MAINNET" || !selectedPool?.staking?.gauge?.id) {
+      return null;
+    }
+
+    if (votingGaugesData?.veBalGetVotingList) {
+      const matchingGauge = votingGaugesData.veBalGetVotingList.find(
+        gauge => gauge.gauge?.address?.toLowerCase() === selectedPool.staking?.gauge?.id.toLowerCase(),
+      );
+      
+      if (matchingGauge) {
+        return matchingGauge;
+      }
+    }
+
+    return null;
+  }, [selectedNetwork, selectedPool, votingGaugesData]);
 
   // Add condition to check for existing gauge
   const hasExistingGauge = useMemo(() => {
@@ -678,7 +691,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
               <ListItem>
                 If you intend to apply for a veBAL gauge, consult{" "}
                 <Link
-                  href="https://forum.balancer.fi/t/instructions-overview/2674"
+                  href="https://forum.balancer.fi/t/gauge-creation-instructions/6907"
                   textDecoration="underline"
                   isExternal
                 >
@@ -689,7 +702,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
           </AlertDescription>
         </Alert>
 
-        {hasExistingGauge && (
+        {hasExistingGauge && selectedNetwork === "MAINNET" && (
           <Alert status="warning" mt={4}>
             <AlertIcon />
             <AlertDescription>
@@ -698,11 +711,34 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
               </Text>
               <Text>
                 This pool already has a gauge ({selectedPool?.staking?.gauge?.id}).
-                {selectedNetwork !== "MAINNET" &&
-                  !existingRootGauge &&
-                  " You can proceed to create a root gauge for it."}
-                {selectedNetwork === "MAINNET" &&
-                  " No additional gauge creation is needed on Ethereum mainnet."}
+                No additional gauge creation is needed on Ethereum mainnet.
+              </Text>
+              {existingMainnetGauge?.gauge?.isKilled && (
+                <Text color="red.500" mt={2}>
+                  Note: This gauge is marked as killed.
+                </Text>
+              )}
+              <Text mt={1}>
+                Weight Cap:{" "}
+                <Badge colorScheme="blue">
+                  {existingMainnetGauge?.gauge?.relativeWeightCap
+                    ? `${(Number(existingMainnetGauge.gauge.relativeWeightCap) * 100).toFixed(0)}%`
+                    : "100%"}
+                </Badge>
+              </Text>
+            </AlertDescription>
+          </Alert>
+        )}
+        {hasExistingGauge && selectedNetwork !== "MAINNET" && (
+          <Alert status="warning" mt={4}>
+            <AlertIcon />
+            <AlertDescription>
+              <Text fontWeight="bold" mb={2}>
+                Existing Gauge Detected
+              </Text>
+              <Text>
+                This pool already has a gauge ({selectedPool?.staking?.gauge?.id}).
+                {!existingRootGauge && " You can proceed to create a root gauge for it."}
               </Text>
             </AlertDescription>
           </Alert>
