@@ -22,8 +22,12 @@ import { TbSettingsDollar } from "react-icons/tb";
 import { GaugeNetworkId, NetworkInfo } from "@/types/types";
 import { TokenInfo } from "@/types/interfaces";
 import { IoLayers } from "react-icons/io5";
+import { IoSwapHorizontal } from "react-icons/io5";
+
 
 export const VAULT_ADDRESS = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+
+export const SPARK_USDS_PSM_WRAPPER_ADDRESS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0";
 
 export const tokenDecimals: Record<string, number> = {
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // mainnet
@@ -310,6 +314,18 @@ export const PAYLOAD_OPTIONS = [
     branchNamePlaceholder: "feature/reclamm-config",
     prNamePlaceholder: "Configure ReCLAMM parameters for pool XYZ",
     prTypePath: "MaxiOps/PoolParameterChanges/ReClammParams/",
+  },
+  {
+    href: "/payload-builder/spark-psm",
+    key: "spark-psm",
+    label: "Swap USDC/sUSDS via Spark PSM",
+    description: "Deposit USDC to receive sUSDS or withdraw sUSDS to USDC via Spark PSM on Ethereum",
+    button_label: "Use Spark PSM",
+    icon: IoSwapHorizontal,
+    repos: ["BalancerMaxis/multisig-ops"],
+    branchNamePlaceholder: "feature/spark-psm",
+    prNamePlaceholder: "Spark PSM USDC/sUSDS Swap",
+    prTypePath: "MaxiOps/SparkPSM/",
   },
 ];
 
