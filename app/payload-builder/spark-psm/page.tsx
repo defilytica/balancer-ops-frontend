@@ -6,6 +6,7 @@ import {
   AlertIcon,
   Box,
   Button,
+  ButtonGroup,
   Card,
   Container,
   Divider,
@@ -20,6 +21,7 @@ import {
   InputLeftElement,
   Skeleton,
   Text,
+  useColorModeValue,
   useDisclosure,
   useToast,
   VStack,
@@ -73,6 +75,12 @@ export default function SparkPSMPage() {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Color mode values for the operation switcher
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
+  const hoverBg = useColorModeValue("gray.100", "whiteAlpha.100");
+  const activeBg = useColorModeValue("gray.200", "whiteAlpha.200");
+  const activeTextColor = useColorModeValue("gray.800", "white");
+
   const SUSDS = WHITELISTED_PAYMENT_TOKENS["mainnet"].find(t => t.symbol === "sUSDS")!;
   const USDC = WHITELISTED_PAYMENT_TOKENS["mainnet"].find(t => t.symbol === "USDC")!;
 
@@ -114,6 +122,21 @@ export default function SparkPSMPage() {
       enabled: operationType === "withdraw" && maxAmountInWei > BigInt(0),
     },
   }) as { data: bigint | undefined };
+
+  // Calculate expected sUSDS output for deposits (USDC -> sUSDS)
+  const expectedSUSDS = useMemo(() => {
+    if (!exchangeRate || !amountIn || operationType !== "deposit") return null;
+    // Use amountOut if provided, otherwise use amountIn
+    // amountOut is in USD, divide by exchange rate to get sUSDS shares
+    const usdAmount = amountOut || amountIn;
+    return parseFloat(usdAmount) / exchangeRate;
+  }, [exchangeRate, amountIn, amountOut, operationType]);
+
+  // Calculate expected sUSDS shares to burn for withdrawals
+  const expectedSharesToBurn = useMemo(() => {
+    if (!sharesForWithdraw || operationType !== "withdraw") return null;
+    return Number(sharesForWithdraw) / 1e18; // Convert from wei to human readable
+  }, [sharesForWithdraw, operationType]);
 
   // Validation state
   const errors = {
@@ -255,33 +278,36 @@ export default function SparkPSMPage() {
 
       <Card p={6}>
         {/* Operation Type Toggle */}
-        <Box mb={6}>
-          <Text fontSize="sm" color="gray.500" mb={2}>
-            Operation
-          </Text>
-          <HStack spacing={0} bg="gray.100" _dark={{ bg: "gray.700" }} borderRadius="lg" p={1}>
+        <Flex justify="center" mb={6}>
+          <ButtonGroup size="sm" isAttached>
             <Button
-              flex={1}
-              size="md"
-              variant={operationType === "deposit" ? "solid" : "ghost"}
-              colorScheme={operationType === "deposit" ? "purple" : "gray"}
               onClick={() => setOperationType("deposit")}
-              borderRadius="md"
+              borderWidth="1px"
+              bg={operationType === "deposit" ? activeBg : "transparent"}
+              color={operationType === "deposit" ? activeTextColor : undefined}
+              borderColor={borderColor}
+              _hover={{
+                bg: hoverBg,
+              }}
+              px={3}
             >
               Deposit USDC → sUSDS
             </Button>
             <Button
-              flex={1}
-              size="md"
-              variant={operationType === "withdraw" ? "solid" : "ghost"}
-              colorScheme={operationType === "withdraw" ? "purple" : "gray"}
               onClick={() => setOperationType("withdraw")}
-              borderRadius="md"
+              borderWidth="1px"
+              bg={operationType === "withdraw" ? activeBg : "transparent"}
+              color={operationType === "withdraw" ? activeTextColor : undefined}
+              borderColor={borderColor}
+              _hover={{
+                bg: hoverBg,
+              }}
+              px={3}
             >
               Withdraw sUSDS → USDC
             </Button>
-          </HStack>
-        </Box>
+          </ButtonGroup>
+        </Flex>
 
         {/* Info Alert */}
         <Alert status="info" mb={6} borderRadius="md">
@@ -317,12 +343,7 @@ export default function SparkPSMPage() {
             {isRateLoading ? (
               <Skeleton height="20px" width="120px" />
             ) : exchangeRate ? (
-              <Text
-                fontSize="sm"
-                fontWeight="bold"
-                color="purple.600"
-                _dark={{ color: "purple.300" }}
-              >
+              <Text fontSize="sm" fontWeight="bold">
                 1 sUSDS = {exchangeRate.toFixed(6)} USDC
               </Text>
             ) : (
@@ -354,7 +375,20 @@ export default function SparkPSMPage() {
               pl={10}
             />
           </InputGroup>
-          <Text fontSize="xs" color="gray.500" mt={1}>
+          {/* Expected sUSDS Shares to Burn Display - for withdrawals, show below max amount in */}
+          {operationType === "withdraw" && expectedSharesToBurn && (
+            <Box mt={1}>
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.500"
+                _dark={{ color: "gray.400" }}
+              >
+                ≈ {expectedSharesToBurn.toFixed(6)} sUSDS
+              </Text>
+            </Box>
+          )}
+          <Text fontSize="sm" color="gray.500" mt={1}>
             {operationType === "deposit" ? (
               "The amount of USDC to deposit."
             ) : (
@@ -363,6 +397,7 @@ export default function SparkPSMPage() {
               </>
             )}
           </Text>
+
           {errors.amount && <FormErrorMessage>{errors.amount}</FormErrorMessage>}
         </FormControl>
 
@@ -386,7 +421,20 @@ export default function SparkPSMPage() {
               pl={10}
             />
           </InputGroup>
-          <Text fontSize="xs" color="gray.500" mt={1}>
+          {/* Expected sUSDS Display - for deposits, show below amount out */}
+          {operationType === "deposit" && expectedSUSDS && (
+            <Box mt={1}>
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.500"
+                _dark={{ color: "gray.400" }}
+              >
+                ≈ {expectedSUSDS.toFixed(6)} sUSDS
+              </Text>
+            </Box>
+          )}
+          <Text fontSize="sm" color="gray.500" mt={1} mb={1}>
             {operationType === "deposit"
               ? "Amount out is measured in USD due to increasing value of the sUSDS."
               : "The amount of USDC to receive."}

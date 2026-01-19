@@ -2093,7 +2093,7 @@ export function generateSparkPSMDepositPayload(input: SparkPSMDepositInput) {
     createdAt: Date.now(),
     meta: {
       name: "Spark PSM Deposit",
-      description: `Deposit ${input.amountIn} USDC to Spark PSM to receive sUSDS.`,
+      description: `Deposit ${ethers.formatUnits(input.amountIn, 6)} USDC to Spark PSM to receive sUSDS.`,
       createdFromSafeAddress: input.depositor,
     },
     transactions,
@@ -2156,7 +2156,7 @@ export function generateSparkPSMWithdrawPayload(input: SparkPSMWithdrawInput) {
     createdAt: Date.now(),
     meta: {
       name: "Spark PSM Withdrawal",
-      description: `Withdraw ${input.amountOut} USDC from Spark PSM.`,
+      description: `Withdraw ${ethers.formatUnits(input.amountOut, 6)} USDC from Spark PSM.`,
       createdFromSafeAddress: input.depositor,
     },
     transactions,
