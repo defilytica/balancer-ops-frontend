@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { Filter } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
-import { HookMinTvlFilter } from "@/components/HookMinTvlFilter";
+import { HookMinTvlFilter } from "@/components/filter/HookMinTvlFilter";
 import { AddressBook } from "@/types/interfaces";
 import { HookType } from "@/components/HookParametersDashboardModule";
 

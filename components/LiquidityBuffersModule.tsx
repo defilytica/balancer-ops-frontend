@@ -21,7 +21,7 @@ import {
 } from "@chakra-ui/react";
 import { BiErrorCircle } from "react-icons/bi";
 import { LiquidityBuffersTable } from "@/components/tables/LiquidityBuffersTable";
-import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
+import { LiquidityBuffersFilters } from "@/components/filter/LiquidityBuffersFilters";
 import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";

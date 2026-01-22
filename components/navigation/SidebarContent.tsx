@@ -19,6 +19,7 @@ import {
   TbFishHook,
   TbCoins,
   TbChartCovariate,
+  TbCurrencyDollar,
 } from "react-icons/tb";
 import { GiRadarSweep } from "react-icons/gi";
 import { FaChartPie } from "react-icons/fa";
@@ -56,6 +57,12 @@ const LinkItems = [
         icon: TbChartCovariate,
         target: "/reclamm",
         description: "View RECLAMM pools",
+      },
+      {
+        name: "Core Pools",
+        icon: TbCurrencyDollar,
+        target: "/core-pools",
+        description: "View v3 core pool fee earnings",
       },
     ],
   },

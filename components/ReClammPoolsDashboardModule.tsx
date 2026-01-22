@@ -15,7 +15,7 @@ import {
   AlertTitle,
   AlertDescription,
 } from "@chakra-ui/react";
-import { HookFilters } from "@/components/HookFilters";
+import { HookFilters } from "@/components/filter/HookFilters";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import {
   GetV3PoolsQuery,

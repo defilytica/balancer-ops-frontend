@@ -20,7 +20,7 @@ import {
 import { BiErrorCircle } from "react-icons/bi";
 import { BoostedPoolsTable } from "@/components/tables/BoostedPoolsTable";
 import { BoostedPoolsGrid } from "@/components/tables/BoostedPoolsGrid";
-import { LiquidityBuffersFilters } from "@/components/LiquidityBuffersFilters";
+import { LiquidityBuffersFilters } from "@/components/filter/LiquidityBuffersFilters";
 import { ViewSwitcher, ViewMode } from "@/components/boostedPools/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
