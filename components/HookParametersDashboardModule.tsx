@@ -16,7 +16,7 @@ import {
   AlertDescription,
 } from "@chakra-ui/react";
 import { HookParametersTable } from "@/components/tables/HookParametersTable";
-import { HookFilters } from "@/components/HookFilters";
+import { HookFilters } from "@/components/filter/HookFilters";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksForFeature } from "@/constants/networkFeatures";
 import {

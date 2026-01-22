@@ -699,3 +699,9 @@ export const SWAP_FEE_PARAMS = {
     MAX: 100, // 100%
   },
 };
+
+// Core Pools Fee Calculation Schedule
+// Reference date used to calculate bi-weekly fee collection cycles.
+// Fee calculations occur every other Thursday at 00:00 UTC, starting from this date.
+// This is used to determine when the next fee calculation and distribution will occur.
+export const CORE_POOLS_FEE_CALC_REFERENCE_DATE = new Date(Date.UTC(2026, 0, 15)); // Jan 15, 2026 - a Thursday

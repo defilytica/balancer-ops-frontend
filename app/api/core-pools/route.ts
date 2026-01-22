@@ -1,14 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 const GRAPHQL_ENDPOINT = "https://api-v3.balancer.fi/";
-const CACHE_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-
-// In-memory cache for storing all v3 pools
-let cachedData: {
-  pools: any[];
-  lastUpdated: string;
-} | null = null;
-let lastFetchTime = 0;
+const CACHE_DURATION_SECONDS = 6 * 60 * 60; // 6 hours
 
 const POOLS_QUERY = `
   query GetV3PoolsForCorePools {
@@ -50,6 +43,7 @@ async function fetchAllV3PoolsFromGraphQL() {
     body: JSON.stringify({
       query: POOLS_QUERY,
     }),
+    next: { revalidate: CACHE_DURATION_SECONDS },
   });
 
   if (!response.ok) {
@@ -65,25 +59,10 @@ async function fetchAllV3PoolsFromGraphQL() {
   return data.data.poolGetPools;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const forceRefresh = request.nextUrl.searchParams.get("forceRefresh") === "true";
-
-    const now = Date.now();
-    const cacheExpired = now - lastFetchTime > CACHE_DURATION_MS;
-
-    // Use cached data if available and not expired (and not forcing refresh)
-    if (!forceRefresh && !cacheExpired && cachedData) {
-      return NextResponse.json(cachedData);
-    }
-
-    // Fetch fresh data (all v3 pools)
     const pools = await fetchAllV3PoolsFromGraphQL();
     const lastUpdated = new Date().toISOString();
-
-    // Update cache
-    cachedData = { pools, lastUpdated };
-    lastFetchTime = now;
 
     return NextResponse.json({
       pools,

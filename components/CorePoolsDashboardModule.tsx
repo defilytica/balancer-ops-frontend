@@ -16,7 +16,6 @@ import {
   SimpleGrid,
   VStack,
   useColorModeValue,
-  Select,
   HStack,
   Tooltip,
   Link,
@@ -29,9 +28,9 @@ import {
   AccordionPanel,
   AccordionIcon,
 } from "@chakra-ui/react";
-import { InfoOutlineIcon, TimeIcon } from "@chakra-ui/icons";
+import { InfoOutlineIcon, TimeIcon, CalendarIcon } from "@chakra-ui/icons";
 import { FaCircle } from "react-icons/fa";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { NETWORK_OPTIONS, networks, CORE_POOLS_FEE_CALC_REFERENCE_DATE } from "@/constants/constants";
 import { Pool, AddressBook } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
 import { CorePoolsTable } from "@/components/tables/CorePoolsTable";
@@ -43,12 +42,8 @@ import {
   calculateFeeDistributions,
   FEE_ALLOCATIONS,
 } from "@/lib/services/fetchCorePoolsFees";
-import { NetworkSelector } from "@/components/NetworkSelector";
+import { CorePoolsFilters } from "@/components/filter/CorePoolsFilters";
 import { shortCurrencyFormat } from "@/lib/utils/shortCurrencyFormat";
-import { CalendarIcon } from "@chakra-ui/icons";
-
-// Reference date: 2026-01-15 is a Thursday and a fee calculation date
-const REFERENCE_FEE_CALC_DATE = new Date(Date.UTC(2026, 0, 15)); // Jan 15, 2026
 
 /**
  * Get the next fee calculation date (bi-weekly on Thursdays, 00:00 UTC)
@@ -60,7 +55,7 @@ function getNextFeeCalculationDate(): Date {
 
   // Calculate days since reference date
   const msPerDay = 24 * 60 * 60 * 1000;
-  const daysSinceRef = Math.floor((todayUTC.getTime() - REFERENCE_FEE_CALC_DATE.getTime()) / msPerDay);
+  const daysSinceRef = Math.floor((todayUTC.getTime() - CORE_POOLS_FEE_CALC_REFERENCE_DATE.getTime()) / msPerDay);
 
   // Find how many days until the next bi-weekly Thursday
   const daysIntoCycle = ((daysSinceRef % 14) + 14) % 14;
@@ -301,36 +296,17 @@ export default function CorePoolsDashboardModule({
           </HStack>
         </Box>
 
-        <HStack spacing={4}>
-          <Box>
-            <Text fontSize="sm" mb={1} color={statsHeaderTextColor}>
-              Date Range
-            </Text>
-            <Select
-              value={selectedDateRangeIndex}
-              onChange={handleDateRangeChange}
-              minW="220px"
-              size="sm"
-            >
-              {availableDateRanges.map((range, index) => (
-                <option key={range.label} value={index}>
-                  {range.label}
-                </option>
-              ))}
-            </Select>
-          </Box>
-          <Box>
-            <Text fontSize="sm" mb={1} color={statsHeaderTextColor}>
-              Network
-            </Text>
-            <NetworkSelector
-              networks={networksWithAll}
-              networkOptions={networkOptionsWithAll}
-              selectedNetwork={selectedNetwork}
-              handleNetworkChange={handleNetworkChange}
-            />
-          </Box>
-        </HStack>
+        <Box>
+          <CorePoolsFilters
+            selectedNetwork={selectedNetwork}
+            onNetworkChange={handleNetworkChange}
+            networkOptions={networkOptionsWithAll}
+            networks={networksWithAll}
+            availableDateRanges={availableDateRanges}
+            selectedDateRangeIndex={selectedDateRangeIndex}
+            onDateRangeChange={handleDateRangeChange}
+          />
+        </Box>
       </Flex>
 
       {/* Stats Overview Cards */}
