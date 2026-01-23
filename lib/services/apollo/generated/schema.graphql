@@ -1294,6 +1294,7 @@ type GqlPoolLiquidityBootstrappingV3 implements GqlPoolBase {
   id: ID!
   investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
   isProjectTokenSwapInBlocked: Boolean!
+  isSeedless: Boolean!
   lbpName: String
   lbpOwner: String!
   liquidityManagement: LiquidityManagement
@@ -3169,6 +3170,7 @@ type LiquidityBootstrappingPoolV3Params {
   endTime: Int!
   farcaster: String
   isProjectTokenSwapInBlocked: Boolean!
+  isSeedless: Boolean!
   lbpName: String
   lbpOwner: String!
   projectToken: String!

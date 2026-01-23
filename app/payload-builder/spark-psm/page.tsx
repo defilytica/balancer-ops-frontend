@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Alert,
   AlertDescription,
@@ -43,11 +43,20 @@ import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { ethers } from "ethers";
 import { ERC4626 } from "@/abi/erc4626";
-import { isAddress } from "viem";
-import { useReadContract } from "wagmi";
-import { WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { ERC20 } from "@/abi/erc20";
+import { sparkPSMAbi } from "@/abi/SparkPSM";
+import { isAddress, formatUnits } from "viem";
+import { useReadContract, useAccount, useSwitchChain, useBalance } from "wagmi";
+import { WHITELISTED_PAYMENT_TOKENS, SPARK_USDS_PSM_WRAPPER_ADDRESS } from "@/constants/constants";
+import SimulateEOATransactionButton from "@/components/btns/SimulateEOATransactionButton";
+import { Select } from "@chakra-ui/react";
 
 type OperationType = "deposit" | "withdraw";
+
+enum ExecutionMode {
+  SAFE = "safe",
+  EOA = "eoa",
+}
 
 const isValidAmount = (amount: string): boolean => {
   if (!amount) return false;
@@ -57,6 +66,7 @@ const isValidAmount = (amount: string): boolean => {
 
 export default function SparkPSMPage() {
   const [operationType, setOperationType] = useState<OperationType>("deposit");
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>(ExecutionMode.EOA);
   const [amountIn, setAmountIn] = useState<string>("");
   const [amountOut, setAmountOut] = useState<string>("");
   const [depositor, setDepositor] = useState<string>("");
@@ -72,6 +82,7 @@ export default function SparkPSMPage() {
     depositor: false,
     receiver: false,
   });
+  const [isExecuting, setIsExecuting] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -83,6 +94,52 @@ export default function SparkPSMPage() {
 
   const SUSDS = WHITELISTED_PAYMENT_TOKENS["mainnet"].find(t => t.symbol === "sUSDS")!;
   const USDC = WHITELISTED_PAYMENT_TOKENS["mainnet"].find(t => t.symbol === "USDC")!;
+
+  // Wallet connection hooks
+  const { address: walletAddress } = useAccount();
+  const { switchChain } = useSwitchChain();
+
+  // Auto-switch to Safe mode when wallet is not connected
+  useEffect(() => {
+    if (!walletAddress && executionMode === ExecutionMode.EOA) {
+      setExecutionMode(ExecutionMode.SAFE);
+    }
+  }, [walletAddress, executionMode]);
+
+  // Pre-fill receiver with connected wallet address for EOA mode
+  useEffect(() => {
+    if (executionMode === ExecutionMode.EOA && walletAddress && !receiver) {
+      setReceiver(walletAddress);
+    }
+  }, [executionMode, walletAddress, receiver]);
+
+  // Switch to mainnet when component mounts (Spark PSM is mainnet only)
+  useEffect(() => {
+    try {
+      switchChain({ chainId: 1 });
+    } catch {
+      // Ignore errors - user may need to switch manually
+    }
+  }, [switchChain]);
+
+  // Fetch wallet balances for EOA mode
+  const { data: usdcBalance } = useBalance({
+    address: walletAddress as `0x${string}` | undefined,
+    token: USDC.address as `0x${string}`,
+    chainId: 1,
+    query: {
+      enabled: !!walletAddress && executionMode === ExecutionMode.EOA,
+    },
+  });
+
+  const { data: susdsBalance } = useBalance({
+    address: walletAddress as `0x${string}` | undefined,
+    token: SUSDS.address as `0x${string}`,
+    chainId: 1,
+    query: {
+      enabled: !!walletAddress && executionMode === ExecutionMode.EOA,
+    },
+  });
 
   // Fetch current sUSDS exchange rate (how many assets 1 share is worth)
   // We use 1e18 as input to get the rate for 1 sUSDS share
@@ -265,6 +322,278 @@ export default function SparkPSMPage() {
     }
   };
 
+  // EOA Direct Execution - Deposit
+  const handleDirectDeposit = useCallback(async () => {
+    if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid amount and receiver address",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsExecuting(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const amountInUnits = ethers.parseUnits(amountIn, USDC.decimals);
+      const minAmountOutUnits = ethers.parseUnits(amountOut || amountIn, SUSDS.decimals);
+
+      // Step 1: Approve USDC to PSM Wrapper
+      const usdcContract = new ethers.Contract(USDC.address, ERC20, signer);
+      const currentAllowance = await usdcContract.allowance(
+        walletAddress,
+        SPARK_USDS_PSM_WRAPPER_ADDRESS,
+      );
+
+      if (currentAllowance < amountInUnits) {
+        toast({
+          title: "Approving USDC",
+          description: "Please confirm the approval transaction in your wallet...",
+          status: "info",
+          duration: null,
+          isClosable: true,
+          id: "approval-pending",
+        });
+        const approveTx = await usdcContract.approve(SPARK_USDS_PSM_WRAPPER_ADDRESS, amountInUnits);
+        toast.update("approval-pending", {
+          title: "Approval Submitted",
+          description: "Waiting for confirmation...",
+          status: "loading",
+        });
+        await approveTx.wait();
+        toast.close("approval-pending");
+        toast({
+          title: "USDC Approved",
+          description: "Approval confirmed. Proceeding with deposit...",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+
+      // Step 2: Execute swapAndDeposit
+      const psmContract = new ethers.Contract(SPARK_USDS_PSM_WRAPPER_ADDRESS, sparkPSMAbi, signer);
+      const tx = await psmContract.swapAndDeposit(receiver, amountInUnits, minAmountOutUnits);
+
+      toast.promise(tx.wait(), {
+        success: {
+          title: "Success",
+          description: `Deposited ${amountIn} USDC to receive sUSDS.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Depositing USDC",
+          description: "Waiting for transaction confirmation...",
+        },
+        error: (error: any) => ({
+          title: "Error",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+      await tx.wait();
+    } catch (error: any) {
+      toast({
+        title: "Error executing transaction",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [walletAddress, amountIn, amountOut, receiver, USDC, SUSDS, toast]);
+
+  // EOA Direct Execution - Withdraw
+  const handleDirectWithdraw = useCallback(async () => {
+    if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid amount and receiver address",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!sharesForWithdraw) {
+      toast({
+        title: "Error",
+        description: "Failed to calculate sUSDS approval amount. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsExecuting(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const maxAmountInUnits = ethers.parseUnits(amountIn, SUSDS.decimals);
+      const amountOutUnits = ethers.parseUnits(amountOut || amountIn, USDC.decimals);
+      // Add 1 to prevent rounding errors (per Spark docs)
+      const approvalAmount = BigInt(sharesForWithdraw) + BigInt(1);
+
+      // Step 1: Approve sUSDS to PSM Wrapper
+      const susdsContract = new ethers.Contract(SUSDS.address, ERC20, signer);
+      const currentAllowance = await susdsContract.allowance(
+        walletAddress,
+        SPARK_USDS_PSM_WRAPPER_ADDRESS,
+      );
+
+      if (currentAllowance < approvalAmount) {
+        toast({
+          title: "Approving sUSDS",
+          description: "Please confirm the approval transaction in your wallet...",
+          status: "info",
+          duration: null,
+          isClosable: true,
+          id: "approval-pending",
+        });
+        const approveTx = await susdsContract.approve(
+          SPARK_USDS_PSM_WRAPPER_ADDRESS,
+          approvalAmount,
+        );
+        toast.update("approval-pending", {
+          title: "Approval Submitted",
+          description: "Waiting for confirmation...",
+          status: "loading",
+        });
+        await approveTx.wait();
+        toast.close("approval-pending");
+        toast({
+          title: "sUSDS Approved",
+          description: "Approval confirmed. Proceeding with withdrawal...",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+
+      // Step 2: Execute withdrawAndSwap
+      const psmContract = new ethers.Contract(SPARK_USDS_PSM_WRAPPER_ADDRESS, sparkPSMAbi, signer);
+      const tx = await psmContract.withdrawAndSwap(receiver, amountOutUnits, maxAmountInUnits);
+
+      toast.promise(tx.wait(), {
+        success: {
+          title: "Success",
+          description: `Withdrew ${amountOut || amountIn} USDC from sUSDS.`,
+          duration: 5000,
+          isClosable: true,
+        },
+        loading: {
+          title: "Withdrawing to USDC",
+          description: "Waiting for transaction confirmation...",
+        },
+        error: (error: any) => ({
+          title: "Error",
+          description: error.message,
+          duration: 7000,
+          isClosable: true,
+        }),
+      });
+      await tx.wait();
+    } catch (error: any) {
+      toast({
+        title: "Error executing transaction",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [walletAddress, amountIn, amountOut, receiver, USDC, SUSDS, sharesForWithdraw, toast]);
+
+  // Handle direct execution based on operation type
+  const handleDirectExecution = useCallback(async () => {
+    if (operationType === "deposit") {
+      await handleDirectDeposit();
+    } else {
+      await handleDirectWithdraw();
+    }
+  }, [operationType, handleDirectDeposit, handleDirectWithdraw]);
+
+  // Build simulation transactions for EOA
+  const buildEOASimulationTransactions = useCallback(() => {
+    if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
+      return [];
+    }
+
+    const transactions = [];
+
+    if (operationType === "deposit") {
+      const amountInUnits = ethers.parseUnits(amountIn, USDC.decimals).toString();
+      const minAmountOutUnits = ethers.parseUnits(amountOut || amountIn, SUSDS.decimals).toString();
+
+      // Approve USDC
+      transactions.push({
+        to: USDC.address,
+        data: new ethers.Interface(ERC20).encodeFunctionData("approve", [
+          SPARK_USDS_PSM_WRAPPER_ADDRESS,
+          amountInUnits,
+        ]),
+        value: "0",
+      });
+
+      // swapAndDeposit
+      transactions.push({
+        to: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+        data: new ethers.Interface(sparkPSMAbi).encodeFunctionData("swapAndDeposit", [
+          receiver,
+          amountInUnits,
+          minAmountOutUnits,
+        ]),
+        value: "0",
+      });
+    } else {
+      if (!sharesForWithdraw) return [];
+
+      const maxAmountInUnits = ethers.parseUnits(amountIn, SUSDS.decimals).toString();
+      const amountOutUnits = ethers.parseUnits(amountOut || amountIn, USDC.decimals).toString();
+      const approvalAmount = (BigInt(sharesForWithdraw) + BigInt(1)).toString();
+
+      // Approve sUSDS
+      transactions.push({
+        to: SUSDS.address,
+        data: new ethers.Interface(ERC20).encodeFunctionData("approve", [
+          SPARK_USDS_PSM_WRAPPER_ADDRESS,
+          approvalAmount,
+        ]),
+        value: "0",
+      });
+
+      // withdrawAndSwap
+      transactions.push({
+        to: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+        data: new ethers.Interface(sparkPSMAbi).encodeFunctionData("withdrawAndSwap", [
+          receiver,
+          amountOutUnits,
+          maxAmountInUnits,
+        ]),
+        value: "0",
+      });
+    }
+
+    return transactions;
+  }, [walletAddress, amountIn, amountOut, receiver, operationType, USDC, SUSDS, sharesForWithdraw]);
+
+  // Form validation for EOA mode (no depositor required)
+  const isEOAFormValid = isValidAmount(amountIn) && isAddress(receiver);
+
   return (
     <Container maxW="container.md">
       <Flex justifyContent="space-between" direction={{ base: "column", md: "row" }} gap={4} mb={6}>
@@ -308,6 +637,24 @@ export default function SparkPSMPage() {
             </Button>
           </ButtonGroup>
         </Flex>
+
+        {/* Execution Mode Selector */}
+        <FormControl mb={4}>
+          <FormLabel>Execution Mode</FormLabel>
+          <Select
+            value={executionMode}
+            onChange={e => setExecutionMode(e.target.value as ExecutionMode)}
+            variant="outline"
+          >
+            <option value={ExecutionMode.EOA}>Direct Wallet Execution (EOA)</option>
+            <option value={ExecutionMode.SAFE}>Safe Payload Generation</option>
+          </Select>
+          <Text fontSize="xs" color="gray.500" mt={1}>
+            {executionMode === ExecutionMode.EOA
+              ? "Execute transactions directly with your connected wallet"
+              : "Generate transaction payloads for Safe multisig execution"}
+          </Text>
+        </FormControl>
 
         {/* Info Alert */}
         <Alert status="info" mb={6} borderRadius="md">
@@ -388,6 +735,61 @@ export default function SparkPSMPage() {
               </Text>
             </Box>
           )}
+
+          {/* Wallet balance display for EOA mode - shown right after ≈ sUSDS */}
+          {executionMode === ExecutionMode.EOA && walletAddress && (
+            <>
+              {operationType === "deposit" && usdcBalance && (
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="gray.500"
+                  _dark={{ color: "gray.400" }}
+                  mt={1}
+                >
+                  Wallet:{" "}
+                  {parseFloat(formatUnits(usdcBalance.value, USDC.decimals)).toLocaleString(
+                    undefined,
+                    { maximumFractionDigits: 2 },
+                  )}{" "}
+                  USDC
+                </Text>
+              )}
+              {operationType === "withdraw" && susdsBalance && (
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="gray.500"
+                  _dark={{ color: "gray.400" }}
+                  mt={1}
+                >
+                  Wallet:{" "}
+                  {parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)).toLocaleString(
+                    undefined,
+                    { maximumFractionDigits: 6 },
+                  )}{" "}
+                  sUSDS
+                  {exchangeRate && (
+                    <Text
+                      as="span"
+                      fontSize="sm"
+                      fontWeight="medium"
+                      color="gray.500"
+                      _dark={{ color: "gray.400" }}
+                    >
+                      {" "}
+                      (≈ $
+                      {(
+                        parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)) * exchangeRate
+                      ).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                      USD)
+                    </Text>
+                  )}
+                </Text>
+              )}
+            </>
+          )}
+
           <Text fontSize="sm" color="gray.500" mt={1}>
             {operationType === "deposit" ? (
               "The amount of USDC to deposit."
@@ -441,22 +843,24 @@ export default function SparkPSMPage() {
           </Text>
         </FormControl>
 
-        {/* Depositor Input */}
-        <FormControl mb={4} isRequired isInvalid={!!errors.depositor}>
-          <FormLabel>Depositor Address (Safe)</FormLabel>
-          <Input
-            placeholder="0x..."
-            value={depositor}
-            onChange={e => setDepositor(e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, depositor: true }))}
-            size="lg"
-            fontFamily="mono"
-          />
-          <Text fontSize="xs" color="gray.500" mt={1}>
-            Address that will provide the {operationType === "deposit" ? "USDC" : "sUSDS"}
-          </Text>
-          {errors.depositor && <FormErrorMessage>{errors.depositor}</FormErrorMessage>}
-        </FormControl>
+        {/* Depositor Input - Only show in Safe mode */}
+        {executionMode === ExecutionMode.SAFE && (
+          <FormControl mb={4} isRequired isInvalid={!!errors.depositor}>
+            <FormLabel>Depositor Address (Safe)</FormLabel>
+            <Input
+              placeholder="0x..."
+              value={depositor}
+              onChange={e => setDepositor(e.target.value)}
+              onBlur={() => setTouched(prev => ({ ...prev, depositor: true }))}
+              size="lg"
+              fontFamily="mono"
+            />
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              Address that will provide the {operationType === "deposit" ? "USDC" : "sUSDS"}
+            </Text>
+            {errors.depositor && <FormErrorMessage>{errors.depositor}</FormErrorMessage>}
+          </FormControl>
+        )}
 
         {/* Receiver Input */}
         <FormControl mb={6} isRequired isInvalid={!!errors.receiver}>
@@ -583,20 +987,42 @@ export default function SparkPSMPage() {
         </VStack>
       </Card>
 
-      {/* Generate Button Row */}
+      {/* Generate/Execute Button Row */}
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">
         <Flex gap={2}>
-          <Button variant="primary" onClick={generatePayload}>
-            Generate Payload
-          </Button>
-          <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+          {executionMode === ExecutionMode.EOA ? (
+            <Button
+              variant="primary"
+              onClick={handleDirectExecution}
+              isDisabled={!isEOAFormValid || !walletAddress || isExecuting}
+              isLoading={isExecuting}
+              loadingText={operationType === "deposit" ? "Depositing..." : "Withdrawing..."}
+            >
+              Execute {operationType === "deposit" ? "Deposit" : "Withdraw"}
+            </Button>
+          ) : (
+            <>
+              <Button variant="primary" onClick={generatePayload}>
+                Generate Payload
+              </Button>
+              <ComposerButton generateData={generateComposerData} isDisabled={!generatedPayload} />
+            </>
+          )}
         </Flex>
-        {generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />}
+        {executionMode === ExecutionMode.EOA && walletAddress ? (
+          <SimulateEOATransactionButton
+            transactions={buildEOASimulationTransactions()}
+            networkId="1"
+            disabled={!isEOAFormValid}
+          />
+        ) : (
+          generatedPayload && <SimulateTransactionButton batchFile={JSON.parse(generatedPayload)} />
+        )}
       </Flex>
       <Divider />
 
-      {/* Generated Payload Display */}
-      {generatedPayload && (
+      {/* Generated Payload Display - Only in Safe mode */}
+      {executionMode === ExecutionMode.SAFE && generatedPayload && (
         <JsonViewerEditor
           jsonData={generatedPayload}
           onJsonChange={newJson => {
@@ -609,29 +1035,31 @@ export default function SparkPSMPage() {
         />
       )}
 
-      {/* Action Buttons */}
-      <Box display="flex" alignItems="center" mt="20px">
-        <Button
-          variant="secondary"
-          mr="10px"
-          leftIcon={<DownloadIcon />}
-          onClick={() => handleDownloadClick(generatedPayload)}
-        >
-          Download Payload
-        </Button>
-        <Button
-          variant="secondary"
-          mr="10px"
-          leftIcon={<CopyIcon />}
-          onClick={() => copyJsonToClipboard(generatedPayload, toast)}
-        >
-          Copy Payload to Clipboard
-        </Button>
-        <OpenPRButton onClick={handleOpenPRModal} />
-      </Box>
+      {/* Action Buttons - Only in Safe mode */}
+      {executionMode === ExecutionMode.SAFE && generatedPayload && (
+        <Box display="flex" alignItems="center" mt="20px">
+          <Button
+            variant="secondary"
+            mr="10px"
+            leftIcon={<DownloadIcon />}
+            onClick={() => handleDownloadClick(generatedPayload)}
+          >
+            Download Payload
+          </Button>
+          <Button
+            variant="secondary"
+            mr="10px"
+            leftIcon={<CopyIcon />}
+            onClick={() => copyJsonToClipboard(generatedPayload, toast)}
+          >
+            Copy Payload to Clipboard
+          </Button>
+          <OpenPRButton onClick={handleOpenPRModal} />
+        </Box>
+      )}
 
-      {/* Human Readable Text */}
-      {humanReadableText && (
+      {/* Human Readable Text - Only in Safe mode */}
+      {executionMode === ExecutionMode.SAFE && humanReadableText && (
         <Box mt="20px">
           <Text fontSize="2xl">Human-readable Text</Text>
           <Box p="20px" mb="20px" borderWidth="1px" borderRadius="lg">
@@ -649,13 +1077,15 @@ export default function SparkPSMPage() {
 
       {/* Spacer at the bottom */}
       <Box mt={8} />
-      <PRCreationModal
-        type={"spark-psm"}
-        isOpen={isOpen}
-        onClose={onClose}
-        payload={generatedPayload ? JSON.parse(generatedPayload) : null}
-        {...getPrefillValues()}
-      />
+      {executionMode === ExecutionMode.SAFE && (
+        <PRCreationModal
+          type={"spark-psm"}
+          isOpen={isOpen}
+          onClose={onClose}
+          payload={generatedPayload ? JSON.parse(generatedPayload) : null}
+          {...getPrefillValues()}
+        />
+      )}
     </Container>
   );
 }
