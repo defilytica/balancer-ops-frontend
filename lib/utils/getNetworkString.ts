@@ -22,6 +22,8 @@ export const getNetworkString = (chainId?: number) => {
       return "HYPEREVM";
     case 9745:
       return "PLASMA";
+    case 143:
+      return "MONAD";
     case 11155111:
       return "SEPOLIA";
     default:
