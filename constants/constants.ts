@@ -18,6 +18,7 @@ import modeLogo from "@/public/imgs/mode.svg";
 import sonicLogo from "@/public/imgs/sonic.svg";
 import hyperEVMLogo from "@/public/imgs/hyperevm.svg";
 import plasmaLogo from "@/public/imgs/plasma.svg";
+import xlayerLogo from "@/public/imgs/xlayer.svg";
 import monadLogo from "@/public/imgs/monad.svg";
 import { TbSettingsDollar } from "react-icons/tb";
 import { GaugeNetworkId, NetworkInfo } from "@/types/types";
@@ -443,6 +444,14 @@ export const NETWORK_OPTIONS = [
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5",
   },
+  {
+    label: "X Layer",
+    apiID: "XLAYER",
+    chainId: "196",
+    maxiSafe: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
+    entrypoint: "0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5",
+  },
 ];
 
 export const networks: Record<string, NetworkInfo> = {
@@ -547,6 +556,12 @@ export const networks: Record<string, NetworkInfo> = {
     rpc: "https://lb.drpc.live/monad-mainnet/",
     explorer: "https://monadscan.com/",
     chainId: "143",
+  },
+  xlayer: {
+    logo: xlayerLogo.src,
+    rpc: "https://lb.drpc.live/xlayer/",
+    explorer: "https://www.okx.com/web3/explorer/xlayer/",
+    chainId: "196",
   },
 };
 
@@ -653,6 +668,7 @@ export const FactoryAddressWeighted = {
   HYPEREVM: "", // placeholder, V2 is not deployed on HyperEVM
   PLASMA: "", // placeholder, needs deployment address
   MONAD: "", // placeholder, needs deployment address
+  XLAYER: "", // placeholder, needs deployment address
 };
 export const FactoryAddressComposable = {
   MAINNET: "0x5B42eC6D40f7B7965BE5308c70e2603c0281C1E9",
@@ -669,6 +685,7 @@ export const FactoryAddressComposable = {
   HYPEREVM: "", // placeholder, V2 is not deployed on HyperEVM
   PLASMA: "", // placeholder, needs deployment address
   MONAD: "", // placeholder, needs deployment address
+  XLAYER: "", // placeholder, needs deployment address
 };
 
 // Gauge Factory
