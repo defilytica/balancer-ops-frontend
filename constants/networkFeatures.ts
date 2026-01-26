@@ -83,6 +83,7 @@ export const NETWORK_FEATURES: Record<NetworkFeature, string[]> = {
     "MODE",
     "HYPEREVM",
     "PLASMA",
+    "XLAYER",
   ],
 
   // Amp factor changes - same as swap fee
@@ -99,6 +100,7 @@ export const NETWORK_FEATURES: Record<NetworkFeature, string[]> = {
     "MODE",
     "HYPEREVM",
     "PLASMA",
+    "XLAYER",
   ],
 
   // Permissions payload builder
@@ -115,6 +117,7 @@ export const NETWORK_FEATURES: Record<NetworkFeature, string[]> = {
     "MODE",
     "HYPEREVM",
     "PLASMA",
+    "XLAYER",
   ],
 
   // MEV capture hook - only deployed on specific networks
