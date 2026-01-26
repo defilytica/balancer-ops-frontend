@@ -1,4 +1,4 @@
-import { V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import { SPARK_USDS_PSM_WRAPPER_ADDRESS, V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
 import { ethers, JsonRpcSigner, parseUnits } from "ethers";
@@ -2034,6 +2034,130 @@ export function generateProtocolFeeChangePayload(
       name: "Transactions Batch",
       description: description,
       createdFromSafeAddress: multisig,
+    },
+    transactions,
+  };
+}
+
+export interface SparkPSMDepositInput {
+  inTokenAddress: string;
+  amountIn: string;
+  minAmountOut: string;
+  receiver: string;
+  depositor: string;
+}
+
+export function generateSparkPSMDepositPayload(input: SparkPSMDepositInput) {
+  const transactions = [
+    {
+      to: input.inTokenAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "spender", type: "address", internalType: "address" },
+          { name: "amount", type: "uint256", internalType: "uint256" },
+        ],
+        name: "approve",
+        payable: false,
+      },
+      contractInputsValues: {
+        spender: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+        amount: input.amountIn,
+      },
+    },
+    {
+      to: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "receiver", type: "address", internalType: "address" },
+          { name: "amountIn", type: "uint256", internalType: "uint256" },
+          { name: "minAmountOut", type: "uint256", internalType: "uint256" },
+        ],
+        name: "swapAndDeposit",
+        payable: false,
+      },
+      contractInputsValues: {
+        receiver: input.receiver,
+        amountIn: input.amountIn,
+        minAmountOut: input.minAmountOut,
+      },
+    },
+  ];
+
+  return {
+    version: "1.0",
+    chainId: "1",
+    createdAt: Date.now(),
+    meta: {
+      name: "Spark PSM Deposit",
+      description: `Deposit ${ethers.formatUnits(input.amountIn, 6)} USDC to Spark PSM to receive sUSDS.`,
+      createdFromSafeAddress: input.depositor,
+    },
+    transactions,
+  };
+}
+
+
+export interface SparkPSMWithdrawInput {
+  inTokenAddress: string;
+  maxAmountIn: string;
+  amountOut: string;
+  receiver: string;
+  depositor: string;
+  approvalAmount: string;
+}
+
+export function generateSparkPSMWithdrawPayload(input: SparkPSMWithdrawInput) {
+  const transactions = [
+    {
+      to: input.inTokenAddress,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "spender", type: "address", internalType: "address" },
+          { name: "amount", type: "uint256", internalType: "uint256" },
+        ],
+        name: "approve",
+        payable: false,
+      },
+      contractInputsValues: {
+        spender: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+        amount: input.approvalAmount,
+      },
+    },
+    {
+      to: SPARK_USDS_PSM_WRAPPER_ADDRESS,
+      value: "0",
+      data: null,
+      contractMethod: {
+        inputs: [
+          { name: "receiver", type: "address", internalType: "address" },
+          { name: "amountOut", type: "uint256", internalType: "uint256" },
+          { name: "maxAmountIn", type: "uint256", internalType: "uint256" },
+        ],
+        name: "withdrawAndSwap",
+        payable: false,
+      },
+      contractInputsValues: {
+        receiver: input.receiver,
+        amountOut: input.amountOut,
+        maxAmountIn: input.maxAmountIn,
+      },
+    },
+  ];
+
+  return {
+    version: "1.0",
+    chainId: "1",
+    createdAt: Date.now(),
+    meta: {
+      name: "Spark PSM Withdrawal",
+      description: `Withdraw ${ethers.formatUnits(input.amountOut, 6)} USDC from Spark PSM.`,
+      createdFromSafeAddress: input.depositor,
     },
     transactions,
   };

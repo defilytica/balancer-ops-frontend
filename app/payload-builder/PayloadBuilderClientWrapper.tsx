@@ -22,7 +22,7 @@ const CATEGORIZED_PAYLOADS = {
     "reclamm",
   ],
   "Emergency Operations": ["emergency"],
-  "Financial Operations": ["create-payment", "cctp-bridge"],
+  "Financial Operations": ["create-payment", "cctp-bridge", "spark-psm"],
   "Pool Management (v2)": ["fee-setter", "amp-factor-update-v2"],
   "Permissions and Operations": ["permissions"],
 };
