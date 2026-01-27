@@ -703,9 +703,7 @@ export default function SparkPSMPage() {
 
         {/* Amount Input */}
         <FormControl mb={4} isRequired isInvalid={!!errors.amount}>
-          <FormLabel>
-            {operationType === "deposit" ? "Amount in" : "Max amount in"} (in USD)
-          </FormLabel>
+          <FormLabel>{operationType === "deposit" ? "Amount in" : "Amount out"} (USDC)</FormLabel>
           <InputGroup size="lg">
             <InputLeftElement pointerEvents="none" h="full">
               <Text fontSize="lg" fontWeight="bold" color="blue.500">
@@ -722,82 +720,32 @@ export default function SparkPSMPage() {
               pl={10}
             />
           </InputGroup>
-          {/* Expected sUSDS Shares to Burn Display - for withdrawals, show below max amount in */}
-          {operationType === "withdraw" && expectedSharesToBurn && (
-            <Box mt={1}>
+
+          {/* Wallet balance display for EOA mode - for deposits, show USDC balance */}
+          {executionMode === ExecutionMode.EOA &&
+            walletAddress &&
+            operationType === "deposit" &&
+            usdcBalance && (
               <Text
                 fontSize="sm"
                 fontWeight="medium"
                 color="gray.500"
                 _dark={{ color: "gray.400" }}
+                mt={1}
               >
-                ≈ {expectedSharesToBurn.toFixed(6)} sUSDS
+                Wallet:{" "}
+                {parseFloat(formatUnits(usdcBalance.value, USDC.decimals)).toLocaleString(
+                  undefined,
+                  { maximumFractionDigits: 2 },
+                )}{" "}
+                USDC
               </Text>
-            </Box>
-          )}
-
-          {/* Wallet balance display for EOA mode - shown right after ≈ sUSDS */}
-          {executionMode === ExecutionMode.EOA && walletAddress && (
-            <>
-              {operationType === "deposit" && usdcBalance && (
-                <Text
-                  fontSize="sm"
-                  fontWeight="medium"
-                  color="gray.500"
-                  _dark={{ color: "gray.400" }}
-                  mt={1}
-                >
-                  Wallet:{" "}
-                  {parseFloat(formatUnits(usdcBalance.value, USDC.decimals)).toLocaleString(
-                    undefined,
-                    { maximumFractionDigits: 2 },
-                  )}{" "}
-                  USDC
-                </Text>
-              )}
-              {operationType === "withdraw" && susdsBalance && (
-                <Text
-                  fontSize="sm"
-                  fontWeight="medium"
-                  color="gray.500"
-                  _dark={{ color: "gray.400" }}
-                  mt={1}
-                >
-                  Wallet:{" "}
-                  {parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)).toLocaleString(
-                    undefined,
-                    { maximumFractionDigits: 6 },
-                  )}{" "}
-                  sUSDS
-                  {exchangeRate && (
-                    <Text
-                      as="span"
-                      fontSize="sm"
-                      fontWeight="medium"
-                      color="gray.500"
-                      _dark={{ color: "gray.400" }}
-                    >
-                      {" "}
-                      (≈ $
-                      {(
-                        parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)) * exchangeRate
-                      ).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
-                      USD)
-                    </Text>
-                  )}
-                </Text>
-              )}
-            </>
-          )}
+            )}
 
           <Text fontSize="sm" color="gray.500" mt={1}>
-            {operationType === "deposit" ? (
-              "The amount of USDC to deposit."
-            ) : (
-              <>
-                Please note that maxAmountIn is measured in USD due to increasing value of the sUSDS
-              </>
-            )}
+            {operationType === "deposit"
+              ? "The amount of USDC to deposit."
+              : "The amount of USDC to receive."}
           </Text>
 
           {errors.amount && <FormErrorMessage>{errors.amount}</FormErrorMessage>}
@@ -806,7 +754,7 @@ export default function SparkPSMPage() {
         {/* Min/Max Amount Input */}
         <FormControl mb={4}>
           <FormLabel>
-            {operationType === "deposit" ? "Minimum amount out" : "Amount out"} (in USD)
+            {operationType === "deposit" ? "Minimum amount out" : "Max amount in"} (in USD)
           </FormLabel>
           <InputGroup size="lg">
             <InputLeftElement pointerEvents="none" h="full">
@@ -823,7 +771,7 @@ export default function SparkPSMPage() {
               pl={10}
             />
           </InputGroup>
-          {/* Expected sUSDS Display - for deposits, show below amount out */}
+          {/* Expected sUSDS Display - for deposits, show below minimum amount out */}
           {operationType === "deposit" && expectedSUSDS && (
             <Box mt={1}>
               <Text
@@ -836,10 +784,59 @@ export default function SparkPSMPage() {
               </Text>
             </Box>
           )}
+          {/* Expected sUSDS Shares to Burn Display - for withdrawals, show below max amount in */}
+          {operationType === "withdraw" && expectedSharesToBurn && (
+            <Box mt={1}>
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.500"
+                _dark={{ color: "gray.400" }}
+              >
+                ≈ {expectedSharesToBurn.toFixed(6)} sUSDS
+              </Text>
+            </Box>
+          )}
+          {/* Wallet balance display for EOA mode - for withdrawals, show sUSDS balance */}
+          {executionMode === ExecutionMode.EOA &&
+            walletAddress &&
+            operationType === "withdraw" &&
+            susdsBalance && (
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.500"
+                _dark={{ color: "gray.400" }}
+                mt={1}
+              >
+                Wallet:{" "}
+                {parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)).toLocaleString(
+                  undefined,
+                  { maximumFractionDigits: 6 },
+                )}{" "}
+                sUSDS
+                {exchangeRate && (
+                  <Text
+                    as="span"
+                    fontSize="sm"
+                    fontWeight="medium"
+                    color="gray.500"
+                    _dark={{ color: "gray.400" }}
+                  >
+                    {" "}
+                    (≈ $
+                    {(
+                      parseFloat(formatUnits(susdsBalance.value, SUSDS.decimals)) * exchangeRate
+                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                    USD)
+                  </Text>
+                )}
+              </Text>
+            )}
           <Text fontSize="sm" color="gray.500" mt={1} mb={1}>
             {operationType === "deposit"
               ? "Amount out is measured in USD due to increasing value of the sUSDS."
-              : "The amount of USDC to receive."}
+              : "Max amount in is measured in USD due to increasing value of the sUSDS"}
           </Text>
         </FormControl>
 
