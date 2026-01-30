@@ -383,9 +383,9 @@ export default function StableSurgeHookConfigurationModule({
 
         // Update max surge fee if provided
         if (debouncedMaxSurgeFeePercentage) {
-          const txMaxSurgeFeePercentage = BigInt(
-            parseFloat(debouncedMaxSurgeFeePercentage) * 1e16,
-          ).toString();
+          const txMaxSurgeFeePercentage = ethers
+            .parseUnits(debouncedMaxSurgeFeePercentage, 16)
+            .toString();
           const tx1 = await hookContract.setMaxSurgeFeePercentage(
             selectedPool.address,
             txMaxSurgeFeePercentage,
@@ -414,9 +414,9 @@ export default function StableSurgeHookConfigurationModule({
 
         // Update surge threshold if provided
         if (debouncedSurgeThresholdPercentage) {
-          const txSurgeThresholdPercentage = BigInt(
-            parseFloat(debouncedSurgeThresholdPercentage) * 1e16,
-          ).toString();
+          const txSurgeThresholdPercentage = ethers
+            .parseUnits(debouncedSurgeThresholdPercentage, 16)
+            .toString();
           const tx2 = await hookContract.setSurgeThresholdPercentage(
             selectedPool.address,
             txSurgeThresholdPercentage,

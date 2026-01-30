@@ -385,7 +385,7 @@ export function buildStableSurgeParameterSimulationTransactions(
     const transactions: SimulationTransaction[] = [];
 
     if (hasMaxSurgeFeePercentage && maxSurgeFeePercentage) {
-      const maxSurgeFeeValue = BigInt(parseFloat(maxSurgeFeePercentage) * 1e16).toString();
+      const maxSurgeFeeValue = ethers.parseUnits(maxSurgeFeePercentage, 16).toString();
 
       const data = contract.interface.encodeFunctionData("setMaxSurgeFeePercentage", [
         selectedPool.address,
@@ -400,7 +400,7 @@ export function buildStableSurgeParameterSimulationTransactions(
     }
 
     if (hasSurgeThresholdPercentage && surgeThresholdPercentage) {
-      const surgeThresholdValue = BigInt(parseFloat(surgeThresholdPercentage) * 1e16).toString();
+      const surgeThresholdValue = ethers.parseUnits(surgeThresholdPercentage, 16).toString();
 
       const data = contract.interface.encodeFunctionData("setSurgeThresholdPercentage", [
         selectedPool.address,
@@ -492,15 +492,12 @@ export function buildChangeProtocolFeeV3SimulationTransactions(
   if (!selectedPool || !protocolFeeControllerAddress) return null;
 
   try {
-    const contract = new ethers.Contract(
-      protocolFeeControllerAddress,
-      protocolFeeControllerAbi,
-    );
+    const contract = new ethers.Contract(protocolFeeControllerAddress, protocolFeeControllerAbi);
     const transactions: SimulationTransaction[] = [];
 
     if (hasProtocolSwapFee && protocolSwapFeePercentage) {
       // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
-      const protocolSwapFeeValue = BigInt(parseFloat(protocolSwapFeePercentage) * 1e16).toString();
+      const protocolSwapFeeValue = ethers.parseUnits(protocolSwapFeePercentage, 16).toString();
 
       const data = contract.interface.encodeFunctionData("setProtocolSwapFeePercentage", [
         selectedPool.address,
@@ -516,7 +513,7 @@ export function buildChangeProtocolFeeV3SimulationTransactions(
 
     if (hasProtocolYieldFee && protocolYieldFeePercentage) {
       // Convert percentage to 18-decimal format (e.g., 25% -> 250000000000000000)
-      const protocolYieldFeeValue = BigInt(parseFloat(protocolYieldFeePercentage) * 1e16).toString();
+      const protocolYieldFeeValue = ethers.parseUnits(protocolYieldFeePercentage, 16).toString();
 
       const data = contract.interface.encodeFunctionData("setProtocolYieldFeePercentage", [
         selectedPool.address,

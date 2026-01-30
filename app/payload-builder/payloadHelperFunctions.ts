@@ -1,4 +1,8 @@
-import { SPARK_USDS_PSM_WRAPPER_ADDRESS, V3_VAULT_ADDRESS, WHITELISTED_PAYMENT_TOKENS } from "@/constants/constants";
+import {
+  SPARK_USDS_PSM_WRAPPER_ADDRESS,
+  V3_VAULT_ADDRESS,
+  WHITELISTED_PAYMENT_TOKENS,
+} from "@/constants/constants";
 import { BatchFile, Transaction } from "@/components/btns/SimulateTransactionButton";
 import { addDays } from "date-fns";
 import { ethers, JsonRpcSigner, parseUnits } from "ethers";
@@ -653,7 +657,7 @@ export function generateSwapFeeChangePayload(
   chainId: string,
   multisig: string,
 ) {
-  const swapFeePercentage = (parseFloat(input.newSwapFeePercentage) * 1e16).toString(); // Convert to wei format
+  const swapFeePercentage = percentageToWei(input.newSwapFeePercentage);
 
   const transaction = {
     to: input.poolAddress,
@@ -697,7 +701,7 @@ export function generateGauntletSwapFeeChangePayload(
 ) {
   // Default Gauntlet fee setter address for mainnet if not provided
   const feeSetterAddress = gauntletFeeSetterAddress || "0xE4a8ed6c1D8d048bD29A00946BFcf2DB10E7923B";
-  const swapFeePercentage = (parseFloat(input.newSwapFeePercentage) * 1e16).toString();
+  const swapFeePercentage = percentageToWei(input.newSwapFeePercentage);
 
   const transaction = {
     to: feeSetterAddress,
@@ -746,7 +750,7 @@ export function isZeroAddress(address: string): boolean {
 
 // Convert percentage to wei format (e.g., 0.1% -> 1000000000000000)
 export function percentageToWei(percentage: string): string {
-  return (parseFloat(percentage) * 1e16).toString();
+  return parseUnits(percentage, 16).toString();
 }
 
 // Generate payload for DAO-governed pools (swapFeeManager is zero address)
@@ -2099,7 +2103,6 @@ export function generateSparkPSMDepositPayload(input: SparkPSMDepositInput) {
     transactions,
   };
 }
-
 
 export interface SparkPSMWithdrawInput {
   inTokenAddress: string;

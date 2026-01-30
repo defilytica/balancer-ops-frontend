@@ -94,6 +94,7 @@ export enum GqlChain {
   Hyperevm = 'HYPEREVM',
   Mainnet = 'MAINNET',
   Mode = 'MODE',
+  Monad = 'MONAD',
   Optimism = 'OPTIMISM',
   Plasma = 'PLASMA',
   Polygon = 'POLYGON',
