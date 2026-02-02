@@ -232,9 +232,10 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
 
     if (votingGaugesData?.veBalGetVotingList) {
       const matchingGauge = votingGaugesData.veBalGetVotingList.find(
-        gauge => gauge.gauge?.address?.toLowerCase() === selectedPool.staking?.gauge?.id.toLowerCase(),
+        gauge =>
+          gauge.gauge?.address?.toLowerCase() === selectedPool.staking?.gauge?.id.toLowerCase(),
       );
-      
+
       if (matchingGauge) {
         return matchingGauge;
       }
@@ -691,7 +692,7 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
               <ListItem>
                 If you intend to apply for a veBAL gauge, consult{" "}
                 <Link
-                  href="https://forum.balancer.fi/t/gauge-creation-instructions/6907"
+                  href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/gauge-onboarding.html#gauge-onboarding"
                   textDecoration="underline"
                   isExternal
                 >
@@ -710,8 +711,8 @@ export default function CreateGaugeModule({ addressBook }: CreateGaugeProps) {
                 Existing Gauge Detected
               </Text>
               <Text>
-                This pool already has a gauge ({selectedPool?.staking?.gauge?.id}).
-                No additional gauge creation is needed on Ethereum mainnet.
+                This pool already has a gauge ({selectedPool?.staking?.gauge?.id}). gauge creation
+                is needed on Ethereum mainnet.
               </Text>
               {existingMainnetGauge?.gauge?.isKilled && (
                 <Text color="red.500" mt={2}>

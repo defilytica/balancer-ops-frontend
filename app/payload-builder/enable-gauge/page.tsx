@@ -193,15 +193,7 @@ export default function EnableGaugePage() {
               </ListItem>
               <ListItem>
                 <ListIcon as={ChevronRightIcon} />
-                For more technical details, consult{" "}
-                <Link
-                  href="https://forum.balancer.fi/t/instructions-overview/2674"
-                  textDecoration="underline"
-                  isExternal
-                >
-                  this documentation
-                </Link>{" "}
-                or our{" "}
+                For a full step-by-step guide, consult this documentation{" "}
                 <Link
                   href="https://docs.balancer.fi/partner-onboarding/onboarding-overview/gauge-onboarding.html"
                   textDecoration="underline"
