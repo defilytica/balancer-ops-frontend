@@ -398,7 +398,7 @@ export const NETWORK_OPTIONS = [
   {
     label: "Fraxtal",
     apiID: "FRAXTAL",
-    chainId: "2522",
+    chainId: "252",
     maxiSafe: "0x7BBAc709a9535464690A435ca7361256496f13Ce",
     omniSig: "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e",
     entrypoint: "0xb9F8AB3ED3F3aCBa64Bc6cd2DcA74B7F38fD7B88",
