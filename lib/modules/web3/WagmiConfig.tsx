@@ -24,6 +24,7 @@ import {
   polygonZkEvm,
   sepolia,
   sonic,
+  xLayer,
 } from "wagmi/chains";
 import { hyperEvm } from "@/lib/modules/chains/custom/hyperevm";
 import { plasma } from "@/lib/modules/chains/custom/plasma";
@@ -44,6 +45,7 @@ import modeLogo from "@/public/imgs/mode.svg";
 import hyperEVMILogo from "@/public/imgs/hyperevm.svg";
 import plasmaLogo from "@/public/imgs/plasma.svg";
 import monadLogo from "@/public/imgs/monad.svg";
+import xlayerLogo from "@/public/imgs/xlayer.svg";
 const appName = "Balancer Operations UI";
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
 
@@ -112,6 +114,10 @@ const customChains = {
     ...monad,
     iconUrl: monadLogo.src,
   },
+  xlayer: {
+    ...xLayer,
+    iconUrl: xlayerLogo.src,
+  },
 };
 
 // Only create connectors on the client side to avoid indexedDB SSR errors
@@ -157,6 +163,7 @@ export const wagmiConfig: Config = createConfig({
     customChains.hyperevm,
     customChains.plasma,
     customChains.monad,
+    customChains.xlayer,
   ],
   transports: {
     [mainnet.id]: http("https://eth.drpc.org"),
@@ -174,6 +181,7 @@ export const wagmiConfig: Config = createConfig({
     [hyperEvm.id]: http("https://hyperliquid.drpc.org"),
     [plasma.id]: http("https://plasma.drpc.org"),
     [monad.id]: http("https://monad-mainnet.drpc.org"),
+    [xLayer.id]: http("https://xlayer.drpc.org"),
   },
   connectors,
   ssr: true,

@@ -24,6 +24,8 @@ export const getNetworkString = (chainId?: number) => {
       return "PLASMA";
     case 143:
       return "MONAD";
+    case 196:
+      return "XLAYER";
     case 11155111:
       return "SEPOLIA";
     default:
