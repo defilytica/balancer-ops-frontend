@@ -47,18 +47,50 @@ The app wraps all pages in nested providers in this order:
 - **Wagmi v2 + Viem** for wallet interaction and chain queries
 - **RainbowKit v2** for wallet connection UI
 - **Ethers v6** used alongside Viem in some modules
-- Supports 15+ networks: Mainnet, Arbitrum, Base, Avalanche, Gnosis, Optimism, Polygon, Polygon zkEVM, Sepolia, Mode, Fraxtal, Sonic, Hyperliquid EVM, Plasma, Monad
+- Supports multiple networks
 - Network feature support is centralized in `constants/networkFeatures.ts` — controls which networks appear in selectors per feature
-- 31 ABI files in `abi/` for Balancer contracts (Vault, Gauges, Injectors, Hooks, etc.)
+- ABI files in `abi/` for Balancer contracts (Vault, Gauges, Injectors, Hooks, etc.)
 
-### Key Feature: Payload Builder
+### Key Features
 
-The primary feature (`app/payload-builder/`) is a multi-operation composition system:
-- Users compose multiple transaction operations (fee changes, gauge enablement, payments, etc.)
+#### 1. Payload builder
+Multi-operation transaction composition system (`app/payload-builder/`):
+- Compose multiple transaction operations (fee changes, gauge enablement, payments, hook configuration, etc.)
+- Multiple operation types for comprehensive governance control
 - Operations persist in localStorage via `PayloadComposerContext`
 - Compatibility validation between operations
 - Transaction simulation via Tenderly API
 - Final submission creates a GitHub PR via the Octokit API
+
+#### 2. Hook management and analytics
+Dashboard and configuration for Balancer v3 hooks (`app/hooks/`):
+- **StableSurge Dashboard** — Monitor StableSurge hook configurations across all pools
+- **MEV Capture Dashboard** — Track MEV Capture hook parameters protocol-wide
+- **Hook Configuration** — Configure hook parameters (StableSurge, MEV Capture) for v3 pools
+- Real-time parameter viewing with pool-specific filtering
+
+#### 3. Incentive management
+Comprehensive rewards and injector management:
+- **Rewards Injector Monitor** (`app/rewards-injector/`) — Real-time monitoring of rewards injector contracts (v1 and v2), showing funding status, reward rates, and distribution schedules across all networks
+- **Injector Creator v2** (`app/injector-creator-v2/`) — Create new rewards injector contracts with configurable parameters
+- **Reward Tokens Management** (`app/reward-tokens/`) — Comprehensive overview of pools, gauges, and their reward tokens with the ability to add new reward tokens to gauges
+- Supports both legacy v1 and current v2 injector versions
+
+#### 4. Pool management and analytics
+Pool monitoring and liquidity management:
+- **Core Pools Dashboard** (`app/core-pools/`) — Monitor and analyze core Balancer pools
+- **Boosted Pools** (`app/boosted-pools/`) — View and manage boosted pool configurations with liquidity buffer monitoring
+- **Liquidity Buffers** (`app/liquidity-buffers/`) — Track and manage liquidity buffer balances across networks
+- **ReCLAMM Pools** (`app/reclamm/`) — Monitor and manage ReCLAMM pool parameters
+
+#### 5. Gauge management
+Gauge lifecycle management:
+- **Gauge Creator** (`app/gauge-creator/`) — Create new gauge contracts for pools
+- **Gauge Kill List** (`app/gauge-kill-list/`) — Manage gauge deprecation and removal
+
+#### 6. Additional tools
+- **Chainlink Automation** (`app/chainlink-automation/`) — Configure and monitor Chainlink automation for protocol operations
+- **veBAL Vesting (sdBAL)** (`app/sdbal-vesting/`) — Manage sdBAL vesting schedules
 
 ### Authentication
 
@@ -69,17 +101,27 @@ NextAuth v4 with GitHub OAuth. Encrypted token storage in Prisma using AES-256-C
 ```
 app/                    # Next.js App Router pages and API routes
   api/                  # Server-side API endpoints
-  payload-builder/      # Main payload builder (15+ sub-features)
-  rewards-injector/     # Injector monitoring
-  [other routes]/       # Feature-specific pages
-components/             # ~80 React components (feature + shared)
+  payload-builder/      # Payload builder (Multiple operation types)
+  hooks/                # Hook dashboards and configuration
+  rewards-injector/     # Rewards injector monitoring (v1 & v2)
+  injector-creator-v2/  # Create new injector contracts
+  reward-tokens/        # Reward token management and addition
+  core-pools/           # Core pools dashboard
+  boosted-pools/        # Boosted pools monitoring
+  liquidity-buffers/    # Liquidity buffer tracking
+  gauge-creator/        # Gauge creation
+  gauge-kill-list/      # Gauge deprecation management
+  chainlink-automation/ # Chainlink automation config
+  sdbal-vesting/        # veBAL/sdBAL vesting management
+  reclamm/              # ReCLAMM position management
+components/             # React components (feature + shared)
 lib/
   services/apollo/      # GraphQL client, queries, generated types
   services/chakra/      # Theme configuration
   modules/web3/         # Wagmi config, Web3Provider, chain definitions
   hooks/                # Custom hooks (useDuneData, usePoolBufferData, validation hooks, etc.)
   data/                 # Data fetching helpers (address book from GitHub, subgraphs, injectors)
-  utils/                # Formatting, network helpers, calculations (~27 files)
+  utils/                # Formatting, network helpers, calculations
   shared/               # Shared components (PaginatedTable, SearchInput) and hooks
   config/               # Encryption config
 constants/              # App constants, network feature matrix
@@ -177,3 +219,9 @@ Required variables (see `.env` / `.env.local`):
 2. Create the page component and any feature-specific modules in `components/`
 3. Add navigation entry in `components/navigation/SidebarContent`
 4. If needed, add ABI files in `abi/` and types in `types/`
+
+## Adding a New Table Dashboard
+
+For paginated tables, use `PaginatedTable` component from `lib/shared/components/PaginatedTable`. Examples: `components/tables/LiquidityBuffersTable.tsx` and `components/tables/BoostedPoolsTable.tsx`
+
+For simpler tables without pagination, use standard Chakra UI `Table` with `TableContainer`. Examples: `components/tables/ReClammPoolsTable.tsx` and `components/tables/HookParametersTable.tsx`
