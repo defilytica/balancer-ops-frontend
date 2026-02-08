@@ -269,6 +269,7 @@ export default function CCTPBridge() {
                     type="number"
                     value={input.value}
                     onChange={e => handleInputChange(index, "value", Number(e.target.value))}
+                    onWheel={e => (e.target as HTMLInputElement).blur()}
                   />
                 </FormControl>
 

@@ -974,6 +974,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               placeholder="Amount in token native decimals"
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </FormControl>
 
@@ -986,6 +987,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               placeholder="Amount in token native decimals"
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </FormControl>
 
@@ -998,6 +1000,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
               placeholder="Minimum issued shares amount"
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </FormControl>
         </Flex>

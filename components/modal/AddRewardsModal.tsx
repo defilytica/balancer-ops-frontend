@@ -627,6 +627,7 @@ const AddRewardsModal: React.FC<AddRewardsModalProps> = ({
                   min="0"
                   step="any"
                   size="lg"
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
                   borderColor={(() => {
                     if (!rewardAmount || !tokenBalance) return "gray.300";
                     try {

@@ -322,6 +322,7 @@ export const RewardsInjectorConfiguratorTable = ({
                   step="0.01"
                   value={editingData?.amountPerPeriod || ""}
                   onChange={e => handleFieldChange("amountPerPeriod", e.target.value)}
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
                   size="sm"
                 />
               ) : (
@@ -348,6 +349,7 @@ export const RewardsInjectorConfiguratorTable = ({
                   max="255"
                   value={editingData?.maxPeriods || ""}
                   onChange={e => handleFieldChange("maxPeriods", e.target.value)}
+                  onWheel={e => (e.target as HTMLInputElement).blur()}
                   size="sm"
                 />
               ) : (
@@ -462,6 +464,7 @@ export const RewardsInjectorConfiguratorTable = ({
               placeholder="Amount"
               value={newRecipientData.amountPerPeriod}
               onChange={e => handleNewRecipientChange("amountPerPeriod", e.target.value)}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
               size="sm"
             />
           </Box>
@@ -477,6 +480,7 @@ export const RewardsInjectorConfiguratorTable = ({
               placeholder="Periods"
               value={newRecipientData.maxPeriods}
               onChange={e => handleNewRecipientChange("maxPeriods", e.target.value)}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
               size="sm"
             />
           </Box>
@@ -634,6 +638,7 @@ export const RewardsInjectorConfiguratorTable = ({
                               step="0.01"
                               value={editingData?.amountPerPeriod || ""}
                               onChange={e => handleFieldChange("amountPerPeriod", e.target.value)}
+                              onWheel={e => (e.target as HTMLInputElement).blur()}
                               size="sm"
                               width="120px"
                               textAlign="right"
@@ -658,6 +663,7 @@ export const RewardsInjectorConfiguratorTable = ({
                             max="255"
                             value={editingData?.maxPeriods || ""}
                             onChange={e => handleFieldChange("maxPeriods", e.target.value)}
+                            onWheel={e => (e.target as HTMLInputElement).blur()}
                             size="sm"
                             width="80px"
                             textAlign="right"
@@ -767,6 +773,7 @@ export const RewardsInjectorConfiguratorTable = ({
                           onChange={e =>
                             handleNewRecipientChange("amountPerPeriod", e.target.value)
                           }
+                          onWheel={e => (e.target as HTMLInputElement).blur()}
                           size="sm"
                           width="120px"
                           textAlign="right"
@@ -781,6 +788,7 @@ export const RewardsInjectorConfiguratorTable = ({
                         placeholder="Periods"
                         value={newRecipientData.maxPeriods}
                         onChange={e => handleNewRecipientChange("maxPeriods", e.target.value)}
+                        onWheel={e => (e.target as HTMLInputElement).blur()}
                         size="sm"
                         width="80px"
                         textAlign="right"
