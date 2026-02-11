@@ -718,6 +718,7 @@ export default function SparkPSMPage() {
               onBlur={() => setTouched(prev => ({ ...prev, amountIn: true }))}
               size="lg"
               pl={10}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </InputGroup>
 
@@ -769,6 +770,7 @@ export default function SparkPSMPage() {
               onChange={e => setAmountOut(e.target.value)}
               size="lg"
               pl={10}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
           </InputGroup>
           {/* Expected sUSDS Display - for deposits, show below minimum amount out */}

@@ -1264,6 +1264,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               placeholder="Amount in token native decimals"
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
             {selectedToken && (
               <>
@@ -1329,6 +1330,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               placeholder="Amount in token native decimals"
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
             {selectedToken && (
               <>
@@ -1400,6 +1402,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               }
               type="number"
               isDisabled={!selectedToken}
+              onWheel={e => (e.target as HTMLInputElement).blur()}
             />
             {selectedToken && (
               <>
