@@ -1,4 +1,4 @@
-query GetTokens($chainIn: [GqlChain!], $tokensIn: [String!], $typeIn: [GqlTokenType!]) {
+query GetTokens($chainIn: [GqlChain!]!, $tokensIn: [String!], $typeIn: [GqlTokenType!]) {
     tokenGetTokens(
         chains: $chainIn
         where: { 
