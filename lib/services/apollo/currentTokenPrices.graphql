@@ -1,4 +1,4 @@
-query CurrentTokenPrices($chains: [GqlChain!]){
+query CurrentTokenPrices($chains: [GqlChain!]!){
     tokenGetCurrentPrices(chains: $chains) {
         address
         price
