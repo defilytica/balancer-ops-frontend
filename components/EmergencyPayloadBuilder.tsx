@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Alert,
@@ -30,6 +30,7 @@ import {
   ListItem,
   Radio,
   RadioGroup,
+  Spinner,
   Stack,
   Text,
   useDisclosure,
@@ -79,10 +80,17 @@ import {
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
+interface PoolOnChainState {
+  isPaused: boolean;
+  isInRecoveryMode: boolean;
+}
+
 interface SelectedPool extends Pool {
   selectedActions: ("pause" | "enableRecoveryMode" | "unpause" | "disableRecoveryMode")[];
   isV3Pool: boolean;
   pauseMethod?: "pause" | "setPaused"; // For v2 pools only
+  poolState?: PoolOnChainState; // V3 on-chain state from VaultExplorer
+  poolStateLoading?: boolean;
 }
 
 interface EmergencyPayloadBuilderProps {
@@ -129,7 +137,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const availableFactories = useMemo(() => {
     if (protocolVersion !== "v3" || !selectedNetwork) return [];
     const factories = getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
-    console.log("Available factories for", selectedNetwork, ":", factories);
     return factories;
   }, [protocolVersion, selectedNetwork, addressBook]);
 
@@ -243,17 +250,31 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
           return prev; // Pool already selected
         }
 
-        // Add pool with default actions and protocol version
         const isV3Pool = protocolVersion === "v3";
-        return [
-          ...prev,
-          {
-            ...pool,
-            selectedActions: ["pause"],
-            isV3Pool,
-            pauseMethod: isV3Pool ? undefined : "pause", // Default to "pause" for V2 pools
-          },
-        ];
+
+        if (isV3Pool) {
+          // V3 pools: start with no actions, fetch on-chain state first
+          return [
+            ...prev,
+            {
+              ...pool,
+              selectedActions: [],
+              isV3Pool,
+              poolStateLoading: true,
+            },
+          ];
+        } else {
+          // V2 pools: default to pause action
+          return [
+            ...prev,
+            {
+              ...pool,
+              selectedActions: ["pause"],
+              isV3Pool,
+              pauseMethod: "pause",
+            },
+          ];
+        }
       });
     },
     [protocolVersion],
@@ -325,6 +346,76 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     },
     [],
   );
+
+  // Fetch on-chain state for newly added V3 pools
+  const fetchingPoolsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const poolsToFetch = selectedPools.filter(
+      pool => pool.isV3Pool && pool.poolStateLoading && !fetchingPoolsRef.current.has(pool.address),
+    );
+
+    if (poolsToFetch.length === 0) return;
+
+    for (const pool of poolsToFetch) {
+      fetchingPoolsRef.current.add(pool.address);
+
+      fetch(`/api/pool-state?poolAddress=${pool.address}&network=${selectedNetwork}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+
+          const defaultActions: SelectedPool["selectedActions"] = [];
+          if (data.isPaused) {
+            defaultActions.push("unpause");
+          } else {
+            defaultActions.push("pause");
+          }
+
+          setSelectedPools(prev =>
+            prev.map(p =>
+              p.address === pool.address
+                ? {
+                    ...p,
+                    poolState: {
+                      isPaused: data.isPaused,
+                      isInRecoveryMode: data.isInRecoveryMode,
+                    },
+                    poolStateLoading: false,
+                    selectedActions: defaultActions,
+                  }
+                : p,
+            ),
+          );
+        })
+        .catch(error => {
+          console.error("Error fetching pool state for", pool.address, error);
+          // On error, fall back to showing all actions with pause as default
+          setSelectedPools(prev =>
+            prev.map(p =>
+              p.address === pool.address
+                ? {
+                    ...p,
+                    poolStateLoading: false,
+                    selectedActions: ["pause"],
+                  }
+                : p,
+            ),
+          );
+        })
+        .finally(() => {
+          fetchingPoolsRef.current.delete(pool.address);
+        });
+    }
+  }, [selectedPools, selectedNetwork]);
+
+  // Clear stale payload when selections change
+  useEffect(() => {
+    if (generatedPayload) {
+      setGeneratedPayload(null);
+      setHumanReadableText(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPools, vaultActions, selectedFactories, selectedDeprecatedFactories]);
 
   const handleGenerateClick = useCallback(() => {
     if (
@@ -469,7 +560,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return {};
 
     const uniqueId = generateUniqueId();
-    selectedPools.length > 0 ? selectedPools[0].address.substring(0, 8) : "vault";
     // Count total actions
     const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
     const totalActions =
@@ -552,7 +642,14 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       },
       builderPath: "emergency",
     };
-  }, [generatedPayload]);
+  }, [
+    generatedPayload,
+    selectedPools,
+    vaultActions,
+    selectedFactories,
+    selectedDeprecatedFactories,
+    protocolVersion,
+  ]);
 
   return (
     <Container maxW="container.lg">
@@ -745,20 +842,34 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 <FormControl>
                   <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
                   <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
-                    <Stack direction="row" spacing={4} flexWrap="wrap">
-                      <Checkbox value="pauseVault" colorScheme="red">
-                        Pause Vault
-                      </Checkbox>
-                      <Checkbox value="pauseVaultBuffers" colorScheme="red">
-                        Pause Vault Buffers
-                      </Checkbox>
-                      <Checkbox value="unpauseVault" colorScheme="green">
-                        Unpause Vault
-                      </Checkbox>
-                      <Checkbox value="unpauseVaultBuffers" colorScheme="green">
-                        Unpause Vault Buffers
-                      </Checkbox>
-                    </Stack>
+                    <VStack align="stretch" spacing={3}>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="bold" color="red.500" mb={1}>
+                          Emergency
+                        </Text>
+                        <Stack direction="row" spacing={4}>
+                          <Checkbox value="pauseVault" colorScheme="red">
+                            Pause Vault
+                          </Checkbox>
+                          <Checkbox value="pauseVaultBuffers" colorScheme="red">
+                            Pause Vault Buffers
+                          </Checkbox>
+                        </Stack>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="bold" color="green.500" mb={1}>
+                          Restoration
+                        </Text>
+                        <Stack direction="row" spacing={4}>
+                          <Checkbox value="unpauseVault" colorScheme="green">
+                            Unpause Vault
+                          </Checkbox>
+                          <Checkbox value="unpauseVaultBuffers" colorScheme="green">
+                            Unpause Vault Buffers
+                          </Checkbox>
+                        </Stack>
+                      </Box>
+                    </VStack>
                   </CheckboxGroup>
                   <Text fontSize="xs" color="font.secondary" mt={2}>
                     Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts
@@ -1013,6 +1124,21 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                             Legacy
                           </Badge>
                         )}
+                        {pool.isV3Pool && pool.poolState && (
+                          <>
+                            <Badge
+                              colorScheme={pool.poolState.isPaused ? "red" : "green"}
+                              size="sm"
+                            >
+                              {pool.poolState.isPaused ? "Paused" : "Active"}
+                            </Badge>
+                            {pool.poolState.isInRecoveryMode && (
+                              <Badge colorScheme="orange" size="sm">
+                                Recovery Mode
+                              </Badge>
+                            )}
+                          </>
+                        )}
                       </Flex>
                       <Text fontSize="sm" color="font.secondary" fontFamily="mono">
                         {pool.address}
@@ -1030,76 +1156,133 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 </CardHeader>
                 <CardBody pt={2}>
                   <VStack spacing={4} align="stretch">
-                    <FormControl>
-                      <FormLabel fontSize="sm">Emergency Actions</FormLabel>
-                      <CheckboxGroup
-                        value={pool.selectedActions}
-                        onChange={values => handleActionChange(pool.address, values as string[])}
-                      >
-                        <Stack direction="row" spacing={4} flexWrap="wrap">
-                          <Checkbox value="pause" colorScheme="red">
-                            Pause Pool
-                          </Checkbox>
-                          <Checkbox value="enableRecoveryMode" colorScheme="orange">
-                            Enable Recovery Mode
-                          </Checkbox>
-                          {pool.isV3Pool && (
-                            <>
-                              <Checkbox value="unpause" colorScheme="green">
-                                Unpause Pool
-                              </Checkbox>
-                              <Checkbox value="disableRecoveryMode" colorScheme="green">
-                                Disable Recovery Mode
-                              </Checkbox>
-                            </>
-                          )}
-                        </Stack>
-                      </CheckboxGroup>
-                    </FormControl>
-
-                    {/* Individual pause method selection for V2 pools */}
-                    {!pool.isV3Pool && pool.selectedActions.includes("pause") && (
-                      <FormControl>
-                        <FormLabel fontSize="sm">
-                          <Flex align="center" gap={1}>
-                            Pause Method for this Pool
-                            <InfoIcon color="font.secondary" />
-                          </Flex>
-                        </FormLabel>
-                        <RadioGroup
-                          value={pool.pauseMethod || "pause"}
-                          onChange={(value: "pause" | "setPaused") =>
-                            handlePauseMethodChange(pool.address, value)
-                          }
-                        >
-                          <VStack align="start" spacing={2}>
-                            <Radio value="pause" size="sm">
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="sm" fontWeight="medium">
-                                  pause() - Modern V2 Pools
-                                </Text>
-                                <Text fontSize="xs" color="font.secondary">
-                                  Use for newer Balancer v2 pools (most common)
-                                </Text>
-                              </VStack>
-                            </Radio>
-                            <Radio value="setPaused" size="sm">
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="sm" fontWeight="medium">
-                                  setPaused(true) - Legacy V2 Pools
-                                </Text>
-                                <Text fontSize="xs" color="font.secondary">
-                                  Use for older pools that don&#39;t have the pause() method
-                                </Text>
-                              </VStack>
-                            </Radio>
-                          </VStack>
-                        </RadioGroup>
-                        <Text fontSize="xs" color="font.secondary" mt={2}>
-                          <strong>Not sure which to use?</strong> Try pause() first (default). If
-                          the transaction fails, switch to setPaused(true).
+                    {pool.poolStateLoading ? (
+                      <Flex align="center" gap={2} py={2}>
+                        <Spinner size="sm" />
+                        <Text fontSize="sm" color="font.secondary">
+                          Fetching on-chain pool state...
                         </Text>
+                      </Flex>
+                    ) : pool.isV3Pool ? (
+                      <FormControl>
+                        <FormLabel fontSize="sm">Pool Actions</FormLabel>
+                        <CheckboxGroup
+                          value={pool.selectedActions}
+                          onChange={values => handleActionChange(pool.address, values as string[])}
+                        >
+                          <VStack align="stretch" spacing={3}>
+                            <Box>
+                              <Text fontSize="xs" fontWeight="bold" color="red.500" mb={1}>
+                                Emergency
+                              </Text>
+                              <Stack direction="row" spacing={4}>
+                                {(!pool.poolState || !pool.poolState.isPaused) && (
+                                  <Checkbox value="pause" colorScheme="red">
+                                    Pause Pool
+                                  </Checkbox>
+                                )}
+                                {(!pool.poolState || !pool.poolState.isInRecoveryMode) && (
+                                  <Checkbox value="enableRecoveryMode" colorScheme="orange">
+                                    Enable Recovery Mode
+                                  </Checkbox>
+                                )}
+                              </Stack>
+                            </Box>
+                            <Box>
+                              <Text fontSize="xs" fontWeight="bold" color="green.500" mb={1}>
+                                Restoration
+                              </Text>
+                              <Stack direction="row" spacing={4}>
+                                {pool.poolState?.isPaused && (
+                                  <Checkbox value="unpause" colorScheme="green">
+                                    Unpause Pool
+                                  </Checkbox>
+                                )}
+                                {pool.poolState?.isInRecoveryMode && (
+                                  <Checkbox value="disableRecoveryMode" colorScheme="green">
+                                    Disable Recovery Mode
+                                  </Checkbox>
+                                )}
+                              </Stack>
+                            </Box>
+                          </VStack>
+                        </CheckboxGroup>
                       </FormControl>
+                    ) : (
+                      <>
+                        <FormControl>
+                          <FormLabel fontSize="sm">Emergency Actions</FormLabel>
+                          <CheckboxGroup
+                            value={pool.selectedActions}
+                            onChange={values =>
+                              handleActionChange(pool.address, values as string[])
+                            }
+                          >
+                            <Stack direction="row" spacing={4}>
+                              <Checkbox value="pause" colorScheme="red">
+                                Pause Pool
+                              </Checkbox>
+                              <Checkbox value="enableRecoveryMode" colorScheme="orange">
+                                Enable Recovery Mode
+                              </Checkbox>
+                            </Stack>
+                          </CheckboxGroup>
+                        </FormControl>
+
+                        {/* Individual pause method selection for V2 pools */}
+                        {pool.selectedActions.includes("pause") && (
+                          <FormControl>
+                            <FormLabel fontSize="sm">
+                              <Flex align="center" gap={1}>
+                                Pause Method for this Pool
+                                <InfoIcon color="font.secondary" />
+                              </Flex>
+                            </FormLabel>
+                            <RadioGroup
+                              value={pool.pauseMethod || "pause"}
+                              onChange={(value: "pause" | "setPaused") =>
+                                handlePauseMethodChange(pool.address, value)
+                              }
+                            >
+                              <VStack align="start" spacing={2}>
+                                <Radio value="pause" size="sm">
+                                  <VStack align="start" spacing={0}>
+                                    <Text fontSize="sm" fontWeight="medium">
+                                      pause() - Modern V2 Pools
+                                    </Text>
+                                    <Text fontSize="xs" color="font.secondary">
+                                      Use for newer Balancer v2 pools (most common)
+                                    </Text>
+                                  </VStack>
+                                </Radio>
+                                <Radio value="setPaused" size="sm">
+                                  <VStack align="start" spacing={0}>
+                                    <Text fontSize="sm" fontWeight="medium">
+                                      setPaused(true) - Legacy V2 Pools
+                                    </Text>
+                                    <Text fontSize="xs" color="font.secondary">
+                                      Use for older pools that don&#39;t have the pause() method
+                                    </Text>
+                                  </VStack>
+                                </Radio>
+                              </VStack>
+                            </RadioGroup>
+                            <Text fontSize="xs" color="font.secondary" mt={2}>
+                              <strong>Not sure which to use?</strong> Try pause() first (default).
+                              If the transaction fails, switch to setPaused(true).
+                            </Text>
+                          </FormControl>
+                        )}
+                      </>
+                    )}
+
+                    {!pool.poolStateLoading && pool.selectedActions.length === 0 && (
+                      <Alert status="warning" py={2} borderRadius="md">
+                        <AlertIcon boxSize="14px" />
+                        <AlertDescription fontSize="xs">
+                          No actions selected for this pool. It will be excluded from the payload.
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </VStack>
                 </CardBody>

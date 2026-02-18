@@ -1722,7 +1722,7 @@ export function generateReClammCombinedParametersPayload(
 export interface EmergencyActionInput {
   poolAddress: string;
   poolName: string;
-  actions: ("pause" | "enableRecoveryMode" | "pauseVault" | "unpause" | "disableRecoveryMode")[];
+  actions: ("pause" | "enableRecoveryMode" | "unpause" | "disableRecoveryMode")[];
   isV3Pool: boolean;
   pauseMethod?: "pause" | "setPaused"; // For V2 pools only
 }
@@ -1828,18 +1828,6 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
             contractInputsValues: {
               pool: pool.poolAddress,
             },
-          });
-        } else if (action === "pauseVault") {
-          transactions.push({
-            to: input.vaultAddress,
-            value: "0",
-            data: null,
-            contractMethod: {
-              inputs: [],
-              name: "pauseVault",
-              payable: false,
-            },
-            contractInputsValues: {},
           });
         } else if (action === "enableRecoveryMode") {
           transactions.push({
@@ -1963,7 +1951,13 @@ export function generateHumanReadableEmergency(input: EmergencyPayloadInput): st
 
   // Add vault-level actions
   if (input.vaultActions && input.vaultActions.length > 0) {
-    const vaultActionsText = input.vaultActions.join(", ");
+    const VAULT_ACTION_LABELS: Record<string, string> = {
+      pauseVault: "Pause Vault",
+      pauseVaultBuffers: "Pause Vault Buffers",
+      unpauseVault: "Unpause Vault",
+      unpauseVaultBuffers: "Unpause Vault Buffers",
+    };
+    const vaultActionsText = input.vaultActions.map(a => VAULT_ACTION_LABELS[a] ?? a).join(", ");
     description += `Vault-level actions: ${vaultActionsText}\n\n`;
   }
 
