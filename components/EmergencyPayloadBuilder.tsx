@@ -80,7 +80,7 @@ import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
 interface SelectedPool extends Pool {
-  selectedActions: ("pause" | "enableRecoveryMode")[];
+  selectedActions: ("pause" | "enableRecoveryMode" | "unpause" | "disableRecoveryMode")[];
   isV3Pool: boolean;
   pauseMethod?: "pause" | "setPaused"; // For v2 pools only
 }
@@ -96,7 +96,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
-  const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
+  const [vaultActions, setVaultActions] = useState<
+    ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[]
+  >([]); // For V3 vault-level actions
   const [selectedFactories, setSelectedFactories] = useState<V3PoolFactory[]>([]); // For V3 factory disable actions
   const [selectedDeprecatedFactories, setSelectedDeprecatedFactories] = useState<
     DeprecatedPoolFactory[]
@@ -267,7 +269,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         pool.address === poolAddress
           ? {
               ...pool,
-              selectedActions: actions as ("pause" | "enableRecoveryMode")[],
+              selectedActions: actions as (
+                | "pause"
+                | "enableRecoveryMode"
+                | "unpause"
+                | "disableRecoveryMode"
+              )[],
             }
           : pool,
       ),
@@ -275,7 +282,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   }, []);
 
   const handleVaultActionChange = useCallback((actions: string[]) => {
-    setVaultActions(actions as ("pauseVault" | "pauseVaultBuffers")[]);
+    setVaultActions(
+      actions as ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[],
+    );
   }, []);
 
   const handleFactorySelect = useCallback((factory: V3PoolFactory) => {
@@ -594,6 +603,11 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 trading
               </ListItem>
               <ListItem>
+                <ListIcon as={ChevronRightIcon} color="green.500" />
+                <strong>Unpause / Disable Recovery Mode (V3 only):</strong> Restores normal pool
+                operations after an emergency
+              </ListItem>
+              <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
                 <strong>Disable Factory:</strong> Permanently prevents new pool deployments from
                 specific factories
@@ -654,8 +668,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                   </>
                 ) : (
                   <>
-                    Actions will be called through the Vault contract (pauseVault(),
-                    enableRecoveryMode())
+                    Actions will be called through the Vault contract (pausePool(), unpausePool(),
+                    enableRecoveryMode(), disableRecoveryMode())
                   </>
                 )}
               </Text>
@@ -731,18 +745,24 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 <FormControl>
                   <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
                   <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
-                    <Stack direction="row" spacing={4}>
+                    <Stack direction="row" spacing={4} flexWrap="wrap">
                       <Checkbox value="pauseVault" colorScheme="red">
                         Pause Vault
                       </Checkbox>
                       <Checkbox value="pauseVaultBuffers" colorScheme="red">
                         Pause Vault Buffers
                       </Checkbox>
+                      <Checkbox value="unpauseVault" colorScheme="green">
+                        Unpause Vault
+                      </Checkbox>
+                      <Checkbox value="unpauseVaultBuffers" colorScheme="green">
+                        Unpause Vault Buffers
+                      </Checkbox>
                     </Stack>
                   </CheckboxGroup>
                   <Text fontSize="xs" color="font.secondary" mt={2}>
                     Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts
-                    buffer operations only.
+                    buffer operations only. Unpause actions restore normal operations.
                   </Text>
                 </FormControl>
               </CardBody>
@@ -1016,13 +1036,23 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                         value={pool.selectedActions}
                         onChange={values => handleActionChange(pool.address, values as string[])}
                       >
-                        <Stack direction="row" spacing={4}>
+                        <Stack direction="row" spacing={4} flexWrap="wrap">
                           <Checkbox value="pause" colorScheme="red">
                             Pause Pool
                           </Checkbox>
                           <Checkbox value="enableRecoveryMode" colorScheme="orange">
                             Enable Recovery Mode
                           </Checkbox>
+                          {pool.isV3Pool && (
+                            <>
+                              <Checkbox value="unpause" colorScheme="green">
+                                Unpause Pool
+                              </Checkbox>
+                              <Checkbox value="disableRecoveryMode" colorScheme="green">
+                                Disable Recovery Mode
+                              </Checkbox>
+                            </>
+                          )}
                         </Stack>
                       </CheckboxGroup>
                     </FormControl>
