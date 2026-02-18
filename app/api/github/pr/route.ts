@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
-import { PrismaClient } from "@prisma/client";
 import { auth } from "@/auth";
 import { decrypt } from "@/lib/config/encrypt";
 import { RateLimiter } from "@/lib/services/rateLimiter";
-
-const prisma = new PrismaClient();
+import prisma from "@/prisma/prisma";
 
 const rateLimiter = new RateLimiter({
   windowSize: 3600 * 1000, // 1 hour
@@ -148,7 +146,5 @@ export async function POST(req: NextRequest) {
       { message: "Internal Server Error", error: err.message },
       { status: 500 },
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
