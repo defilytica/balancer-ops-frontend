@@ -1966,12 +1966,16 @@ export function generateHumanReadableEmergency(input: EmergencyPayloadInput): st
     const poolSummaries = input.pools.map(pool => {
       const actionsText = pool.actions
         .map(action => {
-          if (action === "pause" && !pool.isV3Pool) {
+          if (pool.isV3Pool) {
+            if (action === "pause") return "pausePool()";
+            if (action === "unpause") return "unpausePool()";
+            if (action === "enableRecoveryMode") return "enableRecoveryMode()";
+            if (action === "disableRecoveryMode") return "disableRecoveryMode()";
+          }
+          if (action === "pause") {
             const method = pool.pauseMethod || "pause";
             return method === "setPaused" ? "setPaused(true)" : "pause()";
           }
-          if (action === "unpause") return "unpausePool()";
-          if (action === "disableRecoveryMode") return "disableRecoveryMode()";
           return action;
         })
         .join(" and ");
