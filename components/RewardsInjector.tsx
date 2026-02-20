@@ -36,7 +36,7 @@ import {
   RewardsInjectorData,
   RewardsInjectorTable,
 } from "@/components/tables/RewardsInjectorTable";
-import { AddressOption } from "@/types/interfaces";
+import { AddressBook, AddressOption } from "@/types/interfaces";
 
 type RewardsInjectorProps = {
   addresses: AddressOption[];
@@ -46,7 +46,39 @@ type RewardsInjectorProps = {
   isLoading: boolean;
   isV2: boolean;
   onVersionToggle: () => void;
+  selectedSafe: string;
+  addressBook: AddressBook;
 };
+
+function formatLabel(raw: string): string {
+  return raw.replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function resolveAddressName(addressBook: AddressBook, network: string, address: string): string {
+  if (!address || !network) return "External";
+  const lowerAddress = address.toLowerCase();
+  const networkData = addressBook.active[network];
+  if (!networkData) return "External";
+
+  for (const category of Object.keys(networkData)) {
+    const categoryData = networkData[category];
+    if (!categoryData) continue;
+    for (const [subcategory, value] of Object.entries(categoryData)) {
+      if (typeof value === "string") {
+        if (value.toLowerCase() === lowerAddress) {
+          return formatLabel(`${category} - ${subcategory}`);
+        }
+      } else if (typeof value === "object") {
+        for (const [key, addr] of Object.entries(value)) {
+          if (typeof addr === "string" && addr.toLowerCase() === lowerAddress) {
+            return formatLabel(`${category} - ${key}`);
+          }
+        }
+      }
+    }
+  }
+  return "External";
+}
 
 function RewardsInjector({
   addresses,
@@ -56,6 +88,8 @@ function RewardsInjector({
   isLoading,
   isV2,
   onVersionToggle,
+  selectedSafe,
+  addressBook,
 }: RewardsInjectorProps) {
   const [gauges, setGauges] = useState<RewardsInjectorData[]>([]);
   const [contractBalance, setContractBalance] = useState(0);
@@ -302,6 +336,36 @@ function RewardsInjector({
               </CardBody>
             </Card>
           </SimpleGrid>
+        )}
+
+        {selectedAddress && !isLoading && selectedSafe && (
+          <Card mb={4}>
+            <CardBody>
+              <Flex alignItems="center" gap={3}>
+                <Heading size="md">Owner:</Heading>
+                <Text fontSize="md" fontWeight="bold">
+                  {resolveAddressName(
+                    addressBook,
+                    selectedAddress.network.toLowerCase(),
+                    selectedSafe,
+                  )}
+                </Text>
+                <Text fontSize="sm" color="gray.500" fontFamily="mono">
+                  {selectedSafe.slice(0, 6)}...{selectedSafe.slice(-4)}
+                </Text>
+                <IconButton
+                  aria-label="View owner on explorer"
+                  as="a"
+                  href={`${networks[selectedAddress.network.toLowerCase()].explorer}address/${selectedSafe}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="xs"
+                  icon={<ExternalLinkIcon />}
+                  variant="ghost"
+                />
+              </Flex>
+            </CardBody>
+          </Card>
         )}
 
         {incorrectlySetupGauges.length > 0 && selectedAddress && (

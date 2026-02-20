@@ -264,6 +264,7 @@ export default function RewardsInjectorContainer({
     isV2,
     onVersionToggle: handleVersionToggle,
     selectedSafe: owner,
+    addressBook,
   };
 
   return isViewer ? (
