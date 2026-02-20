@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
-import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
+import { auth } from "@/auth";
 import { decrypt } from "@/lib/config/encrypt";
-
-const prisma = new PrismaClient();
+import prisma from "@/prisma/prisma";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session || !session.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -119,7 +116,5 @@ export async function GET(req: NextRequest) {
       { message: "Internal Server Error", error: err.message },
       { status: 500 },
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
