@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Alert,
   AlertDescription,
   AlertIcon,
@@ -30,6 +35,7 @@ import {
   ListItem,
   Radio,
   RadioGroup,
+  Spinner,
   Stack,
   Text,
   useDisclosure,
@@ -79,10 +85,17 @@ import {
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 
+interface PoolOnChainState {
+  isPaused: boolean;
+  isInRecoveryMode: boolean;
+}
+
 interface SelectedPool extends Pool {
-  selectedActions: ("pause" | "enableRecoveryMode")[];
+  selectedActions: ("pause" | "enableRecoveryMode" | "unpause" | "disableRecoveryMode")[];
   isV3Pool: boolean;
   pauseMethod?: "pause" | "setPaused"; // For v2 pools only
+  poolState?: PoolOnChainState; // V3 on-chain state from VaultExplorer
+  poolStateLoading?: boolean;
 }
 
 interface EmergencyPayloadBuilderProps {
@@ -96,7 +109,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const [generatedPayload, setGeneratedPayload] = useState<null | any>(null);
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const [emergencyWallet, setEmergencyWallet] = useState<string>("");
-  const [vaultActions, setVaultActions] = useState<("pauseVault" | "pauseVaultBuffers")[]>([]); // For V3 vault-level actions
+  const [vaultActions, setVaultActions] = useState<
+    ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[]
+  >([]); // For V3 vault-level actions
   const [selectedFactories, setSelectedFactories] = useState<V3PoolFactory[]>([]); // For V3 factory disable actions
   const [selectedDeprecatedFactories, setSelectedDeprecatedFactories] = useState<
     DeprecatedPoolFactory[]
@@ -126,9 +141,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   // Get available V3 factories for the selected network
   const availableFactories = useMemo(() => {
     if (protocolVersion !== "v3" || !selectedNetwork) return [];
-    const factories = getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
-    console.log("Available factories for", selectedNetwork, ":", factories);
-    return factories;
+    return getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
   }, [protocolVersion, selectedNetwork, addressBook]);
 
   // Get deprecated factories for the selected network
@@ -241,17 +254,31 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
           return prev; // Pool already selected
         }
 
-        // Add pool with default actions and protocol version
         const isV3Pool = protocolVersion === "v3";
-        return [
-          ...prev,
-          {
-            ...pool,
-            selectedActions: ["pause"],
-            isV3Pool,
-            pauseMethod: isV3Pool ? undefined : "pause", // Default to "pause" for V2 pools
-          },
-        ];
+
+        if (isV3Pool) {
+          // V3 pools: start with no actions, fetch on-chain state first
+          return [
+            ...prev,
+            {
+              ...pool,
+              selectedActions: [],
+              isV3Pool,
+              poolStateLoading: true,
+            },
+          ];
+        } else {
+          // V2 pools: default to pause action
+          return [
+            ...prev,
+            {
+              ...pool,
+              selectedActions: ["pause"],
+              isV3Pool,
+              pauseMethod: "pause",
+            },
+          ];
+        }
       });
     },
     [protocolVersion],
@@ -267,7 +294,12 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         pool.address === poolAddress
           ? {
               ...pool,
-              selectedActions: actions as ("pause" | "enableRecoveryMode")[],
+              selectedActions: actions as (
+                | "pause"
+                | "enableRecoveryMode"
+                | "unpause"
+                | "disableRecoveryMode"
+              )[],
             }
           : pool,
       ),
@@ -275,7 +307,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   }, []);
 
   const handleVaultActionChange = useCallback((actions: string[]) => {
-    setVaultActions(actions as ("pauseVault" | "pauseVaultBuffers")[]);
+    setVaultActions(
+      actions as ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[],
+    );
   }, []);
 
   const handleFactorySelect = useCallback((factory: V3PoolFactory) => {
@@ -316,6 +350,76 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     },
     [],
   );
+
+  // Fetch on-chain state for newly added V3 pools
+  const fetchingPoolsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const poolsToFetch = selectedPools.filter(
+      pool => pool.isV3Pool && pool.poolStateLoading && !fetchingPoolsRef.current.has(pool.address),
+    );
+
+    if (poolsToFetch.length === 0) return;
+
+    for (const pool of poolsToFetch) {
+      fetchingPoolsRef.current.add(pool.address);
+
+      fetch(`/api/pool-state?poolAddress=${pool.address}&network=${selectedNetwork}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+
+          const defaultActions: SelectedPool["selectedActions"] = [];
+          if (data.isPaused) {
+            defaultActions.push("unpause");
+          } else {
+            defaultActions.push("pause");
+          }
+
+          setSelectedPools(prev =>
+            prev.map(p =>
+              p.address === pool.address
+                ? {
+                    ...p,
+                    poolState: {
+                      isPaused: data.isPaused,
+                      isInRecoveryMode: data.isInRecoveryMode,
+                    },
+                    poolStateLoading: false,
+                    selectedActions: defaultActions,
+                  }
+                : p,
+            ),
+          );
+        })
+        .catch(error => {
+          console.error("Error fetching pool state for", pool.address, error);
+          // On error, fall back to showing all actions with pause as default
+          setSelectedPools(prev =>
+            prev.map(p =>
+              p.address === pool.address
+                ? {
+                    ...p,
+                    poolStateLoading: false,
+                    selectedActions: ["pause"],
+                  }
+                : p,
+            ),
+          );
+        })
+        .finally(() => {
+          fetchingPoolsRef.current.delete(pool.address);
+        });
+    }
+  }, [selectedPools, selectedNetwork]);
+
+  // Clear stale payload when selections change
+  useEffect(() => {
+    if (generatedPayload) {
+      setGeneratedPayload(null);
+      setHumanReadableText(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPools, vaultActions, selectedFactories, selectedDeprecatedFactories]);
 
   const handleGenerateClick = useCallback(() => {
     if (
@@ -460,7 +564,6 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       return {};
 
     const uniqueId = generateUniqueId();
-    selectedPools.length > 0 ? selectedPools[0].address.substring(0, 8) : "vault";
     // Count total actions
     const poolActions = selectedPools.reduce((sum, pool) => sum + pool.selectedActions.length, 0);
     const totalActions =
@@ -543,7 +646,14 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       },
       builderPath: "emergency",
     };
-  }, [generatedPayload]);
+  }, [
+    generatedPayload,
+    selectedPools,
+    vaultActions,
+    selectedFactories,
+    selectedDeprecatedFactories,
+    protocolVersion,
+  ]);
 
   return (
     <Container maxW="container.lg">
@@ -594,13 +704,18 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                 trading
               </ListItem>
               <ListItem>
+                <ListIcon as={ChevronRightIcon} color="green.500" />
+                <strong>Unpause / Disable Recovery Mode (V3 only):</strong> Restores normal pool
+                operations after an emergency
+              </ListItem>
+              <ListItem>
                 <ListIcon as={ChevronRightIcon} color="orange.500" />
                 <strong>Disable Factory:</strong> Permanently prevents new pool deployments from
                 specific factories
               </ListItem>
               <ListItem>
                 <ListIcon as={WarningIcon} color="red.500" />
-                <strong>Important:</strong> These actions should only be used during actual
+                <strong>Important:</strong> These actions should only be executed during actual
                 emergencies
               </ListItem>
             </List>
@@ -654,8 +769,8 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
                   </>
                 ) : (
                   <>
-                    Actions will be called through the Vault contract (pauseVault(),
-                    enableRecoveryMode())
+                    Actions will be called through the Vault contract (pausePool(), unpausePool(),
+                    enableRecoveryMode(), disableRecoveryMode())
                   </>
                 )}
               </Text>
@@ -708,462 +823,592 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         </Box>
       )}
 
-      {protocolVersion === "v3" && selectedNetwork && (
-        <Card mb={6}>
-          <CardBody>
-            <Heading as="h4" size="sm" mb={4}>
-              🔒 Vault Actions (affects all pools)
-            </Heading>
-            <Alert status="info" mb={4}>
-              <AlertIcon />
-              <AlertDescription>
-                <Text fontWeight="bold" mb={1}>
-                  🔒 Vault-Level Actions
-                </Text>
-                <Text fontSize="sm">
-                  These actions affect the entire V3 vault on {selectedNetwork}. No specific pool
-                  selection needed - they will impact all pools in the vault.
-                </Text>
-              </AlertDescription>
-            </Alert>
-            <Card>
-              <CardBody>
-                <FormControl>
-                  <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
-                  <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
-                    <Stack direction="row" spacing={4}>
-                      <Checkbox value="pauseVault" colorScheme="red">
-                        Pause Vault
-                      </Checkbox>
-                      <Checkbox value="pauseVaultBuffers" colorScheme="red">
-                        Pause Vault Buffers
-                      </Checkbox>
-                    </Stack>
-                  </CheckboxGroup>
-                  <Text fontSize="xs" color="font.secondary" mt={2}>
-                    Pause Vault: Halts all operations across all pools. Pause Vault Buffers: Halts
-                    buffer operations only.
+      {protocolVersion && selectedNetwork && (
+        <Accordion allowMultiple defaultIndex={[]} mb={6}>
+          {/* Vault Actions - V3 only */}
+          {protocolVersion === "v3" && (
+            <AccordionItem border="1px solid" borderColor="inherit" borderRadius="md" mb={4}>
+              <AccordionButton py={3} px={4}>
+                <Flex flex="1" align="center" gap={2}>
+                  <Text fontWeight="bold" fontSize="md">
+                    Vault Actions
                   </Text>
-                </FormControl>
-              </CardBody>
-            </Card>
-            {vaultActions.length > 0 && (
-              <Alert status="success" mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  ✓ Vault actions selected. You can generate the payload now or optionally add
-                  specific pool actions below.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardBody>
-        </Card>
-      )}
+                  {vaultActions.length > 0 && (
+                    <Badge colorScheme="red" borderRadius="full">
+                      {vaultActions.length}
+                    </Badge>
+                  )}
+                </Flex>
+                <AccordionIcon />
+              </AccordionButton>
+              <AccordionPanel pb={4}>
+                <Alert status="info" mb={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontSize="sm">
+                      These actions affect the entire V3 vault on {selectedNetwork}. No specific
+                      pool selection needed.
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+                <Card>
+                  <CardBody>
+                    <FormControl>
+                      <FormLabel fontSize="sm">Vault Emergency Actions</FormLabel>
+                      <CheckboxGroup value={vaultActions} onChange={handleVaultActionChange}>
+                        <VStack align="stretch" spacing={3}>
+                          <Box>
+                            <Text fontSize="xs" fontWeight="bold" color="red.500" mb={1}>
+                              Emergency
+                            </Text>
+                            <Stack direction="row" spacing={4}>
+                              <Checkbox value="pauseVault" colorScheme="red">
+                                Pause Vault
+                              </Checkbox>
+                              <Checkbox value="pauseVaultBuffers" colorScheme="red">
+                                Pause Vault Buffers
+                              </Checkbox>
+                            </Stack>
+                          </Box>
+                          <Box>
+                            <Text fontSize="xs" fontWeight="bold" color="green.500" mb={1}>
+                              Restoration
+                            </Text>
+                            <Stack direction="row" spacing={4}>
+                              <Checkbox value="unpauseVault" colorScheme="green">
+                                Unpause Vault
+                              </Checkbox>
+                              <Checkbox value="unpauseVaultBuffers" colorScheme="green">
+                                Unpause Vault Buffers
+                              </Checkbox>
+                            </Stack>
+                          </Box>
+                        </VStack>
+                      </CheckboxGroup>
+                      <Text fontSize="xs" color="font.secondary" mt={2}>
+                        Pause Vault: Halts all operations across all pools. Pause Vault Buffers:
+                        Halts buffer operations only. Unpause actions restore normal operations.
+                      </Text>
+                    </FormControl>
+                  </CardBody>
+                </Card>
+                {vaultActions.length > 0 && (
+                  <Alert status="success" mt={4}>
+                    <AlertIcon />
+                    <AlertDescription>
+                      Vault actions selected. You can generate the payload now or optionally add
+                      specific pool actions below.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </AccordionPanel>
+            </AccordionItem>
+          )}
 
-      {protocolVersion === "v3" && selectedNetwork && (
-        <Card mb={6}>
-          <CardBody>
-            <Heading as="h4" size="sm" mb={4}>
-              Factory Actions (disable new pool creation)
-            </Heading>
-            <Alert status="warning" mb={4}>
-              <AlertIcon />
-              <AlertDescription>
-                <Text fontWeight="bold" mb={1}>
-                  Factory Disable Actions
-                </Text>
-                <Text fontSize="sm">
-                  Disable pool factories to prevent creation of new pools of specific types. This
-                  action is <strong>irreversible</strong> and will permanently stop new pool
-                  deployments from these factories.
-                </Text>
-              </AlertDescription>
-            </Alert>
-            <Card>
-              <CardBody>
-                <FormControl>
-                  <FormLabel fontSize="sm">Available Pool Factories</FormLabel>
-                  {availableFactories.length === 0 ? (
-                    <Alert status="info">
-                      <AlertIcon />
-                      <AlertDescription>
-                        No V3 pool factories found for {selectedNetwork}. Network: {selectedNetwork}
-                        , Protocol: {protocolVersion}
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <VStack align="stretch" spacing={2}>
-                      {availableFactories.map(factory => (
+          {/* Factory Actions - V3 only */}
+          {protocolVersion === "v3" && (
+            <AccordionItem border="1px solid" borderColor="inherit" borderRadius="md" mb={4}>
+              <AccordionButton py={3} px={4}>
+                <Flex flex="1" align="center" gap={2}>
+                  <Text fontWeight="bold" fontSize="md">
+                    Factory Actions
+                  </Text>
+                  {(selectedFactories.length > 0 || selectedDeprecatedFactories.length > 0) && (
+                    <Badge colorScheme="orange" borderRadius="full">
+                      {selectedFactories.length + selectedDeprecatedFactories.length}
+                    </Badge>
+                  )}
+                </Flex>
+                <AccordionIcon />
+              </AccordionButton>
+              <AccordionPanel pb={4}>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontSize="sm">
+                      Disable pool factories to prevent creation of new pools. This action is{" "}
+                      <strong>irreversible</strong>.
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+                <Card>
+                  <CardBody>
+                    <FormControl>
+                      <FormLabel fontSize="sm">Available Pool Factories</FormLabel>
+                      {availableFactories.length === 0 ? (
+                        <Alert status="info">
+                          <AlertIcon />
+                          <AlertDescription>
+                            No V3 pool factories found for {selectedNetwork}.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <VStack align="stretch" spacing={2}>
+                          {availableFactories.map(factory => (
+                            <Flex
+                              key={factory.address}
+                              justify="space-between"
+                              align="center"
+                              p={2}
+                              borderWidth="1px"
+                              borderRadius="md"
+                            >
+                              <Box>
+                                <Text fontWeight="medium">{factory.displayName}</Text>
+                                <Text fontSize="xs" color="font.secondary" fontFamily="mono">
+                                  {factory.address}
+                                </Text>
+                              </Box>
+                              <Button
+                                size="sm"
+                                colorScheme="red"
+                                variant="outline"
+                                onClick={() => handleFactorySelect(factory)}
+                                isDisabled={selectedFactories.some(
+                                  f => f.address === factory.address,
+                                )}
+                              >
+                                {selectedFactories.some(f => f.address === factory.address)
+                                  ? "Selected"
+                                  : "Select"}
+                              </Button>
+                            </Flex>
+                          ))}
+                        </VStack>
+                      )}
+                    </FormControl>
+                  </CardBody>
+                </Card>
+
+                {/* Deprecated Factories Toggle */}
+                <Card mt={4}>
+                  <CardBody>
+                    <FormControl>
+                      <Checkbox
+                        isChecked={includeDeprecated}
+                        onChange={e => setIncludeDeprecated(e.target.checked)}
+                        colorScheme="orange"
+                      >
+                        <Text fontWeight="medium">Include Deprecated Pool Factories</Text>
+                      </Checkbox>
+                      <Text fontSize="xs" color="font.secondary" mt={1}>
+                        Show deprecated pool factories that can also be disabled for emergency
+                        purposes.
+                      </Text>
+                    </FormControl>
+                  </CardBody>
+                </Card>
+
+                {/* Deprecated Factories List */}
+                {includeDeprecated && (
+                  <Card mt={4}>
+                    <CardBody>
+                      <FormControl>
+                        <FormLabel fontSize="sm">Deprecated Pool Factories</FormLabel>
+                        {loadingDeprecated ? (
+                          <Alert status="info">
+                            <AlertIcon />
+                            <AlertDescription>Loading deprecated factories...</AlertDescription>
+                          </Alert>
+                        ) : deprecatedFactories.length === 0 ? (
+                          <Alert status="info">
+                            <AlertIcon />
+                            <AlertDescription>
+                              No deprecated pool factories found for {selectedNetwork}
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <VStack align="stretch" spacing={2}>
+                            {deprecatedFactories.map(factory => (
+                              <Flex
+                                key={factory.address}
+                                justify="space-between"
+                                align="center"
+                                p={2}
+                                borderWidth="1px"
+                                borderRadius="md"
+                              >
+                                <Box>
+                                  <Flex align="center" gap={2}>
+                                    <Text fontWeight="medium">{factory.displayName}</Text>
+                                    <Badge colorScheme="orange" size="sm">
+                                      DEPRECATED
+                                    </Badge>
+                                  </Flex>
+                                  <Text fontSize="xs" color="font.secondary" fontFamily="mono">
+                                    {factory.address}
+                                  </Text>
+                                  <Text fontSize="xs" color="font.secondary">
+                                    Deployment: {factory.deployment}
+                                  </Text>
+                                </Box>
+                                <Button
+                                  size="sm"
+                                  colorScheme="orange"
+                                  variant="outline"
+                                  onClick={() => handleDeprecatedFactorySelect(factory)}
+                                  isDisabled={selectedDeprecatedFactories.some(
+                                    f => f.address === factory.address,
+                                  )}
+                                >
+                                  {selectedDeprecatedFactories.some(
+                                    f => f.address === factory.address,
+                                  )
+                                    ? "Selected"
+                                    : "Select"}
+                                </Button>
+                              </Flex>
+                            ))}
+                          </VStack>
+                        )}
+                      </FormControl>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {/* Selected factories summary */}
+                {selectedFactories.length > 0 && (
+                  <Box mt={4}>
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>
+                      Selected Factories ({selectedFactories.length})
+                    </Text>
+                    <VStack spacing={2}>
+                      {selectedFactories.map(factory => (
                         <Flex
                           key={factory.address}
                           justify="space-between"
                           align="center"
+                          w="100%"
                           p={2}
                           borderWidth="1px"
                           borderRadius="md"
                         >
-                          <Box>
-                            <Text fontWeight="medium">{factory.displayName}</Text>
-                            <Text fontSize="xs" color="font.secondary" fontFamily="mono">
-                              {factory.address}
+                          <Flex align="center" gap={2}>
+                            <Text fontWeight="medium" fontSize="sm">
+                              {factory.displayName}
                             </Text>
-                          </Box>
-                          <Button
-                            size="sm"
+                            <Badge colorScheme="red" size="sm">
+                              DISABLE
+                            </Badge>
+                          </Flex>
+                          <IconButton
+                            aria-label="Remove factory"
+                            icon={<DeleteIcon />}
+                            size="xs"
+                            variant="ghost"
                             colorScheme="red"
-                            variant="outline"
-                            onClick={() => handleFactorySelect(factory)}
-                            isDisabled={selectedFactories.some(f => f.address === factory.address)}
-                          >
-                            {selectedFactories.some(f => f.address === factory.address)
-                              ? "Selected"
-                              : "Select"}
-                          </Button>
+                            onClick={() => handleRemoveFactory(factory.address)}
+                          />
                         </Flex>
                       ))}
                     </VStack>
-                  )}
-                </FormControl>
-              </CardBody>
-            </Card>
+                  </Box>
+                )}
 
-            {/* Deprecated Factories Toggle */}
-            <Card mt={4}>
-              <CardBody>
-                <FormControl>
-                  <Checkbox
-                    isChecked={includeDeprecated}
-                    onChange={e => setIncludeDeprecated(e.target.checked)}
-                    colorScheme="orange"
-                  >
-                    <Text fontWeight="medium">Include Deprecated Pool Factories</Text>
-                  </Checkbox>
-                  <Text fontSize="xs" color="font.secondary" mt={1}>
-                    Show deprecated pool factories that can also be disabled for emergency purposes.
-                    These are older factory versions that may still be functional but are no longer
-                    officially supported.
-                  </Text>
-                </FormControl>
-              </CardBody>
-            </Card>
-
-            {/* Deprecated Factories List */}
-            {includeDeprecated && (
-              <Card mt={4}>
-                <CardBody>
-                  <FormControl>
-                    <FormLabel fontSize="sm">Deprecated Pool Factories</FormLabel>
-                    {loadingDeprecated ? (
-                      <Alert status="info">
-                        <AlertIcon />
-                        <AlertDescription>Loading deprecated factories...</AlertDescription>
-                      </Alert>
-                    ) : deprecatedFactories.length === 0 ? (
-                      <Alert status="info">
-                        <AlertIcon />
-                        <AlertDescription>
-                          No deprecated pool factories found for {selectedNetwork}
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <VStack align="stretch" spacing={2}>
-                        {deprecatedFactories.map(factory => (
-                          <Flex
-                            key={factory.address}
-                            justify="space-between"
-                            align="center"
-                            p={2}
-                            borderWidth="1px"
-                            borderRadius="md"
-                          >
-                            <Box>
-                              <Flex align="center" gap={2}>
-                                <Text fontWeight="medium">{factory.displayName}</Text>
-                                <Badge colorScheme="orange" size="sm">
-                                  DEPRECATED
-                                </Badge>
-                              </Flex>
-                              <Text fontSize="xs" color="font.secondary" fontFamily="mono">
-                                {factory.address}
-                              </Text>
-                              <Text fontSize="xs" color="font.secondary">
-                                Deployment: {factory.deployment}
-                              </Text>
-                            </Box>
-                            <Button
-                              size="sm"
-                              colorScheme="orange"
-                              variant="outline"
-                              onClick={() => handleDeprecatedFactorySelect(factory)}
-                              isDisabled={selectedDeprecatedFactories.some(
-                                f => f.address === factory.address,
-                              )}
-                            >
-                              {selectedDeprecatedFactories.some(f => f.address === factory.address)
-                                ? "Selected"
-                                : "Select"}
-                            </Button>
+                {selectedDeprecatedFactories.length > 0 && (
+                  <Box mt={4}>
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>
+                      Selected Deprecated Factories ({selectedDeprecatedFactories.length})
+                    </Text>
+                    <VStack spacing={2}>
+                      {selectedDeprecatedFactories.map(factory => (
+                        <Flex
+                          key={factory.address}
+                          justify="space-between"
+                          align="center"
+                          w="100%"
+                          p={2}
+                          borderWidth="1px"
+                          borderRadius="md"
+                        >
+                          <Flex align="center" gap={2}>
+                            <Text fontWeight="medium" fontSize="sm">
+                              {factory.displayName}
+                            </Text>
+                            <Badge colorScheme="orange" size="sm">
+                              DEPRECATED
+                            </Badge>
+                            <Badge colorScheme="red" size="sm">
+                              DISABLE
+                            </Badge>
                           </Flex>
-                        ))}
-                      </VStack>
-                    )}
-                  </FormControl>
-                </CardBody>
-              </Card>
-            )}
-            {(selectedFactories.length > 0 || selectedDeprecatedFactories.length > 0) && (
-              <Alert status="success" mt={4}>
-                <AlertIcon />
-                <AlertDescription>
-                  ✓ {selectedFactories.length + selectedDeprecatedFactories.length} factor
-                  {selectedFactories.length + selectedDeprecatedFactories.length > 1
-                    ? "ies"
-                    : "y"}{" "}
-                  selected for disable action
-                  {selectedFactories.length > 0 &&
-                    selectedDeprecatedFactories.length > 0 &&
-                    ` (${selectedFactories.length} active, ${selectedDeprecatedFactories.length} deprecated)`}
-                  {selectedFactories.length > 0 &&
-                    selectedDeprecatedFactories.length === 0 &&
-                    ` (${selectedFactories.length} active)`}
-                  {selectedFactories.length === 0 &&
-                    selectedDeprecatedFactories.length > 0 &&
-                    ` (${selectedDeprecatedFactories.length} deprecated)`}
-                  .
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardBody>
-        </Card>
-      )}
+                          <IconButton
+                            aria-label="Remove deprecated factory"
+                            icon={<DeleteIcon />}
+                            size="xs"
+                            variant="ghost"
+                            colorScheme="orange"
+                            onClick={() => handleRemoveDeprecatedFactory(factory.address)}
+                          />
+                        </Flex>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+              </AccordionPanel>
+            </AccordionItem>
+          )}
 
-      {protocolVersion && selectedNetwork && (
-        <Card mb={6}>
-          <CardBody>
-            {/* Show pool selection heading and context based on protocol */}
-            {protocolVersion === "v3" && vaultActions.length > 0 ? (
-              <>
-                <Heading as="h4" size="sm" mb={4}>
-                  🏊 Additional Pool Actions (Optional)
-                </Heading>
+          {/* Pool Actions - both V2 and V3 */}
+          <AccordionItem border="1px solid" borderColor="inherit" borderRadius="md" mb={4}>
+            <AccordionButton py={3} px={4}>
+              <Flex flex="1" align="center" gap={2}>
+                <Text fontWeight="bold" fontSize="md">
+                  Pool Actions
+                </Text>
+                {selectedPools.length > 0 && (
+                  <Badge colorScheme="purple" borderRadius="full">
+                    {selectedPools.length}
+                  </Badge>
+                )}
+              </Flex>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel pb={4} minH="400px">
+              {protocolVersion === "v3" && vaultActions.length > 0 && (
                 <Alert status="info" mb={4}>
                   <AlertIcon />
                   <AlertDescription>
                     Optionally add specific pool actions to combine with your vault actions.
                   </AlertDescription>
                 </Alert>
-              </>
-            ) : (
-              <Heading as="h4" size="sm" mb={4}>
-                🏊 Pool Actions (affects individual pools)
-              </Heading>
-            )}
-            <PoolSelector
-              pools={availablePools}
-              loading={loading}
-              error={error}
-              selectedPool={null}
-              onPoolSelect={handlePoolSelect}
-              onClearSelection={() => {}}
-            />
-          </CardBody>
-        </Card>
-      )}
+              )}
+              <PoolSelector
+                pools={availablePools}
+                loading={loading}
+                error={error}
+                selectedPool={null}
+                onPoolSelect={handlePoolSelect}
+                onClearSelection={() => {}}
+              />
 
-      {selectedPools.length > 0 && (
-        <Box mb={6}>
-          <Heading as="h4" size="sm" mb={4}>
-            Selected {protocolVersion?.toUpperCase()} Pools ({selectedPools.length})
-          </Heading>
-          <VStack spacing={4}>
-            {selectedPools.map(pool => (
-              <Card key={pool.address} w="100%">
-                <CardHeader pb={2}>
-                  <Flex justify="space-between" align="center">
-                    <Box>
-                      <Flex align="center" gap={2}>
-                        <Text fontWeight="bold" fontSize="md">
-                          {pool.name}
-                        </Text>
-                        <Badge colorScheme={protocolVersion === "v3" ? "purple" : "blue"} size="sm">
-                          {protocolVersion?.toUpperCase()}
-                        </Badge>
-                        {!pool.isV3Pool && pool.pauseMethod === "setPaused" && (
-                          <Badge colorScheme="orange" size="sm">
-                            Legacy
-                          </Badge>
-                        )}
-                      </Flex>
-                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
-                        {pool.address}
-                      </Text>
-                    </Box>
-                    <IconButton
-                      aria-label="Remove pool"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => handleRemovePool(pool.address)}
-                    />
-                  </Flex>
-                </CardHeader>
-                <CardBody pt={2}>
-                  <VStack spacing={4} align="stretch">
-                    <FormControl>
-                      <FormLabel fontSize="sm">Emergency Actions</FormLabel>
-                      <CheckboxGroup
-                        value={pool.selectedActions}
-                        onChange={values => handleActionChange(pool.address, values as string[])}
-                      >
-                        <Stack direction="row" spacing={4}>
-                          <Checkbox value="pause" colorScheme="red">
-                            Pause Pool
-                          </Checkbox>
-                          <Checkbox value="enableRecoveryMode" colorScheme="orange">
-                            Enable Recovery Mode
-                          </Checkbox>
-                        </Stack>
-                      </CheckboxGroup>
-                    </FormControl>
-
-                    {/* Individual pause method selection for V2 pools */}
-                    {!pool.isV3Pool && pool.selectedActions.includes("pause") && (
-                      <FormControl>
-                        <FormLabel fontSize="sm">
-                          <Flex align="center" gap={1}>
-                            Pause Method for this Pool
-                            <InfoIcon color="font.secondary" />
+              {selectedPools.length > 0 && (
+                <Box mt={6}>
+                  <Text fontSize="sm" fontWeight="bold" mb={3}>
+                    Selected {protocolVersion?.toUpperCase()} Pools ({selectedPools.length})
+                  </Text>
+                  <VStack spacing={4}>
+                    {selectedPools.map(pool => (
+                      <Card key={pool.address} w="100%">
+                        <CardHeader pb={2}>
+                          <Flex justify="space-between" align="center">
+                            <Box>
+                              <Flex align="center" gap={2}>
+                                <Text fontWeight="bold" fontSize="md">
+                                  {pool.name}
+                                </Text>
+                                <Badge
+                                  colorScheme={protocolVersion === "v3" ? "purple" : "blue"}
+                                  size="sm"
+                                >
+                                  {protocolVersion?.toUpperCase()}
+                                </Badge>
+                                {!pool.isV3Pool && pool.pauseMethod === "setPaused" && (
+                                  <Badge colorScheme="orange" size="sm">
+                                    Legacy
+                                  </Badge>
+                                )}
+                                {pool.isV3Pool && pool.poolState && (
+                                  <>
+                                    <Badge
+                                      colorScheme={pool.poolState.isPaused ? "red" : "green"}
+                                      size="sm"
+                                    >
+                                      {pool.poolState.isPaused ? "Paused" : "Active"}
+                                    </Badge>
+                                    {pool.poolState.isInRecoveryMode && (
+                                      <Badge colorScheme="orange" size="sm">
+                                        Recovery Mode
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                              </Flex>
+                              <Text fontSize="sm" color="font.secondary" fontFamily="mono">
+                                {pool.address}
+                              </Text>
+                            </Box>
+                            <IconButton
+                              aria-label="Remove pool"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="red"
+                              onClick={() => handleRemovePool(pool.address)}
+                            />
                           </Flex>
-                        </FormLabel>
-                        <RadioGroup
-                          value={pool.pauseMethod || "pause"}
-                          onChange={(value: "pause" | "setPaused") =>
-                            handlePauseMethodChange(pool.address, value)
-                          }
-                        >
-                          <VStack align="start" spacing={2}>
-                            <Radio value="pause" size="sm">
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="sm" fontWeight="medium">
-                                  pause() - Modern V2 Pools
+                        </CardHeader>
+                        <CardBody pt={2}>
+                          <VStack spacing={4} align="stretch">
+                            {pool.poolStateLoading ? (
+                              <Flex align="center" gap={2} py={2}>
+                                <Spinner size="sm" />
+                                <Text fontSize="sm" color="font.secondary">
+                                  Fetching on-chain pool state...
                                 </Text>
-                                <Text fontSize="xs" color="font.secondary">
-                                  Use for newer Balancer v2 pools (most common)
-                                </Text>
-                              </VStack>
-                            </Radio>
-                            <Radio value="setPaused" size="sm">
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="sm" fontWeight="medium">
-                                  setPaused(true) - Legacy V2 Pools
-                                </Text>
-                                <Text fontSize="xs" color="font.secondary">
-                                  Use for older pools that don&#39;t have the pause() method
-                                </Text>
-                              </VStack>
-                            </Radio>
+                              </Flex>
+                            ) : pool.isV3Pool ? (
+                              <FormControl>
+                                <FormLabel fontSize="sm">Pool Actions</FormLabel>
+                                <CheckboxGroup
+                                  value={pool.selectedActions}
+                                  onChange={values =>
+                                    handleActionChange(pool.address, values as string[])
+                                  }
+                                >
+                                  <VStack align="stretch" spacing={3}>
+                                    {/* Emergency section - only show if there are emergency actions */}
+                                    {(!pool.poolState ||
+                                      !pool.poolState.isPaused ||
+                                      !pool.poolState.isInRecoveryMode) && (
+                                      <Box>
+                                        <Text
+                                          fontSize="xs"
+                                          fontWeight="bold"
+                                          color="red.500"
+                                          mb={1}
+                                        >
+                                          Emergency
+                                        </Text>
+                                        <Stack direction="row" spacing={4}>
+                                          {(!pool.poolState || !pool.poolState.isPaused) && (
+                                            <Checkbox value="pause" colorScheme="red">
+                                              Pause Pool
+                                            </Checkbox>
+                                          )}
+                                          {(!pool.poolState ||
+                                            !pool.poolState.isInRecoveryMode) && (
+                                            <Checkbox
+                                              value="enableRecoveryMode"
+                                              colorScheme="orange"
+                                            >
+                                              Enable Recovery Mode
+                                            </Checkbox>
+                                          )}
+                                        </Stack>
+                                      </Box>
+                                    )}
+                                    {/* Restoration section - only show if pool is paused or in recovery mode */}
+                                    {(pool.poolState?.isPaused ||
+                                      pool.poolState?.isInRecoveryMode) && (
+                                      <Box>
+                                        <Text
+                                          fontSize="xs"
+                                          fontWeight="bold"
+                                          color="green.500"
+                                          mb={1}
+                                        >
+                                          Restoration
+                                        </Text>
+                                        <Stack direction="row" spacing={4}>
+                                          {pool.poolState?.isPaused && (
+                                            <Checkbox value="unpause" colorScheme="green">
+                                              Unpause Pool
+                                            </Checkbox>
+                                          )}
+                                          {pool.poolState?.isInRecoveryMode && (
+                                            <Checkbox
+                                              value="disableRecoveryMode"
+                                              colorScheme="green"
+                                            >
+                                              Disable Recovery Mode
+                                            </Checkbox>
+                                          )}
+                                        </Stack>
+                                      </Box>
+                                    )}
+                                  </VStack>
+                                </CheckboxGroup>
+                              </FormControl>
+                            ) : (
+                              <>
+                                <FormControl>
+                                  <FormLabel fontSize="sm">Emergency Actions</FormLabel>
+                                  <CheckboxGroup
+                                    value={pool.selectedActions}
+                                    onChange={values =>
+                                      handleActionChange(pool.address, values as string[])
+                                    }
+                                  >
+                                    <Stack direction="row" spacing={4}>
+                                      <Checkbox value="pause" colorScheme="red">
+                                        Pause Pool
+                                      </Checkbox>
+                                      <Checkbox value="enableRecoveryMode" colorScheme="orange">
+                                        Enable Recovery Mode
+                                      </Checkbox>
+                                    </Stack>
+                                  </CheckboxGroup>
+                                </FormControl>
+
+                                {/* Individual pause method selection for V2 pools */}
+                                {pool.selectedActions.includes("pause") && (
+                                  <FormControl>
+                                    <FormLabel fontSize="sm">
+                                      <Flex align="center" gap={1}>
+                                        Pause Method for this Pool
+                                        <InfoIcon color="font.secondary" />
+                                      </Flex>
+                                    </FormLabel>
+                                    <RadioGroup
+                                      value={pool.pauseMethod || "pause"}
+                                      onChange={(value: "pause" | "setPaused") =>
+                                        handlePauseMethodChange(pool.address, value)
+                                      }
+                                    >
+                                      <VStack align="start" spacing={2}>
+                                        <Radio value="pause" size="sm">
+                                          <VStack align="start" spacing={0}>
+                                            <Text fontSize="sm" fontWeight="medium">
+                                              pause() - Modern V2 Pools
+                                            </Text>
+                                            <Text fontSize="xs" color="font.secondary">
+                                              Use for newer Balancer v2 pools (most common)
+                                            </Text>
+                                          </VStack>
+                                        </Radio>
+                                        <Radio value="setPaused" size="sm">
+                                          <VStack align="start" spacing={0}>
+                                            <Text fontSize="sm" fontWeight="medium">
+                                              setPaused(true) - Legacy V2 Pools
+                                            </Text>
+                                            <Text fontSize="xs" color="font.secondary">
+                                              Use for older pools that don&#39;t have the pause()
+                                              method
+                                            </Text>
+                                          </VStack>
+                                        </Radio>
+                                      </VStack>
+                                    </RadioGroup>
+                                    <Text fontSize="xs" color="font.secondary" mt={2}>
+                                      <strong>Not sure which to use?</strong> Try pause() first
+                                      (default). If the transaction fails, switch to
+                                      setPaused(true).
+                                    </Text>
+                                  </FormControl>
+                                )}
+                              </>
+                            )}
+
+                            {!pool.poolStateLoading && pool.selectedActions.length === 0 && (
+                              <Alert status="warning" py={2} borderRadius="md">
+                                <AlertIcon boxSize="14px" />
+                                <AlertDescription fontSize="xs">
+                                  No actions selected for this pool. It will be excluded from the
+                                  payload.
+                                </AlertDescription>
+                              </Alert>
+                            )}
                           </VStack>
-                        </RadioGroup>
-                        <Text fontSize="xs" color="font.secondary" mt={2}>
-                          <strong>Not sure which to use?</strong> Try pause() first (default). If
-                          the transaction fails, switch to setPaused(true).
-                        </Text>
-                      </FormControl>
-                    )}
+                        </CardBody>
+                      </Card>
+                    ))}
                   </VStack>
-                </CardBody>
-              </Card>
-            ))}
-          </VStack>
-        </Box>
-      )}
-
-      {selectedFactories.length > 0 && (
-        <Box mb={6}>
-          <Heading as="h4" size="sm" mb={4}>
-            Selected V3 Factories for Disable ({selectedFactories.length})
-          </Heading>
-          <VStack spacing={3}>
-            {selectedFactories.map(factory => (
-              <Card key={factory.address} w="100%">
-                <CardBody>
-                  <Flex justify="space-between" align="center">
-                    <Box>
-                      <Flex align="center" gap={2}>
-                        <Text fontWeight="bold" fontSize="md">
-                          {factory.displayName}
-                        </Text>
-                        <Badge colorScheme="red" size="sm">
-                          DISABLE
-                        </Badge>
-                      </Flex>
-                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
-                        {factory.address}
-                      </Text>
-                      <Text fontSize="xs" color="font.secondary">
-                        Category: {factory.category}
-                      </Text>
-                    </Box>
-                    <IconButton
-                      aria-label="Remove factory"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => handleRemoveFactory(factory.address)}
-                    />
-                  </Flex>
-                </CardBody>
-              </Card>
-            ))}
-          </VStack>
-        </Box>
-      )}
-
-      {selectedDeprecatedFactories.length > 0 && (
-        <Box mb={6}>
-          <Heading as="h4" size="sm" mb={4}>
-            Selected Deprecated Factories for Disable ({selectedDeprecatedFactories.length})
-          </Heading>
-          <VStack spacing={3}>
-            {selectedDeprecatedFactories.map(factory => (
-              <Card key={factory.address} w="100%">
-                <CardBody>
-                  <Flex justify="space-between" align="center">
-                    <Box>
-                      <Flex align="center" gap={2}>
-                        <Text fontWeight="bold" fontSize="md">
-                          {factory.displayName}
-                        </Text>
-                        <Badge colorScheme="orange" size="sm">
-                          DEPRECATED
-                        </Badge>
-                        <Badge colorScheme="red" size="sm">
-                          DISABLE
-                        </Badge>
-                      </Flex>
-                      <Text fontSize="sm" color="font.secondary" fontFamily="mono">
-                        {factory.address}
-                      </Text>
-                      <Text fontSize="xs" color="font.secondary">
-                        Deployment: {factory.deployment}
-                      </Text>
-                    </Box>
-                    <IconButton
-                      aria-label="Remove deprecated factory"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="orange"
-                      onClick={() => handleRemoveDeprecatedFactory(factory.address)}
-                    />
-                  </Flex>
-                </CardBody>
-              </Card>
-            ))}
-          </VStack>
-        </Box>
+                </Box>
+              )}
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
       )}
 
       <Flex justifyContent="space-between" alignItems="center" mt="20px" mb="10px">

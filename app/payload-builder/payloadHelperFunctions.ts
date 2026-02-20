@@ -1722,7 +1722,7 @@ export function generateReClammCombinedParametersPayload(
 export interface EmergencyActionInput {
   poolAddress: string;
   poolName: string;
-  actions: ("pause" | "enableRecoveryMode" | "pauseVault")[];
+  actions: ("pause" | "enableRecoveryMode" | "unpause" | "disableRecoveryMode")[];
   isV3Pool: boolean;
   pauseMethod?: "pause" | "setPaused"; // For V2 pools only
 }
@@ -1732,7 +1732,7 @@ export interface EmergencyPayloadInput {
   emergencyWallet: string;
   chainId: string;
   vaultAddress?: string; // For V3 pools
-  vaultActions?: ("pauseVault" | "pauseVaultBuffers")[];
+  vaultActions?: ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[];
   factoryActions?: { address: string; name: string }[]; // For V3 factory disable actions
 }
 
@@ -1783,6 +1783,30 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
           },
           contractInputsValues: {},
         });
+      } else if (action === "unpauseVault") {
+        transactions.push({
+          to: input.vaultAddress,
+          value: "0",
+          data: null,
+          contractMethod: {
+            inputs: [],
+            name: "unpauseVault",
+            payable: false,
+          },
+          contractInputsValues: {},
+        });
+      } else if (action === "unpauseVaultBuffers") {
+        transactions.push({
+          to: input.vaultAddress,
+          value: "0",
+          data: null,
+          contractMethod: {
+            inputs: [],
+            name: "unpauseVaultBuffers",
+            payable: false,
+          },
+          contractInputsValues: {},
+        });
       }
     }
   }
@@ -1805,18 +1829,6 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
               pool: pool.poolAddress,
             },
           });
-        } else if (action === "pauseVault") {
-          transactions.push({
-            to: input.vaultAddress,
-            value: "0",
-            data: null,
-            contractMethod: {
-              inputs: [],
-              name: "pauseVault",
-              payable: false,
-            },
-            contractInputsValues: {},
-          });
         } else if (action === "enableRecoveryMode") {
           transactions.push({
             to: input.vaultAddress,
@@ -1825,6 +1837,34 @@ export function generateEmergencyPayload(input: EmergencyPayloadInput) {
             contractMethod: {
               inputs: [{ internalType: "address", name: "pool", type: "address" }],
               name: "enableRecoveryMode",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        } else if (action === "unpause") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "unpausePool",
+              payable: false,
+            },
+            contractInputsValues: {
+              pool: pool.poolAddress,
+            },
+          });
+        } else if (action === "disableRecoveryMode") {
+          transactions.push({
+            to: input.vaultAddress,
+            value: "0",
+            data: null,
+            contractMethod: {
+              inputs: [{ internalType: "address", name: "pool", type: "address" }],
+              name: "disableRecoveryMode",
               payable: false,
             },
             contractInputsValues: {
@@ -1911,7 +1951,13 @@ export function generateHumanReadableEmergency(input: EmergencyPayloadInput): st
 
   // Add vault-level actions
   if (input.vaultActions && input.vaultActions.length > 0) {
-    const vaultActionsText = input.vaultActions.join(", ");
+    const VAULT_ACTION_LABELS: Record<string, string> = {
+      pauseVault: "Pause Vault",
+      pauseVaultBuffers: "Pause Vault Buffers",
+      unpauseVault: "Unpause Vault",
+      unpauseVaultBuffers: "Unpause Vault Buffers",
+    };
+    const vaultActionsText = input.vaultActions.map(a => VAULT_ACTION_LABELS[a] ?? a).join(", ");
     description += `Vault-level actions: ${vaultActionsText}\n\n`;
   }
 
@@ -1920,7 +1966,13 @@ export function generateHumanReadableEmergency(input: EmergencyPayloadInput): st
     const poolSummaries = input.pools.map(pool => {
       const actionsText = pool.actions
         .map(action => {
-          if (action === "pause" && !pool.isV3Pool) {
+          if (pool.isV3Pool) {
+            if (action === "pause") return "pausePool()";
+            if (action === "unpause") return "unpausePool()";
+            if (action === "enableRecoveryMode") return "enableRecoveryMode()";
+            if (action === "disableRecoveryMode") return "disableRecoveryMode()";
+          }
+          if (action === "pause") {
             const method = pool.pauseMethod || "pause";
             return method === "setPaused" ? "setPaused(true)" : "pause()";
           }
