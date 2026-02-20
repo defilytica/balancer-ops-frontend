@@ -500,7 +500,7 @@ export const networks: Record<string, NetworkInfo> = {
   zkevm: {
     logo: zkevmLogo.src,
     rpc: "https://lb.drpc.live/polygon-zkevm/",
-    explorer: "https://gnosisscan.io/",
+    explorer: "https://www.oklink.com/polygon-zkevm/",
     chainId: "1101",
   },
   avalanche_c: {
