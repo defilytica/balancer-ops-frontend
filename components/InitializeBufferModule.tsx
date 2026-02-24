@@ -46,7 +46,7 @@ import {
 } from "@/lib/utils/sonicNetworkUtils";
 import { TokenSelector } from "@/components/TokenSelector";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
 import { fetchBufferAsset } from "@/lib/services/fetchBufferAsset";

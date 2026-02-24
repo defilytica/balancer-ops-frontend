@@ -1,6 +1,10 @@
 "use client";
 import React, { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+
+const ReactJson = dynamic(() => import("@microlink/react-json-view").then(mod => mod.default), {
+  ssr: false,
+});
 import {
   Box,
   Button,
@@ -35,8 +39,6 @@ import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { getNetworkString } from "@/lib/utils/getNetworkString";
 
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
-
 const DOMAIN_OPTIONS = [
   { label: "Ethereum", value: "0" },
   { label: "Avalanche", value: "1" },
@@ -57,7 +59,6 @@ const addressMapping: { [key: string]: string } = {
 
 export default function CCTPBridge() {
   const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [inputs, setInputs] = useState<CCTPBridgeInput[]>([
     { value: 0, destinationDomain: "0", mintRecipient: "" },
   ]);
@@ -344,7 +345,10 @@ export default function CCTPBridge() {
               onChange={value => setGeneratedPayload(value)}
             />
           ) : (
-            <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)} />
+            <ReactJson
+              theme={colorMode === "light" ? "rjv-default" : "solarized"}
+              src={JSON.parse(generatedPayload)}
+            />
           )}
           {isEditing && (
             <Button mt="10px" onClick={() => handleSaveEdit(generatedPayload)}>

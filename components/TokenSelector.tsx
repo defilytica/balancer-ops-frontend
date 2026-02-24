@@ -26,7 +26,7 @@ import {
   Divider,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { useState } from "react";
 import { Search2Icon, ChevronDownIcon, AddIcon } from "@chakra-ui/icons";
 import { GetTokensDocument } from "@/lib/services/apollo/generated/graphql";

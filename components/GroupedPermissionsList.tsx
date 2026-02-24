@@ -15,7 +15,7 @@ import {
   HStack,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { FixedSizeList as List } from "react-window";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FormattedDeployment, Permission } from "@/types/interfaces";
 import { formatDeploymentName } from "@/lib/utils/formatDeploymentName";
@@ -89,12 +89,12 @@ const VirtualizedPermissionList = React.memo(
     const hoverBg = useColorModeValue("gray.50", "gray.700");
 
     const RowRenderer = useCallback(
-      ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      ({ index, style }: ListChildComponentProps) => {
         const permission = permissions[index];
         const isSelected = selectedPermissions.includes(permission.actionId);
 
         return (
-          <div style={style}>
+          <div style={style as React.CSSProperties}>
             <PermissionRow
               permission={permission}
               isSelected={isSelected}

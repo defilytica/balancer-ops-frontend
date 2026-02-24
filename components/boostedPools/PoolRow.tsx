@@ -155,7 +155,7 @@ export const PoolRow = ({ token, isLastToken, buffer, blocklist }: PoolRowProps)
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" stackOffset="expand" barSize={24}>
               <XAxis type="number" hide />
-              <YAxis type="category" dataKey="name" hide />
+              <YAxis type="category" hide />
               <RechartsTooltip
                 content={<BufferCardTooltip />}
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}

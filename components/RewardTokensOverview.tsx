@@ -22,7 +22,7 @@ import { useRewardTokenData } from "@/lib/hooks/useRewardTokenData";
 import { RewardTokenData } from "@/types/rewardTokenTypes";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useAccount } from "wagmi";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import {
   GetTokensDocument,
   GetTokensQuery,

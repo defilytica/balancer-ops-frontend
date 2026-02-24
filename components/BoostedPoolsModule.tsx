@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import {
   GetV3PoolsDocument,
   GetV3PoolsQuery,
