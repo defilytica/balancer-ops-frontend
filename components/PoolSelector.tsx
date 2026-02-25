@@ -22,13 +22,13 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
 import { Pool } from "@/types/interfaces";
-import { ApolloError } from "@apollo/client";
+import type { ErrorLike } from "@apollo/client";
 import { GetPoolsQuery } from "@/lib/services/apollo/generated/graphql";
 
 interface PoolSelectorProps {
   pools: GetPoolsQuery["poolGetPools"] | undefined;
   loading: boolean;
-  error: ApolloError | undefined;
+  error: ErrorLike | undefined;
   selectedPool: Pool | null;
   onPoolSelect: (pool: Pool) => void;
   onClearSelection: () => void;

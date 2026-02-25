@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import {
   Box,
   Container,
