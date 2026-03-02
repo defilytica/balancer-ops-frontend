@@ -33,7 +33,7 @@ import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { ArrowUp, ArrowDown } from "react-feather";
 import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { isZeroAddress } from "@ethereumjs/util";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
 import { fetchReclammRangeStatus } from "@/lib/services/fetchReclammRangeStatus";

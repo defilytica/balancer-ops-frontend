@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { Box, Button, Flex, Text, useColorMode, useToast } from "@chakra-ui/react";
 import { CodeiumEditor } from "@codeium/react-code-editor";
 import dynamic from "next/dynamic";
-import { BatchFile } from "@/components/btns/SimulateTransactionButton";
 
-const ReactJson = dynamic(() => import("react-json-view"), {
+const ReactJson = dynamic(() => import("@microlink/react-json-view").then(mod => mod.default), {
   ssr: false,
 });
+import { BatchFile } from "@/components/btns/SimulateTransactionButton";
 
 interface JsonViewerEditorProps {
   jsonData: string | BatchFile | null;
@@ -15,7 +15,6 @@ interface JsonViewerEditorProps {
 
 export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, onJsonChange }) => {
   const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [isEditing, setIsEditing] = useState(false);
   const [localJsonString, setLocalJsonString] = useState("");
   const toast = useToast();
@@ -98,7 +97,7 @@ export const JsonViewerEditor: React.FC<JsonViewerEditorProps> = ({ jsonData, on
         />
       ) : (
         <ReactJson
-          theme={reactJsonTheme}
+          theme={colorMode === "light" ? "rjv-default" : "solarized"}
           src={typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData}
         />
       )}

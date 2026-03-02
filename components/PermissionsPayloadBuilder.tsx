@@ -32,7 +32,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { CopyIcon, DownloadIcon, HamburgerIcon, SearchIcon, ViewIcon } from "@chakra-ui/icons";
-import { FixedSizeList as List } from "react-window";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import { ActionIdsData, AddressBook, Permission, ReverseAddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksForFeature } from "@/constants/networkFeatures";
@@ -336,10 +336,10 @@ const VirtualizedPermissionsList: React.FC<VirtualizedPermissionsListProps> = Re
       return <Text>No matching permissions found</Text>;
     }
 
-    const PermissionRow = ({ index, style }: PermissionRowProps) => {
+    const PermissionRow = ({ index, style }: ListChildComponentProps) => {
       const permission = permissions[index];
       return (
-        <div style={style}>
+        <div style={style as React.CSSProperties}>
           <Checkbox
             isChecked={selectedPermissions.includes(permission.actionId)}
             onChange={() => onToggle(permission.actionId)}

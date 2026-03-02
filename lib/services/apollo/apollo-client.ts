@@ -1,25 +1,15 @@
 import { ApolloLink, HttpLink } from "@apollo/client";
-import {
-  NextSSRApolloClient,
-  NextSSRInMemoryCache,
-  SSRMultipartLink,
-} from "@apollo/experimental-nextjs-app-support/ssr";
+import { ApolloClient, InMemoryCache, SSRMultipartLink } from "@apollo/client-integration-nextjs";
 
 export function createApolloClient() {
   const httpLink = new HttpLink({ uri: "https://api-v3.balancer.fi/" });
 
-  return new NextSSRApolloClient({
-    ssrMode: typeof window === "undefined",
+  return new ApolloClient({
     link:
       typeof window === "undefined"
-        ? ApolloLink.from([
-            new SSRMultipartLink({
-              stripDefer: true,
-            }),
-            httpLink,
-          ])
+        ? ApolloLink.from([new SSRMultipartLink({ stripDefer: true }), httpLink])
         : httpLink,
-    cache: new NextSSRInMemoryCache({
+    cache: new InMemoryCache({
       typePolicies: {
         GqlToken: {
           keyFields: ["address", "chainId"],

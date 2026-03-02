@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useCallback } from "react";
-import dynamic from "next/dynamic";
 import {
   Box,
   Button,
@@ -16,7 +15,6 @@ import {
   Select,
   SimpleGrid,
   Text,
-  useColorMode,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
@@ -29,13 +27,11 @@ import {
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import OpenPRButton from "@/components/btns/OpenPRButton";
-import { CodeiumEditor } from "@codeium/react-code-editor";
+import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { getNetworkString } from "@/lib/utils/getNetworkString";
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 const DOMAIN_OPTIONS = [
   { label: "Ethereum", value: "0" },
@@ -56,8 +52,6 @@ const addressMapping: { [key: string]: string } = {
 };
 
 export default function CCTPBridge() {
-  const { colorMode } = useColorMode();
-  const reactJsonTheme = colorMode === "light" ? "rjv-default" : "solarized";
   const [inputs, setInputs] = useState<CCTPBridgeInput[]>([
     { value: 0, destinationDomain: "0", mintRecipient: "" },
   ]);
@@ -65,7 +59,6 @@ export default function CCTPBridge() {
   const [humanReadableText, setHumanReadableText] = useState<string | null>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isEditing, setIsEditing] = useState(false);
 
   const getPrefillValues = () => {
     // Check if we have any inputs with values
@@ -177,26 +170,6 @@ export default function CCTPBridge() {
       link.download = "BIP-XXX.json";
       link.click();
       URL.revokeObjectURL(link.href);
-    }
-  };
-
-  const handleToggleEdit = () => {
-    setIsEditing(!isEditing);
-  };
-
-  const handleSaveEdit = (editedValue: string) => {
-    try {
-      const parsedJson = JSON.parse(editedValue);
-      setGeneratedPayload(JSON.stringify(parsedJson, null, 2));
-      setIsEditing(false);
-    } catch (error) {
-      toast({
-        title: "Invalid JSON",
-        description: "Please ensure the edited JSON is valid",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
     }
   };
 
@@ -329,28 +302,13 @@ export default function CCTPBridge() {
 
       {generatedPayload && (
         <Box mt="20px">
-          <Flex justifyContent="space-between" alignItems="center" mb="10px">
-            <Text fontSize="lg">Generated JSON Payload:</Text>
-            <Button onClick={handleToggleEdit}>
-              {isEditing ? "Switch to Viewer" : "Switch to Editor"}
-            </Button>
-          </Flex>
-          {isEditing ? (
-            <CodeiumEditor
-              height="400px"
-              language="json"
-              theme="vs-dark"
-              value={generatedPayload}
-              onChange={value => setGeneratedPayload(value)}
-            />
-          ) : (
-            <ReactJson theme={reactJsonTheme} src={JSON.parse(generatedPayload)} />
-          )}
-          {isEditing && (
-            <Button mt="10px" onClick={() => handleSaveEdit(generatedPayload)}>
-              Save Changes
-            </Button>
-          )}
+          <JsonViewerEditor
+            jsonData={generatedPayload}
+            onJsonChange={newJson => {
+              const value = typeof newJson === "string" ? newJson : JSON.stringify(newJson, null, 2);
+              setGeneratedPayload(value);
+            }}
+          />
         </Box>
       )}
 

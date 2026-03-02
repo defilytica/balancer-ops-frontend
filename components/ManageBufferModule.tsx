@@ -29,7 +29,7 @@ import {
   GetTokensQueryVariables,
   TokenListToken,
 } from "@/types/interfaces";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { ChevronRightIcon, CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import {
   Alert,

@@ -36,7 +36,7 @@ import {
   useWriteContract,
   useSwitchChain,
 } from "wagmi";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 import { AddressBook } from "@/types/interfaces";
 import { getCategoryData } from "@/lib/data/maxis/addressBook";

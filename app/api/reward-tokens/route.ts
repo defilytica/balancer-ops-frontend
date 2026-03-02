@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     `;
 
     const apolloClient = createApolloClient();
-    const { data: poolsData } = await apolloClient.query({
+    const { data: poolsData } = await apolloClient.query<any>({
       query: GET_POOLS_WITH_GAUGES,
       variables: {
         chainIn: [chainMapping[networkParam]],
