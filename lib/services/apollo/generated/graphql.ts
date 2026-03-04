@@ -424,6 +424,8 @@ export enum GqlPoolAprItemType {
   Aura = 'AURA',
   /** Dynamic swap fee APR based on data from the last 24h */
   DynamicSwapFee_24H = 'DYNAMIC_SWAP_FEE_24H',
+  /** Rewards distributed by fuul.xyz */
+  Fuul = 'FUUL',
   /** Represents the yield from an IB (Interest-Bearing) asset APR in a pool. */
   IbYield = 'IB_YIELD',
   /** APR in a pool that can be earned through locking, i.e. veBAL */

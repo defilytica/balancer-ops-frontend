@@ -6,6 +6,7 @@ import { ERC20 } from "@/abi/erc20";
 import { RewardTokenData, RewardToken } from "@/types/rewardTokenTypes";
 import { createApolloClient } from "@/lib/services/apollo/apollo-client";
 import { gql } from "@apollo/client";
+import { networkSupportsFeature } from "@/constants/networkFeatures";
 
 const CACHE_DURATION = 300;
 
@@ -13,27 +14,23 @@ export const revalidate = 300;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const networkParam = searchParams.get("network") || "mainnet";
+  const networkParam = searchParams.get("network") || "MAINNET";
   const network = networkParam.toLowerCase();
 
   if (!networks[network]) {
     return NextResponse.json({ error: "Invalid network" }, { status: 400 });
   }
 
+  if (!networkSupportsFeature(networkParam, "gaugeRewards")) {
+    return NextResponse.json(
+      { error: `Network ${networkParam} does not support gauge rewards` },
+      { status: 400 },
+    );
+  }
+
   try {
     const rpcUrl = `${networks[network].rpc}${process.env.DRPC_API_KEY}`;
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-
-    const chainMapping: { [key: string]: string } = {
-      MAINNET: "MAINNET",
-      POLYGON: "POLYGON",
-      ARBITRUM: "ARBITRUM",
-      OPTIMISM: "OPTIMISM",
-      GNOSIS: "GNOSIS",
-      AVALANCHE: "AVALANCHE",
-      BASE: "BASE",
-      SONIC: "SONIC",
-    };
 
     // GraphQL query to fetch pools with gauges
     const GET_POOLS_WITH_GAUGES = gql`
@@ -46,7 +43,6 @@ export async function GET(request: NextRequest) {
           name
           symbol
           type
-          version
           createTime
           swapFeeManager
           staking {
@@ -59,13 +55,11 @@ export async function GET(request: NextRequest) {
             poolId
             totalLiquidity
           }
-          allTokens {
+          poolTokens {
             address
             symbol
             name
             decimals
-            isNested
-            isPhantomBpt
           }
         }
       }
@@ -75,7 +69,7 @@ export async function GET(request: NextRequest) {
     const { data: poolsData } = await apolloClient.query<any>({
       query: GET_POOLS_WITH_GAUGES,
       variables: {
-        chainIn: [chainMapping[networkParam]],
+        chainIn: [networkParam],
       },
     });
 
@@ -134,11 +128,11 @@ export async function GET(request: NextRequest) {
             gaugeAddress,
             version: `v${pool.protocolVersion}`,
             rewardTokens,
-            poolTokens: pool.allTokens || [],
+            poolTokens: pool.poolTokens || [],
             totalLiquidity: pool.dynamicData?.totalLiquidity || "0",
           };
-        } catch (gaugeError) {
-          console.error(`Error fetching gauge data for ${gaugeAddress}:`, gaugeError);
+        } catch {
+          // Expected for gauges that don't support reward_count (v1/killed gauges)
           return {
             poolAddress: pool.address,
             poolId: pool.id,
@@ -147,7 +141,7 @@ export async function GET(request: NextRequest) {
             gaugeAddress,
             version: `v${pool.protocolVersion}`,
             rewardTokens: [],
-            poolTokens: pool.allTokens || [],
+            poolTokens: pool.poolTokens || [],
             totalLiquidity: pool.dynamicData?.totalLiquidity || "0",
           };
         }

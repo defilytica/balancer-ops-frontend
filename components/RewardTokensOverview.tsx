@@ -20,7 +20,8 @@ import { SearchIcon } from "@chakra-ui/icons";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { useRewardTokenData } from "@/lib/hooks/useRewardTokenData";
 import { RewardTokenData } from "@/types/rewardTokenTypes";
-import { NETWORK_OPTIONS, networks } from "@/constants/constants";
+import { networks } from "@/constants/constants";
+import { getNetworksForFeature } from "@/constants/networkFeatures";
 import { useAccount } from "wagmi";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -38,6 +39,8 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+
+  const gaugeRewardsNetworks = useMemo(() => getNetworksForFeature("gaugeRewards"), []);
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -65,9 +68,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       });
       // Include pool tokens
       pool.poolTokens?.forEach(token => {
-        if (!token.isNested && !token.isPhantomBpt) {
-          addresses.add(token.address);
-        }
+        addresses.add(token.address);
       });
     });
     return Array.from(addresses);
@@ -335,7 +336,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         <Box maxW="300px">
           <NetworkSelector
             networks={networks}
-            networkOptions={NETWORK_OPTIONS}
+            networkOptions={gaugeRewardsNetworks}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
             label="Network"
@@ -352,7 +353,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
           <Box maxW="300px">
             <NetworkSelector
               networks={networks}
-              networkOptions={NETWORK_OPTIONS}
+              networkOptions={gaugeRewardsNetworks}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
               label="Network"
@@ -380,7 +381,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
           <Box maxW="300px">
             <NetworkSelector
               networks={networks}
-              networkOptions={NETWORK_OPTIONS}
+              networkOptions={gaugeRewardsNetworks}
               selectedNetwork={selectedNetwork}
               handleNetworkChange={handleNetworkChange}
               label="Network"
@@ -405,7 +406,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         <Box maxW="300px">
           <NetworkSelector
             networks={networks}
-            networkOptions={NETWORK_OPTIONS}
+            networkOptions={gaugeRewardsNetworks}
             selectedNetwork={selectedNetwork}
             handleNetworkChange={handleNetworkChange}
             label="Network"
