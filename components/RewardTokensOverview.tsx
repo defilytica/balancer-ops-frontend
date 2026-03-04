@@ -5,19 +5,20 @@ import {
   AlertIcon,
   Box,
   Button,
-  Checkbox,
   HStack,
   Input,
   InputGroup,
   InputLeftElement,
   Spinner,
   Text,
+  useColorModeValue,
   useDisclosure,
   useToast,
   VStack,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { NetworkSelector } from "@/components/NetworkSelector";
+import { RewardTokensFilters } from "@/components/filter/RewardTokensFilters";
 import { useRewardTokenData } from "@/lib/hooks/useRewardTokenData";
 import { RewardTokenData } from "@/types/rewardTokenTypes";
 import { networks } from "@/constants/constants";
@@ -33,6 +34,13 @@ import RewardTokensTable from "@/components/tables/RewardTokensTable";
 import AddRewardsModal from "@/components/modal/AddRewardsModal";
 import { getExplorerUrl } from "@/lib/utils/getExplorerUrl";
 
+enum Sorting {
+  Asc = "asc",
+  Desc = "desc",
+}
+
+type SortField = "tvl" | "rewardTokenCount" | "status";
+
 interface RewardTokensOverviewProps {}
 
 const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
@@ -46,27 +54,35 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showActiveOnly, setShowActiveOnly] = useState<boolean>(false);
   const [showDistributorOnly, setShowDistributorOnly] = useState<boolean>(false);
+  const [showWithRewardsOnly, setShowWithRewardsOnly] = useState<boolean>(true);
   const [selectedToken, setSelectedToken] = useState<any>(null);
   const [selectedPool, setSelectedPool] = useState<RewardTokenData | null>(null);
   const [injectorAddresses, setInjectorAddresses] = useState<Set<string>>(new Set());
   const [v2InjectorAddresses, setV2InjectorAddresses] = useState<Set<string>>(new Set());
   const [shouldOpenModalOnDataLoad, setShouldOpenModalOnDataLoad] = useState<boolean>(false);
 
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>("tvl");
+  const [sortDirection, setSortDirection] = useState<Sorting>(Sorting.Desc);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+
   const { data, loading, error, refetch } = useRewardTokenData(selectedNetwork);
   const { address, isConnected } = useAccount();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const statBorderColor = useColorModeValue("gray.200", "gray.600");
 
   // Optimized token data fetching with early logo loading
   const tokenAddresses = useMemo(() => {
     if (!data) return [];
     const addresses = new Set<string>();
     data.forEach(pool => {
-      // Include reward tokens
       pool.rewardTokens.forEach(token => {
         addresses.add(token.address);
       });
-      // Include pool tokens
       pool.poolTokens?.forEach(token => {
         addresses.add(token.address);
       });
@@ -75,18 +91,14 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   }, [data]);
 
   // Prefetch token logos as soon as we have the network and any data
-  const { data: tokenData, loading: tokenDataLoading } = useQuery<
-    GetTokensQuery,
-    GetTokensQueryVariables
-  >(GetTokensDocument, {
+  const { data: tokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(GetTokensDocument, {
     variables: {
       chainIn: [selectedNetwork as any],
       tokensIn: tokenAddresses,
     },
     skip: !selectedNetwork || tokenAddresses.length === 0,
-    // Add caching and performance optimizations
     fetchPolicy: "cache-first",
-    errorPolicy: "ignore", // Don't break the UI if token logos fail
+    errorPolicy: "ignore",
   });
 
   // Optimized token logos mapping with memoization
@@ -112,7 +124,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       }
     }
 
-    // If data is loaded and we have all required params, open the modal
     if (data && shouldOpenModalOnDataLoad && gaugeAddress && tokenAddress) {
       const pool = data.find(p => p.gaugeAddress.toLowerCase() === gaugeAddress.toLowerCase());
 
@@ -131,7 +142,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     }
   }, [searchParams, data, selectedNetwork, shouldOpenModalOnDataLoad, onOpen]);
 
-  // Optimized injector address fetching
   // Reset distributor filter when wallet disconnects
   useEffect(() => {
     if (!isConnected || !address) {
@@ -142,7 +152,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   useEffect(() => {
     const fetchAllInjectorAddresses = async () => {
       try {
-        // Use the optimized endpoints from rewards-injector status page
         const [v1Response, v2Response] = await Promise.all([
           fetch("/api/injector/v1/all").catch(() => ({ ok: false, status: 500 })),
           fetch("/api/injector/v2/all").catch(() => ({ ok: false, status: 500 })),
@@ -151,7 +160,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         const addresses = new Set<string>();
         const v2Addresses = new Set<string>();
 
-        // Process V1 data
         if (v1Response.ok) {
           try {
             const v1Data = await (v1Response as Response).json();
@@ -167,7 +175,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
           }
         }
 
-        // Process V2 data (using the bulk endpoint like rewards-injector status page)
         if (v2Response.ok) {
           try {
             const v2Data = await (v2Response as Response).json();
@@ -194,7 +201,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     fetchAllInjectorAddresses();
   }, []);
 
-  // Check if a distributor address is a reward injector
   const isRewardInjector = (distributorAddress: string) => {
     return injectorAddresses.has(distributorAddress.toLowerCase());
   };
@@ -202,11 +208,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
-    // Clear URL params when network changes
     updateUrlParams({});
   };
 
-  // Function to update URL with query parameters
   const updateUrlParams = useCallback(
     (params: Record<string, string>) => {
       const newSearchParams = new URLSearchParams();
@@ -238,24 +242,18 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const openAddRewardsModal = (pool: RewardTokenData, token: any) => {
     setSelectedPool(pool);
     setSelectedToken(token);
-
-    // Update URL with modal parameters (simplified - using gauge as unique identifier)
     updateUrlParams({
       network: selectedNetwork,
       gauge: pool.gaugeAddress,
       token: token.address,
     });
-
     onOpen();
   };
 
   const closeAddRewardsModal = () => {
     setSelectedPool(null);
     setSelectedToken(null);
-
-    // Clear URL params when modal closes
     updateUrlParams({});
-
     onClose();
   };
 
@@ -267,7 +265,6 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       duration: 5000,
       isClosable: true,
     });
-    // Optimized refresh - only refetch if needed
     if (data) {
       refetch();
     }
@@ -280,25 +277,59 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       return pool.rewardTokens.some(token => {
         const rate = parseFloat(token.rate);
         const periodFinish = parseInt(token.period_finish);
-        // Active if rate > 0 and period hasn't finished (or is indefinite with periodFinish = 0)
-        // Fix: If periodFinish > 0 and < currentTime, reward is expired regardless of rate
         if (periodFinish > 0 && periodFinish <= currentTime) {
-          return false; // Expired reward
+          return false;
         }
         return rate > 0;
       });
     };
   }, []);
 
-  // Optimized filter and search logic with memoization
-  const sortedData = useMemo(() => {
-    if (!data) return [];
+  // Sort handler
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+      } else {
+        setSortField(field);
+        setSortDirection(Sorting.Desc);
+      }
+      setCurrentPage(1);
+    },
+    [sortField, sortDirection],
+  );
 
-    // Pre-compute search term for performance
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, showActiveOnly, showDistributorOnly, showWithRewardsOnly, selectedNetwork]);
+
+  // Summary stats from full data
+  const summaryStats = useMemo(() => {
+    if (!data) return { totalWithGauges: 0, activeRewards: 0, uniqueRewardTokens: 0 };
+    const uniqueTokens = new Set<string>();
+    let activeCount = 0;
+    data.forEach(pool => {
+      if (hasActiveRewards(pool)) activeCount++;
+      pool.rewardTokens.forEach(token => uniqueTokens.add(token.address.toLowerCase()));
+    });
+    return {
+      totalWithGauges: data.length,
+      activeRewards: activeCount,
+      uniqueRewardTokens: uniqueTokens.size,
+    };
+  }, [data, hasActiveRewards]);
+
+  // Filter → Sort → Paginate pipeline
+  const filteredData = useMemo(() => {
+    if (!data) return [];
     const lowerSearchTerm = searchTerm.toLowerCase();
 
     return data.filter(pool => {
-      // Search filter - check pool name, symbol, and reward token names/symbols
+      if (showWithRewardsOnly && pool.rewardTokens.length === 0) {
+        return false;
+      }
+
       if (searchTerm) {
         const poolMatches =
           pool.poolName.toLowerCase().includes(lowerSearchTerm) ||
@@ -315,19 +346,85 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         }
       }
 
-      // Active rewards filter
       if (showActiveOnly && !hasActiveRewards(pool)) {
         return false;
       }
 
-      // Distributor filter (only check if user is connected)
       if (showDistributorOnly && (!address || !isDistributorForPool(pool))) {
         return false;
       }
 
       return true;
     });
-  }, [data, searchTerm, showActiveOnly, showDistributorOnly, address, hasActiveRewards]);
+  }, [
+    data,
+    searchTerm,
+    showActiveOnly,
+    showDistributorOnly,
+    showWithRewardsOnly,
+    address,
+    hasActiveRewards,
+  ]);
+
+  const sortedData = useMemo(() => {
+    const sorted = [...filteredData];
+    const currentTime = Math.floor(Date.now() / 1000);
+    sorted.sort((a, b) => {
+      let aValue: number;
+      let bValue: number;
+
+      if (sortField === "tvl") {
+        aValue = parseFloat(a.totalLiquidity || "0");
+        bValue = parseFloat(b.totalLiquidity || "0");
+      } else if (sortField === "rewardTokenCount") {
+        aValue = a.rewardTokens.length;
+        bValue = b.rewardTokens.length;
+      } else {
+        // status: active=1, inactive with tokens=0.5, none=0
+        const getStatusScore = (pool: RewardTokenData) => {
+          if (pool.rewardTokens.length === 0) return 0;
+          const hasActive = pool.rewardTokens.some(token => {
+            const rate = parseFloat(token.rate);
+            const periodFinish = parseInt(token.period_finish);
+            if (periodFinish > 0 && periodFinish <= currentTime) return false;
+            return rate > 0;
+          });
+          return hasActive ? 1 : 0.5;
+        };
+        aValue = getStatusScore(a);
+        bValue = getStatusScore(b);
+      }
+
+      return sortDirection === Sorting.Asc ? aValue - bValue : bValue - aValue;
+    });
+    return sorted;
+  }, [filteredData, sortField, sortDirection]);
+
+  const totalPageCount = Math.max(1, Math.ceil(sortedData.length / pageSize));
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, currentPage, pageSize]);
+
+  const paginationProps = useMemo(
+    () => ({
+      currentPageNumber: currentPage,
+      totalPageCount,
+      pageSize,
+      canPreviousPage: currentPage > 1,
+      canNextPage: currentPage < totalPageCount,
+      goToFirstPage: () => setCurrentPage(1),
+      goToLastPage: () => setCurrentPage(totalPageCount),
+      goToNextPage: () => setCurrentPage(prev => Math.min(prev + 1, totalPageCount)),
+      goToPreviousPage: () => setCurrentPage(prev => Math.max(prev - 1, 1)),
+      setPageSize: (size: number) => {
+        setPageSize(size);
+        setCurrentPage(1);
+      },
+    }),
+    [currentPage, totalPageCount, pageSize],
+  );
 
   // Show network selector first if no network is selected
   if (!selectedNetwork) {
@@ -415,40 +512,59 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         <Button onClick={() => refetch()}>Refresh</Button>
       </HStack>
 
-      <VStack spacing={4} mb={6}>
-        <VStack spacing={3} width="100%" align="start">
-          <InputGroup maxW="400px">
-            <InputLeftElement>
-              <SearchIcon color="gray.500" />
-            </InputLeftElement>
-            <Input
-              placeholder="Search pools or reward tokens..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </InputGroup>
-          <HStack spacing={6}>
-            <Checkbox
-              isChecked={showActiveOnly}
-              onChange={e => setShowActiveOnly(e.target.checked)}
-              colorScheme="green"
-            >
-              Pools with active rewards
-            </Checkbox>
-            <Checkbox
-              isChecked={showDistributorOnly}
-              onChange={e => setShowDistributorOnly(e.target.checked)}
-              colorScheme="blue"
-              isDisabled={!isConnected || !address}
-            >
-              Pools with connected wallet as distributor
-            </Checkbox>
-          </HStack>
-        </VStack>
-      </VStack>
+      <HStack spacing={4} mb={6}>
+        <InputGroup maxW="400px">
+          <InputLeftElement>
+            <SearchIcon color="gray.500" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search pools or reward tokens..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </InputGroup>
+        <RewardTokensFilters
+          showWithRewardsOnly={showWithRewardsOnly}
+          onShowWithRewardsOnlyChange={setShowWithRewardsOnly}
+          showActiveOnly={showActiveOnly}
+          onShowActiveOnlyChange={setShowActiveOnly}
+          showDistributorOnly={showDistributorOnly}
+          onShowDistributorOnlyChange={setShowDistributorOnly}
+          isDistributorDisabled={!isConnected || !address}
+        />
+      </HStack>
+
+      {/* Summary stats */}
+      <HStack spacing={4} mb={6}>
+        <Box px={4} py={3} border="1px" borderColor={statBorderColor} borderRadius="md" flex="1">
+          <Text fontSize="xs" color="font.secondary">
+            Pools with Gauges
+          </Text>
+          <Text fontSize="lg" fontWeight="bold">
+            {summaryStats.totalWithGauges}
+          </Text>
+        </Box>
+        <Box px={4} py={3} border="1px" borderColor={statBorderColor} borderRadius="md" flex="1">
+          <Text fontSize="xs" color="font.secondary">
+            Active Rewards
+          </Text>
+          <Text fontSize="lg" fontWeight="bold" color="green.500">
+            {summaryStats.activeRewards}
+          </Text>
+        </Box>
+        <Box px={4} py={3} border="1px" borderColor={statBorderColor} borderRadius="md" flex="1">
+          <Text fontSize="xs" color="font.secondary">
+            Unique Reward Tokens
+          </Text>
+          <Text fontSize="lg" fontWeight="bold">
+            {summaryStats.uniqueRewardTokens}
+          </Text>
+        </Box>
+      </HStack>
 
       <RewardTokensTable
-        data={sortedData || []}
+        data={paginatedData}
+        loading={loading}
         selectedNetwork={selectedNetwork}
         tokenLogos={tokenLogos}
         injectorAddresses={injectorAddresses}
@@ -458,17 +574,12 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         onAddRewards={openAddRewardsModal}
         getExplorerUrl={(address: string) => getExplorerUrl(selectedNetwork, address)}
         formatEndDate={formatEndDate}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        showPagination={sortedData.length > pageSize}
+        paginationProps={paginationProps}
       />
-
-      {(!sortedData || sortedData.length === 0) && (
-        <Box textAlign="center" py={8}>
-          <Text color="font.secondary">
-            {searchTerm || showActiveOnly || showDistributorOnly
-              ? `No pools or reward tokens found${searchTerm ? ` matching "${searchTerm}"` : ""}${showActiveOnly ? " with active rewards" : ""}${showDistributorOnly ? " where you're a distributor" : ""} on ${selectedNetwork}`
-              : `No pools with gauges found for ${selectedNetwork}`}
-          </Text>
-        </Box>
-      )}
 
       <AddRewardsModal
         isOpen={isOpen}
