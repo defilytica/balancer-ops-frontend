@@ -14,7 +14,7 @@ export const revalidate = 300;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const networkParam = searchParams.get("network") || "MAINNET";
+  const networkParam = (searchParams.get("network") || "MAINNET").toUpperCase();
   const network = networkParam.toLowerCase();
 
   if (!networks[network]) {
