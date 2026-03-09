@@ -546,7 +546,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         </Box>
         <Box px={4} py={3} border="1px" borderColor={statBorderColor} borderRadius="md" flex="1">
           <Text fontSize="xs" color="font.secondary">
-            Active Rewards
+            Gauges with Rewards
           </Text>
           <Text fontSize="lg" fontWeight="bold" color="green.500">
             {summaryStats.activeRewards}
