@@ -14,8 +14,6 @@ export interface PoolToken {
   symbol: string;
   name: string;
   decimals: number;
-  isNested: boolean;
-  isPhantomBpt: boolean;
 }
 
 export interface RewardTokenData {
