@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { ReClammContractData } from "@/types/interfaces";
 
 export interface UseValidateReClammParams {
@@ -22,7 +21,7 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
     reClammContractData,
   } = params;
 
-  const validationResult = useMemo(() => {
+  const validationResult = (() => {
     // Centeredness margin validation
     let centerednessMarginError = "";
     let isCenterednessMarginValid = false;
@@ -178,15 +177,7 @@ export function useValidateReclamm(params: UseValidateReClammParams) {
       // Overall validation
       isValid,
     };
-  }, [
-    centerednessMargin,
-    dailyPriceShiftExponent,
-    endPriceRatio,
-    priceRatioUpdateStartTime,
-    priceRatioUpdateEndTime,
-    stopPriceRatioUpdate,
-    reClammContractData,
-  ]);
+  })();
 
   return validationResult;
 }

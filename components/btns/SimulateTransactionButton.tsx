@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import axios, { AxiosError } from "axios";
 import { Button, Box, Text, Link, useToast, Flex, Badge } from "@chakra-ui/react";
 
@@ -42,7 +42,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const toast = useToast();
 
-  const simulateTransaction = useCallback(async (): Promise<void> => {
+  const simulateTransaction = async (): Promise<void> => {
     setIsSimulating(true);
     setSimulationResult(null); // Reset the simulation result before starting a new simulation
     try {
@@ -142,7 +142,7 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
     } finally {
       setIsSimulating(false);
     }
-  }, [batchFile, toast]);
+  };
 
   const getTenderlyLink = (): string | null => {
     return simulationResult?.url ?? null;

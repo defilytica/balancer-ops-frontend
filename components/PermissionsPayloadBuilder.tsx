@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   Badge,
   Box,
@@ -195,7 +195,7 @@ function useDebounce<T>(value: T, delay: number): T {
 const PermissionTag: React.FC<PermissionTagProps> = React.memo(
   ({ permission, description, deployment, onRemove }) => {
     // Format deployment info for better readability
-    const formattedDeployment = useMemo(() => {
+    const formattedDeployment = (() => {
       if (!deployment) return null;
 
       try {
@@ -218,7 +218,7 @@ const PermissionTag: React.FC<PermissionTagProps> = React.memo(
       } catch {
         return { date: "", version: "v2" };
       }
-    }, [deployment]);
+    })();
 
     // Extract contract and function name from description
     const [contract, funcName] = description.split(".");
@@ -504,26 +504,22 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   }, [debouncedSearchTerm, permissionsState.allPermissions]);
 
   // Memoized sorted and paginated permissions
-  const sortedCurrentPermissions = useMemo((): string[] => {
-    return [...permissionsState.currentPermissions].sort((a, b) => {
-      const descA = permissionsState.actionIdDescriptions[a] || a;
-      const descB = permissionsState.actionIdDescriptions[b] || b;
-      return descA.toLowerCase().localeCompare(descB.toLowerCase());
-    });
-  }, [permissionsState.currentPermissions, permissionsState.actionIdDescriptions]);
+  const sortedCurrentPermissions = [...permissionsState.currentPermissions].sort((a, b) => {
+    const descA = permissionsState.actionIdDescriptions[a] || a;
+    const descB = permissionsState.actionIdDescriptions[b] || b;
+    return descA.toLowerCase().localeCompare(descB.toLowerCase());
+  });
 
-  const paginatedPermissions = useMemo((): string[] => {
+  const paginatedPermissions = ((): string[] => {
     const startIndex = (permissionsState.currentPage - 1) * permissionsState.permissionsPerPage;
     const endIndex = startIndex + permissionsState.permissionsPerPage;
     return sortedCurrentPermissions.slice(startIndex, endIndex);
-  }, [sortedCurrentPermissions, permissionsState.currentPage, permissionsState.permissionsPerPage]);
+  })();
 
-  const totalPages = useMemo((): number => {
-    return Math.ceil(sortedCurrentPermissions.length / permissionsState.permissionsPerPage);
-  }, [sortedCurrentPermissions, permissionsState.permissionsPerPage]);
+  const totalPages = Math.ceil(sortedCurrentPermissions.length / permissionsState.permissionsPerPage);
 
   // Load wallets for the selected network
-  const loadWallets = useCallback((): void => {
+  const loadWallets = (): void => {
     const multisigs = getCategoryData(addressBook, selectedNetwork, "multisigs");
     const formattedAddresses: Record<string, string> = {};
 
@@ -560,10 +556,10 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     dispatchPermissions({ type: "RESET_PERMISSIONS" });
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  }, [selectedNetwork, addressBook]);
+  };
 
   // Load reverse lookup data
-  const loadReverseLookup = useCallback(async (): Promise<boolean> => {
+  const loadReverseLookup = async (): Promise<boolean> => {
     try {
       const response = await fetch(
         `https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/${selectedNetwork}_reverse.json`,
@@ -586,10 +582,10 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       });
       return false;
     }
-  }, [selectedNetwork, toast]);
+  };
 
   // Load action IDs
-  const loadActionIds = useCallback(async (): Promise<boolean> => {
+  const loadActionIds = async (): Promise<boolean> => {
     try {
       const response = await fetch(
         `https://raw.githubusercontent.com/balancer/balancer-deployments/master/action-ids/${selectedNetwork}/action-ids.json`,
@@ -645,10 +641,10 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       dispatchPermissions({ type: "SET_LOADING", payload: false });
       return false;
     }
-  }, [selectedNetwork, toast]);
+  };
 
   // Load wallet permissions
-  const loadWalletPermissions = useCallback(async (): Promise<void> => {
+  const loadWalletPermissions = async (): Promise<void> => {
     try {
       dispatchPermissions({ type: "SET_PERMISSIONS_LOADING", payload: true });
 
@@ -697,10 +693,10 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       });
       dispatchPermissions({ type: "SET_PERMISSIONS_LOADING", payload: false });
     }
-  }, [selectedNetwork, selectedWallet, toast]);
+  };
 
   // Handle network change
-  const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const selectedApiID = e.target.value;
 
     // First find the network option by apiID
@@ -711,36 +707,36 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     dispatchPermissions({ type: "RESET_PERMISSIONS" });
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  }, []);
+  };
 
   // Handle wallet selection
-  const handleWalletSelect = useCallback((address: string): void => {
+  const handleWalletSelect = (address: string): void => {
     setSelectedWallet(address);
     setCustomWalletInput("");
     dispatchPermissions({ type: "CLEAR_SELECTED_PERMISSIONS" });
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  }, []);
+  };
 
   // Toggle permission selection
-  const handlePermissionToggle = useCallback((actionId: string): void => {
+  const handlePermissionToggle = (actionId: string): void => {
     dispatchPermissions({ type: "TOGGLE_PERMISSION", payload: actionId });
-  }, []);
+  };
 
   // Remove selected permission
-  const removeSelectedPermission = useCallback((actionId: string): void => {
+  const removeSelectedPermission = (actionId: string): void => {
     dispatchPermissions({ type: "REMOVE_PERMISSION", payload: actionId });
-  }, []);
+  };
 
   // Handle pagination
-  const handlePageChange = useCallback((newPage: number): void => {
+  const handlePageChange = (newPage: number): void => {
     dispatchPermissions({ type: "SET_PAGE", payload: newPage });
-  }, []);
+  };
 
   // Handle permissions per page change
-  const handlePermissionsPerPageChange = useCallback((value: number): void => {
+  const handlePermissionsPerPageChange = (value: number): void => {
     dispatchPermissions({ type: "SET_PER_PAGE", payload: value });
-  }, []);
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -817,39 +813,36 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   };
 
   // Toggle view type
-  const toggleViewType = useCallback((): void => {
+  const toggleViewType = (): void => {
     setPermissionViewType(prevType =>
       prevType === PermissionViewType.LIST ? PermissionViewType.GROUPED : PermissionViewType.LIST,
     );
-  }, []);
+  };
 
   const [permissionsToRevoke, setPermissionsToRevoke] = useState<string[]>([]);
 
   // Add function to toggle permission revocation
-  const togglePermissionRevocation = useCallback((actionId: string): void => {
+  const togglePermissionRevocation = (actionId: string): void => {
     setPermissionsToRevoke(prev =>
       prev.includes(actionId) ? prev.filter(id => id !== actionId) : [...prev, actionId],
     );
-  }, []);
+  };
 
   // Copy to clipboard utility
-  const copyToClipboard = useCallback(
-    (text: string): void => {
-      navigator.clipboard.writeText(text).catch(err => {
-        console.error("Failed to copy to clipboard:", err);
-      });
-      toast({
-        title: "Copied to clipboard!",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
-    },
-    [toast],
-  );
+  const copyToClipboard = (text: string): void => {
+    navigator.clipboard.writeText(text).catch(err => {
+      console.error("Failed to copy to clipboard:", err);
+    });
+    toast({
+      title: "Copied to clipboard!",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
 
   // Generate payload
-  const generatePayload = useCallback((): void => {
+  const generatePayload = (): void => {
     if (permissionsState.selectedPermissions.length === 0 && permissionsToRevoke.length === 0) {
       toast({
         title: "No permissions selected",
@@ -968,20 +961,9 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
     }
 
     setHumanReadableText(humanReadable);
-  }, [
-    permissionsState.selectedPermissions,
-    permissionsState.actionIdDescriptions,
-    permissionsToRevoke,
-    selectedWallet,
-    selectedNetwork,
-    filteredNetworkOptions,
-    daoAddress,
-    authorizerAdaptor,
-    availableWallets,
-    toast,
-  ]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -1004,20 +986,17 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       },
       builderPath: "permissions",
     };
-  }, [generatedPayload, permissionsState.selectedPermissions, permissionsToRevoke, selectedWallet]);
+  };
 
   // Handle search input change
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchTerm(e.target.value);
-  }, []);
+  };
 
   // Get permission description helper
-  const getPermissionDescription = useCallback(
-    (actionId: string): string => {
-      return permissionsState.actionIdDescriptions[actionId] || actionId;
-    },
-    [permissionsState.actionIdDescriptions],
-  );
+  const getPermissionDescription = (actionId: string): string => {
+    return permissionsState.actionIdDescriptions[actionId] || actionId;
+  };
 
   return (
     <Container maxW="container.xl">

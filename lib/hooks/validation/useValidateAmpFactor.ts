@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 // Constants for amplification factor validation
 export const AMP_FACTOR_PARAMS = {
   MIN: 1,
@@ -27,7 +25,7 @@ export interface AmpFactorValidationResult {
 export function useValidateAmpFactor(params: AmpFactorValidationParams): AmpFactorValidationResult {
   const { value, currentAmp, endDateTime } = params;
 
-  const validationResult = useMemo(() => {
+  const validationResult = (() => {
     let ampFactorError: string | null = null;
     let rateLimitInfo: AmpFactorValidationResult["rateLimitInfo"] = null;
 
@@ -92,7 +90,7 @@ export function useValidateAmpFactor(params: AmpFactorValidationParams): AmpFact
       isValid: !ampFactorError && !!value,
       rateLimitInfo,
     };
-  }, [value, currentAmp, endDateTime]);
+  })();
 
   return validationResult;
 }

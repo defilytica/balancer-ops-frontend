@@ -27,7 +27,7 @@ import { ArrowUp, ArrowDown } from "react-feather";
 import { formatHookAttributes } from "@/lib/data/useFormattedHookAttributes";
 import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { isZeroAddress } from "@ethereumjs/util";
 import { HookType } from "@/components/HookParametersDashboardModule";
@@ -63,61 +63,49 @@ export const HookParametersTable = ({
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<Sorting>(Sorting.Desc);
 
-  const getConfigRoute = useCallback(
-    (pool: Pool) => {
-      const network = pool.chain.toLowerCase();
-      const route =
-        selectedHookType === "STABLE_SURGE" ? "/hooks/stable-surge" : "/hooks/mev-capture";
-      return `${route}?network=${network}&pool=${pool.address}`;
-    },
-    [selectedHookType],
-  );
+  const getConfigRoute = (pool: Pool) => {
+    const network = pool.chain.toLowerCase();
+    const route =
+      selectedHookType === "STABLE_SURGE" ? "/hooks/stable-surge" : "/hooks/mev-capture";
+    return `${route}?network=${network}&pool=${pool.address}`;
+  };
 
-  const getOwnerType = useCallback(
-    (pool: Pool) => {
-      const network = pool.chain.toLowerCase();
-      const multisig = getMultisigForNetwork(addressBook, network);
+  const getOwnerType = (pool: Pool) => {
+    const network = pool.chain.toLowerCase();
+    const multisig = getMultisigForNetwork(addressBook, network);
 
-      // Early return for zero address
-      if (isZeroAddress(pool.swapFeeManager)) {
-        return "DAO";
-      }
+    // Early return for zero address
+    if (isZeroAddress(pool.swapFeeManager)) {
+      return "DAO";
+    }
 
-      if (multisig && pool.swapFeeManager.toLowerCase() === multisig.toLowerCase()) {
-        return "DAO";
-      }
+    if (multisig && pool.swapFeeManager.toLowerCase() === multisig.toLowerCase()) {
+      return "DAO";
+    }
 
-      return "EOA";
-    },
-    [addressBook],
-  );
+    return "EOA";
+  };
 
-  const getNetworkNameForUrl = useCallback((chainName: string) => {
+  const getNetworkNameForUrl = (chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
-  }, []);
+  };
 
-  const getPoolUrl = useCallback(
-    (pool: Pool) => {
-      const networkName = getNetworkNameForUrl(pool.chain);
-      return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
-    },
-    [getNetworkNameForUrl],
-  );
+  const getPoolUrl = (pool: Pool) => {
+    const networkName = getNetworkNameForUrl(pool.chain);
+    return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
+  };
 
-  const handleSort = useCallback(
-    (field: SortField) => {
-      if (sortField === field) {
-        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
-      } else {
-        setSortField(field);
-        setSortDirection(Sorting.Desc);
-      }
-    },
-    [sortField, sortDirection],
-  );
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+    } else {
+      setSortField(field);
+      setSortDirection(Sorting.Desc);
+    }
+  };
 
   // Filter pools based on selected hook type and minimum TVL
-  const filteredPools = useMemo(() => {
+  const filteredPools = (() => {
     let filtered = pools.filter(pool => {
       // Filter by hook type
       const hookTypeMatch =
@@ -173,15 +161,15 @@ export const HookParametersTable = ({
     }
 
     return filtered;
-  }, [pools, selectedHookType, minTvl, sortField, sortDirection]);
+  })();
 
   // Get parameter names from the first pool with the selected hook type
-  const parameterNames = useMemo(() => {
+  const parameterNames = (() => {
     if (filteredPools.length === 0) return [];
     const firstPool = filteredPools[0];
     const hookAttributes = formatHookAttributes(firstPool, false);
     return hookAttributes.map(attr => attr.title);
-  }, [filteredPools]);
+  })();
 
   return (
     <TableContainer

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Table,
@@ -44,49 +44,41 @@ export const CorePoolsTable = ({ pools }: CorePoolsTableProps) => {
   const [sortField, setSortField] = useState<SortField>("earned_fees");
   const [sortDirection, setSortDirection] = useState<Sorting>(Sorting.Desc);
 
-  const getNetworkNameForUrl = useCallback((chainName: string) => {
+  const getNetworkNameForUrl = (chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
-  }, []);
+  };
 
-  const getPoolUrl = useCallback(
-    (poolData: EnrichedCorePoolData) => {
-      const networkName = getNetworkNameForUrl(poolData.chain);
-      return `https://balancer.fi/pools/${networkName}/v3/${poolData.pool_id}`;
-    },
-    [getNetworkNameForUrl],
-  );
+  const getPoolUrl = (poolData: EnrichedCorePoolData) => {
+    const networkName = getNetworkNameForUrl(poolData.chain);
+    return `https://balancer.fi/pools/${networkName}/v3/${poolData.pool_id}`;
+  };
 
-  const handleSort = useCallback(
-    (field: SortField) => {
-      if (sortField === field) {
-        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
-      } else {
-        setSortField(field);
-        setSortDirection(Sorting.Desc);
-      }
-    },
-    [sortField, sortDirection],
-  );
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+    } else {
+      setSortField(field);
+      setSortDirection(Sorting.Desc);
+    }
+  };
 
-  const sortedPools = useMemo(() => {
-    return [...pools].sort((a, b) => {
-      let aValue: number;
-      let bValue: number;
+  const sortedPools = [...pools].sort((a, b) => {
+    let aValue: number;
+    let bValue: number;
 
-      if (sortField === "earned_fees") {
-        aValue = a.earned_fees;
-        bValue = b.earned_fees;
-      } else if (sortField === "feesToVotingIncentives") {
-        aValue = a.feesToVotingIncentives;
-        bValue = b.feesToVotingIncentives;
-      } else {
-        aValue = 0;
-        bValue = 0;
-      }
+    if (sortField === "earned_fees") {
+      aValue = a.earned_fees;
+      bValue = b.earned_fees;
+    } else if (sortField === "feesToVotingIncentives") {
+      aValue = a.feesToVotingIncentives;
+      bValue = b.feesToVotingIncentives;
+    } else {
+      aValue = 0;
+      bValue = 0;
+    }
 
-      return sortDirection === Sorting.Asc ? aValue - bValue : bValue - aValue;
-    });
-  }, [pools, sortField, sortDirection]);
+    return sortDirection === Sorting.Asc ? aValue - bValue : bValue - aValue;
+  });
 
   return (
     <TableContainer

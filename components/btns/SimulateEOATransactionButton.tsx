@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { Button, Box, Text, Link, useToast, Flex, Badge } from "@chakra-ui/react";
 import { ethers } from "ethers";
 import { SimulationResult, SimulationTransaction } from "@/types/interfaces";
@@ -20,7 +20,7 @@ export default function SimulateTransactionButton({
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const toast = useToast();
 
-  const simulateTransaction = useCallback(async (): Promise<void> => {
+  const simulateTransaction = async (): Promise<void> => {
     if (!window.ethereum) {
       toast({
         title: "Wallet not connected",
@@ -115,7 +115,7 @@ export default function SimulateTransactionButton({
     } finally {
       setIsSimulating(false);
     }
-  }, [transactions, networkId, toast]);
+  };
 
   return (
     <Box borderRadius="lg" p={2} maxWidth="300px">

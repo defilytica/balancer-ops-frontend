@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -390,7 +390,7 @@ function RewardsInjectorConfiguratorV2({
     }
   };
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (!selectedAddress)
       return {
         prefillBranchName: "",
@@ -414,15 +414,9 @@ function RewardsInjectorConfiguratorV2({
       prefillDescription: `This PR updates the rewards injector at ${selectedAddress.address} by ${summaryInfo} on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [
-    selectedAddress,
-    editedGauges.size,
-    newlyAddedGauges.length,
-    tokenSymbol,
-    removedGauges.length,
-  ]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -445,7 +439,7 @@ function RewardsInjectorConfiguratorV2({
       },
       builderPath: "injector-configurator",
     };
-  }, [generatedPayload]);
+  };
 
   return (
     <Container maxW="container.xl">

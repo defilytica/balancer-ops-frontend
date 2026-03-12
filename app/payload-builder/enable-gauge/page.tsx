@@ -24,7 +24,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -64,7 +64,7 @@ export default function EnableGaugePage() {
     setHumanReadableText(text);
   };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -91,7 +91,7 @@ export default function EnableGaugePage() {
       },
       builderPath: "enable-gauge",
     };
-  }, [generatedPayload, humanReadableText]);
+  };
 
   // Simplified network options to handle gauge adder special use-case
   const networkOptions = Object.entries(GAUGE_NETWORK_MAP)

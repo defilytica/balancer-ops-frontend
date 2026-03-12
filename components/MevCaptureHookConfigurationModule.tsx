@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -138,14 +138,9 @@ export default function MevCaptureHookConfigurationModule({
     skip: !selectedNetwork,
   });
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network),
-    [addressBook],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network);
 
-  const networkOptions = useMemo(() => {
-    return getNetworksForFeature("mevCaptureHook");
-  }, []);
+  const networkOptions = getNetworksForFeature("mevCaptureHook");
 
   // Handle URL parameters for pre-selection
   useEffect(() => {
@@ -178,36 +173,33 @@ export default function MevCaptureHookConfigurationModule({
     }
   }, [searchParams, data?.poolGetPools, selectedNetwork]);
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewMevTaxThreshold("");
-      setNewMevTaxMultiplier("");
-      setIsCurrentWalletManager(false);
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewMevTaxThreshold("");
+    setNewMevTaxMultiplier("");
+    setIsCurrentWalletManager(false);
 
-      // Find the corresponding chain ID for the selected network
-      const networkOption = networkOptions.find(n => n.apiID === newNetwork);
-      if (networkOption) {
-        try {
-          switchChain({ chainId: Number(networkOption.chainId) });
-        } catch (error) {
-          toast({
-            title: "Error switching network",
-            description: "Please switch network manually in your wallet",
-            status: "error",
-            duration: 5000,
-          });
-        }
+    // Find the corresponding chain ID for the selected network
+    const networkOption = networkOptions.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
       }
-    },
-    [resolveMultisig, networkOptions, switchChain, toast],
-  );
+    }
+  };
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     // Make sure we have a selected pool and at least one parameter changed
     if (!selectedPool || (!debouncedMevTaxThreshold && !debouncedMevTaxMultiplier)) return {};
 
@@ -254,7 +246,7 @@ export default function MevCaptureHookConfigurationModule({
       prefillDescription: `This PR ${changes.join(" and ")} for ${poolName} (${shortPoolId}) on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedNetwork, debouncedMevTaxThreshold, debouncedMevTaxMultiplier]);
+  };
 
   const handlePoolSelect = (pool: Pool) => {
     setSelectedPool(pool);
@@ -464,31 +456,27 @@ export default function MevCaptureHookConfigurationModule({
       : "0";
 
   // API returns value in ETH, convert to GWei for display (1 ETH = 10^9 GWei)
-  const displayCurrentMevTaxThreshold = useMemo(() => {
+  const displayCurrentMevTaxThreshold = (() => {
     if (!currentMevTaxThreshold || currentMevTaxThreshold === "0") return "0";
     return formatGwei(parseEther(currentMevTaxThreshold)).toString();
-  }, [currentMevTaxThreshold]);
+  })();
 
   // Convert from Ether to MEther (divide by 1e6)
-  const displayCurrentMevTaxMultiplier = useMemo(() => {
+  const displayCurrentMevTaxMultiplier = (() => {
     if (!currentMevTaxMultiplier || currentMevTaxMultiplier === "0") return "0";
     return (Number(currentMevTaxMultiplier) / 1e6).toString();
-  }, [currentMevTaxMultiplier]);
+  })();
 
-  const isAuthorizedPool = useMemo(() => {
+  const isAuthorizedPool = (() => {
     if (!selectedPool?.swapFeeManager) return false;
     return (
       isZeroAddress(selectedPool.swapFeeManager) ||
       selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
     );
-  }, [selectedPool, selectedMultisig]);
+  })();
 
   // Determine if we need to check the address type
-  const shouldCheckAddressType = useMemo(() => {
-    return (
-      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
-    );
-  }, [selectedPool, selectedNetwork]);
+  const shouldCheckAddressType = (selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager));
 
   // React Query for address type checking
   const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
@@ -498,7 +486,7 @@ export default function MevCaptureHookConfigurationModule({
     staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
   });
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -528,7 +516,7 @@ export default function MevCaptureHookConfigurationModule({
       params: extractedParams,
       builderPath: "hook-mev-capture",
     };
-  }, [generatedPayload]);
+  };
 
   return (
     <Container maxW="container.lg">

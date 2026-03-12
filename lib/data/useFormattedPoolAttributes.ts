@@ -1,8 +1,7 @@
-import { useMemo } from "react";
 import { Pool } from "@/types/interfaces";
 
 export function useFormattedPoolAttributes(pool: Pool | null) {
-  return useMemo(() => {
+  return (() => {
     if (!pool) return [];
 
     return [
@@ -23,5 +22,5 @@ export function useFormattedPoolAttributes(pool: Pool | null) {
       },
       { title: "Pool ID", value: pool.dynamicData.poolId },
     ].filter(attribute => attribute.value !== undefined && attribute.value !== null);
-  }, [pool]);
+  })();
 }

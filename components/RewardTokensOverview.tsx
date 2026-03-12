@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Alert,
@@ -48,7 +48,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const gaugeRewardsNetworks = useMemo(() => getNetworksForFeature("gaugeRewards"), []);
+  const gaugeRewardsNetworks = getNetworksForFeature("gaugeRewards");
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -76,7 +76,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   const statBorderColor = useColorModeValue("gray.200", "gray.600");
 
   // Optimized token data fetching with early logo loading
-  const tokenAddresses = useMemo(() => {
+  const tokenAddresses = (() => {
     if (!data) return [];
     const addresses = new Set<string>();
     data.forEach(pool => {
@@ -88,7 +88,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       });
     });
     return Array.from(addresses);
-  }, [data]);
+  })();
 
   // Prefetch token logos as soon as we have the network and any data
   const { data: tokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(GetTokensDocument, {
@@ -102,14 +102,14 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   });
 
   // Optimized token logos mapping with memoization
-  const tokenLogos = useMemo(() => {
+  const tokenLogos = (() => {
     if (!tokenData?.tokenGetTokens) return {};
     const logoMap: { [address: string]: string } = {};
     tokenData.tokenGetTokens.forEach(token => {
       logoMap[token.address.toLowerCase()] = token.logoURI || "";
     });
     return logoMap;
-  }, [tokenData]);
+  })();
 
   // Process URL parameters on initial load and network/data changes
   useEffect(() => {
@@ -211,18 +211,15 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
     updateUrlParams({});
   };
 
-  const updateUrlParams = useCallback(
-    (params: Record<string, string>) => {
-      const newSearchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value) newSearchParams.set(key, value);
-      });
-      const queryString = newSearchParams.toString();
-      const url = queryString ? `${pathname}?${queryString}` : pathname;
-      router.replace(url, { scroll: false });
-    },
-    [pathname, router],
-  );
+  const updateUrlParams = (params: Record<string, string>) => {
+    const newSearchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) newSearchParams.set(key, value);
+    });
+    const queryString = newSearchParams.toString();
+    const url = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(url, { scroll: false });
+  };
 
   const formatEndDate = (periodFinish: string) => {
     const timestamp = parseInt(periodFinish);
@@ -271,7 +268,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   };
 
   // Memoized function to check if pool has active rewards
-  const hasActiveRewards = useMemo(() => {
+  const hasActiveRewards = (() => {
     const currentTime = Math.floor(Date.now() / 1000);
     return (pool: RewardTokenData) => {
       return pool.rewardTokens.some(token => {
@@ -283,21 +280,18 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
         return rate > 0;
       });
     };
-  }, []);
+  })();
 
   // Sort handler
-  const handleSort = useCallback(
-    (field: SortField) => {
-      if (sortField === field) {
-        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
-      } else {
-        setSortField(field);
-        setSortDirection(Sorting.Desc);
-      }
-      setCurrentPage(1);
-    },
-    [sortField, sortDirection],
-  );
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+    } else {
+      setSortField(field);
+      setSortDirection(Sorting.Desc);
+    }
+    setCurrentPage(1);
+  };
 
   // Reset page when filters change
   useEffect(() => {
@@ -305,7 +299,7 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
   }, [searchTerm, showActiveOnly, showDistributorOnly, showWithRewardsOnly, selectedNetwork]);
 
   // Summary stats from full data
-  const summaryStats = useMemo(() => {
+  const summaryStats = (() => {
     if (!data) return { totalWithGauges: 0, activeRewards: 0, uniqueRewardTokens: 0 };
     const uniqueTokens = new Set<string>();
     let activeCount = 0;
@@ -318,10 +312,10 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       activeRewards: activeCount,
       uniqueRewardTokens: uniqueTokens.size,
     };
-  }, [data, hasActiveRewards]);
+  })();
 
   // Filter → Sort → Paginate pipeline
-  const filteredData = useMemo(() => {
+  const filteredData = (() => {
     if (!data) return [];
     const lowerSearchTerm = searchTerm.toLowerCase();
 
@@ -356,17 +350,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
       return true;
     });
-  }, [
-    data,
-    searchTerm,
-    showActiveOnly,
-    showDistributorOnly,
-    showWithRewardsOnly,
-    address,
-    hasActiveRewards,
-  ]);
+  })();
 
-  const sortedData = useMemo(() => {
+  const sortedData = (() => {
     const sorted = [...filteredData];
     const currentTime = Math.floor(Date.now() / 1000);
     sorted.sort((a, b) => {
@@ -398,14 +384,14 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
       return sortDirection === Sorting.Asc ? aValue - bValue : bValue - aValue;
     });
     return sorted;
-  }, [filteredData, sortField, sortDirection]);
+  })();
 
   const totalPageCount = Math.max(1, Math.ceil(sortedData.length / pageSize));
 
-  const paginatedData = useMemo(() => {
+  const paginatedData = (() => {
     const start = (currentPage - 1) * pageSize;
     return sortedData.slice(start, start + pageSize);
-  }, [sortedData, currentPage, pageSize]);
+  })();
 
   const paginationProps = useMemo(
     () => ({

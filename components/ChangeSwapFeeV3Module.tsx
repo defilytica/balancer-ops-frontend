@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -116,50 +116,44 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     },
   );
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network),
-    [addressBook],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network);
 
-  const networkOptionsWithV3 = useMemo(() => {
+  const networkOptionsWithV3 = (() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
-  }, [addressBook]);
+  })();
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewSwapFee("");
-      setIsCurrentWalletManager(false);
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewSwapFee("");
+    setIsCurrentWalletManager(false);
 
-      // Find the corresponding chain ID for the selected network
-      const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
-      if (networkOption) {
-        try {
-          switchChain({ chainId: Number(networkOption.chainId) });
-        } catch (error) {
-          toast({
-            title: "Error switching network",
-            description: "Please switch network manually in your wallet",
-            status: "error",
-            duration: 5000,
-          });
-        }
+    // Find the corresponding chain ID for the selected network
+    const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
       }
-    },
-    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
-  );
+    }
+  };
 
   // Check manager status when pool is selected
-  const handlePoolSelection = useCallback(async (pool: Pool) => {
+  const handlePoolSelection = async (pool: Pool) => {
     setSelectedPool(pool); // Set pool immediately for UI update
-  }, []);
+  };
 
   const clearPoolSelection = () => {
     setSelectedPool(null);
@@ -283,20 +277,16 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
   const newFee = debouncedSwapFee ? parseFloat(debouncedSwapFee) : currentFee;
 
   // Check if the pool is authorized for DAO governance (zero address or matches the multisig)
-  const isAuthorizedPool = useMemo(() => {
+  const isAuthorizedPool = (() => {
     if (!selectedPool?.swapFeeManager) return false;
     return (
       isZeroAddress(selectedPool.swapFeeManager) ||
       selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
     );
-  }, [selectedPool, selectedMultisig]);
+  })();
 
   // Determine if we need to check the address type
-  const shouldCheckAddressType = useMemo(() => {
-    return (
-      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
-    );
-  }, [selectedPool, selectedNetwork]);
+  const shouldCheckAddressType = (selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager));
 
   // React Query for address type checking
   const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
@@ -306,7 +296,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
     staleTime: 5 * 60 * 1000, // 5 minutes - addresses don't change type often
   });
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     // Make sure we have a selected pool and new swap fee
     if (!selectedPool || !debouncedSwapFee)
       return {
@@ -344,9 +334,9 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedPool, debouncedSwapFee, selectedNetwork]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -366,7 +356,7 @@ export default function ChangeSwapFeeV3Module({ addressBook }: { addressBook: Ad
       },
       builderPath: "fee-setter-v3",
     };
-  }, [generatedPayload]);
+  };
 
   return (
     <Container maxW="container.lg">

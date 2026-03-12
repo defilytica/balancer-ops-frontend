@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -48,12 +48,12 @@ export default function ComposerPayloadViewer({
   const iconColor = useColorModeValue("gray.400", "gray.500");
 
   // Format the payload for display
-  const formattedPayload = useMemo(() => {
+  const formattedPayload = (() => {
     if (!combinationResult.success || !combinationResult.payload || hasErrors) {
       return null;
     }
     return JSON.stringify(combinationResult.payload, null, 2);
-  }, [combinationResult, hasErrors]);
+  })();
 
   // Update edited payload when the base payload changes
   useEffect(() => {
@@ -66,12 +66,12 @@ export default function ComposerPayloadViewer({
   const currentPayload = hasManualEdits ? editedPayload : formattedPayload || "";
 
   // Get primary network for PR creation
-  const primaryNetwork = useMemo(() => {
+  const primaryNetwork = (() => {
     if (!combinationResult.payload?.chainId) return "";
     return getNetworkString(Number(combinationResult.payload.chainId));
-  }, [combinationResult.payload?.chainId]);
+  })();
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (!currentPayload || operations.length === 0) {
       return {
         prefillBranchName: "",
@@ -118,7 +118,7 @@ export default function ComposerPayloadViewer({
       prefillDescription: `This PR combines ${operations.length} operations into a single transaction on ${networkName}:\n\n${operationsList}`,
       prefillFilename: `${networkPath}/combined-operations-${uniqueId}.json`,
     };
-  }, [currentPayload, operations, combinationResult.metadata.networks]);
+  };
 
   const handleOpenPRModal = () => {
     if (currentPayload) {

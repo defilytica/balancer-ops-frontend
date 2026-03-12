@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -105,13 +105,10 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
     },
   );
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network),
-    [addressBook],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network);
 
   // Get ProtocolFeeController address for the selected network
-  const protocolFeeControllerAddress = useMemo(() => {
+  const protocolFeeControllerAddress = (() => {
     if (!selectedNetwork) return "";
     const address = getAddress(
       addressBook,
@@ -120,9 +117,9 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
       "ProtocolFeeController",
     );
     return address || "";
-  }, [addressBook, selectedNetwork]);
+  })();
 
-  const networkOptionsWithV3 = useMemo(() => {
+  const networkOptionsWithV3 = (() => {
     const networksWithV3 = getNetworksWithCategory(
       addressBook,
       "20250214-v3-protocol-fee-controller-v2",
@@ -130,7 +127,7 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
     return NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
-  }, [addressBook]);
+  })();
 
   // Track which pool we've already fetched fees for to prevent re-fetching
   const [lastFetchedPoolAddress, setLastFetchedPoolAddress] = useState<string | null>(null);
@@ -196,49 +193,46 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
     lastFetchedPoolAddress,
   ]);
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewProtocolSwapFee("");
-      setNewProtocolYieldFee("");
-      setEnableSwapFee(false);
-      setEnableYieldFee(false);
-      setLastFetchedPoolAddress(null);
-      setCurrentFeeInfo({
-        swapFeePercentage: null,
-        swapFeeIsOverride: false,
-        yieldFeePercentage: null,
-        yieldFeeIsOverride: false,
-        isLoading: false,
-        error: null,
-      });
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewProtocolSwapFee("");
+    setNewProtocolYieldFee("");
+    setEnableSwapFee(false);
+    setEnableYieldFee(false);
+    setLastFetchedPoolAddress(null);
+    setCurrentFeeInfo({
+      swapFeePercentage: null,
+      swapFeeIsOverride: false,
+      yieldFeePercentage: null,
+      yieldFeeIsOverride: false,
+      isLoading: false,
+      error: null,
+    });
 
-      // Find the corresponding chain ID for the selected network
-      const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
-      if (networkOption) {
-        try {
-          switchChain({ chainId: Number(networkOption.chainId) });
-        } catch (error) {
-          toast({
-            title: "Error switching network",
-            description: "Please switch network manually in your wallet",
-            status: "error",
-            duration: 5000,
-          });
-        }
+    // Find the corresponding chain ID for the selected network
+    const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
       }
-    },
-    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
-  );
+    }
+  };
 
   // Check manager status when pool is selected
-  const handlePoolSelection = useCallback(async (pool: Pool) => {
+  const handlePoolSelection = async (pool: Pool) => {
     setSelectedPool(pool);
-  }, []);
+  };
 
   const clearPoolSelection = () => {
     setSelectedPool(null);
@@ -292,7 +286,7 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
   const swapFeeValidation = validateFee(debouncedSwapFee);
   const yieldFeeValidation = validateFee(debouncedYieldFee);
 
-  const isFormValid = useMemo(() => {
+  const isFormValid = (() => {
     const hasAtLeastOneFee =
       (enableSwapFee && debouncedSwapFee !== "") || (enableYieldFee && debouncedYieldFee !== "");
 
@@ -300,15 +294,7 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
     const yieldFeeOk = !enableYieldFee || (debouncedYieldFee !== "" && yieldFeeValidation.isValid);
 
     return hasAtLeastOneFee && swapFeeOk && yieldFeeOk && protocolFeeControllerAddress !== "";
-  }, [
-    enableSwapFee,
-    enableYieldFee,
-    debouncedSwapFee,
-    debouncedYieldFee,
-    swapFeeValidation.isValid,
-    yieldFeeValidation.isValid,
-    protocolFeeControllerAddress,
-  ]);
+  })();
 
   const handleGenerateClick = async () => {
     if (!selectedPool || !selectedNetwork || !isFormValid) {
@@ -361,7 +347,7 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (!selectedPool || (!debouncedSwapFee && !debouncedYieldFee))
       return {
         prefillBranchName: "",
@@ -396,16 +382,9 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
       prefillDescription: `This PR sets ${feeChangeDescription} for ${poolName} (${shortPoolId}) on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [
-    selectedPool,
-    debouncedSwapFee,
-    debouncedYieldFee,
-    enableSwapFee,
-    enableYieldFee,
-    selectedNetwork,
-  ]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -426,10 +405,10 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
       },
       builderPath: "protocol-fee-setter-v3",
     };
-  }, [generatedPayload, enableSwapFee, enableYieldFee, debouncedSwapFee, debouncedYieldFee]);
+  };
 
   // Build preview parameters
-  const previewParameters = useMemo(() => {
+  const previewParameters = (() => {
     const params = [];
     if (enableSwapFee && debouncedSwapFee) {
       const currentSwapFee =
@@ -470,7 +449,7 @@ export default function ChangeProtocolFeeV3Module({ addressBook }: { addressBook
       });
     }
     return params;
-  }, [enableSwapFee, enableYieldFee, debouncedSwapFee, debouncedYieldFee, currentFeeInfo]);
+  })();
 
   return (
     <Container maxW="container.lg">

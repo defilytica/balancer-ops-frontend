@@ -1,5 +1,4 @@
 import { MEV_CAPTURE_PARAMS } from "@/constants/constants";
-import { useMemo } from "react";
 
 export function useValidateMevCapture(params: {
   mevTaxThreshold: string;
@@ -7,8 +6,8 @@ export function useValidateMevCapture(params: {
 }) {
   const { mevTaxThreshold, mevTaxMultiplier } = params;
 
-  // Use useMemo to compute validation results synchronously
-  const validationResult = useMemo(() => {
+  // Compute validation results synchronously
+  const validationResult = (() => {
     let mevTaxThresholdError: string | null = null;
     let mevTaxMultiplierError: string | null = null;
 
@@ -43,7 +42,7 @@ export function useValidateMevCapture(params: {
       mevTaxMultiplierError,
       isValid: !mevTaxThresholdError && !mevTaxMultiplierError,
     };
-  }, [mevTaxThreshold, mevTaxMultiplier]);
+  })();
 
   return validationResult;
 }

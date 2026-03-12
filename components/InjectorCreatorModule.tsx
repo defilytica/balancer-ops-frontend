@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   AlertDescription,
@@ -518,30 +518,27 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
     }
   };
 
-  const handleNetworkChange = useCallback(
-    async (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setFactoryAddress("");
-      setTransactions([]);
+  const handleNetworkChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setFactoryAddress("");
+    setTransactions([]);
 
-      // Find the corresponding chain ID for the selected network
-      const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
-      if (networkOption) {
-        try {
-          await switchChain({ chainId: Number(networkOption.chainId) });
-        } catch (error) {
-          toast({
-            title: "Error switching network",
-            description: "Please switch network manually in your wallet",
-            status: "error",
-            duration: 5000,
-          });
-        }
+    // Find the corresponding chain ID for the selected network
+    const networkOption = NETWORK_OPTIONS.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        await switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
       }
-    },
-    [switchChain, toast],
-  );
+    }
+  };
 
   const handleAddKeeper = () => {
     setKeeperAddresses([...keeperAddresses, ""]);

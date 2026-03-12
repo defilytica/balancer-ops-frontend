@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   AlertDescription,
@@ -153,21 +153,21 @@ export default function SparkPSMPage() {
   }) as { data: bigint | undefined; isLoading: boolean };
 
   // Calculate the exchange rate as a human-readable number
-  const exchangeRate = useMemo(() => {
+  const exchangeRate = (() => {
     if (!assetsPerShare) return null;
     // assetsPerShare is in 18 decimals (USDS decimals), divide by 1e18 to get rate
     return Number(assetsPerShare) / 1e18;
-  }, [assetsPerShare]);
+  })();
 
   // Fetch convertToShares for withdraw approval calculation
-  const maxAmountInWei = useMemo(() => {
+  const maxAmountInWei = (() => {
     if (!amountIn || operationType !== "withdraw") return BigInt(0);
     try {
       return ethers.parseUnits(amountIn, SUSDS.decimals);
     } catch {
       return BigInt(0);
     }
-  }, [amountIn, operationType, SUSDS.decimals]);
+  })();
 
   const { data: sharesForWithdraw } = useReadContract({
     address: SUSDS.address as `0x${string}`,
@@ -181,19 +181,19 @@ export default function SparkPSMPage() {
   }) as { data: bigint | undefined };
 
   // Calculate expected sUSDS output for deposits (USDC -> sUSDS)
-  const expectedSUSDS = useMemo(() => {
+  const expectedSUSDS = (() => {
     if (!exchangeRate || !amountIn || operationType !== "deposit") return null;
     // Use amountOut if provided, otherwise use amountIn
     // amountOut is in USD, divide by exchange rate to get sUSDS shares
     const usdAmount = amountOut || amountIn;
     return parseFloat(usdAmount) / exchangeRate;
-  }, [exchangeRate, amountIn, amountOut, operationType]);
+  })();
 
   // Calculate expected sUSDS shares to burn for withdrawals
-  const expectedSharesToBurn = useMemo(() => {
+  const expectedSharesToBurn = (() => {
     if (!sharesForWithdraw || operationType !== "withdraw") return null;
     return Number(sharesForWithdraw) / 1e18; // Convert from wei to human readable
-  }, [sharesForWithdraw, operationType]);
+  })();
 
   // Validation state
   const errors = {
@@ -273,7 +273,7 @@ export default function SparkPSMPage() {
     setHumanReadableText(humanText);
   };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -292,7 +292,7 @@ export default function SparkPSMPage() {
       },
       builderPath: "spark-psm",
     };
-  }, [generatedPayload, humanReadableText, operationType, amountIn, depositor, receiver]);
+  };
 
   const getPrefillValues = () => {
     if (!amountIn || !generatedPayload) return {};
@@ -323,7 +323,7 @@ export default function SparkPSMPage() {
   };
 
   // EOA Direct Execution - Deposit
-  const handleDirectDeposit = useCallback(async () => {
+  const handleDirectDeposit = async () => {
     if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
       toast({
         title: "Validation Error",
@@ -410,10 +410,10 @@ export default function SparkPSMPage() {
     } finally {
       setIsExecuting(false);
     }
-  }, [walletAddress, amountIn, amountOut, receiver, USDC, SUSDS, toast]);
+  };
 
   // EOA Direct Execution - Withdraw
-  const handleDirectWithdraw = useCallback(async () => {
+  const handleDirectWithdraw = async () => {
     if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
       toast({
         title: "Validation Error",
@@ -516,19 +516,19 @@ export default function SparkPSMPage() {
     } finally {
       setIsExecuting(false);
     }
-  }, [walletAddress, amountIn, amountOut, receiver, USDC, SUSDS, sharesForWithdraw, toast]);
+  };
 
   // Handle direct execution based on operation type
-  const handleDirectExecution = useCallback(async () => {
+  const handleDirectExecution = async () => {
     if (operationType === "deposit") {
       await handleDirectDeposit();
     } else {
       await handleDirectWithdraw();
     }
-  }, [operationType, handleDirectDeposit, handleDirectWithdraw]);
+  };
 
   // Build simulation transactions for EOA
-  const buildEOASimulationTransactions = useCallback(() => {
+  const buildEOASimulationTransactions = () => {
     if (!walletAddress || !isValidAmount(amountIn) || !isAddress(receiver)) {
       return [];
     }
@@ -589,7 +589,7 @@ export default function SparkPSMPage() {
     }
 
     return transactions;
-  }, [walletAddress, amountIn, amountOut, receiver, operationType, USDC, SUSDS, sharesForWithdraw]);
+  };
 
   // Form validation for EOA mode (no depositor required)
   const isEOAFormValid = isValidAmount(amountIn) && isAddress(receiver);

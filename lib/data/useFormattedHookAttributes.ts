@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Pool } from "@/types/interfaces";
 import { isMevTaxHookParams } from "@/components/MevCaptureHookConfigurationModule";
 import { isStableSurgeHookParams } from "@/components/StableSurgeHookConfigurationModule";
@@ -47,5 +46,5 @@ export function formatHookAttributes(pool: Pool | null, withAddress = true) {
 }
 
 export function useFormattedHookAttributes(pool: Pool | null, withAddress = true) {
-  return useMemo(() => formatHookAttributes(pool, withAddress), [pool, withAddress]);
+  return formatHookAttributes(pool, withAddress);
 }

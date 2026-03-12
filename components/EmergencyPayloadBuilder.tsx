@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Accordion,
@@ -122,7 +122,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Get available networks based on protocol version
-  const availableNetworkOptions = useMemo(() => {
+  const availableNetworkOptions = (() => {
     if (!protocolVersion) return [];
 
     if (protocolVersion === "v3") {
@@ -136,13 +136,13 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       // For V2, show all networks except SONIC
       return NETWORK_OPTIONS.filter(network => network.apiID !== "SONIC");
     }
-  }, [protocolVersion, addressBook]);
+  })();
 
   // Get available V3 factories for the selected network
-  const availableFactories = useMemo(() => {
+  const availableFactories = (() => {
     if (protocolVersion !== "v3" || !selectedNetwork) return [];
     return getV3PoolFactoriesForNetwork(addressBook, selectedNetwork);
-  }, [protocolVersion, selectedNetwork, addressBook]);
+  })();
 
   // Get deprecated factories for the selected network
   const [deprecatedFactories, setDeprecatedFactories] = useState<DeprecatedPoolFactory[]>([]);
@@ -195,7 +195,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
   });
 
   // Get pools based on selected protocol
-  const availablePools = useMemo(() => {
+  const availablePools = (() => {
     if (protocolVersion === "v3" && v3Data?.poolGetPools) {
       return v3Data.poolGetPools.map(pool => ({ ...pool, isV3Pool: true }));
     } else if (protocolVersion === "v2" && v2Data?.poolGetPools) {
@@ -205,7 +205,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
         .map(pool => ({ ...pool, isV3Pool: false }));
     }
     return [];
-  }, [protocolVersion, v3Data, v2Data]);
+  })();
 
   const loading = protocolVersion === "v3" ? v3Loading : v2Loading;
   const error = protocolVersion === "v3" ? v3Error : v2Error;
@@ -223,7 +223,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     }
   }, [selectedNetwork, addressBook]);
 
-  const handleProtocolVersionChange = useCallback((version: "v2" | "v3") => {
+  const handleProtocolVersionChange = (version: "v2" | "v3") => {
     setProtocolVersion(version);
     setSelectedNetwork("");
     setSelectedPools([]);
@@ -232,9 +232,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedDeprecatedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  }, []);
+  };
 
-  const handleNetworkChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
     setSelectedNetwork(newNetwork);
     setSelectedPools([]);
@@ -243,52 +243,49 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     setSelectedDeprecatedFactories([]);
     setGeneratedPayload(null);
     setHumanReadableText(null);
-  }, []);
+  };
 
-  const handlePoolSelect = useCallback(
-    (pool: Pool & { isV3Pool?: boolean }) => {
-      setSelectedPools(prev => {
-        // Check if pool is already selected
-        const existingIndex = prev.findIndex(p => p.address === pool.address);
-        if (existingIndex >= 0) {
-          return prev; // Pool already selected
-        }
+  const handlePoolSelect = (pool: Pool & { isV3Pool?: boolean }) => {
+    setSelectedPools(prev => {
+      // Check if pool is already selected
+      const existingIndex = prev.findIndex(p => p.address === pool.address);
+      if (existingIndex >= 0) {
+        return prev; // Pool already selected
+      }
 
-        const isV3Pool = protocolVersion === "v3";
+      const isV3Pool = protocolVersion === "v3";
 
-        if (isV3Pool) {
-          // V3 pools: start with no actions, fetch on-chain state first
-          return [
-            ...prev,
-            {
-              ...pool,
-              selectedActions: [],
-              isV3Pool,
-              poolStateLoading: true,
-            },
-          ];
-        } else {
-          // V2 pools: default to pause action
-          return [
-            ...prev,
-            {
-              ...pool,
-              selectedActions: ["pause"],
-              isV3Pool,
-              pauseMethod: "pause",
-            },
-          ];
-        }
-      });
-    },
-    [protocolVersion],
-  );
+      if (isV3Pool) {
+        // V3 pools: start with no actions, fetch on-chain state first
+        return [
+          ...prev,
+          {
+            ...pool,
+            selectedActions: [],
+            isV3Pool,
+            poolStateLoading: true,
+          },
+        ];
+      } else {
+        // V2 pools: default to pause action
+        return [
+          ...prev,
+          {
+            ...pool,
+            selectedActions: ["pause"],
+            isV3Pool,
+            pauseMethod: "pause",
+          },
+        ];
+      }
+    });
+  };
 
-  const handleRemovePool = useCallback((poolAddress: string) => {
+  const handleRemovePool = (poolAddress: string) => {
     setSelectedPools(prev => prev.filter(p => p.address !== poolAddress));
-  }, []);
+  };
 
-  const handleActionChange = useCallback((poolAddress: string, actions: string[]) => {
+  const handleActionChange = (poolAddress: string, actions: string[]) => {
     setSelectedPools(prev =>
       prev.map(pool =>
         pool.address === poolAddress
@@ -304,15 +301,15 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
           : pool,
       ),
     );
-  }, []);
+  };
 
-  const handleVaultActionChange = useCallback((actions: string[]) => {
+  const handleVaultActionChange = (actions: string[]) => {
     setVaultActions(
       actions as ("pauseVault" | "pauseVaultBuffers" | "unpauseVault" | "unpauseVaultBuffers")[],
     );
-  }, []);
+  };
 
-  const handleFactorySelect = useCallback((factory: V3PoolFactory) => {
+  const handleFactorySelect = (factory: V3PoolFactory) => {
     setSelectedFactories(prev => {
       // Check if factory is already selected
       const existingIndex = prev.findIndex(f => f.address === factory.address);
@@ -321,13 +318,13 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       }
       return [...prev, factory];
     });
-  }, []);
+  };
 
-  const handleRemoveFactory = useCallback((factoryAddress: string) => {
+  const handleRemoveFactory = (factoryAddress: string) => {
     setSelectedFactories(prev => prev.filter(f => f.address !== factoryAddress));
-  }, []);
+  };
 
-  const handleDeprecatedFactorySelect = useCallback((factory: DeprecatedPoolFactory) => {
+  const handleDeprecatedFactorySelect = (factory: DeprecatedPoolFactory) => {
     setSelectedDeprecatedFactories(prev => {
       // Check if factory is already selected
       const existingIndex = prev.findIndex(f => f.address === factory.address);
@@ -336,20 +333,17 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       }
       return [...prev, factory];
     });
-  }, []);
+  };
 
-  const handleRemoveDeprecatedFactory = useCallback((factoryAddress: string) => {
+  const handleRemoveDeprecatedFactory = (factoryAddress: string) => {
     setSelectedDeprecatedFactories(prev => prev.filter(f => f.address !== factoryAddress));
-  }, []);
+  };
 
-  const handlePauseMethodChange = useCallback(
-    (poolAddress: string, method: "pause" | "setPaused") => {
-      setSelectedPools(prev =>
-        prev.map(pool => (pool.address === poolAddress ? { ...pool, pauseMethod: method } : pool)),
-      );
-    },
-    [],
-  );
+  const handlePauseMethodChange = (poolAddress: string, method: "pause" | "setPaused") => {
+    setSelectedPools(prev =>
+      prev.map(pool => (pool.address === poolAddress ? { ...pool, pauseMethod: method } : pool)),
+    );
+  };
 
   // Fetch on-chain state for newly added V3 pools
   const fetchingPoolsRef = useRef<Set<string>>(new Set());
@@ -421,7 +415,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPools, vaultActions, selectedFactories, selectedDeprecatedFactories]);
 
-  const handleGenerateClick = useCallback(() => {
+  const handleGenerateClick = () => {
     if (
       selectedPools.length === 0 &&
       vaultActions.length === 0 &&
@@ -528,16 +522,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
 
     setGeneratedPayload(JSON.stringify(payload, null, 2));
     setHumanReadableText(humanReadable);
-  }, [
-    selectedPools,
-    vaultActions,
-    selectedFactories,
-    selectedDeprecatedFactories,
-    emergencyWallet,
-    selectedNetwork,
-    addressBook,
-    protocolVersion,
-  ]);
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -553,7 +538,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
     }
   };
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (
       (selectedPools.length === 0 &&
         vaultActions.length === 0 &&
@@ -611,16 +596,9 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       prefillDescription: `Emergency actions: ${totalActions} total action${totalActions !== 1 ? "s" : ""} (${descriptions.join(", ")}) on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [
-    selectedPools,
-    vaultActions,
-    selectedFactories,
-    selectedDeprecatedFactories,
-    selectedNetwork,
-    protocolVersion,
-  ]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -646,14 +624,7 @@ export default function EmergencyPayloadBuilder({ addressBook }: EmergencyPayloa
       },
       builderPath: "emergency",
     };
-  }, [
-    generatedPayload,
-    selectedPools,
-    vaultActions,
-    selectedFactories,
-    selectedDeprecatedFactories,
-    protocolVersion,
-  ]);
+  };
 
   return (
     <Container maxW="container.lg">

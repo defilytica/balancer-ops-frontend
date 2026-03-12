@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -167,22 +167,19 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     reClammContractData,
   });
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network),
-    [addressBook],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network);
 
   // Check if the pool is authorized for DAO governance (zero address or matches the multisig)
-  const isAuthorizedPool = useMemo(() => {
+  const isAuthorizedPool = (() => {
     if (!selectedPool?.swapFeeManager) return false;
     return (
       isZeroAddress(selectedPool.swapFeeManager) ||
       selectedPool.swapFeeManager.toLowerCase() === selectedMultisig.toLowerCase()
     );
-  }, [selectedPool, selectedMultisig]);
+  })();
 
   // Check if price ratio update is currently active
-  const isPriceRatioUpdateInProgress = useMemo(() => {
+  const isPriceRatioUpdateInProgress = (() => {
     if (
       !poolData?.pool ||
       !("priceRatioUpdateStartTime" in poolData.pool) ||
@@ -196,14 +193,10 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     const endTime = parseInt(poolData.pool.priceRatioUpdateEndTime?.toString() || "0");
 
     return startTime > 0 && endTime > 0 && now >= startTime && now <= endTime;
-  }, [poolData?.pool]);
+  })();
 
   // Determine if we need to check the address type
-  const shouldCheckAddressType = useMemo(() => {
-    return (
-      selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager)
-    );
-  }, [selectedPool, selectedNetwork]);
+  const shouldCheckAddressType = (selectedPool?.swapFeeManager && selectedNetwork && !isZeroAddress(selectedPool.swapFeeManager));
 
   // React Query for address type checking
   const { data: addressTypeData, isLoading: isCheckingAddress } = useReactQuery({
@@ -237,49 +230,46 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     checkManagerStatus();
   }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
 
-  const networkOptionsWithV3 = useMemo(() => {
+  const networkOptionsWithV3 = (() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
-  }, [addressBook]);
+  })();
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewCenterednessMargin("");
-      setNewDailyPriceShiftExponent("");
-      setEndPriceRatio("");
-      setPriceRatioUpdateStartTime("");
-      setPriceRatioUpdateEndTime("");
-      setStopPriceRatioUpdate(false);
-      setIsCurrentWalletManager(false);
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewCenterednessMargin("");
+    setNewDailyPriceShiftExponent("");
+    setEndPriceRatio("");
+    setPriceRatioUpdateStartTime("");
+    setPriceRatioUpdateEndTime("");
+    setStopPriceRatioUpdate(false);
+    setIsCurrentWalletManager(false);
 
-      // Find the corresponding chain ID for the selected network
-      const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
-      if (networkOption) {
-        try {
-          switchChain({ chainId: Number(networkOption.chainId) });
-        } catch (error) {
-          toast({
-            title: "Error switching network",
-            description: "Please switch network manually in your wallet",
-            status: "error",
-            duration: 5000,
-          });
-        }
+    // Find the corresponding chain ID for the selected network
+    const networkOption = networkOptionsWithV3.find(n => n.apiID === newNetwork);
+    if (networkOption) {
+      try {
+        switchChain({ chainId: Number(networkOption.chainId) });
+      } catch (error) {
+        toast({
+          title: "Error switching network",
+          description: "Please switch network manually in your wallet",
+          status: "error",
+          duration: 5000,
+        });
       }
-    },
-    [resolveMultisig, networkOptionsWithV3, switchChain, toast],
-  );
+    }
+  };
 
-  const handlePoolSelection = useCallback((pool: Pool) => {
+  const handlePoolSelection = (pool: Pool) => {
     setSelectedPool(pool);
-  }, []);
+  };
 
   // Effect to handle URL parameters and auto-select pool
   useEffect(() => {
@@ -625,21 +615,16 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
     }
   };
 
-  const getParameterCount = useMemo(() => {
+  const getParameterCount = (() => {
     let count = 0;
     if (hasCenterednessMargin) count++;
     if (hasDailyPriceShiftExponent) count++;
     if (hasPriceRatioUpdate) count++;
     if (stopPriceRatioUpdate) count++;
     return count;
-  }, [
-    hasCenterednessMargin,
-    hasDailyPriceShiftExponent,
-    hasPriceRatioUpdate,
-    stopPriceRatioUpdate,
-  ]);
+  })();
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (
       !selectedPool ||
       (!debouncedCenterednessMargin &&
@@ -708,20 +693,9 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       prefillDescription: description,
       prefillFilename: filename,
     };
-  }, [
-    selectedPool,
-    debouncedCenterednessMargin,
-    debouncedDailyPriceShiftExponent,
-    debouncedEndPriceRatio,
-    debouncedPriceRatioUpdateStartTime,
-    debouncedPriceRatioUpdateEndTime,
-    hasCenterednessMargin,
-    hasDailyPriceShiftExponent,
-    hasPriceRatioUpdate,
-    selectedNetwork,
-  ]);
+  };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -756,7 +730,7 @@ export default function ReClammModule({ addressBook }: { addressBook: AddressBoo
       params: params,
       builderPath: "reclamm",
     };
-  }, [generatedPayload]);
+  };
 
   return (
     <Container maxW="container.lg">
