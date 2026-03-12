@@ -2899,7 +2899,7 @@ type Query {
   tokenGetRelativePriceChartData(chain: GqlChain!, range: GqlTokenChartDataRange!, tokenIn: String!, tokenOut: String!): [GqlTokenPriceChartDataItem!]!
 
   """Returns dynamic data of a token such as price, market cap, etc."""
-  tokenGetTokenDynamicData(address: String!, chain: GqlChain!): GqlTokenDynamicData
+  tokenGetTokenDynamicData(address: String!, chain: GqlChain!): GqlTokenDynamicData @deprecated(reason: "Removed without replacement")
 
   """Returns all allowed tokens for a given chain or chains"""
   tokenGetTokens(chains: [GqlChain!]!, where: GqlTokenFilter): [GqlToken!]!
@@ -2907,7 +2907,7 @@ type Query {
   """
   Returns dynamic data of a set of tokens such as price, market cap, etc.
   """
-  tokenGetTokensDynamicData(addresses: [String!]!, chain: GqlChain!): [GqlTokenDynamicData!]!
+  tokenGetTokensDynamicData(addresses: [String!]!, chain: GqlChain!): [GqlTokenDynamicData!]! @deprecated(reason: "Removed without replacement")
   veBalGetTotalSupply(chain: GqlChain!): AmountHumanReadable!
   veBalGetUser(address: String!, chain: GqlChain!): GqlVeBalUserData!
   veBalGetUserBalance(address: String!, chain: GqlChain!): AmountHumanReadable!
