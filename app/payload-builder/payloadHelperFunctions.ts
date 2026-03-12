@@ -724,8 +724,8 @@ export function generateGauntletSwapFeeChangePayload(
       payable: false,
     },
     contractInputsValues: {
-      addresses: [input.poolAddress],
-      fees: [swapFeePercentage],
+      addresses: `[${input.poolAddress}]`,
+      fees: `[${swapFeePercentage}]`,
     },
   };
 

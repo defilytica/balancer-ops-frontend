@@ -57,7 +57,16 @@ const SimulateTransactionButton: React.FC<SimulateTransactionButtonProps> = ({ b
               const inputName = input.name;
               let inputValue = tx.contractInputsValues![inputName];
 
-              // Process array inputs
+              // Reject actual JS arrays — contractInputsValues must use string-encoded
+              // arrays like "[0x..., 0x...]" for Safe Transaction Builder compatibility
+              if (input.type.includes("[]") && Array.isArray(inputValue)) {
+                throw new Error(
+                  `Invalid payload: "${inputName}" is a JS array but must be a string-encoded array ` +
+                    `(e.g. "[value1, value2]"). Please fix the JSON payload.`,
+                );
+              }
+
+              // Process string-encoded array inputs
               if (input.type.includes("[]") && typeof inputValue === "string") {
                 inputValue = inputValue
                   .replace(/^\[|\]$/g, "")
