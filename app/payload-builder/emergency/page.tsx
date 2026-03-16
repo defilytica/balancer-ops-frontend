@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Skeleton } from "@chakra-ui/skeleton";
-import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook } from "@/lib/data/balancer/addressBook";
 import EmergencyPayloadBuilder from "@/components/EmergencyPayloadBuilder";
 
 export default async function EmergencyPayloadBuilderPage() {

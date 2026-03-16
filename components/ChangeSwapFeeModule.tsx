@@ -55,7 +55,7 @@ import { DollarSign } from "react-feather";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { generateUniqueId } from "@/lib/utils/generateUniqueID";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/balancer/addressBook";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";
 import ComposerIndicator from "@/app/payload-builder/composer/ComposerIndicator";
 import { Checkbox } from "@chakra-ui/react";

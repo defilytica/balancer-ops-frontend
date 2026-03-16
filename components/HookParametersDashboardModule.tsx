@@ -27,7 +27,7 @@ import {
 } from "@/lib/services/apollo/generated/graphql";
 import { Pool, AddressBook } from "@/types/interfaces";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 
 export type HookType = "STABLE_SURGE" | "MEV_TAX";
 

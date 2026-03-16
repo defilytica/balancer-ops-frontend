@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { networks, INJECTOR_BLACKLIST } from "@/constants/constants";
-import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/balancer/addressBook";
 
 // 5 min caching for factory
 const CACHE_DURATION = 300;

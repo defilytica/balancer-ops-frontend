@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import RewardsInjector from "./RewardsInjector";
 import { AddressBook, AddressOption } from "@/types/interfaces";
-import { getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getNetworks } from "@/lib/data/balancer/addressBook";
 import RewardsInjectorConfigurator from "@/components/RewardsInjectorConfigurator";
 import RewardsInjectorConfiguratorV2 from "./RewardsInjectorConfiguratorV2";
 import { INJECTOR_BLACKLIST } from "@/constants/constants";

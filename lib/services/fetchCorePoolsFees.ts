@@ -15,7 +15,7 @@ export interface DateRange {
 }
 
 const BASE_URL =
-  "https://raw.githubusercontent.com/BalancerMaxis/protocol_fee_allocator_v2/refs/heads/collect-fees-cron/fee_allocator/allocations/incentives/current_fees";
+  "https://raw.githubusercontent.com/balancer/protocol_fee_allocator_v2/refs/heads/collect-fees-cron/fee_allocator/allocations/incentives/current_fees";
 
 // Fee allocation percentages
 export const FEE_ALLOCATIONS = {

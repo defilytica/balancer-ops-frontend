@@ -40,7 +40,7 @@ import { PoolInfoCard } from "@/components/PoolInfoCard";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import { CopyIcon, DownloadIcon } from "@chakra-ui/icons";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getAddress, getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getAddress, getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import OpenPRButton from "./btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { DollarSign } from "react-feather";

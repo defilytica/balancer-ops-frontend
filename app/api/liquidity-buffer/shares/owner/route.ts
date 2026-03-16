@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Contract, JsonRpcProvider } from "ethers";
 import { networks } from "@/constants/constants";
-import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook } from "@/lib/data/balancer/addressBook";
 import { vaultExplorerABI } from "@/abi/VaultExplorer";
 import { getVaultExplorerAddress } from "@/lib/utils/sonicNetworkUtils";
 

@@ -31,7 +31,7 @@ import {
 import { AddressBook } from "@/types/interfaces";
 import { WHITELISTED_PAYMENT_TOKENS, networks } from "@/constants/constants";
 import SearchableAddressInput from "@/components/SearchableAddressInput";
-import { getCategoryData, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData, getSubCategoryData } from "@/lib/data/balancer/addressBook";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";

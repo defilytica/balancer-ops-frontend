@@ -1,5 +1,5 @@
 import { AddressBook } from "@/types/interfaces";
-import { getAddress } from "@/lib/data/maxis/addressBook";
+import { getAddress } from "@/lib/data/balancer/addressBook";
 import {
   SONIC_VAULT_EXPLORER,
   SONIC_VAULT,

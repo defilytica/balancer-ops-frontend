@@ -39,7 +39,7 @@ import {
 import { useQuery } from "@apollo/client/react";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 import { AddressBook } from "@/types/interfaces";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/balancer/addressBook";
 import { sdBALVesterABI } from "@/abi/sdBALVester";
 import { gaugeABI } from "@/abi/gauge";
 import { merkleStashABI } from "@/abi/merkleStash";

@@ -3,7 +3,7 @@ import { ChainlinkData } from "@/types/interfaces";
 
 export const fetchChainlinkData = async (): Promise<ChainlinkData[]> => {
   const response = await fetch(
-    "https://raw.githubusercontent.com/BalancerMaxis/multisig-ops/upkeeps/upkeeps.csv",
+    "https://raw.githubusercontent.com/balancer/multisig-ops/upkeeps/upkeeps.csv",
   );
   const csvText = await response.text();
 

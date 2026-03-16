@@ -801,6 +801,7 @@ export type GqlPoolFixedPriceLbp = GqlPoolBase & {
   hasNestedErc4626: Scalars['Boolean']['output'];
   hook?: Maybe<GqlHook>;
   id: Scalars['ID']['output'];
+  isProjectTokenSwapInBlocked: Scalars['Boolean']['output'];
   lbpName?: Maybe<Scalars['String']['output']>;
   lbpOwner: Scalars['String']['output'];
   liquidityManagement?: Maybe<LiquidityManagement>;
@@ -817,6 +818,7 @@ export type GqlPoolFixedPriceLbp = GqlPoolBase & {
   poolTokens: Array<GqlPoolTokenDetail>;
   projectToken: Scalars['String']['output'];
   projectTokenIndex: Scalars['Int']['output'];
+  projectTokenRate: Scalars['BigDecimal']['output'];
   protocolVersion: Scalars['Int']['output'];
   reserveToken: Scalars['String']['output'];
   reserveTokenIndex: Scalars['Int']['output'];

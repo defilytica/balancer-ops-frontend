@@ -53,7 +53,7 @@ import PoolSelector from "./PoolSelector";
 import { ParameterChangePreviewCard } from "./ParameterChangePreviewCard";
 import { useDebounce } from "use-debounce";
 import { useAmpFactor } from "@/app/hooks/amp-factor/useAmpFactor";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { useValidateAmpFactor } from "@/lib/hooks/validation/useValidateAmpFactor";
 import { useValidateEndTime } from "@/lib/hooks/validation/useValidateEndTime";
 import ComposerButton from "@/app/payload-builder/composer/ComposerButton";

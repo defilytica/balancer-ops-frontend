@@ -25,7 +25,7 @@ import { ViewSwitcher, ViewMode } from "@/components/boostedPools/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { usePoolBufferData, PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
 import GlobeLogo from "@/public/imgs/globe.svg";
 import { isRealErc4626Token } from "@/lib/utils/tokenFilters";
