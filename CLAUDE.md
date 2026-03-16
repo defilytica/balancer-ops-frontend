@@ -25,7 +25,7 @@ No test suite exists in this project.
 
 ### Framework & Stack
 
-- **Next.js 15** with App Router (`app/` directory), Turbopack in dev
+- **Next.js 16** with App Router (`app/` directory), React 19, React Compiler enabled, Turbopack in dev
 - **Chakra UI v2** with custom Balancer theme (light/dark mode)
 - **TypeScript** (strict mode, path alias `@/*` → project root)
 - **Yarn 1.x** as package manager
@@ -34,6 +34,8 @@ No test suite exists in this project.
 
 The app wraps all pages in nested providers in this order:
 `SessionProvider` → `ApolloClientProvider` → `ThemeProvider` → `Web3Provider` (Wagmi + RainbowKit + React Query) → `CacheProvider` → `ColorThemeProvider` → `PayloadComposerProvider`
+
+A root error boundary (`app/error.tsx`) provides graceful error recovery across the app.
 
 ### Data Fetching Layers
 

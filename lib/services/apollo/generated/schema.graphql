@@ -952,6 +952,7 @@ type GqlPoolFixedPriceLBP implements GqlPoolBase {
   hasNestedErc4626: Boolean!
   hook: GqlHook
   id: ID!
+  isProjectTokenSwapInBlocked: Boolean!
   lbpName: String
   lbpOwner: String!
   liquidityManagement: LiquidityManagement
@@ -972,6 +973,7 @@ type GqlPoolFixedPriceLBP implements GqlPoolBase {
   poolTokens: [GqlPoolTokenDetail!]!
   projectToken: String!
   projectTokenIndex: Int!
+  projectTokenRate: BigDecimal!
   protocolVersion: Int!
   reserveToken: String!
   reserveTokenIndex: Int!
