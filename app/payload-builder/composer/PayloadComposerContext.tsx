@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from "react";
+import { createContext, use, useEffect, useState, useMemo, ReactNode } from "react";
 import { useIsMounted } from "@/lib/shared/hooks/useIsMounted";
 import {
   combinePayloadOperations,
@@ -137,7 +137,7 @@ export const PayloadComposerProvider = ({ children }: { children: ReactNode }) =
 };
 
 export const useComposer = () => {
-  const context = useContext(PayloadComposerContext);
+  const context = use(PayloadComposerContext);
   if (!context) {
     throw new Error("useComposer must be used within a ComposerProvider");
   }
