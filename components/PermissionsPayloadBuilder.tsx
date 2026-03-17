@@ -36,7 +36,7 @@ import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import { ActionIdsData, AddressBook, Permission, ReverseAddressBook } from "@/types/interfaces";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksForFeature } from "@/constants/networkFeatures";
-import { getAddress, getCategoryData } from "@/lib/data/maxis/addressBook";
+import { getAddress, getCategoryData } from "@/lib/data/balancer/addressBook";
 import SimulateTransactionButton, { BatchFile } from "@/components/btns/SimulateTransactionButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";
@@ -566,7 +566,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
   const loadReverseLookup = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(
-        `https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/${selectedNetwork}_reverse.json`,
+        `https://raw.githubusercontent.com/balancer/bal_addresses/main/outputs/${selectedNetwork}_reverse.json`,
       );
 
       if (!response.ok) {
@@ -653,7 +653,7 @@ const PermissionsPayloadBuilder: React.FC<PermissionsPayloadBuilderProps> = ({ a
       dispatchPermissions({ type: "SET_PERMISSIONS_LOADING", payload: true });
 
       const response = await fetch(
-        `https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/permissions/active/${selectedNetwork}.json`,
+        `https://raw.githubusercontent.com/balancer/bal_addresses/main/outputs/permissions/active/${selectedNetwork}.json`,
       );
 
       if (!response.ok) {

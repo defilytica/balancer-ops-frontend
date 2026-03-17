@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Balancer Ops Frontend — a DAO operations and governance tool for the Balancer protocol. Built for the Balancer Maxis tooling suite to manage multi-chain governance operations, payload composition, injector monitoring, and contract interactions.
+Balancer Ops Frontend — a DAO operations and governance tool for the Balancer protocol. Built for the Balancer tooling suite to manage multi-chain governance operations, payload composition, injector monitoring, and contract interactions.
 
 ## Commands
 

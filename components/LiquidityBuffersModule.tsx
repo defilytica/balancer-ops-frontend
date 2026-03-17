@@ -26,7 +26,7 @@ import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { useState, useMemo } from "react";
 import { AddressBook, TokenListToken } from "@/types/interfaces";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 import { useTokenBufferData } from "@/lib/hooks/useTokenBufferData";
 

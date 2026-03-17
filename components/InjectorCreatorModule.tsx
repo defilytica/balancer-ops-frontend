@@ -51,7 +51,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { NetworkSelector } from "@/components/NetworkSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import { getNetworksForFeature } from "@/constants/networkFeatures";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/balancer/addressBook";
 import { AddressBook } from "@/types/interfaces";
 import { ChildChainGaugeInjectorV2Factory } from "@/abi/ChildChainGaugeInjectorV2Factory";
 import AddressInput from "@/components/AdressInput";
@@ -874,7 +874,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 <ListIcon as={ChevronRightIcon} />
                 For more technical details about the injector contract, consult{" "}
                 <Link
-                  href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#child-chain-gauge-injector-v2"
+                  href="https://github.com/balancer/ChildGaugeInjectorV2?tab=readme-ov-file#child-chain-gauge-injector-v2"
                   textDecoration="underline"
                   isExternal
                 >
@@ -885,7 +885,7 @@ export default function InjectorCreatorModule({ addressBook }: InjectorCreationP
                 <ListIcon as={ChevronRightIcon} />
                 For full automation, a{" "}
                 <Link
-                  href="https://github.com/BalancerMaxis/ChildGaugeInjectorV2?tab=readme-ov-file#setting-up-a-chainlink-automation-balancer-maxi-specific-notes"
+                  href="https://github.com/balancer/ChildGaugeInjectorV2?tab=readme-ov-file#setting-up-a-chainlink-automation-balancer-maxi-specific-notes"
                   textDecoration="underline"
                   isExternal
                 >

@@ -1,5 +1,5 @@
 import { AddressBook } from "@/types/interfaces";
-import { getCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategoryData } from "@/lib/data/balancer/addressBook";
 import { NETWORK_OPTIONS } from "@/constants/constants";
 
 export const getMultisigForNetwork = (

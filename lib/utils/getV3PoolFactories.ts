@@ -1,5 +1,5 @@
 import { AddressBook } from "@/types/interfaces";
-import { getCategories, getSubCategoryData } from "@/lib/data/maxis/addressBook";
+import { getCategories, getSubCategoryData } from "@/lib/data/balancer/addressBook";
 import { formatFactoryName } from "./formatFactoryName";
 
 export interface V3PoolFactory {

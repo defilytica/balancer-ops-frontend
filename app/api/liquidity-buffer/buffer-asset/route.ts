@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { NextRequest, NextResponse } from "next/server";
 import { networks } from "@/constants/constants";
 import { vaultExplorerABI } from "@/abi/VaultExplorer";
-import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook } from "@/lib/data/balancer/addressBook";
 import { getVaultExplorerAddress } from "@/lib/utils/sonicNetworkUtils";
 
 export async function GET(request: NextRequest) {

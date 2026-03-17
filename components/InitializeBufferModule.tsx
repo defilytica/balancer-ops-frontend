@@ -39,7 +39,7 @@ import { NETWORK_OPTIONS, networks } from "@/constants/constants";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
 import SimulateEOATransactionButton from "./btns/SimulateEOATransactionButton";
 import { buildInitializeBufferSimulationTransactions } from "@/app/payload-builder/simulationHelperFunctions";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import {
   getPermit2Address,
   getBufferRouterAddress as getBufferRouterAddressForNetwork,

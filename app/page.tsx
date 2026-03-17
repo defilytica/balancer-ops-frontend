@@ -104,7 +104,7 @@ export default function Page() {
         {
           title: "Chainlink Automation",
           icon: TbActivity,
-          description: "Monitor funding status of upkeeps managed by the Balancer Maxis",
+          description: "Monitor funding status of upkeeps managed by Balancer",
           primaryAction: {
             label: "View Upkeeps",
             href: "/chainlink-automation",

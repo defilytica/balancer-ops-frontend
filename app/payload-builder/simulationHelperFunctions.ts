@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { SimulationTransaction } from "@/types/interfaces";
-import { getAddress } from "@/lib/data/maxis/addressBook";
+import { getAddress } from "@/lib/data/balancer/addressBook";
 import { V3vaultAdmin } from "@/abi/v3vaultAdmin";
 import BufferRouterABI from "@/abi/BufferRouter.json";
 import { V3_VAULT_ADDRESS } from "@/constants/constants";

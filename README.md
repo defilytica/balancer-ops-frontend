@@ -1,6 +1,6 @@
 # Balancer Ops Frontend
 
-DAO operations and governance tool for the Balancer protocol. Part of the [Balancer Maxis](https://github.com/BalancerMaxis) tooling suite.
+DAO operations and governance tool for the Balancer protocol. Part of the [Balancer](https://github.com/balancer) tooling suite.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/defilytica/balancer-ops-frontend)
 

@@ -32,7 +32,7 @@ import { InfoOutlineIcon, TimeIcon, CalendarIcon } from "@chakra-ui/icons";
 import { FaCircle } from "react-icons/fa";
 import { NETWORK_OPTIONS, networks, CORE_POOLS_FEE_CALC_REFERENCE_DATE } from "@/constants/constants";
 import { Pool, AddressBook } from "@/types/interfaces";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { CorePoolsTable } from "@/components/tables/CorePoolsTable";
 import {
   CorePoolFeeData,
@@ -434,7 +434,7 @@ export default function CorePoolsDashboardModule({
                     <strong>Core pool list:</strong> The list of core pools is updated every
                     Wednesday. Verify the current list{" "}
                     <Link
-                      href="https://github.com/BalancerMaxis/bal_addresses/blob/main/outputs/core_pools.json"
+                      href="https://github.com/balancer/bal_addresses/blob/main/outputs/core_pools.json"
                       isExternal
                       color="blue.400"
                     >
@@ -448,7 +448,7 @@ export default function CorePoolsDashboardModule({
                   <Box>
                     <strong>Effective fee runs:</strong> Actual distribution data is stored in the{" "}
                     <Link
-                      href="https://github.com/BalancerMaxis/protocol_fee_allocator_v2/tree/biweekly-runs/fee_allocator/allocations/incentives"
+                      href="https://github.com/balancer/protocol_fee_allocator_v2/tree/biweekly-runs/fee_allocator/allocations/incentives"
                       isExternal
                       color="blue.400"
                     >

@@ -71,7 +71,7 @@ import {
 import { AddressBook, Pool } from "@/types/interfaces";
 import { PRCreationModal } from "@/components/modal/PRModal";
 import SimulateTransactionButton from "@/components/btns/SimulateTransactionButton";
-import { getNetworksWithCategory, getAddress } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory, getAddress } from "@/lib/data/balancer/addressBook";
 import OpenPRButton from "@/components/btns/OpenPRButton";
 import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { NetworkSelector } from "@/components/NetworkSelector";

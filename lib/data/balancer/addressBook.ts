@@ -2,7 +2,7 @@ import { AddressBook } from "@/types/interfaces";
 
 export async function fetchAddressBook(): Promise<AddressBook> {
   const url =
-    "https://raw.githubusercontent.com/BalancerMaxis/bal_addresses/main/outputs/addressbook.json";
+    "https://raw.githubusercontent.com/balancer/bal_addresses/main/outputs/addressbook.json";
 
   const response = await fetch(url, {
     next: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { networks } from "@/constants/constants";
-import { fetchAddressBook, getCategoryData } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook, getCategoryData } from "@/lib/data/balancer/addressBook";
 
 const FACTORY_ABI = [
   {

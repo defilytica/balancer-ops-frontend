@@ -8,7 +8,7 @@ import {
   fetchTokenInfo,
   getInjectTokenBalanceForAddress,
 } from "@/lib/data/injector/helpers";
-import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook, getCategoryData, getNetworks } from "@/lib/data/balancer/addressBook";
 import { RateLimiter } from "@/lib/services/rateLimiter";
 
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds

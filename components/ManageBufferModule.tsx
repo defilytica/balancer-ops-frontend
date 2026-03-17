@@ -9,7 +9,7 @@ import { JsonViewerEditor } from "@/components/JsonViewerEditor";
 import { TokenSelector } from "@/components/TokenSelector";
 import { ShareholderSelector } from "@/components/modal/ShareholderSelector";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import {
   getPermit2Address,
   getBufferRouterAddress as getBufferRouterAddressForNetwork,

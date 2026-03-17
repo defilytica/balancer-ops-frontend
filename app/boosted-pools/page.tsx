@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { fetchAddressBook } from "@/lib/data/maxis/addressBook";
+import { fetchAddressBook } from "@/lib/data/balancer/addressBook";
 import BoostedPoolsClientWrapper from "./BoostedPoolsClientWrapper";
 import { fetchBufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 

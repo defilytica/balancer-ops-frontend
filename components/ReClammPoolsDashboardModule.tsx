@@ -23,7 +23,7 @@ import {
   GqlChain,
 } from "@/lib/services/apollo/generated/graphql";
 import { Pool, AddressBook } from "@/types/interfaces";
-import { getNetworksWithCategory } from "@/lib/data/maxis/addressBook";
+import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { ReClammPoolsTable } from "@/components/tables/ReClammPoolsTable";
 
 interface ReClammPoolsDashboardModuleProps {
