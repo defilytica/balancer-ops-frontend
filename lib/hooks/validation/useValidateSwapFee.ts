@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { GqlPoolType } from "@/lib/services/apollo/generated/graphql";
 import { SWAP_FEE_PARAMS } from "@/constants/constants";
 
@@ -13,7 +12,7 @@ export function getSwapFeeRange(poolType: GqlPoolType) {
 export function useValidateSwapFee(params: { swapFeePercentage: string; poolType: GqlPoolType }) {
   const { swapFeePercentage, poolType } = params;
 
-  const validationResult = useMemo(() => {
+  const validationResult = (() => {
     let swapFeePercentageError: string | null = null;
 
     // Determine which range to use based on pool type
@@ -35,7 +34,7 @@ export function useValidateSwapFee(params: { swapFeePercentage: string; poolType
       swapFeePercentageError,
       isValid: !swapFeePercentageError,
     };
-  }, [swapFeePercentage, poolType]);
+  })();
 
   return validationResult;
 }

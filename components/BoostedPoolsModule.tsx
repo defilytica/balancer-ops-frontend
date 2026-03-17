@@ -23,7 +23,7 @@ import { BoostedPoolsGrid } from "@/components/tables/BoostedPoolsGrid";
 import { LiquidityBuffersFilters } from "@/components/filter/LiquidityBuffersFilters";
 import { ViewSwitcher, ViewMode } from "@/components/boostedPools/ViewSwitcher";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { AddressBook, Pool } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { usePoolBufferData, PoolWithBufferData } from "@/lib/hooks/usePoolBufferData";
@@ -72,7 +72,7 @@ export default function BoostedPoolsModule({
     bufferBlocklist,
   );
 
-  const filteredPools = useMemo(() => {
+  const filteredPools = (() => {
     if (!showOnlyEmptyBuffers) return poolsWithBufferBalances;
 
     return poolsWithBufferBalances.filter((pool: PoolWithBufferData) => {
@@ -86,20 +86,20 @@ export default function BoostedPoolsModule({
         return buffer.underlyingBalance === BigInt(0) && buffer.wrappedBalance === BigInt(0);
       });
     });
-  }, [poolsWithBufferBalances, showOnlyEmptyBuffers, bufferBlocklist]);
+  })();
 
   // When empty buffersfilter is on, we need to paginate the filtered results
-  const displayedPools = useMemo(() => {
+  const displayedPools = (() => {
     if (!showOnlyEmptyBuffers) return filteredPools;
     return filteredPools.slice(startIndex, endIndex);
-  }, [filteredPools, showOnlyEmptyBuffers, startIndex, endIndex]);
+  })();
 
-  const totalPages = useMemo(() => {
+  const totalPages = (() => {
     if (showOnlyEmptyBuffers) {
       return Math.ceil(filteredPools.length / pageSize);
     }
     return Math.ceil(allPools.length / pageSize);
-  }, [allPools.length, filteredPools.length, showOnlyEmptyBuffers, pageSize]);
+  })();
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -110,7 +110,7 @@ export default function BoostedPoolsModule({
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  const networkOptionsV3WithAll = useMemo(() => {
+  const networkOptionsV3WithAll = (() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     const filteredNetworks = NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
@@ -124,7 +124,7 @@ export default function BoostedPoolsModule({
       },
       ...filteredNetworks,
     ];
-  }, [addressBook]);
+  })();
 
   const networksWithAll = {
     ...networks,

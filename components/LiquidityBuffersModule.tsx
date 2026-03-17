@@ -24,7 +24,7 @@ import { LiquidityBuffersTable } from "@/components/tables/LiquidityBuffersTable
 import { LiquidityBuffersFilters } from "@/components/filter/LiquidityBuffersFilters";
 import { SearchInput } from "@/lib/shared/components/SearchInput";
 import { NETWORK_OPTIONS, networks } from "@/constants/constants";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { AddressBook, TokenListToken } from "@/types/interfaces";
 import { getNetworksWithCategory } from "@/lib/data/balancer/addressBook";
 import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
@@ -66,7 +66,7 @@ export default function LiquidityBuffersModule({
 
   const { tokensWithBufferData, isBufferDataLoading } = useTokenBufferData(allTokens);
 
-  const filteredTokens = useMemo(() => {
+  const filteredTokens = (() => {
     let filtered = tokensWithBufferData;
 
     // Filter out blocklisted tokens
@@ -95,15 +95,13 @@ export default function LiquidityBuffersModule({
     }
 
     return filtered;
-  }, [tokensWithBufferData, showOnlyEmpty, searchTerm, selectedNetwork, bufferBlocklist]);
+  })();
 
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
 
-  const totalPages = useMemo(() => {
-    return Math.ceil(filteredTokens.length / pageSize);
-  }, [filteredTokens.length, pageSize]);
+  const totalPages = Math.ceil(filteredTokens.length / pageSize);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -114,14 +112,14 @@ export default function LiquidityBuffersModule({
     setCurrentPage(1);
   };
 
-  const networkOptionsV3 = useMemo(() => {
+  const networkOptionsV3 = (() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     const filteredNetworks = NETWORK_OPTIONS.filter(
       network => networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
     );
 
     return filteredNetworks;
-  }, [addressBook]);
+  })();
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedNetwork(e.target.value);

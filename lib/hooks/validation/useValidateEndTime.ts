@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 // Constants for end time validation
 export const END_TIME_PARAMS = {
   MIN_HOURS_FROM_NOW: 24,
@@ -23,7 +21,7 @@ export interface EndTimeValidationResult {
 export function useValidateEndTime(params: EndTimeValidationParams): EndTimeValidationResult {
   const { value } = params;
 
-  const validationResult = useMemo(() => {
+  const validationResult = (() => {
     let endTimeError: string | null = null;
     let unixTimestamp: number | null = null;
     let timeInfo: EndTimeValidationResult["timeInfo"] = null;
@@ -82,7 +80,7 @@ export function useValidateEndTime(params: EndTimeValidationParams): EndTimeVali
       unixTimestamp,
       timeInfo,
     };
-  }, [value]);
+  })();
 
   return validationResult;
 }

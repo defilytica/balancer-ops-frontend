@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -81,7 +81,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
   const { isOpen, onOpen, onClose } = useDisclosure();
   const filteredNetworkOptions = getNetworksForFeature("swapFeeChange");
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     // Make sure we have a selected pool and new swap fee
     if (!selectedPool || !newSwapFee)
       return {
@@ -119,43 +119,34 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
       prefillDescription: `This PR ${feeChangeDirection}s the swap fee for ${poolName} (${shortPoolId}) from ${currentFee.toFixed(4)}% to ${newFee.toFixed(4)}% on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [selectedPool, newSwapFee, selectedNetwork]);
+  };
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network, "lm"),
-    [addressBook],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network, "lm");
 
-  const resolveGauntletFeeSetter = useCallback(
-    (network: string) => {
-      const gauntletData = getCategoryData(addressBook, network.toLowerCase(), "gauntlet");
+  const resolveGauntletFeeSetter = (network: string) => {
+    const gauntletData = getCategoryData(addressBook, network.toLowerCase(), "gauntlet");
 
-      if (gauntletData && typeof gauntletData === "object") {
-        const feeSetter = gauntletData["GauntletFeeSetter"];
-        if (feeSetter && typeof feeSetter === "string") {
-          return feeSetter;
-        }
+    if (gauntletData && typeof gauntletData === "object") {
+      const feeSetter = gauntletData["GauntletFeeSetter"];
+      if (feeSetter && typeof feeSetter === "string") {
+        return feeSetter;
       }
-      // Default to mainnet Gauntlet fee setter if not found
-      return network.toLowerCase() === "mainnet"
-        ? "0xE4a8ed6c1D8d048bD29A00946BFcf2DB10E7923B"
-        : "";
-    },
-    [addressBook],
-  );
+    }
+    // Default to mainnet Gauntlet fee setter if not found
+    return network.toLowerCase() === "mainnet"
+      ? "0xE4a8ed6c1D8d048bD29A00946BFcf2DB10E7923B"
+      : "";
+  };
 
-  const resolveFeeManagerSafe = useCallback(
-    (network: string) => {
-      // Get the feeManager safe address from multisigs
-      const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
-      if (multisigs && multisigs["feeManager"]) {
-        const feeManagerSafe = multisigs["feeManager"];
-        return typeof feeManagerSafe === "string" ? feeManagerSafe : "";
-      }
-      return "";
-    },
-    [addressBook],
-  );
+  const resolveFeeManagerSafe = (network: string) => {
+    // Get the feeManager safe address from multisigs
+    const multisigs = getCategoryData(addressBook, network.toLowerCase(), "multisigs");
+    if (multisigs && multisigs["feeManager"]) {
+      const feeManagerSafe = multisigs["feeManager"];
+      return typeof feeManagerSafe === "string" ? feeManagerSafe : "";
+    }
+    return "";
+  };
 
   const { loading, error, data } = useQuery<GetPoolsQuery, GetPoolsQueryVariables>(
     GetPoolsDocument,
@@ -165,30 +156,27 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     },
   );
 
-  const handlePoolSelection = useCallback((pool: Pool) => {
+  const handlePoolSelection = (pool: Pool) => {
     setSelectedPool(pool);
-  }, []);
+  };
 
-  const clearPoolSelection = useCallback(() => {
+  const clearPoolSelection = () => {
     setSelectedPool(null);
     setGeneratedPayload(null);
     setNewSwapFee("");
     setUseGauntletFeeSetter(false);
-  }, []);
+  };
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setGauntletFeeSetterAddress(resolveGauntletFeeSetter(newNetwork));
-      setFeeManagerSafeAddress(resolveFeeManagerSafe(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewSwapFee("");
-    },
-    [resolveMultisig, resolveGauntletFeeSetter, resolveFeeManagerSafe],
-  );
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setGauntletFeeSetterAddress(resolveGauntletFeeSetter(newNetwork));
+    setFeeManagerSafeAddress(resolveFeeManagerSafe(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewSwapFee("");
+  };
 
   const handleOpenPRModal = () => {
     if (generatedPayload) {
@@ -206,13 +194,9 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
 
   const isAuthorizedPool = selectedPool?.swapFeeManager === AUTHORIZED_OWNER;
 
-  const isGauntletAvailable = useMemo(() => {
-    return !!(gauntletFeeSetterAddress && feeManagerSafeAddress);
-  }, [gauntletFeeSetterAddress, feeManagerSafeAddress]);
+  const isGauntletAvailable = !!(gauntletFeeSetterAddress && feeManagerSafeAddress);
 
-  const v2Pools = useMemo(() => {
-    return data?.poolGetPools?.filter(pool => pool.protocolVersion !== 3);
-  }, [data]);
+  const v2Pools = data?.poolGetPools?.filter(pool => pool.protocolVersion !== 3);
 
   // Color mode values for dark mode support
   const textColorSecondary = useColorModeValue("gray.600", "gray.400");
@@ -297,7 +281,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
     setGeneratedPayload(JSON.stringify(payload, null, 2));
   };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -343,7 +327,7 @@ export default function ChangeSwapFeeModule({ addressBook }: ChangeSwapFeeProps)
         builderPath: "fee-setter",
       };
     }
-  }, [generatedPayload]);
+  };
 
   const currentFee = selectedPool ? parseFloat(selectedPool.dynamicData.swapFee) * 100 : 0;
   const newFee = newSwapFee ? parseFloat(newSwapFee) : 0;

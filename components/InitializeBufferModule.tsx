@@ -21,7 +21,7 @@ import {
   Container,
   AlertDescription,
 } from "@chakra-ui/react";
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AddressBook,
   GetTokensQuery,
@@ -112,10 +112,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   }, [walletAddress, executionMode]);
 
   // Extract token address from URL for efficient querying
-  const tokenParamFromUrl = useMemo(() => {
-    const tokenParam = searchParams.get("token");
-    return tokenParam && isAddress(tokenParam) ? tokenParam : null;
-  }, [searchParams]);
+  const tokenParam = searchParams.get("token");
+  const tokenParamFromUrl = tokenParam && isAddress(tokenParam) ? tokenParam : null;
 
   // Query for specific token from URL parameter
   const { data: urlTokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
@@ -155,12 +153,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     },
   );
 
-  const underlyingToken = useMemo(
-    () =>
-      tokensData?.tokenGetTokens?.find(
-        t => t.address.toLowerCase() === selectedToken?.underlyingTokenAddress?.toLowerCase(),
-      ),
-    [tokensData?.tokenGetTokens, selectedToken?.underlyingTokenAddress],
+  const underlyingToken = tokensData?.tokenGetTokens?.find(
+    t => t.address.toLowerCase() === selectedToken?.underlyingTokenAddress?.toLowerCase(),
   );
 
   // Fetch buffer asset (underlying token) for manually added token
@@ -174,14 +168,12 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       selectedToken.isManual,
   });
 
-  const networkOptionsWithV3 = useMemo(() => {
-    const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
-    return NETWORK_OPTIONS.filter(
-      network =>
-        networksWithVaultExplorer.includes(network.apiID.toLowerCase()) ||
-        network.apiID === "SONIC",
-    );
-  }, [addressBook]);
+  const networksWithVaultExplorer = getNetworksWithCategory(addressBook, "20241204-v3-vault");
+  const networkOptionsWithV3 = NETWORK_OPTIONS.filter(
+    network =>
+      networksWithVaultExplorer.includes(network.apiID.toLowerCase()) ||
+      network.apiID === "SONIC",
+  );
 
   // Handle URL parameter for network
   useEffect(() => {
@@ -208,7 +200,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     }
   }, [tokenParamFromUrl, selectedToken, selectedNetwork, urlTokenData]);
 
-  const isGenerateButtonDisabled = useMemo(() => {
+  const isGenerateButtonDisabled = (() => {
     // Check if required fields are missing
     if (!selectedNetwork || !selectedToken) {
       return true;
@@ -228,13 +220,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         isZeroAddress(debouncedUnderlyingTokenAddress) ||
         !isAddress(debouncedUnderlyingTokenAddress))
     );
-  }, [
-    selectedNetwork,
-    selectedToken,
-    exactAmountUnderlyingIn,
-    exactAmountWrappedIn,
-    debouncedUnderlyingTokenAddress,
-  ]);
+  })();
 
   const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newNetwork = e.target.value;
@@ -289,7 +275,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   }, [bufferAsset, selectedToken]);
 
   // Get buffer router address with validation
-  const getBufferRouterAddress = useCallback(() => {
+  const getBufferRouterAddress = () => {
     if (!selectedNetwork) return null;
 
     const bufferRouterAddress = getBufferRouterAddressForNetwork(addressBook, selectedNetwork);
@@ -306,10 +292,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     }
 
     return bufferRouterAddress;
-  }, [selectedNetwork, addressBook, toast]);
+  };
 
   // Function to wrap underlying tokens to wrapped tokens
-  const handleWrapTokens = useCallback(async () => {
+  const handleWrapTokens = async () => {
     try {
       if (!selectedToken || !exactAmountUnderlyingIn) {
         toast({
@@ -398,16 +384,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         isClosable: true,
       });
     }
-  }, [
-    selectedToken,
-    exactAmountUnderlyingIn,
-    debouncedUnderlyingTokenAddress,
-    walletAddress,
-    toast,
-  ]);
+  };
 
   // Direct transaction execution for EOA
-  const handleDirectBufferInitialization = useCallback(async () => {
+  const handleDirectBufferInitialization = async () => {
     try {
       if (!selectedToken) {
         toast({
@@ -671,21 +651,9 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         isClosable: true,
       });
     }
-  }, [
-    selectedToken,
-    minIssuedShares,
-    exactAmountUnderlyingIn,
-    exactAmountWrappedIn,
-    walletAddress,
-    selectedNetwork,
-    addressBook,
-    includePermit2,
-    debouncedUnderlyingTokenAddress,
-    toast,
-    getBufferRouterAddress,
-  ]);
+  };
 
-  const handleGeneratePayload = useCallback(async () => {
+  const handleGeneratePayload = async () => {
     // Validation
     if (!selectedNetwork || !selectedToken) {
       toast({
@@ -811,22 +779,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     );
 
     setGeneratedPayload(JSON.stringify(payload, null, 2));
-  }, [
-    selectedNetwork,
-    selectedToken,
-    debouncedUnderlyingTokenAddress,
-    minIssuedShares,
-    exactAmountUnderlyingIn,
-    exactAmountWrappedIn,
-    includePermit2,
-    seedingSafe,
-    toast,
-    addressBook,
-    isInitialized,
-  ]);
+  };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -848,7 +804,7 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
       },
       builderPath: "initialize-buffer",
     };
-  }, [generatedPayload]);
+  };
 
   return (
     <Container maxW="container.lg" mx="auto" p={4}>

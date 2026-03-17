@@ -31,7 +31,7 @@ import {
   DownloadIcon,
   InfoIcon,
 } from "@chakra-ui/icons";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -149,7 +149,7 @@ export default function AddRewardToGaugePage() {
   };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -163,7 +163,7 @@ export default function AddRewardToGaugePage() {
       params: {},
       builderPath: "add-reward-to-gauge",
     };
-  }, [generatedPayload, humanReadableText]);
+  };
 
   const addRewardRow = () => {
     if (!uiState.isFormValid) {

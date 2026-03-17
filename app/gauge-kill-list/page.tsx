@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { Box, Container, Heading, Text, VStack, Button } from "@chakra-ui/react";
 import DuneGaugeDataTable from "@/components/tables/DuneGaugeDataTable";
 import { useDuneData } from "@/lib/hooks/useDuneData";
@@ -22,13 +22,13 @@ export default function DuneDashboardPage() {
   } = useDuneData(queryId);
 
   // Filter data to only show rows where avg_60d_tvl < 100k
-  const data = useMemo(() => {
+  const data = (() => {
     if (!rawData || !Array.isArray(rawData)) return [];
     return rawData.filter(row => {
       // Check if avg_60d_tvl exists and is less than 100k
       return row.max_60d_tvl < 100000;
     });
-  }, [rawData]);
+  })();
 
   // Function to download data as CSV
   const downloadCSV = () => {

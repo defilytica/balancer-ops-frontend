@@ -31,7 +31,7 @@ import {
   AttachmentIcon,
 } from "@chakra-ui/icons";
 import Papa from "papaparse";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -78,7 +78,7 @@ export default function KillGaugePage() {
     setHumanReadableText(text);
   };
 
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -105,7 +105,7 @@ export default function KillGaugePage() {
       },
       builderPath: "kill-gauge",
     };
-  }, [generatedPayload]);
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

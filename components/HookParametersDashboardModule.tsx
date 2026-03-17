@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Box,
@@ -82,7 +82,7 @@ export default function HookParametersDashboardModule({
     setSelectedNetwork(e.target.value);
   };
 
-  const networkOptionsWithAll = useMemo(() => {
+  const networkOptionsWithAll = (() => {
     const baseOptions = [
       {
         label: "All networks",
@@ -107,7 +107,7 @@ export default function HookParametersDashboardModule({
           networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
       ),
     ];
-  }, [hookType.type, addressBook]);
+  })();
 
   const networksWithAll = {
     ...networks,

@@ -1,5 +1,4 @@
 import { STABLE_SURGE_PARAMS } from "@/constants/constants";
-import { useMemo } from "react";
 
 export function useValidateStableSurge(params: {
   maxSurgeFeePercentage: string;
@@ -7,8 +6,8 @@ export function useValidateStableSurge(params: {
 }) {
   const { maxSurgeFeePercentage, surgeThresholdPercentage } = params;
 
-  // Use useMemo to compute validation results synchronously
-  const validationResult = useMemo(() => {
+  // Compute validation results synchronously
+  const validationResult = (() => {
     let maxSurgeFeePercentageError: string | null = null;
     let surgeThresholdPercentageError: string | null = null;
 
@@ -41,7 +40,7 @@ export function useValidateStableSurge(params: {
       surgeThresholdPercentageError,
       isValid: !maxSurgeFeePercentageError && !surgeThresholdPercentageError,
     };
-  }, [maxSurgeFeePercentage, surgeThresholdPercentage]);
+  })();
 
   return validationResult;
 }

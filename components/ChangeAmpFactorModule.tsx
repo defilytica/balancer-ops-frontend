@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -104,7 +104,7 @@ export default function ChangeAmpFactorModule({
   // Get protocol-specific configuration
   const config = PROTOCOL_CONFIG[protocolVersion];
 
-  const filteredNetworkOptions = useMemo(() => {
+  const filteredNetworkOptions = (() => {
     let baseOptions = getNetworksForFeature("ampFactorChange");
 
     // For v3, filter to only networks where v3 vault is deployed
@@ -117,7 +117,7 @@ export default function ChangeAmpFactorModule({
     }
 
     return baseOptions;
-  }, [protocolVersion, addressBook]);
+  })();
   const {
     data: ampFactorData,
     isLoading: isLoadingAmp,
@@ -152,7 +152,7 @@ export default function ChangeAmpFactorModule({
   );
 
   // Filter pools based on protocol version and pool types
-  const filteredPools = useMemo(() => {
+  const filteredPools = (() => {
     if (!data?.poolGetPools) return [];
 
     const stablePoolTypes = [
@@ -166,25 +166,19 @@ export default function ChangeAmpFactorModule({
         stablePoolTypes.includes(pool.type as GqlPoolType) &&
         pool.protocolVersion === config.protocolVersion,
     );
-  }, [data?.poolGetPools, config.protocolVersion]);
+  })();
 
-  const resolveMultisig = useCallback(
-    (network: string) => getMultisigForNetwork(addressBook, network, config.multisigType),
-    [addressBook, config.multisigType],
-  );
+  const resolveMultisig = (network: string) => getMultisigForNetwork(addressBook, network, config.multisigType);
 
-  const handleNetworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newNetwork = e.target.value;
-      setSelectedNetwork(newNetwork);
-      setSelectedMultisig(resolveMultisig(newNetwork));
-      setSelectedPool(null);
-      setGeneratedPayload(null);
-      setNewAmpFactor("");
-      setEndDateTime("");
-    },
-    [resolveMultisig],
-  );
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNetwork = e.target.value;
+    setSelectedNetwork(newNetwork);
+    setSelectedMultisig(resolveMultisig(newNetwork));
+    setSelectedPool(null);
+    setGeneratedPayload(null);
+    setNewAmpFactor("");
+    setEndDateTime("");
+  };
 
   const handlePoolSelect = (pool: Pool) => {
     setSelectedPool(pool);
@@ -214,13 +208,13 @@ export default function ChangeAmpFactorModule({
     }
   };
 
-  const isAuthorizedPool = useMemo(() => {
+  const isAuthorizedPool = (() => {
     if (!selectedPool) return false;
     return (
       selectedPool.swapFeeManager === config.authorizedOwner ||
       "0x9ff471f9f98f42e5151c7855fd1b5aa906b1af7e"
     );
-  }, [selectedPool, config.authorizedOwner]);
+  })();
 
   const handleGenerateClick = () => {
     if (
@@ -279,7 +273,7 @@ export default function ChangeAmpFactorModule({
   };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -300,9 +294,9 @@ export default function ChangeAmpFactorModule({
       },
       builderPath: config.prType,
     };
-  }, [generatedPayload, config]);
+  };
 
-  const getPrefillValues = useCallback(() => {
+  const getPrefillValues = () => {
     if (!selectedPool || !debouncedAmpFactor || !debouncedEndDateTime) return {};
 
     const uniqueId = generateUniqueId();
@@ -326,13 +320,7 @@ export default function ChangeAmpFactorModule({
       prefillDescription: `This PR ${changeDirection}s the amplification factor for ${poolName} (${shortPoolId}) from ${Math.round(currentAmp)} to ${newAmp} on ${networkName}.`,
       prefillFilename: filename,
     };
-  }, [
-    selectedPool,
-    debouncedAmpFactor,
-    debouncedEndDateTime,
-    selectedNetwork,
-    ampFactorData?.amplificationParameter,
-  ]);
+  };
 
   // Calculate rate limit information for display
   const getRateLimitInfo = (currentAmp: number, endDateTime: string) => {

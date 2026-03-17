@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -196,7 +196,7 @@ export default function CorePoolsDashboardModule({
     setSelectedDateRangeIndex(parseInt(e.target.value, 10));
   };
 
-  const networkOptionsWithAll = useMemo(() => {
+  const networkOptionsWithAll = (() => {
     const baseOptions = [
       {
         label: "All networks",
@@ -215,23 +215,21 @@ export default function CorePoolsDashboardModule({
           networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
       ),
     ];
-  }, [addressBook]);
+  })();
 
-  const networksWithAll = useMemo(
-    () => ({
-      ...networks,
-      all: {
-        logo: "/imgs/globe.svg",
-        rpc: "",
-        explorer: "",
-        chainId: "",
-      },
-    }),
-    [],
-  );
+  const networksWithAll = ({
+    ...networks,
+
+    all: {
+      logo: "/imgs/globe.svg",
+      rpc: "",
+      explorer: "",
+      chainId: "",
+    }
+  });
 
   // Merge fee data with pool data
-  const enrichedPoolData = useMemo(() => {
+  const enrichedPoolData = (() => {
     const poolsMap = new Map<string, Pool>();
     if (poolsData && poolsData.length > 0) {
       for (const pool of poolsData) {
@@ -255,13 +253,13 @@ export default function CorePoolsDashboardModule({
         }
         return true;
       });
-  }, [feeData, poolsData, selectedNetwork]);
+  })();
 
   // Calculate totals
-  const totals = useMemo(() => {
+  const totals = (() => {
     const totalFees = enrichedPoolData.reduce((sum, item) => sum + item.earned_fees, 0);
     return calculateFeeDistributions(totalFees);
-  }, [enrichedPoolData]);
+  })();
 
   const isLoading = isLoadingFees || loadingPools;
 

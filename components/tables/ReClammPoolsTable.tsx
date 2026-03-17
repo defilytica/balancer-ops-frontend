@@ -32,7 +32,7 @@ import { formatTokenAmount } from "@/lib/utils/formatTokenAmount";
 import { Globe, Settings } from "react-feather";
 import { FaCircle } from "react-icons/fa";
 import { ArrowUp, ArrowDown } from "react-feather";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { isZeroAddress } from "@ethereumjs/util";
 import { getMultisigForNetwork } from "@/lib/utils/getMultisigForNetwork";
@@ -257,26 +257,23 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<Sorting>(Sorting.Desc);
 
-  const getOwnerType = useCallback(
-    (pool: Pool) => {
-      const network = pool.chain.toLowerCase();
-      const multisig = getMultisigForNetwork(addressBook, network);
+  const getOwnerType = (pool: Pool) => {
+    const network = pool.chain.toLowerCase();
+    const multisig = getMultisigForNetwork(addressBook, network);
 
-      // Early return for zero address
-      if (isZeroAddress(pool.swapFeeManager)) {
-        return "DAO";
-      }
+    // Early return for zero address
+    if (isZeroAddress(pool.swapFeeManager)) {
+      return "DAO";
+    }
 
-      if (multisig && pool.swapFeeManager.toLowerCase() === multisig.toLowerCase()) {
-        return "DAO";
-      }
+    if (multisig && pool.swapFeeManager.toLowerCase() === multisig.toLowerCase()) {
+      return "DAO";
+    }
 
-      return "EOA";
-    },
-    [addressBook],
-  );
+    return "EOA";
+  };
 
-  const calculateTokenPercentage = useCallback((token: Pool["poolTokens"][0], pool: Pool) => {
+  const calculateTokenPercentage = (token: Pool["poolTokens"][0], pool: Pool) => {
     if (!token.balanceUSD || !pool.dynamicData?.totalLiquidity) {
       return "0.0";
     }
@@ -290,39 +287,33 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
 
     const percentage = (tokenUSDValue / totalLiquidity) * 100;
     return percentage.toFixed(1);
-  }, []);
+  };
 
-  const getNetworkNameForUrl = useCallback((chainName: string) => {
+  const getNetworkNameForUrl = (chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
-  }, []);
+  };
 
-  const getPoolUrl = useCallback(
-    (pool: Pool) => {
-      const networkName = getNetworkNameForUrl(pool.chain);
-      return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
-    },
-    [getNetworkNameForUrl],
-  );
+  const getPoolUrl = (pool: Pool) => {
+    const networkName = getNetworkNameForUrl(pool.chain);
+    return `https://balancer.fi/pools/${networkName}/v3/${pool.id}`;
+  };
 
-  const getConfigRoute = useCallback((pool: Pool) => {
+  const getConfigRoute = (pool: Pool) => {
     const network = pool.chain.toLowerCase();
     return `/payload-builder/reclamm?network=${network}&pool=${pool.address}`;
-  }, []);
+  };
 
-  const handleSort = useCallback(
-    (field: SortField) => {
-      if (sortField === field) {
-        setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
-      } else {
-        setSortField(field);
-        setSortDirection(Sorting.Desc);
-      }
-    },
-    [sortField, sortDirection],
-  );
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === Sorting.Asc ? Sorting.Desc : Sorting.Asc);
+    } else {
+      setSortField(field);
+      setSortDirection(Sorting.Desc);
+    }
+  };
 
   // Filter pools based on minimum TVL
-  const filteredPools = useMemo(() => {
+  const filteredPools = (() => {
     let filtered = pools.filter(pool => {
       // Filter by minimum TVL
       if (minTvl !== null && minTvl !== undefined) {
@@ -355,7 +346,7 @@ export const ReClammPoolsTable = ({ pools, addressBook, minTvl }: ReClammPoolsTa
     }
 
     return filtered;
-  }, [pools, minTvl, sortField, sortDirection]);
+  })();
 
   return (
     <TableContainer

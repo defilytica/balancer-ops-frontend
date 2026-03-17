@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   Box,
@@ -54,7 +54,7 @@ export default function ReClammPoolsDashboardModule({
     setSelectedNetwork(e.target.value);
   };
 
-  const networkOptionsWithAll = useMemo(() => {
+  const networkOptionsWithAll = (() => {
     const baseOptions = [
       {
         label: "All networks",
@@ -74,7 +74,7 @@ export default function ReClammPoolsDashboardModule({
           networksWithV3.includes(network.apiID.toLowerCase()) || network.apiID === "SONIC",
       ),
     ];
-  }, [addressBook]);
+  })();
 
   const networksWithAll = {
     ...networks,

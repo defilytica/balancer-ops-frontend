@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { TokenListToken, BufferData, TokenWithBufferData } from "@/types/interfaces";
 import { fetchBufferInitializationStatus } from "@/lib/services/fetchBufferInitializationStatus";
 import { fetchBufferBalance } from "@/lib/services/fetchBufferBalance";
@@ -41,16 +41,12 @@ export function useTokenBufferData(tokens: TokenListToken[]): UseTokenBufferData
     return bufferDataMap.get(key) || { loading: false };
   };
 
-  const tokensWithBufferData: TokenWithBufferData[] = useMemo(() => {
-    return tokens.map(token => ({
-      ...token,
-      bufferData: getBufferData(token),
-    }));
-  }, [tokens, bufferDataMap]);
+  const tokensWithBufferData: TokenWithBufferData[] = tokens.map(token => ({
+    ...token,
+    bufferData: getBufferData(token),
+  }));
 
-  const isBufferDataLoading = useMemo(() => {
-    return tokens.length > 0 && Array.from(bufferDataMap.values()).some(data => data.loading);
-  }, [tokens.length, bufferDataMap]);
+  const isBufferDataLoading = tokens.length > 0 && Array.from(bufferDataMap.values()).some(data => data.loading);
 
   useEffect(() => {
     const loadAllTokenData = async () => {

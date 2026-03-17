@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -141,7 +141,7 @@ export default function CCTPBridge() {
   };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -159,7 +159,7 @@ export default function CCTPBridge() {
       },
       builderPath: "cctp-bridge",
     };
-  }, [generatedPayload, humanReadableText]);
+  };
 
   const handleDownloadClick = (payload: any) => {
     if (typeof window !== "undefined" && window.document) {

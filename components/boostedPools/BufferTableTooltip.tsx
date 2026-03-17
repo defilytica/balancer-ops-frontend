@@ -17,7 +17,6 @@ import { formatUnits } from "viem";
 import { calculateRatios } from "@/lib/utils/calculateRatios";
 import { formatValue } from "@/lib/utils/formatValue";
 import { BiErrorCircle } from "react-icons/bi";
-import { useMemo } from "react";
 import { filterRealErc4626Tokens } from "@/lib/utils/tokenFilters";
 import { BufferBlocklist } from "@/lib/services/fetchBufferBlocklist";
 
@@ -27,24 +26,19 @@ interface BufferTableTooltipProps {
 }
 
 export const BufferTableTooltip = ({ pool, blocklist }: BufferTableTooltipProps) => {
-  const realErc4626Tokens = useMemo(
-    () => filterRealErc4626Tokens(pool.poolTokens, blocklist),
-    [pool.poolTokens, blocklist],
-  );
+  const realErc4626Tokens = filterRealErc4626Tokens(pool.poolTokens, blocklist);
 
   const isLoading = realErc4626Tokens.some(
     token => pool.buffers?.[token.address]?.state?.isLoading,
   );
   const hasError = realErc4626Tokens.some(token => pool.buffers?.[token.address]?.state?.isError);
 
-  const nonEmptyBufferCount = useMemo(() => {
-    return realErc4626Tokens.filter(token => {
-      const buffer = pool.buffers?.[token.address];
-      if (!buffer) return false;
-      if (buffer.state?.isError) return true;
-      return buffer.underlyingBalance > BigInt(0) || buffer.wrappedBalance > BigInt(0);
-    }).length;
-  }, [realErc4626Tokens, pool.buffers]);
+  const nonEmptyBufferCount = realErc4626Tokens.filter(token => {
+    const buffer = pool.buffers?.[token.address];
+    if (!buffer) return false;
+    if (buffer.state?.isError) return true;
+    return buffer.underlyingBalance > BigInt(0) || buffer.wrappedBalance > BigInt(0);
+  }).length;
 
   const formatBufferValue = (value: bigint, decimals: number) => {
     const formattedValue = Number(formatUnits(value, decimals));

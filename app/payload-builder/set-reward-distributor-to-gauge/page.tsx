@@ -24,7 +24,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon, CopyIcon, DeleteIcon, DownloadIcon } from "@chakra-ui/icons";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   copyJsonToClipboard,
   copyTextToClipboard,
@@ -142,7 +142,7 @@ export default function SetRewardDistributorPage() {
   };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -156,7 +156,7 @@ export default function SetRewardDistributorPage() {
       params: {},
       builderPath: "set-reward-distributor-to-gauge",
     };
-  }, [generatedPayload, humanReadableText]);
+  };
 
   const addRewardRow = () => {
     if (!uiState.isFormValid) {

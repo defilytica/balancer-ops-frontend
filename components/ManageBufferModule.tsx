@@ -56,7 +56,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useQuery as useTanStackQuery } from "@tanstack/react-query";
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { isAddress } from "viem";
 import { isZeroAddress } from "@ethereumjs/util";
 import SimulateTransactionButton from "./btns/SimulateTransactionButton";
@@ -104,10 +104,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   const { address: walletAddress } = useAccount();
 
   // Extract token address from URL for efficient querying
-  const tokenParamFromUrl = useMemo(() => {
+  const tokenParamFromUrl = (() => {
     const tokenParam = searchParams.get("token");
     return tokenParam && isAddress(tokenParam) ? tokenParam : null;
-  }, [searchParams]);
+  })();
 
   // Query for specific token from URL parameter
   const { data: urlTokenData } = useQuery<GetTokensQuery, GetTokensQueryVariables>(
@@ -147,22 +147,18 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     },
   );
 
-  const underlyingToken = useMemo(
-    () =>
-      tokensData?.tokenGetTokens?.find(
-        t => t.address.toLowerCase() === selectedToken?.underlyingTokenAddress?.toLowerCase(),
-      ),
-    [tokensData?.tokenGetTokens, selectedToken?.underlyingTokenAddress],
+  const underlyingToken = tokensData?.tokenGetTokens?.find(
+    t => t.address.toLowerCase() === selectedToken?.underlyingTokenAddress?.toLowerCase(),
   );
 
-  const networkOptionsWithV3 = useMemo(() => {
+  const networkOptionsWithV3 = (() => {
     const networksWithV3 = getNetworksWithCategory(addressBook, "20241204-v3-vault");
     return NETWORK_OPTIONS.filter(
       network =>
         networksWithV3.includes(network.apiID.toLowerCase()) ||
         network.apiID.toLowerCase() === "sonic",
     );
-  }, [addressBook]);
+  })();
 
   // Handle URL parameters for network
   useEffect(() => {
@@ -273,14 +269,14 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     enabled: !!selectedToken && !!selectedNetwork,
   });
 
-  const underlyingTokenAddress = useMemo(() => {
+  const underlyingTokenAddress = (() => {
     if (!selectedToken) return undefined;
     return selectedToken.isManual
       ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
         ? bufferAsset.underlyingToken
         : selectedToken.underlyingTokenAddress
       : selectedToken.underlyingTokenAddress;
-  }, [selectedToken, bufferAsset]);
+  })();
 
   // Fetch wallet balance for underlying token
   const { data: walletUnderlyingBalance } = useBalance({
@@ -308,7 +304,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
   }, [walletAddress, executionMode]);
 
   // Get buffer router address with validation
-  const getBufferRouterAddress = useCallback(() => {
+  const getBufferRouterAddress = () => {
     if (!selectedNetwork) return null;
 
     const bufferRouterAddress = getBufferRouterAddressForNetwork(addressBook, selectedNetwork);
@@ -325,10 +321,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     }
 
     return bufferRouterAddress;
-  }, [selectedNetwork, addressBook, toast]);
+  };
 
   // Get vault address with validation
-  const getVaultAddress = useCallback(() => {
+  const getVaultAddress = () => {
     if (!selectedNetwork) return null;
 
     const vaultAddress = getVaultAddressForNetwork(addressBook, selectedNetwork);
@@ -345,24 +341,12 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     }
 
     return vaultAddress;
-  }, [selectedNetwork, addressBook, toast]);
+  };
 
-  const isGenerateButtonDisabled = useMemo(() => {
-    return (
-      !selectedNetwork ||
-      !selectedToken ||
-      !sharesAmount ||
-      (!underlyingTokenAmount && !wrappedTokenAmount) ||
-      !isInitialized
-    );
-  }, [
-    selectedNetwork,
-    selectedToken,
-    sharesAmount,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    isInitialized,
-  ]);
+  const isGenerateButtonDisabled = (!selectedNetwork ||
+  !selectedToken ||
+  !sharesAmount ||
+  (!underlyingTokenAmount && !wrappedTokenAmount) || !isInitialized);
 
   const calculateTokenAmounts = (newSharesAmount: string) => {
     if (bufferShares?.shares && bufferBalance && newSharesAmount) {
@@ -436,89 +420,64 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     setSharesAmount("");
   };
 
-  const handleRemoveLiquidity = useCallback(
-    (chainId: string) => {
-      const vaultAddress = getVaultAddress();
-      if (!vaultAddress) return null;
+  const handleRemoveLiquidity = (chainId: string) => {
+    const vaultAddress = getVaultAddress();
+    if (!vaultAddress) return null;
 
-      return generateRemoveLiquidityPayload(
-        {
-          wrappedToken: selectedToken!.address,
-          sharesToRemove: sharesAmount,
-          minAmountUnderlyingOutRaw: underlyingTokenAmount || "0",
-          minAmountWrappedOutRaw: wrappedTokenAmount || "0",
-          ownerSafe,
-        },
-        chainId,
-        vaultAddress,
-      );
-    },
-    [
-      getVaultAddress,
-      selectedToken,
-      sharesAmount,
-      underlyingTokenAmount,
-      wrappedTokenAmount,
-      ownerSafe,
-    ],
-  );
+    return generateRemoveLiquidityPayload(
+      {
+        wrappedToken: selectedToken!.address,
+        sharesToRemove: sharesAmount,
+        minAmountUnderlyingOutRaw: underlyingTokenAmount || "0",
+        minAmountWrappedOutRaw: wrappedTokenAmount || "0",
+        ownerSafe,
+      },
+      chainId,
+      vaultAddress,
+    );
+  };
 
-  const handleAddLiquidity = useCallback(
-    (chainId: string) => {
-      const bufferRouterAddress = getBufferRouterAddress();
-      if (!bufferRouterAddress) return null;
+  const handleAddLiquidity = (chainId: string) => {
+    const bufferRouterAddress = getBufferRouterAddress();
+    if (!bufferRouterAddress) return null;
 
-      let permit2Address;
-      if (includePermit2) {
-        permit2Address = getPermit2Address(addressBook, selectedNetwork);
-        if (!permit2Address) {
-          toast({
-            title: "Permit2 not found",
-            description: "Permit2 contract is not deployed on the selected network",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-          });
-          return null;
-        }
+    let permit2Address;
+    if (includePermit2) {
+      permit2Address = getPermit2Address(addressBook, selectedNetwork);
+      if (!permit2Address) {
+        toast({
+          title: "Permit2 not found",
+          description: "Permit2 contract is not deployed on the selected network",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return null;
       }
+    }
 
-      return generateAddLiquidityToBufferPayload(
-        {
-          wrappedToken: selectedToken!.address,
-          underlyingToken: selectedToken!.isManual
-            ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
-              ? bufferAsset.underlyingToken
-              : selectedToken!.underlyingTokenAddress
-            : selectedToken!.underlyingTokenAddress,
-          maxAmountUnderlyingIn: underlyingTokenAmount || "0",
-          maxAmountWrappedIn: wrappedTokenAmount || "0",
-          exactSharesToIssue: sharesAmount,
-          ownerSafe,
-          includePermit2,
-        },
-        chainId,
-        bufferRouterAddress,
-        permit2Address,
-      );
-    },
-    [
-      getBufferRouterAddress,
-      selectedToken,
-      underlyingTokenAmount,
-      wrappedTokenAmount,
-      sharesAmount,
-      ownerSafe,
-      includePermit2,
-      bufferAsset,
-      addressBook,
-      selectedNetwork,
-      toast,
-    ],
-  );
+    return generateAddLiquidityToBufferPayload(
+      {
+        wrappedToken: selectedToken!.address,
+        underlyingToken: selectedToken!.isManual
+          ? bufferAsset?.underlyingToken && !isZeroAddress(bufferAsset.underlyingToken)
+            ? bufferAsset.underlyingToken
+            : selectedToken!.underlyingTokenAddress
+          : selectedToken!.underlyingTokenAddress,
+        maxAmountUnderlyingIn: underlyingTokenAmount || "0",
+        maxAmountWrappedIn: wrappedTokenAmount || "0",
+        exactSharesToIssue: sharesAmount,
+        ownerSafe,
+        includePermit2,
+      },
+      chainId,
+      bufferRouterAddress,
+      permit2Address,
+    );
+  };
 
   // Direct transaction execution for EOA with proper permit2 flow
-  const handleDirectAddLiquidity = useCallback(async () => {
+  const handleDirectAddLiquidity = async () => {
     try {
       if (!selectedToken || !sharesAmount) {
         toast({
@@ -760,23 +719,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         isClosable: true,
       });
     }
-  }, [
-    selectedToken,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    sharesAmount,
-    walletAddress,
-    getBufferRouterAddress,
-    bufferAsset,
-    includePermit2,
-    addressBook,
-    selectedNetwork,
-    toast,
-    underlyingTokenAddress,
-  ]);
+  };
 
   // Function to wrap underlying tokens to wrapped tokens
-  const handleWrapTokens = useCallback(async () => {
+  const handleWrapTokens = async () => {
     try {
       if (!selectedToken || !underlyingTokenAmount) {
         toast({
@@ -859,16 +805,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         isClosable: true,
       });
     }
-  }, [
-    selectedToken,
-    underlyingTokenAmount,
-    walletAddress,
-    bufferAsset,
-    toast,
-    underlyingTokenAddress,
-  ]);
+  };
 
-  const handleDirectRemoveLiquidity = useCallback(async () => {
+  const handleDirectRemoveLiquidity = async () => {
     try {
       if (!selectedToken || !sharesAmount) {
         toast({
@@ -922,16 +861,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         isClosable: true,
       });
     }
-  }, [
-    selectedToken,
-    sharesAmount,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    getVaultAddress,
-    toast,
-  ]);
+  };
 
-  const handleGeneratePayload = useCallback(async () => {
+  const handleGeneratePayload = async () => {
     if (!selectedNetwork || !selectedToken || !sharesAmount) {
       toast({
         title: "Missing information",
@@ -998,19 +930,9 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     if (payload) {
       setGeneratedPayload(JSON.stringify(payload, null, 2));
     }
-  }, [
-    selectedNetwork,
-    selectedToken,
-    sharesAmount,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    operationType,
-    handleRemoveLiquidity,
-    handleAddLiquidity,
-    toast,
-  ]);
+  };
 
-  const handleDirectExecution = useCallback(async () => {
+  const handleDirectExecution = async () => {
     if (!selectedNetwork || !selectedToken || !sharesAmount) {
       toast({
         title: "Missing information",
@@ -1062,20 +984,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
     } else {
       await handleDirectRemoveLiquidity();
     }
-  }, [
-    selectedNetwork,
-    selectedToken,
-    sharesAmount,
-    underlyingTokenAmount,
-    wrappedTokenAmount,
-    operationType,
-    handleDirectAddLiquidity,
-    handleDirectRemoveLiquidity,
-    toast,
-  ]);
+  };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -1119,7 +1031,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
         builderPath: "manage-buffer",
       };
     }
-  }, [generatedPayload, selectedToken]);
+  };
 
   return (
     <Container maxW="container.lg" mx="auto" p={4}>
@@ -1581,7 +1493,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
               </Button>
             ) : executionMode === ExecutionMode.EOA && walletAddress ? (
               // EOA Mode: Show Execute and Wrap Tokens buttons
-              <>
+              (<>
                 <Button
                   variant="primary"
                   onClick={handleDirectExecution}
@@ -1600,10 +1512,10 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                       Wrap Tokens
                     </Button>
                   )}
-              </>
+              </>)
             ) : (
               // Safe Mode: Show only Generate Payload button
-              <>
+              (<>
                 <Button
                   variant="primary"
                   onClick={handleGeneratePayload}
@@ -1615,7 +1527,7 @@ export default function ManageBufferModule({ addressBook }: ManageBufferModulePr
                   generateData={generateComposerData}
                   isDisabled={!generatedPayload}
                 />
-              </>
+              </>)
             )}
           </Flex>
           {executionMode === ExecutionMode.SAFE && generatedPayload && (

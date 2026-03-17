@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -135,18 +135,15 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
     setPayments(newPayments);
   };
 
-  const handleValueChange = useCallback(
-    (index: number, valueAsString: string) => {
-      const updatedPayments = [...payments];
-      updatedPayments[index] = {
-        ...updatedPayments[index],
-        displayValue: valueAsString,
-        value: valueAsString === "" ? 0 : parseFloat(valueAsString) || 0,
-      };
-      setPayments(updatedPayments);
-    },
-    [payments],
-  );
+  const handleValueChange = (index: number, valueAsString: string) => {
+    const updatedPayments = [...payments];
+    updatedPayments[index] = {
+      ...updatedPayments[index],
+      displayValue: valueAsString,
+      value: valueAsString === "" ? 0 : parseFloat(valueAsString) || 0,
+    };
+    setPayments(updatedPayments);
+  };
 
   const handleGenerateClick = () => {
     if (!selectedMultisig) {
@@ -173,7 +170,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
   };
 
   // Generate composer data only when button is clicked
-  const generateComposerData = useCallback(() => {
+  const generateComposerData = () => {
     if (!generatedPayload) return null;
 
     const payload =
@@ -191,7 +188,7 @@ export default function CreatePaymentContent({ addressBook }: CreatePaymentProps
       },
       builderPath: "create-payment",
     };
-  }, [generatedPayload, humanReadableText]);
+  };
 
   // Prepare pre-filled values for PR modal
   const getPrefillValues = () => {

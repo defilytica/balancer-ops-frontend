@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   AlertDescription,
@@ -115,16 +115,16 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     },
   });
 
-  const sdBALPrice = useMemo(() => {
+  const sdBALPrice = (() => {
     if (!priceData?.tokenGetCurrentPrices) return null;
     const price = priceData.tokenGetCurrentPrices.find(
       p => p.address.toLowerCase() === SDBAL_TOKEN_ADDRESS.toLowerCase(),
     );
     return price?.price || null;
-  }, [priceData?.tokenGetCurrentPrices]);
+  })();
 
   // Calculate claimable amounts
-  const claimableVotingRewards = useMemo(() => {
+  const claimableVotingRewards = (() => {
     if (!selectedContract || !merklData) return null;
     const vesterAddress = selectedContract.address.toLowerCase();
     const data = merklData[vesterAddress];
@@ -137,7 +137,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       amount: formatted,
       usdValue: sdBALPrice ? (parseFloat(formatted) * sdBALPrice).toFixed(2) : null,
     };
-  }, [selectedContract, merklData, sdBALPrice]);
+  })();
 
   // Read the gauge address from the selected contract
   const { data: gaugeAddress } = useReadContract({
@@ -160,15 +160,12 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   });
 
   // Get token logos from fetched data
-  const getTokenLogo = useCallback(
-    (address: string) => {
-      const token = tokenData?.tokenGetTokens.find(
-        t => t.address.toLowerCase() === address.toLowerCase(),
-      );
-      return token?.logoURI || null;
-    },
-    [tokenData],
-  );
+  const getTokenLogo = (address: string) => {
+    const token = tokenData?.tokenGetTokens.find(
+      t => t.address.toLowerCase() === address.toLowerCase(),
+    );
+    return token?.logoURI || null;
+  };
 
   // Read claimable USDC from gauge
   const { data: claimableUSDC } = useReadContract({
@@ -193,21 +190,21 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   });
 
   // Get token prices for USDC and BAL
-  const usdcPrice = useMemo(() => {
+  const usdcPrice = (() => {
     if (!priceData?.tokenGetCurrentPrices) return 1; // USDC is ~$1
     const price = priceData.tokenGetCurrentPrices.find(
       p => p.address.toLowerCase() === USDC_ADDRESS.toLowerCase(),
     );
     return price?.price || 1;
-  }, [priceData?.tokenGetCurrentPrices, USDC_ADDRESS]);
+  })();
 
-  const balPrice = useMemo(() => {
+  const balPrice = (() => {
     if (!priceData?.tokenGetCurrentPrices) return null;
     const price = priceData.tokenGetCurrentPrices.find(
       p => p.address.toLowerCase() === BAL_ADDRESS.toLowerCase(),
     );
     return price?.price || null;
-  }, [priceData?.tokenGetCurrentPrices, BAL_ADDRESS]);
+  })();
 
   // Check if the current merkle proof has already been claimed
   const { data: isAlreadyClaimed, isLoading: isCheckingClaimed } = useReadContract({
@@ -231,7 +228,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   });
 
   // Calculate vesting rewards amounts
-  const vestingRewards = useMemo(() => {
+  const vestingRewards = (() => {
     const rewards = [];
 
     if (claimableUSDC && BigInt(claimableUSDC.toString()) > BigInt(0)) {
@@ -253,10 +250,10 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     }
 
     return rewards;
-  }, [claimableUSDC, claimableBAL, usdcPrice, balPrice]);
+  })();
 
   // Calculate total claimable value in USD
-  const totalClaimableUSD = useMemo(() => {
+  const totalClaimableUSD = (() => {
     let total = 0;
 
     // Add voting rewards value only if not already claimed
@@ -272,10 +269,10 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     });
 
     return total.toFixed(2);
-  }, [claimableVotingRewards, vestingRewards, isAlreadyClaimed]);
+  })();
 
   // Get all stake_dao vesting contracts from the address book
-  const vestingContracts = useMemo(() => {
+  const vestingContracts = (() => {
     const contracts: VestingContract[] = [];
 
     // Get networks that have stake_dao category
@@ -301,7 +298,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     });
 
     return contracts;
-  }, [addressBook]);
+  })();
 
   // Check if connected wallet is beneficiary of selected contract
   const { data: beneficiary, isLoading: isLoadingBeneficiary } = useReadContract({
@@ -313,7 +310,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     },
   });
 
-  const isBeneficiary = useMemo(() => {
+  const isBeneficiary = (() => {
     if (!connectedAddress || !beneficiary) {
       return false;
     }
@@ -328,7 +325,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     });
 
     return connected === beneficiaryAddr;
-  }, [connectedAddress, beneficiary]);
+  })();
 
   // Read the vesting nonce (total number of vesting positions)
   const { data: vestingNonce, isLoading: isLoadingNonce } = useReadContract({
@@ -341,7 +338,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   });
 
   // Fetch all vesting positions based on the nonce
-  const vestingPositionContracts = useMemo(() => {
+  const vestingPositionContracts = (() => {
     if (!vestingNonce || !selectedContract?.address) return [];
 
     const nonce = Number(vestingNonce);
@@ -357,7 +354,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     }
 
     return contracts;
-  }, [vestingNonce, selectedContract?.address]);
+  })();
 
   const { data: vestingPositionsData, isLoading: isLoadingPositions } = useReadContracts({
     contracts: vestingPositionContracts as any,
@@ -367,7 +364,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
   });
 
   // Process vesting positions data
-  const vestingPositions = useMemo(() => {
+  const vestingPositions = (() => {
     if (!vestingPositionsData) return [];
 
     return vestingPositionsData
@@ -399,10 +396,10 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         return null;
       })
       .filter((pos): pos is VestingPosition => pos !== null);
-  }, [vestingPositionsData]);
+  })();
 
   // Custom hook to fetch Merkl data
-  const fetchMerklData = useCallback(async () => {
+  const fetchMerklData = async () => {
     // Add timestamp to bypass cache during development
     const response = await fetch(`/api/merkl?t=${Date.now()}`, {
       cache: "no-cache",
@@ -415,7 +412,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
       throw new Error("Failed to fetch Merkl data");
     }
     return response.json();
-  }, []);
+  };
 
   // Use React Query for Merkl data fetching
   const {
@@ -467,7 +464,7 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     }
   }, [merklError, toast]);
 
-  const handleSwitchToMainnet = useCallback(async () => {
+  const handleSwitchToMainnet = async () => {
     try {
       await switchChainAsync({ chainId: MAINNET_CHAIN_ID });
     } catch (error: any) {
@@ -480,58 +477,52 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         isClosable: true,
       });
     }
-  }, [switchChainAsync, toast]);
+  };
 
-  const handleContractSelect = useCallback(
-    (contractAddress: string) => {
-      const contract = vestingContracts.find(c => c.address === contractAddress);
-      setSelectedContract(contract || null);
-    },
-    [vestingContracts],
-  );
+  const handleContractSelect = (contractAddress: string) => {
+    const contract = vestingContracts.find(c => c.address === contractAddress);
+    setSelectedContract(contract || null);
+  };
 
   // Shared validation for claim functions
-  const validateClaim = useCallback(
-    (rewardType: string): boolean => {
-      if (!selectedContract || !connectedAddress) {
-        toast({
-          title: "Error",
-          description: "Please connect your wallet and select a vesting contract",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return false;
-      }
+  const validateClaim = (rewardType: string): boolean => {
+    if (!selectedContract || !connectedAddress) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet and select a vesting contract",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return false;
+    }
 
-      if (!isOnMainnet) {
-        toast({
-          title: "Wrong network",
-          description: `Please switch to Ethereum Mainnet to claim ${rewardType}`,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return false;
-      }
+    if (!isOnMainnet) {
+      toast({
+        title: "Wrong network",
+        description: `Please switch to Ethereum Mainnet to claim ${rewardType}`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return false;
+    }
 
-      if (!isBeneficiary) {
-        toast({
-          title: "Not authorized",
-          description: "You are not the beneficiary of this vesting contract",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        return false;
-      }
+    if (!isBeneficiary) {
+      toast({
+        title: "Not authorized",
+        description: "You are not the beneficiary of this vesting contract",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return false;
+    }
 
-      return true;
-    },
-    [selectedContract, connectedAddress, isOnMainnet, isBeneficiary, toast],
-  );
+    return true;
+  };
 
-  const handleClaimRewards = useCallback(async () => {
+  const handleClaimRewards = async () => {
     if (!validateClaim("rewards")) return;
 
     try {
@@ -559,9 +550,9 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         isClosable: true,
       });
     }
-  }, [validateClaim, selectedContract, writeContractAsync, toast]);
+  };
 
-  const handleClaimVotingRewards = useCallback(async () => {
+  const handleClaimVotingRewards = async () => {
     if (!validateClaim("voting rewards")) return;
 
     if (!merklData) {
@@ -668,20 +659,10 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
         isClosable: true,
       });
     }
-  }, [
-    validateClaim,
-    selectedContract,
-    connectedAddress,
-    isOnMainnet,
-    isBeneficiary,
-    merklData,
-    isAlreadyClaimed,
-    writeContractAsync,
-    toast,
-  ]);
+  };
 
   // Helper function to format dates (absolute + relative)
-  const formatVestingDate = useCallback((vestingEnds: bigint) => {
+  const formatVestingDate = (vestingEnds: bigint) => {
     const date = new Date(Number(vestingEnds) * 1000);
     const now = Date.now();
     const vestingTime = date.getTime();
@@ -727,41 +708,38 @@ export default function SdbalVestingManager({ addressBook }: SdbalVestingManager
     }
 
     return { absoluteDate, relativeTime, diffDays };
-  }, []);
+  };
 
   // Handle claiming a specific vesting position
-  const handleClaimVesting = useCallback(
-    async (nonce: number) => {
-      if (!validateClaim("vesting position")) return;
+  const handleClaimVesting = async (nonce: number) => {
+    if (!validateClaim("vesting position")) return;
 
-      try {
-        const hash = await writeContractAsync({
-          address: selectedContract!.address as `0x${string}`,
-          abi: sdBALVesterABI,
-          functionName: "claim",
-          args: [BigInt(nonce)],
-        });
+    try {
+      const hash = await writeContractAsync({
+        address: selectedContract!.address as `0x${string}`,
+        abi: sdBALVesterABI,
+        functionName: "claim",
+        args: [BigInt(nonce)],
+      });
 
-        toast({
-          title: "Transaction submitted",
-          description: `Claiming vesting position #${nonce}. Transaction: ${hash}`,
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (error: any) {
-        console.error("Error claiming vesting position:", error);
-        toast({
-          title: "Transaction failed",
-          description: error.message || "Failed to claim vesting position",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    },
-    [validateClaim, selectedContract, writeContractAsync, toast],
-  );
+      toast({
+        title: "Transaction submitted",
+        description: `Claiming vesting position #${nonce}. Transaction: ${hash}`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      console.error("Error claiming vesting position:", error);
+      toast({
+        title: "Transaction failed",
+        description: error.message || "Failed to claim vesting position",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <Container maxW="container.lg">

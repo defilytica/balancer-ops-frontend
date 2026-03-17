@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import NextLink from "next/link";
 import {
   Text,
@@ -267,19 +267,16 @@ const RewardTokensTable: React.FC<RewardTokensTableProps> = ({
   const textTertiary = useColorModeValue("gray.600", "gray.400");
   const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50");
 
-  const getNetworkNameForUrl = useCallback((chainName: string) => {
+  const getNetworkNameForUrl = (chainName: string) => {
     return chainName.toLowerCase() === "mainnet" ? "ethereum" : chainName.toLowerCase();
-  }, []);
+  };
 
-  const getPoolUrl = useCallback(
-    (pool: RewardTokenData) => {
-      const networkName = getNetworkNameForUrl(selectedNetwork);
-      const domain = selectedNetwork.toLowerCase() === "sonic" ? "beets.fi" : "balancer.fi";
-      const poolIdentifier = pool.version === "v3" ? pool.poolAddress : pool.poolId;
-      return `https://${domain}/pools/${networkName}/${pool.version}/${poolIdentifier}`;
-    },
-    [getNetworkNameForUrl, selectedNetwork],
-  );
+  const getPoolUrl = (pool: RewardTokenData) => {
+    const networkName = getNetworkNameForUrl(selectedNetwork);
+    const domain = selectedNetwork.toLowerCase() === "sonic" ? "beets.fi" : "balancer.fi";
+    const poolIdentifier = pool.version === "v3" ? pool.poolAddress : pool.poolId;
+    return `https://${domain}/pools/${networkName}/${pool.version}/${poolIdentifier}`;
+  };
 
   const toggleRow = (poolAddress: string) => {
     setExpandedRows(prev => {
