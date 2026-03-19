@@ -165,6 +165,7 @@ export enum GqlHookType {
   DirectionalFee = 'DIRECTIONAL_FEE',
   ExitFee = 'EXIT_FEE',
   FeeTaking = 'FEE_TAKING',
+  FixedLbp = 'FIXED_LBP',
   Lbp = 'LBP',
   Lottery = 'LOTTERY',
   MevTax = 'MEV_TAX',
