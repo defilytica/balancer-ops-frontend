@@ -181,25 +181,28 @@ function RewardsInjector({
     </MenuItem>
   );
 
-  const renderSelectedAddress = () => (
-    <Flex alignItems="center">
-      <Image
-        src={networks[selectedAddress!.network]?.logo}
-        alt={`${selectedAddress!.network} logo`}
-        boxSize="20px"
-        mr={2}
-      />
-      <Text as="span" fontFamily="mono" isTruncated>
-        {isMobile ? `${selectedAddress!.address.slice(0, 6)}...` : selectedAddress!.address}
-        {(selectedAddress!.token || tokenSymbol) && (
-          <Text as="span" color="gray.500">
-            {" - "}
-            {selectedAddress!.token || tokenSymbol}
-          </Text>
-        )}
-      </Text>
-    </Flex>
-  );
+  const renderSelectedAddress = () => {
+    if (!selectedAddress) return null;
+    return (
+      <Flex alignItems="center">
+        <Image
+          src={networks[selectedAddress.network]?.logo}
+          alt={`${selectedAddress.network} logo`}
+          boxSize="20px"
+          mr={2}
+        />
+        <Text as="span" fontFamily="mono" isTruncated>
+          {isMobile ? `${selectedAddress.address.slice(0, 6)}...` : selectedAddress.address}
+          {(selectedAddress.token || tokenSymbol) && (
+            <Text as="span" color="gray.500">
+              {" - "}
+              {selectedAddress.token || tokenSymbol}
+            </Text>
+          )}
+        </Text>
+      </Flex>
+    );
+  };
 
   return (
     <Container maxW="container.lg" justifyContent="center" alignItems="center">
