@@ -124,7 +124,7 @@
     "cookie": "^0.7.0",
     "js-yaml": "^4.1.1",
     "axios": "^1.13.5",
-    "h3": "^1.15.6",
+    "h3": "^1.15.9",
     "socket.io-parser": "^4.2.6",
     "lodash": "^4.17.23",
     "hono": "^4.12.7",
@@ -133,7 +133,9 @@
     "immutable": "^3.8.3",
     "bn.js": "^5.2.3",
     "chakra-react-select": "^4.9.1",
-    "@codeium/react-code-editor": "^1.0.12"
+    "@codeium/react-code-editor": "^1.0.12",
+    "flatted": "^3.4.2",
+    "effect": "^3.20.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
