@@ -1,0 +1,148 @@
+name: Auto-fix vulnerable transitive dependencies
+
+on:
+  schedule:
+    # Runs every Monday at 8:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fix-vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Audit and update resolutions
+        id: audit
+        run: |
+          # Run yarn audit and extract vulnerable packages with their patched versions
+          AUDIT_JSON=$(yarn audit --json 2>/dev/null || true)
+
+          # Parse audit output to find packages needing resolution updates
+          echo "$AUDIT_JSON" | python3 << 'PYEOF'
+          import sys, json, os
+
+          advisories = {}
+          for line in sys.stdin:
+              try:
+                  obj = json.loads(line)
+                  if obj.get("type") == "auditAdvisory":
+                      d = obj["data"]["advisory"]
+                      name = d["module_name"]
+                      patched = d.get("patched_versions", "")
+                      severity = d["severity"]
+                      if patched.startswith(">="):
+                          version = patched[2:]
+                          if name not in advisories or version > advisories[name]["version"]:
+                              advisories[name] = {"version": version, "severity": severity}
+              except:
+                  pass
+
+          output_file = os.environ.get("GITHUB_OUTPUT", "/dev/null")
+
+          if not advisories:
+              print("No vulnerabilities with available patches found")
+              with open(output_file, "a") as f:
+                  f.write("has_updates=false\n")
+              sys.exit(0)
+
+          # Read current package.json to check existing resolutions
+          with open("package.json", "r") as f:
+              pkg = json.load(f)
+
+          resolutions = pkg.get("resolutions", {})
+          needed = {}
+
+          for name, info in advisories.items():
+              current = resolutions.get(name, "")
+              target = f"^{info['version']}"
+              if current != target:
+                  needed[name] = {"version": target, "severity": info["severity"], "current": current}
+
+          if not needed:
+              print("All resolutions already up to date")
+              with open(output_file, "a") as f:
+                  f.write("has_updates=false\n")
+              sys.exit(0)
+
+          # Build summary table
+          lines = []
+          lines.append("| Dependency | Before | After | Severity |")
+          lines.append("|---|---|---|---|")
+          for name, info in sorted(needed.items()):
+              before = info["current"] if info["current"] else "_(none)_"
+              lines.append(f"| **{name}** | {before} | {info['version']} | {info['severity']} |")
+
+          summary = "\n".join(lines)
+          print(f"Updates needed:\n{summary}")
+
+          # Apply resolutions
+          for name, info in needed.items():
+              resolutions[name] = info["version"]
+
+          pkg["resolutions"] = resolutions
+
+          with open("package.json", "w") as f:
+              json.dump(pkg, f, indent=2)
+              f.write("\n")
+
+          # Write outputs
+          with open(output_file, "a") as f:
+              f.write("has_updates=true\n")
+              f.write(f"summary<<EOFSUM\n{summary}\nEOFSUM\n")
+
+          print(f"Applied {len(needed)} resolution updates to package.json")
+          PYEOF
+
+      - name: Reinstall with updated resolutions
+        if: steps.audit.outputs.has_updates == 'true'
+        run: yarn install
+
+      - name: Verify fixes
+        if: steps.audit.outputs.has_updates == 'true'
+        run: |
+          echo "Remaining vulnerabilities (if any):"
+          yarn audit --summary 2>/dev/null || true
+
+      - name: Create Pull Request
+        if: steps.audit.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "fix: update resolutions for vulnerable transitive dependencies"
+          branch: automated/security-resolutions
+          delete-branch: true
+          title: "Security: Update transitive dependency resolutions"
+          body: |
+            ## Summary
+            Automated update of `resolutions` in `package.json` to fix vulnerable transitive dependencies.
+
+            ### Changes
+            ${{ steps.audit.outputs.summary }}
+
+            ### How this works
+            - `yarn audit` detected vulnerable transitive dependencies
+            - `resolutions` entries were added/updated in `package.json` to force safe versions
+            - `yarn install` was re-run to update `yarn.lock`
+
+            > **Note:** This only updates transitive dependencies via resolutions. Direct dependency upgrades should be done manually to avoid breaking changes.
+
+            ### Verify
+            - [ ] `yarn install` succeeds
+            - [ ] `yarn build` succeeds
+            - [ ] App runs correctly
+          labels: |
+            dependencies
+            security
