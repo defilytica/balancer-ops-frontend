@@ -9,7 +9,6 @@ import {
   safeWallet,
   injectedWallet,
   walletConnectWallet,
-  metaMaskWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import {
   arbitrum,
@@ -129,14 +128,16 @@ const connectors = isServer
         {
           groupName: "Recommended",
           wallets: [
-            // metaMaskWallet must appear above injectedWallet to avoid random disconnection issues
-            metaMaskWallet,
+            // injectedWallet detects MetaMask extension natively via window.ethereum.isMetaMask.
+            // metaMaskWallet was removed because @metamask/sdk's iframe (frame.js) tries to
+            // assign window.ethereum which throws when a wallet extension already defined it
+            // as a read-only getter. WalletConnect handles MetaMask mobile deep-linking.
+            injectedWallet,
             safeWallet,
             walletConnectWallet,
             rabbyWallet,
             coinbaseWallet,
             rainbowWallet,
-            injectedWallet,
           ],
         },
       ],
