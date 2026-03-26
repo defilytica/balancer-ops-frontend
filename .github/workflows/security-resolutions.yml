@@ -9,56 +9,101 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  security-events: read
 
 jobs:
   fix-vulnerabilities:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Audit and update resolutions
+      - name: Fetch Dependabot alerts and run yarn audit
+        id: fetch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "::group::Fetching Dependabot alerts (medium/high/critical)"
+          gh api \
+            "/repos/${{ github.repository }}/dependabot/alerts?state=open&severity=medium,high,critical&per_page=100" \
+            > /tmp/dependabot-alerts.json 2>/dev/null || echo "[]" > /tmp/dependabot-alerts.json
+          echo "::endgroup::"
+
+          echo "::group::Running yarn audit"
+          yarn audit --json > /tmp/yarn-audit.json 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Analyze and update resolutions
         id: audit
         run: |
-          # Run yarn audit and extract vulnerable packages with their patched versions
-          AUDIT_JSON=$(yarn audit --json 2>/dev/null || true)
+          python3 << 'PYEOF'
+          import json, os
 
-          # Parse audit output to find packages needing resolution updates
-          echo "$AUDIT_JSON" | python3 << 'PYEOF'
-          import sys, json, os
-
+          # "medium" = Dependabot terminology, "moderate" = yarn audit terminology
+          MIN_SEVERITIES = {"moderate", "medium", "high", "critical"}
           advisories = {}
-          for line in sys.stdin:
-              try:
-                  obj = json.loads(line)
-                  if obj.get("type") == "auditAdvisory":
-                      d = obj["data"]["advisory"]
-                      name = d["module_name"]
-                      patched = d.get("patched_versions", "")
-                      severity = d["severity"]
-                      if patched.startswith(">="):
-                          version = patched[2:]
+
+          # --- Source 1: Dependabot alerts ---
+          try:
+              with open("/tmp/dependabot-alerts.json", "r") as f:
+                  alerts = json.load(f)
+              if isinstance(alerts, list):
+                  for alert in alerts:
+                      vuln = alert.get("security_vulnerability", {})
+                      name = vuln.get("package", {}).get("name", "")
+                      severity = alert.get("security_advisory", {}).get("severity", "").lower()
+                      if severity not in MIN_SEVERITIES or not name:
+                          continue
+                      patched_obj = vuln.get("first_patched_version")
+                      if patched_obj and patched_obj.get("identifier"):
+                          version = patched_obj["identifier"]
                           if name not in advisories or version > advisories[name]["version"]:
-                              advisories[name] = {"version": version, "severity": severity}
-              except:
-                  pass
+                              advisories[name] = {"version": version, "severity": severity, "source": "dependabot"}
+                          print(f"  Dependabot: {name} ({severity}) -> {version}")
+          except Exception as e:
+              print(f"  Warning: Could not parse Dependabot alerts: {e}")
+
+          # --- Source 2: yarn audit ---
+          try:
+              with open("/tmp/yarn-audit.json", "r") as f:
+                  for line in f:
+                      try:
+                          obj = json.loads(line)
+                          if obj.get("type") == "auditAdvisory":
+                              d = obj["data"]["advisory"]
+                              name = d["module_name"]
+                              patched = d.get("patched_versions", "")
+                              severity = d.get("severity", "").lower()
+                              if severity not in MIN_SEVERITIES:
+                                  continue
+                              if patched.startswith(">="):
+                                  version = patched[2:].strip()
+                                  if name not in advisories or version > advisories[name]["version"]:
+                                      advisories[name] = {"version": version, "severity": severity, "source": "yarn-audit"}
+                                  print(f"  yarn audit: {name} ({severity}) -> {version}")
+                      except json.JSONDecodeError:
+                          pass
+          except Exception as e:
+              print(f"  Warning: Could not parse yarn audit: {e}")
+
+          print(f"\nFound {len(advisories)} vulnerable packages (moderate/high/critical)")
 
           output_file = os.environ.get("GITHUB_OUTPUT", "/dev/null")
 
           if not advisories:
-              print("No vulnerabilities with available patches found")
+              print("No actionable vulnerabilities found")
               with open(output_file, "a") as f:
                   f.write("has_updates=false\n")
-              sys.exit(0)
+              raise SystemExit(0)
 
-          # Read current package.json to check existing resolutions
+          # Read current package.json
           with open("package.json", "r") as f:
               pkg = json.load(f)
 
@@ -69,26 +114,33 @@ jobs:
               current = resolutions.get(name, "")
               target = f"^{info['version']}"
               if current != target:
-                  needed[name] = {"version": target, "severity": info["severity"], "current": current}
+                  needed[name] = {
+                      "version": target,
+                      "severity": info["severity"],
+                      "current": current,
+                      "source": info["source"],
+                  }
 
           if not needed:
               print("All resolutions already up to date")
               with open(output_file, "a") as f:
                   f.write("has_updates=false\n")
-              sys.exit(0)
+              raise SystemExit(0)
 
           # Build summary table
           lines = []
-          lines.append("| Dependency | Before | After | Severity |")
-          lines.append("|---|---|---|---|")
+          lines.append("| Dependency | Before | After | Severity | Source |")
+          lines.append("|---|---|---|---|---|")
           for name, info in sorted(needed.items()):
               before = info["current"] if info["current"] else "_(none)_"
-              lines.append(f"| **{name}** | {before} | {info['version']} | {info['severity']} |")
+              lines.append(
+                  f"| **{name}** | {before} | {info['version']} | {info['severity']} | {info['source']} |"
+              )
 
           summary = "\n".join(lines)
-          print(f"Updates needed:\n{summary}")
+          print(f"\nUpdates needed:\n{summary}")
 
-          # Apply resolutions
+          # Apply resolutions to package.json
           for name, info in needed.items():
               resolutions[name] = info["version"]
 
@@ -98,12 +150,11 @@ jobs:
               json.dump(pkg, f, indent=2)
               f.write("\n")
 
-          # Write outputs
           with open(output_file, "a") as f:
               f.write("has_updates=true\n")
               f.write(f"summary<<EOFSUM\n{summary}\nEOFSUM\n")
 
-          print(f"Applied {len(needed)} resolution updates to package.json")
+          print(f"\nApplied {len(needed)} resolution updates to package.json")
           PYEOF
 
       - name: Reinstall with updated resolutions
@@ -128,14 +179,10 @@ jobs:
           body: |
             ## Summary
             Automated update of `resolutions` in `package.json` to fix vulnerable transitive dependencies.
+            Sources: Dependabot alerts (medium/high/critical) + yarn audit.
 
             ### Changes
             ${{ steps.audit.outputs.summary }}
-
-            ### How this works
-            - `yarn audit` detected vulnerable transitive dependencies
-            - `resolutions` entries were added/updated in `package.json` to force safe versions
-            - `yarn install` was re-run to update `yarn.lock`
 
             > **Note:** This only updates transitive dependencies via resolutions. Direct dependency upgrades should be done manually to avoid breaking changes.
 
