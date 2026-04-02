@@ -120,7 +120,7 @@
     "@metamask/sdk-communication-layer": "^0.33.1",
     "@metamask/rpc-errors": "^6.4.0",
     "tmp": "^0.2.4",
-    "brace-expansion": "^2.0.2",
+    "brace-expansion": "^2.0.3",
     "cookie": "^0.7.0",
     "js-yaml": "^4.1.1",
     "axios": "^1.13.5",
@@ -135,7 +135,10 @@
     "chakra-react-select": "^4.9.1",
     "@codeium/react-code-editor": "^1.0.12",
     "flatted": "^3.4.2",
-    "effect": "^3.20.0"
+    "effect": "^3.20.0",
+    "picomatch": "^4.0.4",
+    "ajv": "^6.14.0",
+    "yaml": "^2.8.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
