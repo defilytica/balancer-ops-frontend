@@ -1,4 +1,4 @@
-name: Auto-fix vulnerable transitive dependencies
+name: Auto-fix vulnerable dependencies
 
 on:
   schedule:
@@ -108,43 +108,81 @@ jobs:
               pkg = json.load(f)
 
           resolutions = pkg.get("resolutions", {})
-          needed = {}
+          dependencies = pkg.get("dependencies", {})
+          dev_dependencies = pkg.get("devDependencies", {})
+          needed_resolutions = {}
+          needed_direct = {}
+
+          def parse_ver(v):
+              """Parse a version string like '4.17.23' into a comparable tuple."""
+              parts = v.split(".")
+              return tuple(int(p) for p in parts if p.isdigit())
 
           for name, info in advisories.items():
-              current = resolutions.get(name, "")
               target = f"^{info['version']}"
-              if current != target:
-                  needed[name] = {
+
+              # Check resolutions
+              current_res = resolutions.get(name, "")
+              if current_res != target:
+                  needed_resolutions[name] = {
                       "version": target,
                       "severity": info["severity"],
-                      "current": current,
+                      "current": current_res,
                       "source": info["source"],
                   }
 
-          if not needed:
-              print("All resolutions already up to date")
+              # Check direct dependencies — upgrade if current range could resolve to a vulnerable version
+              for dep_section, dep_label in [(dependencies, "dependencies"), (dev_dependencies, "devDependencies")]:
+                  if name in dep_section:
+                      current_spec = dep_section[name]
+                      base_version = current_spec.lstrip("^~>=<")
+                      patched_version = info["version"]
+                      try:
+                          if parse_ver(base_version) < parse_ver(patched_version):
+                              needed_direct[name] = {
+                                  "version": target,
+                                  "severity": info["severity"],
+                                  "current": current_spec,
+                                  "section": dep_label,
+                                  "source": info["source"],
+                              }
+                      except Exception:
+                          pass
+
+          if not needed_resolutions and not needed_direct:
+              print("All dependencies already up to date")
               with open(output_file, "a") as f:
                   f.write("has_updates=false\n")
               raise SystemExit(0)
 
           # Build summary table
           lines = []
-          lines.append("| Dependency | Before | After | Severity | Source |")
-          lines.append("|---|---|---|---|---|")
-          for name, info in sorted(needed.items()):
+          lines.append("| Dependency | Section | Before | After | Severity | Source |")
+          lines.append("|---|---|---|---|---|---|")
+          for name, info in sorted(needed_resolutions.items()):
               before = info["current"] if info["current"] else "_(none)_"
               lines.append(
-                  f"| **{name}** | {before} | {info['version']} | {info['severity']} | {info['source']} |"
+                  f"| **{name}** | resolutions | {before} | {info['version']} | {info['severity']} | {info['source']} |"
+              )
+          for name, info in sorted(needed_direct.items()):
+              lines.append(
+                  f"| **{name}** | {info['section']} | {info['current']} | {info['version']} | {info['severity']} | {info['source']} |"
               )
 
           summary = "\n".join(lines)
           print(f"\nUpdates needed:\n{summary}")
 
-          # Apply resolutions to package.json
-          for name, info in needed.items():
+          # Apply resolution updates
+          for name, info in needed_resolutions.items():
               resolutions[name] = info["version"]
-
           pkg["resolutions"] = resolutions
+
+          # Apply direct dependency updates
+          for name, info in needed_direct.items():
+              if info["section"] == "dependencies":
+                  pkg["dependencies"][name] = info["version"]
+              else:
+                  pkg["devDependencies"][name] = info["version"]
 
           with open("package.json", "w") as f:
               json.dump(pkg, f, indent=2)
@@ -154,7 +192,8 @@ jobs:
               f.write("has_updates=true\n")
               f.write(f"summary<<EOFSUM\n{summary}\nEOFSUM\n")
 
-          print(f"\nApplied {len(needed)} resolution updates to package.json")
+          total = len(needed_resolutions) + len(needed_direct)
+          print(f"\nApplied {total} updates to package.json ({len(needed_resolutions)} resolutions, {len(needed_direct)} direct deps)")
           PYEOF
 
       - name: Reinstall with updated resolutions
@@ -172,19 +211,19 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "fix: update resolutions for vulnerable transitive dependencies"
+          commit-message: "fix: update vulnerable dependencies (direct + transitive)"
           branch: automated/security-resolutions
           delete-branch: true
-          title: "Security: Update transitive dependency resolutions"
+          title: "Security: Update vulnerable dependencies"
           body: |
             ## Summary
-            Automated update of `resolutions` in `package.json` to fix vulnerable transitive dependencies.
+            Automated update of `package.json` to fix vulnerable dependencies (both direct and transitive via resolutions).
             Sources: Dependabot alerts (medium/high/critical) + yarn audit.
 
             ### Changes
             ${{ steps.audit.outputs.summary }}
 
-            > **Note:** This only updates transitive dependencies via resolutions. Direct dependency upgrades should be done manually to avoid breaking changes.
+            > **Note:** Direct dependencies are upgraded to the minimum patched version (semver-compatible). Review the preview build to verify nothing breaks.
 
             ### Verify
             - [ ] `yarn install` succeeds
