@@ -138,7 +138,13 @@ jobs:
                       base_version = current_spec.lstrip("^~>=<")
                       patched_version = info["version"]
                       try:
-                          if parse_ver(base_version) < parse_ver(patched_version):
+                          current_parts = parse_ver(base_version)
+                          patched_parts = parse_ver(patched_version)
+                          # Skip major version bumps — too risky for automated upgrades
+                          if current_parts[0] != patched_parts[0]:
+                              print(f"  Skipping {name}: major version bump {base_version} -> {patched_version} (requires manual upgrade)")
+                              continue
+                          if current_parts < patched_parts:
                               needed_direct[name] = {
                                   "version": target,
                                   "severity": info["severity"],
