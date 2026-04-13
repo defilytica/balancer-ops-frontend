@@ -1201,6 +1201,7 @@ type GqlPoolLiquidityBootstrappingV3 implements GqlPoolBase {
   reserveTokenEndWeight: Float!
   reserveTokenIndex: Int!
   reserveTokenStartWeight: Float!
+  reserveTokenVirtualBalance: Float!
 
   """
   All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
@@ -2708,7 +2709,6 @@ type LBPPriceChartData {
   cumulativeFees: Float!
   cumulativeVolume: Float!
   fees: Float!
-  intervalTimestamp: Int! @deprecated
   projectTokenBalance: Float!
   projectTokenPrice: Float!
   reservePrice: Float!
@@ -2764,6 +2764,8 @@ type MevTaxHookParams {
 type Mutation {
   beetsPoolLoadReliquarySnapshotsForAllFarms(chain: GqlChain!): String!
   createLBP(input: CreateLBPInput!, type: GqlPoolType): Boolean!
+  lbpReloadFixedLbps(chains: [GqlChain!]!): String!
+  lbpReloadLbps(chains: [GqlChain!]!): String!
   poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
   poolLoadSnapshotsForPools(chain: GqlChain!, poolId: String!): String!
   poolReloadAllPoolAprs(chain: GqlChain!): String!
@@ -2819,6 +2821,7 @@ type Query {
   """Returns all pools for a given filter, specific for aggregators"""
   aggregatorPools(first: Int, orderBy: GqlPoolOrderBy, orderDirection: GqlPoolOrderDirection, skip: Int, where: GqlAggregatorPoolFilter): [GqlPoolAggregator!]!
   beetsPoolGetReliquaryFarmSnapshots(chain: GqlChain!, id: String!, range: GqlPoolSnapshotDataRange!): [GqlReliquaryFarmSnapshot!]!
+  fixedLbpPriceChart(chain: GqlChain!, dataPoints: Int, id: String!): [LBPPriceChartData!]
   lbpPriceChart(chain: GqlChain!, dataPoints: Int, id: String!): [LBPPriceChartData!]
 
   """Get the LoopS data"""

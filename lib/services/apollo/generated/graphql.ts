@@ -1023,6 +1023,7 @@ export type GqlPoolLiquidityBootstrappingV3 = GqlPoolBase & {
   reserveTokenEndWeight: Scalars['Float']['output'];
   reserveTokenIndex: Scalars['Int']['output'];
   reserveTokenStartWeight: Scalars['Float']['output'];
+  reserveTokenVirtualBalance: Scalars['Float']['output'];
   /** All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again. */
   staking?: Maybe<GqlPoolStaking>;
   startTime: Scalars['Int']['output'];
@@ -2272,8 +2273,6 @@ export type LbpPriceChartData = {
   cumulativeFees: Scalars['Float']['output'];
   cumulativeVolume: Scalars['Float']['output'];
   fees: Scalars['Float']['output'];
-  /** @deprecated No longer supported */
-  intervalTimestamp: Scalars['Int']['output'];
   projectTokenBalance: Scalars['Float']['output'];
   projectTokenPrice: Scalars['Float']['output'];
   reservePrice: Scalars['Float']['output'];
@@ -2322,6 +2321,8 @@ export type Mutation = {
   __typename: 'Mutation';
   beetsPoolLoadReliquarySnapshotsForAllFarms: Scalars['String']['output'];
   createLBP: Scalars['Boolean']['output'];
+  lbpReloadFixedLbps: Scalars['String']['output'];
+  lbpReloadLbps: Scalars['String']['output'];
   poolLoadOnChainDataForAllPools: Array<GqlPoolMutationResult>;
   poolLoadSnapshotsForPools: Scalars['String']['output'];
   poolReloadAllPoolAprs: Scalars['String']['output'];
@@ -2355,6 +2356,16 @@ export type MutationBeetsPoolLoadReliquarySnapshotsForAllFarmsArgs = {
 export type MutationCreateLbpArgs = {
   input: CreateLbpInput;
   type?: InputMaybe<GqlPoolType>;
+};
+
+
+export type MutationLbpReloadFixedLbpsArgs = {
+  chains: Array<GqlChain>;
+};
+
+
+export type MutationLbpReloadLbpsArgs = {
+  chains: Array<GqlChain>;
 };
 
 
@@ -2503,6 +2514,7 @@ export type Query = {
   /** Returns all pools for a given filter, specific for aggregators */
   aggregatorPools: Array<GqlPoolAggregator>;
   beetsPoolGetReliquaryFarmSnapshots: Array<GqlReliquaryFarmSnapshot>;
+  fixedLbpPriceChart?: Maybe<Array<LbpPriceChartData>>;
   lbpPriceChart?: Maybe<Array<LbpPriceChartData>>;
   /** Get the LoopS data */
   loopsGetData: GqlLoopsData;
@@ -2571,6 +2583,13 @@ export type QueryBeetsPoolGetReliquaryFarmSnapshotsArgs = {
   chain: GqlChain;
   id: Scalars['String']['input'];
   range: GqlPoolSnapshotDataRange;
+};
+
+
+export type QueryFixedLbpPriceChartArgs = {
+  chain: GqlChain;
+  dataPoints?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['String']['input'];
 };
 
 
