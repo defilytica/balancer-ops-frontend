@@ -80,7 +80,6 @@ Comprehensive rewards and injector management:
 
 #### 4. Pool management and analytics
 Pool monitoring and liquidity management:
-- **Core Pools Dashboard** (`app/core-pools/`) — Monitor and analyze core Balancer pools
 - **Boosted Pools** (`app/boosted-pools/`) — View and manage boosted pool configurations with liquidity buffer monitoring
 - **Liquidity Buffers** (`app/liquidity-buffers/`) — Track and manage liquidity buffer balances across networks
 - **ReCLAMM Pools** (`app/reclamm/`) — Monitor and manage ReCLAMM pool parameters
@@ -108,7 +107,6 @@ app/                    # Next.js App Router pages and API routes
   rewards-injector/     # Rewards injector monitoring (v1 & v2)
   injector-creator-v2/  # Create new injector contracts
   reward-tokens/        # Reward token management and addition
-  core-pools/           # Core pools dashboard
   boosted-pools/        # Boosted pools monitoring
   liquidity-buffers/    # Liquidity buffer tracking
   gauge-creator/        # Gauge creation
