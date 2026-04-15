@@ -570,6 +570,9 @@ export const INJECTOR_BLACKLIST: Record<string, string[]> = {
   avalanche: [
     "0xfa7b21B30325DBbd4A71ee2B2EDE74A7d8A2c0E4", // Blacklisted injector address
   ],
+  mainnet: [
+    "0xF7d32a6D1FFA5DEe909728fF2fEFf4C31C85b052", // test injector with bad config
+  ],
   // Add more networks and addresses as needed
 };
 
