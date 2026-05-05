@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
 const TENDERLY_API_URL =
-  "https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulate-bundle";
+  "https://api.tenderly.co/api/v1/account/balancer/project/maxis/simulate-bundle";
 const TENDERLY_ACCESS_KEY = process.env.TENDERLY_KEY;
 
 interface EOATransaction {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     if (simulationToShare?.simulation?.id) {
       try {
         await axios.post(
-          `https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulations/${simulationToShare.simulation.id}/share`,
+          `https://api.tenderly.co/api/v1/account/balancer/project/maxis/simulations/${simulationToShare.simulation.id}/share`,
           {},
           {
             headers: {

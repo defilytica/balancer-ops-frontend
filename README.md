@@ -2,7 +2,7 @@
 
 DAO operations and governance tool for the Balancer protocol. Part of the [Balancer](https://github.com/balancer) tooling suite.
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/defilytica/balancer-ops-frontend)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/balancer/balancer-ops-frontend)
 
 ## Features
 
@@ -18,7 +18,7 @@ Supports 15+ networks including Mainnet, Arbitrum, Base, Polygon, Optimism, Gnos
 
 1. Clone and install dependencies:
    ```bash
-   git clone https://github.com/defilytica/balancer-ops-frontend.git
+   git clone https://github.com/balancer/balancer-ops-frontend.git
    cd balancer-ops-frontend
    yarn install
    ```

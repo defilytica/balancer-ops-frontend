@@ -22,7 +22,7 @@ export default function Footer() {
             or errors. Use at your own risk.
           </Text>
           <Text fontSize="xs" color={textColor}>
-            © 2025 DeFilytica
+            Built by DeFilytica for the Balancer DAO
           </Text>
         </Stack>
       </Container>

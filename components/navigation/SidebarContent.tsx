@@ -15,7 +15,6 @@ import { RiAlertLine, RiContractLine } from "react-icons/ri";
 import {
   TbTransactionBitcoin,
   TbGaugeFilled,
-  TbHeartRateMonitor,
   TbFishHook,
   TbCoins,
   TbChartCovariate,
@@ -117,12 +116,6 @@ const LinkItems = [
         target: "/chainlink-automation",
         description: "View Chainlink Automation Upkeeps",
       },
-      {
-        name: "Gauge Monitoring",
-        icon: TbHeartRateMonitor,
-        target: "/gauge-kill-list",
-        description: "Check for gauge kill-list",
-      },
     ],
   },
   {
@@ -132,28 +125,6 @@ const LinkItems = [
     description: "Create Emergency Payloads",
   },
 ];
-
-const DRPCBanner = () => (
-  <Link href="https://drpc.org?ref=974b0e" isExternal>
-    <Box
-      shadow="md"
-      borderRadius="md"
-      overflow="hidden"
-      transition="all 0.1s"
-      _hover={{
-        shadow: "lg",
-        transform: "translateY(-2px)",
-      }}
-    >
-      <Image
-        src="https://drpc.org/images/external/powered-by-drpc-dark.svg"
-        alt="Powered by dRPC"
-        width="190px"
-        height="47px"
-      />
-    </Box>
-  </Link>
-);
 
 const DefilyticaBanner = () => (
   <Link href="https://defilytica.com" isExternal>
@@ -180,7 +151,7 @@ const DefilyticaBanner = () => (
         objectFit="contain"
       />
       <Text fontSize="sm" fontWeight="medium" variant="special">
-        Developed by DeFilytica
+        developed by defilytica
       </Text>
     </Box>
   </Link>
@@ -260,12 +231,11 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           alignItems="center"
           px="4"
           py="4"
-          pb="16"
+          pb="24"
           gap="2"
           display={{ base: "none", sm: "flex" }}
           flexShrink={0}
         >
-          <DRPCBanner />
           <DefilyticaBanner />
         </Flex>
       </Flex>

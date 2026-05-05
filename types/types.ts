@@ -1,5 +1,5 @@
 import { GAUGE_WEIGHT_CAPS } from "@/constants/constants";
-import { GaugeData, Permission } from "@/types/interfaces";
+import { Permission } from "@/types/interfaces";
 
 export type NetworkInfo = {
   logo: string;
@@ -11,12 +11,6 @@ export type NetworkInfo = {
 export type PoolType = "weighted" | "composableStable" | undefined;
 
 export type WeightCapType = (typeof GAUGE_WEIGHT_CAPS)[keyof typeof GAUGE_WEIGHT_CAPS];
-
-// Table: Define the sort direction type
-export type SortDirection = "asc" | "desc";
-
-// Table: Define column type for sorting
-export type SortableColumn = keyof GaugeData;
 
 export type GaugeNetworkId =
   | "mainnet"

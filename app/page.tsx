@@ -73,15 +73,6 @@ export default function Page() {
           },
         },
         {
-          title: "Enable Staking Gauge",
-          icon: TbGaugeFilled,
-          description: "Create a Payload to add a Gauge to the veBAL gauge controller",
-          primaryAction: {
-            label: "Enable Gauge",
-            href: "/payload-builder/enable-gauge",
-          },
-        },
-        {
           title: "Initialize Buffers",
           icon: FaRegChartBar,
           description: "Initialize Buffers for v3 pools",

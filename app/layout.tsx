@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={satoshiFont.className} suppressHydrationWarning>
         <Providers>
           <Flex direction="column" minH="100vh">

@@ -5,7 +5,7 @@ import IGnosisSafeABI from "@/abi/IGnosisSafe.json";
 import { networks } from "@/constants/constants";
 
 const TENDERLY_API_URL =
-  "https://api.tenderly.co/api/v1/account/defilytica/project/balancer-ops/simulate";
+  "https://api.tenderly.co/api/v1/account/balancer/project/maxis/simulate";
 const TENDERLY_ACCESS_KEY = process.env.TENDERLY_KEY;
 
 const MULTISEND_ADDRESS = "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D";

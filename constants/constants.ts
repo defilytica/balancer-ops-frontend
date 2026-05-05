@@ -1,4 +1,4 @@
-import { FaDollarSign, FaTachometerAlt, FaSkull, FaGift } from "react-icons/fa";
+import { FaDollarSign, FaGift } from "react-icons/fa";
 import { FaRegChartBar } from "react-icons/fa6";
 import { FaBridgeCircleCheck } from "react-icons/fa6";
 import { FaUnlockAlt } from "react-icons/fa";
@@ -78,30 +78,6 @@ export const PAYLOAD_OPTIONS = [
     repos: ["balancer/multisig-ops"],
     branchNamePlaceholder: "feature/create-payment",
     prNamePlaceholder: "Create Payment for Service XYZ",
-    prTypePath: "BIPs/YYYY-WXX/",
-  },
-  {
-    href: "/payload-builder/enable-gauge",
-    key: "enable-gauge",
-    label: "Enable Gauge for BAL Rewards in the veBAL system",
-    button_label: "Enable Gauge",
-    description: "Set up a payload to enable a gauge in the Balancer gauge system.",
-    icon: FaTachometerAlt,
-    repos: ["balancer/multisig-ops"],
-    branchNamePlaceholder: "feature/enable-gauge",
-    prNamePlaceholder: "Enable Gauge XYZ",
-    prTypePath: "BIPs/YYYY-WXX/",
-  },
-  {
-    href: "/payload-builder/kill-gauge",
-    key: "kill-gauge",
-    label: "Remove Gauge from the veBAL system",
-    button_label: "Kill Gauge",
-    description: "Set up a payload to remove a gauge from the Balancer gauge system",
-    icon: FaSkull,
-    repos: ["balancer/multisig-ops"],
-    branchNamePlaceholder: "feature/kill-gauge",
-    prNamePlaceholder: "Kill Gauge XYZ",
     prTypePath: "BIPs/YYYY-WXX/",
   },
   {

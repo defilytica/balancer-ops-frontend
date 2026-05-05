@@ -7,7 +7,6 @@ import ComposerIndicator from "./composer/ComposerIndicator";
 import { PayloadComposerProvider } from "./composer/PayloadComposerContext";
 
 const CATEGORIZED_PAYLOADS = {
-  "Gauge Management": ["enable-gauge", "kill-gauge"],
   "Reward Configuration": [
     "add-reward-to-gauge",
     "set-reward-distributor-to-gauge",
