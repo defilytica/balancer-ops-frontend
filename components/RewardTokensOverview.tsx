@@ -223,8 +223,9 @@ const RewardTokensOverview: React.FC<RewardTokensOverviewProps> = () => {
 
   const formatEndDate = (periodFinish: string) => {
     const timestamp = parseInt(periodFinish);
-    if (timestamp === 0) return "No end date";
+    if (!Number.isFinite(timestamp) || timestamp === 0) return "No end date";
     const date = new Date(timestamp * 1000);
+    if (Number.isNaN(date.getTime())) return "No end date";
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 

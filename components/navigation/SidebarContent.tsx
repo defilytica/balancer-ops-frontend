@@ -231,7 +231,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           alignItems="center"
           px="4"
           py="4"
-          pb="24"
+          pb="32"
           gap="2"
           display={{ base: "none", sm: "flex" }}
           flexShrink={0}
