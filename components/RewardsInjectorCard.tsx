@@ -146,7 +146,7 @@ const RewardsInjectorCard: React.FC<RewardsInjectorCardProps> = ({ data, network
               </Tooltip>
             )}
             {hasGaugesNearExpiration && (
-              <Tooltip label="Some gauges are about to expire">
+              <Tooltip label="Schedule expiring">
                 <Box
                   bg="yellow.600"
                   color="white"

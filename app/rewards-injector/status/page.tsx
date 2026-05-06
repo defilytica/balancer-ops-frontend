@@ -322,7 +322,7 @@ const RewardsInjectorStatusPage = () => {
               {stats.total}
             </Text>
           </VStack>
-          <Tooltip label="Some gauges are about to expire" hasArrow>
+          <Tooltip label="Schedule expiring" hasArrow>
             <VStack spacing={1} cursor="pointer">
               <Text fontSize="xs" color={statsHeaderTextColor} textAlign="center">
                 Needs attention

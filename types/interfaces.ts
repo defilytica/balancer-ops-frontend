@@ -209,45 +209,6 @@ export interface PoolSettings {
   stableSpecific?: StablePoolSpecific;
 }
 
-export interface DuneResponse {
-  execution_id: string;
-  query_id: number;
-  state: string;
-  submitted_at: string;
-  expires_at: string;
-  execution_started_at: string;
-  execution_ended_at: string;
-  result: DuneResult;
-}
-
-export interface DuneResult {
-  rows: GaugeData[];
-  metadata: {
-    column_names: string[];
-    result_set_bytes: number;
-    total_row_count: number;
-    datapoint_count: number;
-    pending_execution_row_count: number;
-  };
-}
-
-export interface GaugeData {
-  gauge: string;
-  symbol: string;
-  status: string;
-  last_round_id: number;
-  last_vote_date: string;
-  days_since_last_vote: number;
-  last_vote_amount: number;
-  last_vote_percentage: number;
-  median_60d_tvl: number;
-  avg_60d_tvl: number;
-  max_60d_tvl: number;
-  min_60d_tvl: number;
-  days_above_100k_tvl: number;
-  last_day_above_100k: number;
-}
-
 // Base interface for hook params
 export interface BaseHookParams {
   __typename?: string;

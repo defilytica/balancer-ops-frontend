@@ -232,7 +232,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
                         status === GaugeStatus.COMPLETED
                           ? "This gauge is completed and is no longer distributing rewards"
                           : status === GaugeStatus.WARNING
-                            ? "This gauge is about to expire"
+                            ? "Schedule expiring"
                             : status === GaugeStatus.OK
                               ? "This gauge is active and distributing rewards"
                               : undefined
@@ -317,7 +317,7 @@ export const RewardsInjectorTable: React.FC<RewardsInjectorTableProps> = ({
                       status === GaugeStatus.COMPLETED
                         ? "This gauge is completed and is no longer distributing rewards"
                         : status === GaugeStatus.WARNING
-                          ? "This gauge is about to expire"
+                          ? "Schedule expiring"
                           : status === GaugeStatus.OK
                             ? "This gauge is active and distributing rewards"
                             : undefined

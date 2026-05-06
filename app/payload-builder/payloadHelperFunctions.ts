@@ -9,11 +9,6 @@ import { ethers, JsonRpcSigner, parseUnits } from "ethers";
 import { encodeFunctionData } from "viem";
 import { vaultAdminAbi } from "@/abi/VaultAdmin";
 
-export interface EnableGaugeInput {
-  gauge: string;
-  gaugeType: string;
-}
-
 export const handleDownloadClick = (generatedPayload: any) => {
   const payloadString = JSON.stringify(JSON.parse(generatedPayload), null, 2);
   const blob = new Blob([payloadString], { type: "application/json" });
@@ -70,90 +65,6 @@ export const copyTextToClipboard = (text: string, toast: any) => {
       console.error("Could not copy text: ", err);
     });
 };
-
-// --- ENABLE GAUGE
-export function generateEnableGaugePayload(inputs: EnableGaugeInput[]) {
-  // Using omni-sig safe address for gauge operations
-  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
-
-  const transactions = inputs.map(input => ({
-    to: "0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd",
-    value: "0",
-    data: null,
-    contractMethod: {
-      inputs: [
-        { name: "gauge", type: "address", internalType: "address" },
-        { name: "gaugeType", type: "string", internalType: "string" },
-      ],
-      name: "addGauge",
-      payable: false,
-    },
-    contractInputsValues: {
-      gauge: input.gauge,
-      gaugeType: input.gaugeType,
-    },
-  }));
-
-  return {
-    version: "1.0",
-    chainId: "1",
-    createdAt: Date.now(),
-    meta: {
-      name: "Transactions Batch",
-      createdFromSafeAddress: OMNI_SIG_SAFE,
-    },
-    transactions,
-  };
-}
-
-export function generateHumanReadableForEnableGauge(inputs: EnableGaugeInput[]): string {
-  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
-
-  const gaugesList = inputs
-    .map(input => `gauge(address):${input.gauge}\ngaugeType(string): ${input.gaugeType}`)
-    .join("\n");
-
-  return `The Balancer Maxi Omni-Sig ${OMNI_SIG_SAFE} will interact with the GaugeAdderv4 at 0x5DbAd78818D4c8958EfF2d5b95b28385A22113Cd and call the addGauge function with the following arguments:\n${gaugesList}`;
-}
-
-// --- KILL GAUGE ---
-export interface KillGaugeInput {
-  target: string;
-}
-
-export function generateKillGaugePayload(targets: KillGaugeInput[]) {
-  // Using omni-sig safe address for gauge operations
-  const OMNI_SIG_SAFE = "0x9ff471F9f98F42E5151C7855fD1b5aa906b1AF7e";
-
-  const transactions = targets.map(target => ({
-    to: "0xf5dECDB1f3d1ee384908Fbe16D2F0348AE43a9eA",
-    value: "0",
-    data: null,
-    contractMethod: {
-      inputs: [
-        { name: "target", type: "address", internalType: "address" },
-        { name: "data", type: "bytes", internalType: "bytes" },
-      ],
-      name: "performAction",
-      payable: true,
-    },
-    contractInputsValues: {
-      target: target.target,
-      data: "0xab8f0945",
-    },
-  }));
-
-  return {
-    version: "1.0",
-    chainId: "1",
-    createdAt: Date.now(),
-    meta: {
-      name: "Transactions Batch",
-      createdFromSafeAddress: OMNI_SIG_SAFE,
-    },
-    transactions,
-  };
-}
 
 // --- PAYMENT ---
 export interface PaymentInput {

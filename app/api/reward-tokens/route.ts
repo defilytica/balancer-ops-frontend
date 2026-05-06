@@ -89,7 +89,12 @@ export async function GET(request: NextRequest) {
               const tokenAddress = await gaugeContract.reward_tokens(i);
               const rewardData = await gaugeContract.reward_data(tokenAddress);
 
-              if (tokenAddress && tokenAddress !== ethers.ZeroAddress) {
+              if (
+                tokenAddress &&
+                tokenAddress !== ethers.ZeroAddress &&
+                rewardData.distributor &&
+                rewardData.distributor !== ethers.ZeroAddress
+              ) {
                 const tokenContract = new ethers.Contract(tokenAddress, ERC20, provider);
 
                 const [symbol, name, decimals] = await Promise.all([
@@ -106,7 +111,7 @@ export async function GET(request: NextRequest) {
                   symbol,
                   name,
                   decimals: Number(decimals),
-                  distributor: rewardData.distributor || ethers.ZeroAddress,
+                  distributor: rewardData.distributor,
                   rate: formattedRate,
                   period_finish: rewardData.period_finish?.toString() || "0",
                   last_update: rewardData.last_update?.toString() || "0",
