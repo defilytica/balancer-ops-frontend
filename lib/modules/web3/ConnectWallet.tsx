@@ -10,13 +10,17 @@ export function ConnectWallet({ ...rest }: ButtonProps) {
     <ConnectButton.Custom>
       {({ mounted, openConnectModal, account, chain, openChainModal, openAccountModal }) => {
         const isReady = mounted;
-        const isLoading = status === "connecting" || status === "reconnecting";
+        // Only block clicks during an active user-initiated connect. "reconnecting"
+        // (auto-reconnect on mount, e.g. resuming a WalletConnect session) can hang
+        // for many seconds on a slow relayer — keep the button clickable so the user
+        // can start a fresh connection instead of waiting it out.
+        const isConnecting = status === "connecting";
         const hasActiveConnection = isReady && isConnected && account && chain;
 
         if (!hasActiveConnection) {
           return (
             <Button
-              isDisabled={isLoading || !mounted}
+              isDisabled={isConnecting || !mounted}
               loadingText="Connect wallet"
               onClick={openConnectModal}
               type="button"

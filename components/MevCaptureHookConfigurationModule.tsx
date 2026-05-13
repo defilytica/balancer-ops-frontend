@@ -106,29 +106,18 @@ export default function MevCaptureHookConfigurationModule({
   // Add wallet connection hook
   const { address: walletAddress } = useAccount();
 
-  // Add effect to check manager status when wallet changes
+  // Compare the wagmi-connected wallet against the pool's swap fee manager.
+  // Reading from window.ethereum is wrong here: it may be undefined (WalletConnect,
+  // Safe, mobile) or expose a different default account than the one selected via wagmi.
   useEffect(() => {
-    const checkManagerStatus = async () => {
-      if (!selectedPool || !window.ethereum) {
-        setIsCurrentWalletManager(false);
-        return;
-      }
-
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const signerAddress = await signer.getAddress();
-
-        const isManager = selectedPool.swapFeeManager.toLowerCase() === signerAddress.toLowerCase();
-        setIsCurrentWalletManager(isManager);
-      } catch (error) {
-        console.error("Error checking manager status:", error);
-        setIsCurrentWalletManager(false);
-      }
-    };
-
-    checkManagerStatus();
-  }, [selectedPool, walletAddress]); // Dependencies include both selectedPool and walletAddress
+    if (!selectedPool || !walletAddress) {
+      setIsCurrentWalletManager(false);
+      return;
+    }
+    setIsCurrentWalletManager(
+      selectedPool.swapFeeManager.toLowerCase() === walletAddress.toLowerCase(),
+    );
+  }, [selectedPool, walletAddress]);
 
   const { loading, error, data } = useQuery<
     GetV3PoolsWithHooksQuery,
