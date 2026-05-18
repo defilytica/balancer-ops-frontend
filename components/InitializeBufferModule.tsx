@@ -88,10 +88,10 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
   const toast = useToast();
 
   // Chain state switch
-  const { switchChain } = useSwitchChain();
+  const { switchChain, switchChainAsync } = useSwitchChain();
 
   // Add wallet connection hook
-  const { address: walletAddress } = useAccount();
+  const { address: walletAddress, chain } = useAccount();
 
   const [debouncedUnderlyingTokenAddress] = useDebounce(underlyingTokenAddress, 300);
 
@@ -294,6 +294,68 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
     return bufferRouterAddress;
   };
 
+  // Guard: confirm wallet is on the same chain as `selectedNetwork` before any RPC call.
+  // Without this, contract reads against `selectedToken.address` on the wrong chain
+  // return `0x` and ethers throws "could not decode result data (BAD_DATA)".
+  const ensureCorrectChain = async (): Promise<ethers.BrowserProvider | null> => {
+    const expectedChainId = Number(
+      NETWORK_OPTIONS.find(n => n.apiID === selectedNetwork)?.chainId,
+    );
+    if (!expectedChainId) {
+      toast({
+        title: "Invalid network",
+        description: "Selected network is not valid",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    if (chain?.id !== expectedChainId) {
+      try {
+        await switchChainAsync({ chainId: expectedChainId });
+      } catch {
+        toast({
+          title: "Wrong network",
+          description: `Please switch your wallet to ${selectedNetwork} and try again`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return null;
+      }
+    }
+
+    if (typeof window === "undefined" || !(window as any).ethereum) {
+      toast({
+        title: "No wallet provider",
+        description: "No injected wallet provider detected",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    // Belt-and-suspenders: the injected provider's chain is what actually executes
+    // the call, so verify it directly in case wagmi's `chain` state has drifted.
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== expectedChainId) {
+      toast({
+        title: "Wrong network",
+        description: `Wallet is on chain ${network.chainId}, expected ${expectedChainId} (${selectedNetwork})`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return null;
+    }
+
+    return provider;
+  };
+
   // Function to wrap underlying tokens to wrapped tokens
   const handleWrapTokens = async () => {
     try {
@@ -319,7 +381,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         return;
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = await ensureCorrectChain();
+      if (!provider) return;
       const signer = await provider.getSigner();
 
       // Step 1: Approve wrapped token to spend underlying tokens
@@ -400,6 +463,17 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         return;
       }
 
+      if (!walletAddress) {
+        toast({
+          title: "Wallet not connected",
+          description: "Connect your wallet to execute the transaction",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
       const underlyingAmount = parseFloat(exactAmountUnderlyingIn) || 0;
       const wrappedAmount = parseFloat(exactAmountWrappedIn) || 0;
       if (underlyingAmount <= 0 && wrappedAmount <= 0) {
@@ -454,7 +528,8 @@ export default function InitializeBufferModule({ addressBook }: InitializeBuffer
         return;
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = await ensureCorrectChain();
+      if (!provider) return;
       const signer = await provider.getSigner();
 
       // Step 1: Check token balances first - fail fast if insufficient
